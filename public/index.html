@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#140f2b">
+<meta name="theme-color" content="#0e1f27">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -15,10 +15,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Mitr:wght@300;400;500;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
-  --void:#140f2b; --deep:#1c1540; --panel:#251c52; --panel-2:#30246a; --edge:#4b3a93; --edge-hi:#6a55c4;
-  --ink:#f1ebff; --ink-dim:#a99fd0; --ink-faint:#6f66a0;
-  --ember:#ff7a3d; --ember-hi:#ffb347; --rune:#4ff0e0; --gold:#ffd166;
-  --blood:#ff4d6d; --leaf:#6ee7a0; --shadow:#0a0718;
+  --void:#0e1f27; --deep:#142b34; --panel:#1b3540; --panel-2:#224353; --edge:#3d6b72; --edge-hi:#5fa3a0;
+  --ink:#eaf5f0; --ink-dim:#9fc0bd; --ink-faint:#5f8583;
+  --ember:#ff9d5c; --ember-hi:#ffc386; --rune:#7fe0cf; --gold:#e8c477;
+  --blood:#e2705a; --leaf:#7fd88a; --shadow:#081418;
   --px:3px;
   --f-pixel:'Pixelify Sans', 'Mitr', monospace;
   --f-ui:'Mitr', 'Noto Sans Thai', 'Leelawadee UI', system-ui, sans-serif;
@@ -27,7 +27,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);}
 body{
-  margin:0; min-height:100%; color:var(--ink); font-family:var(--f-ui); font-weight:300; font-size:15px; line-height:1.55;
+  margin:0; min-height:100%; color:var(--ink); font-family:var(--f-ui); font-weight:300; font-size:17px; line-height:1.55;
   background:var(--void);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
   overflow-x:hidden;
@@ -60,29 +60,29 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
   background:linear-gradient(180deg, rgba(20,15,43,.97) 70%, rgba(20,15,43,0));
   display:flex; align-items:center; gap:12px;
 }
-.hud-avatar{width:46px; height:46px; flex:none; display:grid; place-items:center; font-size:24px; background:var(--panel-2); position:relative;}
-.hud-lv{position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); font-family:var(--f-pixel); font-size:11px; background:var(--ember); color:#2a0f00; padding:0 5px; line-height:15px; white-space:nowrap;}
+.hud-avatar{width:46px; height:46px; flex:none; display:grid; place-items:center; font-size:28px; background:var(--panel-2); position:relative;}
+.hud-lv{position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); font-family:var(--f-pixel); font-size:13px; background:var(--ember); color:#2a0f00; padding:0 5px; line-height:15px; white-space:nowrap;}
 .hud-main{flex:1; min-width:0;}
-.hud-name{font-weight:500; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.hud-name{font-weight:500; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .hud-xp{height:7px; background:var(--shadow); margin-top:5px; position:relative;}
 .hud-xp > i{position:absolute; inset:0 auto 0 0; background:linear-gradient(90deg,var(--ember),var(--ember-hi)); transition:width .5s;}
 .hud-xptext{font-family:var(--f-pixel); font-size:10.5px; color:var(--ink-dim); margin-top:2px;}
-.hud-stats{display:flex; gap:10px; font-family:var(--f-pixel); font-size:15px; flex:none;}
+.hud-stats{display:flex; gap:10px; font-family:var(--f-pixel); font-size:17px; flex:none;}
 .hud-stats span{display:flex; align-items:center; gap:4px;}
 
 /* ---------- title ---------- */
 .title-block{text-align:center; margin:6px 0 18px;}
 .game-title{
-  font-family:var(--f-pixel); font-weight:700; font-size:44px; line-height:1; margin:0; letter-spacing:.04em;
+  font-family:var(--f-pixel); font-weight:700; font-size:51px; line-height:1; margin:0; letter-spacing:.04em;
   color:var(--ember-hi);
   text-shadow: 3px 3px 0 #a3321a, 6px 6px 0 var(--shadow), 0 0 28px rgba(255,122,61,.45);
 }
-.game-sub{color:var(--ink-dim); font-size:13px; margin-top:8px;}
+.game-sub{color:var(--ink-dim); font-size:15px; margin-top:8px;}
 
 /* ---------- buttons ---------- */
 .btn{
   display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; border:0;
-  font-family:var(--f-ui); font-weight:500; font-size:15px; padding:12px 18px; color:var(--ink);
+  font-family:var(--f-ui); font-weight:500; font-size:17px; padding:12px 18px; color:var(--ink);
   background:var(--panel-2); transition:transform .06s, filter .15s; user-select:none;
 }
 .btn.px{margin:var(--px);}
@@ -94,8 +94,8 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .btn.ghost{background:transparent;}
 .btn.danger{--edge:var(--blood); color:#ffd0d8; background:rgba(255,77,109,.12);}
 .btn.block{display:flex; width:calc(100% - 6px);}
-.btn.small{font-size:13px; padding:7px 12px;}
-.back{background:none; border:0; color:var(--ink-dim); cursor:pointer; font-size:14px; padding:4px 0; margin-bottom:8px;}
+.btn.small{font-size:15px; padding:7px 12px;}
+.back{background:none; border:0; color:var(--ink-dim); cursor:pointer; font-size:16px; padding:4px 0; margin-bottom:8px;}
 .back:hover{color:var(--ink);}
 
 /* ---------- hub ---------- */
@@ -106,30 +106,45 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .tower-scene canvas{position:absolute; left:50%; bottom:18px; transform:translateX(-50%); width:120px; height:120px; image-rendering:pixelated;}
 .tower-floor{position:absolute; left:0; right:0; bottom:0; height:22px; background:repeating-linear-gradient(90deg,#2b1e5c 0 16px,#241950 16px 32px); border-top:3px solid #3d2d7e;}
 .tower-info{padding:12px 16px 14px; display:flex; align-items:center; gap:12px;}
-.tower-info h3{margin:0; font-family:var(--f-pixel); font-size:22px; color:var(--ember-hi); font-weight:700;}
-.tower-info p{margin:2px 0 0; font-size:13px; color:var(--ink-dim);}
-.tower-info .go{margin-left:auto; font-family:var(--f-pixel); font-size:15px; background:var(--ember); color:#2a0f00; padding:6px 12px; white-space:nowrap;}
-.tower-badge{position:absolute; top:10px; left:12px; font-family:var(--f-pixel); font-size:13px; background:rgba(10,7,24,.7); padding:3px 8px; color:var(--gold);}
+.tower-info h3{margin:0; font-family:var(--f-pixel); font-size:25px; color:var(--ember-hi); font-weight:700;}
+.tower-info p{margin:2px 0 0; font-size:15px; color:var(--ink-dim);}
+.tower-info .go{margin-left:auto; font-family:var(--f-pixel); font-size:17px; background:var(--ember); color:#2a0f00; padding:6px 12px; white-space:nowrap;}
+.tower-badge{position:absolute; top:10px; left:12px; font-family:var(--f-pixel); font-size:15px; background:rgba(10,7,24,.7); padding:3px 8px; color:var(--gold);}
+.char-tile{display:flex; align-items:center; gap:14px; width:calc(100% - 6px); text-align:left; cursor:pointer; border:0; padding:16px; background:var(--deep); --edge:var(--ember);}
+.char-tile .ava{width:64px; height:64px; flex:none; display:grid; place-items:center; font-size:38px; background:var(--panel-2); position:relative;}
+.char-tile .ava .lv{position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); font-family:var(--f-pixel); font-size:13px; background:var(--ember); color:#2a0f00; padding:0 6px; line-height:16px; white-space:nowrap;}
+.char-tile .ci{flex:1; min-width:0;}
+.char-tile h3{margin:0; font-family:var(--f-pixel); font-size:20px; color:var(--ember-hi); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.char-tile p{margin:2px 0 6px; font-size:13px; color:var(--ink-dim);}
+.char-tile .go{font-family:var(--f-pixel); font-size:13px; color:var(--rune);}
+.vocab-tile{display:block; width:calc(100% - 6px); text-align:left; cursor:pointer; border:0; padding:14px 16px; background:var(--panel); --edge:var(--rune); margin-top:14px;}
+.vocab-tile .vh{display:flex; align-items:center; gap:8px;}
+.vocab-tile .vh h4{margin:0; font-weight:500; font-size:18px; flex:1;}
+.vocab-tile .vh span{font-family:var(--f-pixel); font-size:13px; color:var(--rune);}
+.vocab-tile .words{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+.vocab-tile .w{background:var(--deep); padding:6px 10px; font-size:14px; --edge:var(--edge);}
+.vocab-tile .w b{color:var(--gold);}
+.vocab-tile .w small{display:block; color:var(--ink-dim); font-size:11.5px;}
 
 .mode-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 14px; margin-top:16px;}
 .mode-tile{cursor:pointer; border:0; text-align:left; padding:14px; min-height:112px; display:flex; flex-direction:column; justify-content:space-between; background:var(--panel);}
 .mode-tile.wide{grid-column:1 / -1; flex-direction:row; align-items:center; gap:14px; min-height:0;}
-.mode-tile .ico{font-size:30px; line-height:1;}
-.mode-tile h4{margin:8px 0 2px; font-weight:500; font-size:16px;}
+.mode-tile .ico{font-size:34px; line-height:1;}
+.mode-tile h4{margin:8px 0 2px; font-weight:500; font-size:18px;}
 .mode-tile.wide h4{margin-top:0;}
 .mode-tile p{margin:0; font-size:12.5px; color:var(--ink-dim); line-height:1.4;}
-.mode-tile .pill{font-family:var(--f-pixel); font-size:12px; color:var(--rune);}
+.mode-tile .pill{font-family:var(--f-pixel); font-size:14px; color:var(--rune);}
 
 .section-h{display:flex; align-items:baseline; justify-content:space-between; margin:24px 4px 10px;}
-.section-h h3{margin:0; font-size:16px; font-weight:500;}
-.section-h small{color:var(--ink-dim); font-size:12px;}
+.section-h h3{margin:0; font-size:18px; font-weight:500;}
+.section-h small{color:var(--ink-dim); font-size:14px;}
 
 .quest{display:flex; align-items:center; gap:12px; padding:11px 14px; margin-bottom:10px; background:var(--deep);}
 .quest .q-txt{flex:1; min-width:0;}
-.quest .q-name{font-size:14px;}
+.quest .q-name{font-size:16px;}
 .quest .q-bar{height:6px; background:var(--shadow); margin-top:6px; position:relative;}
 .quest .q-bar i{position:absolute; inset:0 auto 0 0; background:var(--rune);}
-.quest .q-num{font-family:var(--f-pixel); font-size:12px; color:var(--ink-dim); margin-top:3px;}
+.quest .q-num{font-family:var(--f-pixel); font-size:14px; color:var(--ink-dim); margin-top:3px;}
 .quest .btn{flex:none;}
 .quest.done{opacity:.55;}
 
@@ -141,78 +156,78 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 }
 .tabbar-in{max-width:520px; margin:0 auto; display:flex; gap:6px; background:var(--deep);}
 .tab{flex:1; border:0; background:none; cursor:pointer; padding:8px 2px 6px; display:flex; flex-direction:column; align-items:center; gap:1px; color:var(--ink-dim); font-size:11.5px;}
-.tab b{font-size:20px; line-height:1.1; font-weight:400; filter:grayscale(.7); opacity:.8;}
+.tab b{font-size:23px; line-height:1.1; font-weight:400; filter:grayscale(.7); opacity:.8;}
 .tab.on{color:var(--ink);}
 .tab.on b{filter:none; opacity:1;}
 .tab.on::after{content:""; width:18px; height:3px; background:var(--ember); margin-top:2px;}
 
 /* ---------- forms / chips ---------- */
-.field-label{display:block; font-size:13px; color:var(--ink-dim); margin:16px 0 8px;}
-.text-in{width:calc(100% - 6px); font-family:var(--f-ui); font-size:15px; color:var(--ink); background:var(--shadow); border:0; padding:12px 14px; --edge:var(--edge);}
+.field-label{display:block; font-size:15px; color:var(--ink-dim); margin:16px 0 8px;}
+.text-in{width:calc(100% - 6px); font-family:var(--f-ui); font-size:17px; color:var(--ink); background:var(--shadow); border:0; padding:12px 14px; --edge:var(--edge);}
 .text-in::placeholder{color:var(--ink-faint);}
 .chips{display:flex; gap:10px; flex-wrap:wrap;}
-.chip{flex:1 1 0; min-width:84px; cursor:pointer; border:0; padding:10px 8px; background:var(--deep); text-align:center; font-size:14px;}
+.chip{flex:1 1 0; min-width:84px; cursor:pointer; border:0; padding:10px 8px; background:var(--deep); text-align:center; font-size:16px;}
 .chip small{display:block; font-size:11.5px; color:var(--ink-dim);}
 .chip.on{--edge:var(--ember); background:#3a2250;}
 .class-card{flex:1 1 0; min-width:0; cursor:pointer; border:0; padding:12px 8px 10px; background:var(--deep); text-align:center;}
-.class-card .e{font-size:32px;}
-.class-card .n{font-weight:500; font-size:14px; margin-top:4px;}
+.class-card .e{font-size:37px;}
+.class-card .n{font-weight:500; font-size:16px; margin-top:4px;}
 .class-card .s{font-family:var(--f-pixel); font-size:11.5px; color:var(--ink-dim); line-height:1.5; margin-top:4px;}
 .class-card.on{--edge:var(--ember); background:#3a2250;}
-.class-desc{font-size:13px; color:var(--ink-dim); margin-top:10px; min-height:40px;}
+.class-desc{font-size:15px; color:var(--ink-dim); margin-top:10px; min-height:40px;}
 
 /* ---------- story ---------- */
 .scene-wrap{position:relative; aspect-ratio:16/9; background:#000; overflow:hidden;}
 .scene-wrap canvas{width:100%; height:100%; display:block; image-rendering:pixelated;}
-.scene-tag{position:absolute; top:8px; left:8px; font-family:var(--f-pixel); font-size:12px; background:rgba(10,7,24,.75); padding:2px 8px; color:var(--gold);}
-.scene-text{font-family:var(--f-story); font-size:18px; line-height:1.7; padding:16px 18px; margin-top:14px; background:var(--deep);}
+.scene-tag{position:absolute; top:8px; left:8px; font-family:var(--f-pixel); font-size:14px; background:rgba(10,7,24,.75); padding:2px 8px; color:var(--gold);}
+.scene-text{font-family:var(--f-story); font-size:21px; line-height:1.7; padding:16px 18px; margin-top:14px; background:var(--deep);}
 .scene-text .typing::after{content:"▌"; color:var(--ember); animation:blink 1s steps(1) infinite;}
 @keyframes blink{50%{opacity:0;}}
 .opts{margin-top:14px; display:flex; flex-direction:column; gap:8px;}
-.opt{display:flex; gap:12px; align-items:flex-start; text-align:left; cursor:pointer; border:0; background:var(--panel); padding:12px 14px; font-family:var(--f-story); font-size:16px; line-height:1.45; width:calc(100% - 6px);}
-.opt .k{font-family:var(--f-pixel); font-size:14px; background:var(--edge); color:var(--ink); width:24px; height:24px; flex:none; display:grid; place-items:center;}
+.opt{display:flex; gap:12px; align-items:flex-start; text-align:left; cursor:pointer; border:0; background:var(--panel); padding:12px 14px; font-family:var(--f-story); font-size:18px; line-height:1.45; width:calc(100% - 6px);}
+.opt .k{font-family:var(--f-pixel); font-size:16px; background:var(--edge); color:var(--ink); width:24px; height:24px; flex:none; display:grid; place-items:center;}
 .opt:hover:not(:disabled){--edge:var(--ember);}
 .opt:hover:not(:disabled) .k{background:var(--ember); color:#2a0f00;}
 .opt:disabled{opacity:.45; cursor:default;}
 .free-row{display:flex; gap:8px; margin-top:6px;}
 .free-row .text-in{flex:1; width:auto;}
 .vocab-box{margin-top:16px; padding:14px 16px; background:var(--deep); --edge:#3a2f70;}
-.vocab-box h4{margin:0 0 8px; font-size:13px; color:var(--ink-dim); font-weight:400;}
+.vocab-box h4{margin:0 0 8px; font-size:15px; color:var(--ink-dim); font-weight:400;}
 .vocab-row{display:flex; align-items:center; gap:10px; padding:5px 0; border-top:1px dashed #33296a;}
 .vocab-row:first-of-type{border-top:0;}
-.vocab-row b{font-family:var(--f-story); font-weight:600; font-size:16px; min-width:110px;}
-.vocab-row span{flex:1; font-size:14px;}
-.speak{border:0; background:none; cursor:pointer; font-size:16px; padding:2px 6px; opacity:.8;}
+.vocab-row b{font-family:var(--f-story); font-weight:600; font-size:18px; min-width:110px;}
+.vocab-row span{flex:1; font-size:16px;}
+.speak{border:0; background:none; cursor:pointer; font-size:18px; padding:2px 6px; opacity:.8;}
 .speak:hover{opacity:1;}
-.grammar{margin-top:14px; padding:12px 14px; background:rgba(79,240,224,.08); --edge:var(--rune); font-size:14px;}
+.grammar{margin-top:14px; padding:12px 14px; background:rgba(79,240,224,.08); --edge:var(--rune); font-size:16px;}
 .grammar b{color:var(--rune); font-weight:500;}
 .ending-banner{text-align:center; margin:16px 0 4px;}
-.ending-banner .t{font-family:var(--f-pixel); font-size:28px; font-weight:700;}
+.ending-banner .t{font-family:var(--f-pixel); font-size:32px; font-weight:700;}
 .ending-banner.win .t{color:var(--gold); text-shadow:3px 3px 0 #8a5a00;}
 .ending-banner.lose .t{color:var(--blood); text-shadow:3px 3px 0 #5a0018;}
-.ending-banner p{color:var(--ink-dim); font-size:13px; margin:4px 0 0;}
-.status{display:flex; align-items:center; gap:10px; color:var(--ink-dim); font-size:14px; margin:14px 4px;}
+.ending-banner p{color:var(--ink-dim); font-size:15px; margin:4px 0 0;}
+.status{display:flex; align-items:center; gap:10px; color:var(--ink-dim); font-size:16px; margin:14px 4px;}
 .spinner{width:14px; height:14px; background:var(--ember); animation:spin .9s steps(4) infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.err{padding:12px 14px; margin:14px 3px; --edge:var(--blood); background:rgba(255,77,109,.1); font-size:14px;}
+.err{padding:12px 14px; margin:14px 3px; --edge:var(--blood); background:rgba(255,77,109,.1); font-size:16px;}
 .err .btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
 .story-card{display:flex; gap:14px; align-items:center; padding:12px; cursor:pointer; border:0; width:calc(100% - 6px); text-align:left; background:var(--panel); margin-bottom:12px;}
 .story-card canvas{width:120px; height:68px; image-rendering:pixelated; flex:none; background:#000;}
-.story-card h4{margin:0; font-size:16px; font-weight:500;}
+.story-card h4{margin:0; font-size:18px; font-weight:500;}
 .story-card p{margin:3px 0 0; font-size:12.5px; color:var(--ink-dim);}
-.story-card .endc{font-family:var(--f-pixel); font-size:12px; color:var(--gold); margin-top:4px;}
+.story-card .endc{font-family:var(--f-pixel); font-size:14px; color:var(--gold); margin-top:4px;}
 .story-card.on{--edge:var(--ember);}
 
 /* ---------- battle ---------- */
 .arena{position:relative; height:250px; overflow:hidden; background:
-  radial-gradient(ellipse 55% 45% at 50% 88%, rgba(255,77,109,.28), transparent 70%),
-  linear-gradient(180deg,#1b1240 0%,#2a1650 60%,#1a1034 100%); --edge:var(--blood);}
+  radial-gradient(ellipse 55% 45% at 50% 88%, rgba(226,112,90,.22), transparent 70%),
+  linear-gradient(180deg,#122a33 0%,#1a3d42 60%,#112a2c 100%); --edge:var(--blood);}
 .arena.boss{background:
-  radial-gradient(ellipse 60% 50% at 50% 85%, rgba(255,179,71,.35), transparent 70%),
-  linear-gradient(180deg,#2a0f22 0%,#3d1230 60%,#1d0a1a 100%); --edge:var(--gold);}
+  radial-gradient(ellipse 60% 50% at 50% 85%, rgba(232,196,119,.30), transparent 70%),
+  linear-gradient(180deg,#173238 0%,#1f4a48 60%,#0f2828 100%); --edge:var(--gold);}
 .arena-floor{position:absolute; left:0; right:0; bottom:0; height:46px; background:
-  repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 24px), linear-gradient(180deg,#2f1f5e,#1a1136); border-top:3px solid #43308a;}
-.arena.boss .arena-floor{background:repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 24px), linear-gradient(180deg,#4a1a36,#240b1c); border-top-color:#6e2448;}
+  repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 24px), linear-gradient(180deg,#20444c,#112a2e); border-top:3px solid #3d6f6a;}
+.arena.boss .arena-floor{background:repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 24px), linear-gradient(180deg,#1f4740,#102625); border-top-color:#4a7a68;}
 .monster{position:absolute; left:50%; bottom:30px; transform:translateX(-50%); width:176px; height:176px; animation:bob 2.2s ease-in-out infinite;}
 .arena.boss .monster{width:208px; height:208px; bottom:24px;}
 .monster canvas{width:100%; height:100%; image-rendering:pixelated; display:block;}
@@ -223,23 +238,23 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 @keyframes hitflash{0%{filter:brightness(3) saturate(0);}100%{filter:none;}}
 @keyframes die{to{transform:translate(-50%,30px) scale(.6); opacity:0; filter:brightness(3);}}
 .mon-head{position:absolute; top:10px; left:12px; right:12px; display:flex; align-items:center; gap:10px;}
-.mon-name{font-family:var(--f-pixel); font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55%;}
+.mon-name{font-family:var(--f-pixel); font-size:17px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55%;}
 .mon-bar{flex:1; height:12px; background:var(--shadow); position:relative;}
 .mon-bar i{position:absolute; inset:0 auto 0 0; background:linear-gradient(180deg,#ff8aa0,var(--blood)); transition:width .35s;}
 .mon-bar u{position:absolute; inset:0 auto 0 0; background:#fff3; transition:width .9s .25s; text-decoration:none;}
-.mon-hpnum{font-family:var(--f-pixel); font-size:12px; color:var(--ink-dim); min-width:58px; text-align:right;}
-.floor-tag{position:absolute; top:34px; left:12px; font-family:var(--f-pixel); font-size:12px; color:var(--gold);}
-.intent{position:absolute; top:34px; right:12px; font-size:12px; color:#ffb3c1;}
-.dmg{position:absolute; left:50%; top:45%; font-family:var(--f-pixel); font-weight:700; font-size:30px; color:#fff; pointer-events:none; text-shadow:3px 3px 0 var(--shadow); animation:float 1s ease-out forwards; z-index:5; white-space:nowrap;}
-.dmg.crit{font-size:40px; color:var(--gold);}
+.mon-hpnum{font-family:var(--f-pixel); font-size:14px; color:var(--ink-dim); min-width:58px; text-align:right;}
+.floor-tag{position:absolute; top:34px; left:12px; font-family:var(--f-pixel); font-size:14px; color:var(--gold);}
+.intent{position:absolute; top:34px; right:12px; font-size:14px; color:#ffb3c1;}
+.dmg{position:absolute; left:50%; top:45%; font-family:var(--f-pixel); font-weight:700; font-size:34px; color:#fff; pointer-events:none; text-shadow:3px 3px 0 var(--shadow); animation:float 1s ease-out forwards; z-index:5; white-space:nowrap;}
+.dmg.crit{font-size:46px; color:var(--gold);}
 .dmg.heal{color:var(--leaf);}
 .dmg.hurt{color:var(--blood);}
 .dmg.mp{color:var(--rune);}
-.dmg.tag{font-size:17px; color:var(--rune);}
+.dmg.tag{font-size:20px; color:var(--rune);}
 @keyframes float{0%{transform:translate(-50%,0) scale(.6); opacity:0;}15%{transform:translate(-50%,-10px) scale(1.15); opacity:1;}100%{transform:translate(-50%,-70px) scale(1); opacity:0;}}
 .combo{position:absolute; right:12px; bottom:56px; text-align:right; font-family:var(--f-pixel); line-height:1;}
-.combo .n{font-size:34px; font-weight:700; color:var(--ember-hi); text-shadow:3px 3px 0 #a3321a;}
-.combo .l{font-size:12px; color:var(--ember-hi);}
+.combo .n{font-size:39px; font-weight:700; color:var(--ember-hi); text-shadow:3px 3px 0 #a3321a;}
+.combo .l{font-size:14px; color:var(--ember-hi);}
 .combo.pop{animation:pop .25s;}
 @keyframes pop{50%{transform:scale(1.3);}}
 .shake{animation:shake .35s;}
@@ -249,19 +264,19 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 
 .me-bars{display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center; padding:12px 14px; margin-top:14px; background:var(--deep);}
 .me-bars .who{grid-row:span 2; display:flex; align-items:center; gap:8px;}
-.me-bars .who .e{font-size:30px; position:relative;}
-.me-bars .who .e.shield::after{content:"🛡️"; position:absolute; right:-10px; bottom:-4px; font-size:16px;}
+.me-bars .who .e{font-size:34px; position:relative;}
+.me-bars .who .e.shield::after{content:"🛡️"; position:absolute; right:-10px; bottom:-4px; font-size:18px;}
 .bar{height:14px; background:var(--shadow); position:relative;}
 .bar i{position:absolute; inset:0 auto 0 0; transition:width .35s;}
 .bar.hp i{background:linear-gradient(180deg,#a6f5c6,var(--leaf));}
 .bar.hp.low i{background:linear-gradient(180deg,#ff9fb0,var(--blood)); animation:blink 0.8s steps(1) infinite;}
 .bar.mp i{background:linear-gradient(180deg,#b5fff8,var(--rune));}
-.bar span{position:absolute; right:6px; top:50%; transform:translateY(-50%); font-family:var(--f-pixel); font-size:11px; color:#fff; text-shadow:1px 1px 0 #000;}
+.bar span{position:absolute; right:6px; top:50%; transform:translateY(-50%); font-family:var(--f-pixel); font-size:13px; color:#fff; text-shadow:1px 1px 0 #000;}
 
 .qcard{margin-top:14px; padding:14px 16px; background:#efe7ff; color:#1c1540; --edge:#cbbcf7;}
-.qcard .qmeta{display:flex; justify-content:space-between; font-size:12px; color:#6a5aa8; margin-bottom:6px;}
+.qcard .qmeta{display:flex; justify-content:space-between; font-size:14px; color:#6a5aa8; margin-bottom:6px;}
 .qcard .qtype{font-weight:500;}
-.qcard .prompt{font-family:var(--f-story); font-size:19px; line-height:1.45; font-weight:600;}
+.qcard .prompt{font-family:var(--f-story); font-size:22px; line-height:1.45; font-weight:600;}
 .qcard .prompt.thai{font-family:var(--f-ui); font-weight:500;}
 .timer{height:6px; background:#d4c8f5; margin-top:10px; position:relative;}
 .timer i{position:absolute; inset:0 auto 0 0; background:var(--ember);}
@@ -270,10 +285,10 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .answers{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;}
 @media (max-width:380px){ .answers{grid-template-columns:1fr;} }
 .ans{cursor:pointer; border:0; text-align:left; padding:12px 12px; background:var(--panel); min-height:62px; display:flex; flex-direction:column; justify-content:center; width:calc(100% - 6px);}
-.ans .w{font-family:var(--f-story); font-size:17px; font-weight:600; line-height:1.25;}
-.ans .w.thai{font-family:var(--f-ui); font-weight:400; font-size:15px;}
-.ans .sub{font-size:12px; color:var(--ink-dim); margin-top:2px;}
-.ans .key{font-family:var(--f-pixel); font-size:11px; color:var(--ink-faint);}
+.ans .w{font-family:var(--f-story); font-size:20px; font-weight:600; line-height:1.25;}
+.ans .w.thai{font-family:var(--f-ui); font-weight:400; font-size:17px;}
+.ans .sub{font-size:14px; color:var(--ink-dim); margin-top:2px;}
+.ans .key{font-family:var(--f-pixel); font-size:13px; color:var(--ink-faint);}
 .ans:hover:not(:disabled){--edge:var(--ember);}
 .ans.ok{--edge:var(--leaf); background:#1d4a3a;}
 .ans.no{--edge:var(--blood); background:#4a1d2c;}
@@ -283,95 +298,95 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 
 .actions{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
 .skill{flex:1 1 0; min-width:64px; cursor:pointer; border:0; background:var(--deep); padding:8px 4px 6px; display:flex; flex-direction:column; align-items:center; gap:2px;}
-.skill b{font-size:20px; font-weight:400; line-height:1.2;}
-.skill span{font-size:11px; color:var(--ink-dim); white-space:nowrap;}
-.skill em{font-style:normal; font-family:var(--f-pixel); font-size:11px; color:var(--rune);}
+.skill b{font-size:23px; font-weight:400; line-height:1.2;}
+.skill span{font-size:13px; color:var(--ink-dim); white-space:nowrap;}
+.skill em{font-style:normal; font-family:var(--f-pixel); font-size:13px; color:var(--rune);}
 .skill em.item{color:var(--gold);}
 .skill:disabled{opacity:.35; cursor:default;}
 .skill:hover:not(:disabled){--edge:var(--rune);}
-.reveal{margin-top:12px; padding:12px 14px; background:var(--deep); font-size:14px;}
-.reveal .rw{font-family:var(--f-story); font-weight:600; font-size:17px;}
-.reveal .rdef{color:var(--ink-dim); font-size:13px; margin-top:2px;}
+.reveal{margin-top:12px; padding:12px 14px; background:var(--deep); font-size:16px;}
+.reveal .rw{font-family:var(--f-story); font-weight:600; font-size:20px;}
+.reveal .rdef{color:var(--ink-dim); font-size:15px; margin-top:2px;}
 
 /* ---------- overlay / modal ---------- */
 .overlay{position:fixed; inset:0; z-index:80; background:rgba(8,5,20,.8); display:flex; align-items:center; justify-content:center; padding:20px; animation:fadein .2s;}
 @keyframes fadein{from{opacity:0;}}
 .modal{width:100%; max-width:400px; padding:22px 20px; text-align:center; background:var(--panel); max-height:90vh; overflow:auto;}
-.modal .big{font-size:52px; line-height:1.1;}
-.modal h2{font-family:var(--f-pixel); font-size:30px; margin:8px 0 4px; font-weight:700;}
+.modal .big{font-size:60px; line-height:1.1;}
+.modal h2{font-family:var(--f-pixel); font-size:34px; margin:8px 0 4px; font-weight:700;}
 .modal h2.win{color:var(--gold); text-shadow:3px 3px 0 #8a5a00;}
 .modal h2.lose{color:var(--blood); text-shadow:3px 3px 0 #5a0018;}
 .modal h2.lvl{color:var(--ember-hi); text-shadow:3px 3px 0 #a3321a;}
-.modal p{color:var(--ink-dim); font-size:14px; margin:4px 0;}
+.modal p{color:var(--ink-dim); font-size:16px; margin:4px 0;}
 .loot{display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:16px 0;}
-.loot div{background:var(--deep); padding:8px 12px; font-family:var(--f-pixel); font-size:15px;}
+.loot div{background:var(--deep); padding:8px 12px; font-family:var(--f-pixel); font-size:17px;}
 .modal .btn{margin-top:8px;}
 .stat-ups{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:14px 0;}
-.stat-ups div{background:var(--deep); padding:8px 4px; font-size:12px; color:var(--ink-dim);}
-.stat-ups b{display:block; font-family:var(--f-pixel); font-size:18px; color:var(--leaf);}
+.stat-ups div{background:var(--deep); padding:8px 4px; font-size:14px; color:var(--ink-dim);}
+.stat-ups b{display:block; font-family:var(--f-pixel); font-size:21px; color:var(--leaf);}
 
 /* ---------- challenge ---------- */
 .ch-top{display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--deep);}
-.ch-time{font-family:var(--f-pixel); font-size:36px; font-weight:700; color:var(--rune); min-width:64px;}
+.ch-time{font-family:var(--f-pixel); font-size:41px; font-weight:700; color:var(--rune); min-width:64px;}
 .ch-time.urgent{color:var(--blood);}
 .ch-score{margin-left:auto; text-align:right; font-family:var(--f-pixel);}
-.ch-score b{display:block; font-size:28px; color:var(--gold); line-height:1;}
-.ch-score small{font-size:12px; color:var(--ink-dim);}
-.ch-mult{font-family:var(--f-pixel); font-size:16px; color:var(--ember-hi);}
-.bump{position:fixed; left:50%; top:40%; transform:translateX(-50%); font-family:var(--f-pixel); font-weight:700; font-size:26px; pointer-events:none; z-index:70; animation:float 0.9s ease-out forwards; text-shadow:3px 3px 0 var(--shadow);}
+.ch-score b{display:block; font-size:32px; color:var(--gold); line-height:1;}
+.ch-score small{font-size:14px; color:var(--ink-dim);}
+.ch-mult{font-family:var(--f-pixel); font-size:18px; color:var(--ember-hi);}
+.bump{position:fixed; left:50%; top:40%; transform:translateX(-50%); font-family:var(--f-pixel); font-weight:700; font-size:30px; pointer-events:none; z-index:70; animation:float 0.9s ease-out forwards; text-shadow:3px 3px 0 var(--shadow);}
 
 /* ---------- library ---------- */
 .lib-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
-.lib-stats div{background:var(--deep); padding:10px 8px; text-align:center; font-size:12px; color:var(--ink-dim);}
-.lib-stats b{display:block; font-family:var(--f-pixel); font-size:24px; color:var(--ink); font-weight:600;}
+.lib-stats div{background:var(--deep); padding:10px 8px; text-align:center; font-size:14px; color:var(--ink-dim);}
+.lib-stats b{display:block; font-family:var(--f-pixel); font-size:28px; color:var(--ink); font-weight:600;}
 .word-row{display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--deep); margin-bottom:9px;}
 .word-row .wm{flex:1; min-width:0;}
-.word-row .ww{font-family:var(--f-story); font-weight:600; font-size:17px;}
-.word-row .wp{font-size:12px; color:var(--ink-faint); margin-left:6px; font-family:var(--f-ui);}
-.word-row .wt{font-size:14px; color:var(--ink-dim);}
-.stars{font-size:11px; letter-spacing:1px; color:var(--gold); white-space:nowrap;}
+.word-row .ww{font-family:var(--f-story); font-weight:600; font-size:20px;}
+.word-row .wp{font-size:14px; color:var(--ink-faint); margin-left:6px; font-family:var(--f-ui);}
+.word-row .wt{font-size:16px; color:var(--ink-dim);}
+.stars{font-size:13px; letter-spacing:1px; color:var(--gold); white-space:nowrap;}
 .stars s{color:#3d3373; text-decoration:none;}
 .due-dot{width:8px; height:8px; background:var(--ember); flex:none;}
-.empty{text-align:center; color:var(--ink-dim); padding:30px 16px; font-size:14px;}
+.empty{text-align:center; color:var(--ink-dim); padding:30px 16px; font-size:16px;}
 .flash{margin-top:14px; min-height:220px; padding:24px 18px; text-align:center; cursor:pointer; background:#efe7ff; color:#1c1540; --edge:#cbbcf7; display:flex; flex-direction:column; justify-content:center; align-items:center; border:0; width:calc(100% - 6px);}
-.flash .fw{font-family:var(--f-story); font-size:34px; font-weight:600; line-height:1.2;}
-.flash .fp{font-size:14px; color:#6a5aa8; margin-top:4px;}
-.flash .ft{font-size:22px; font-weight:500; margin-top:14px;}
-.flash .fd{font-family:var(--f-story); font-size:15px; color:#4b3f80; margin-top:6px; font-style:italic;}
-.flash .hint{font-size:12px; color:#8a7cc2; margin-top:16px;}
+.flash .fw{font-family:var(--f-story); font-size:39px; font-weight:600; line-height:1.2;}
+.flash .fp{font-size:16px; color:#6a5aa8; margin-top:4px;}
+.flash .ft{font-size:25px; font-weight:500; margin-top:14px;}
+.flash .fd{font-family:var(--f-story); font-size:17px; color:#4b3f80; margin-top:6px; font-style:italic;}
+.flash .hint{font-size:14px; color:#8a7cc2; margin-top:16px;}
 .flash-btns{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;}
 
 /* ---------- hero / shop ---------- */
 .hero-top{display:flex; gap:16px; align-items:center; padding:16px; background:var(--panel);}
-.hero-top .e{font-size:54px; width:84px; height:84px; display:grid; place-items:center; background:var(--deep); flex:none;}
-.hero-top h2{margin:0; font-weight:500; font-size:20px;}
-.hero-top p{margin:2px 0 0; color:var(--ink-dim); font-size:13px;}
+.hero-top .e{font-size:62px; width:84px; height:84px; display:grid; place-items:center; background:var(--deep); flex:none;}
+.hero-top h2{margin:0; font-weight:500; font-size:23px;}
+.hero-top p{margin:2px 0 0; color:var(--ink-dim); font-size:15px;}
 .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
-.stat-grid div{background:var(--deep); padding:10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--ink-dim);}
-.stat-grid b{font-family:var(--f-pixel); font-size:17px; color:var(--ink); font-weight:600;}
+.stat-grid div{background:var(--deep); padding:10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:15px; color:var(--ink-dim);}
+.stat-grid b{font-family:var(--f-pixel); font-size:20px; color:var(--ink); font-weight:600;}
 .ach-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
 .ach{padding:12px; background:var(--deep); --edge:#2e2663; opacity:.55;}
 .ach.on{--edge:var(--gold); opacity:1; background:#2d2350;}
-.ach .ai{font-size:26px; filter:grayscale(1);}
+.ach .ai{font-size:30px; filter:grayscale(1);}
 .ach.on .ai{filter:none;}
-.ach .an{font-size:14px; font-weight:500; margin-top:4px;}
-.ach .ad{font-size:12px; color:var(--ink-dim); line-height:1.4;}
-.ach .ar{font-family:var(--f-pixel); font-size:12px; color:var(--gold); margin-top:4px;}
+.ach .an{font-size:16px; font-weight:500; margin-top:4px;}
+.ach .ad{font-size:14px; color:var(--ink-dim); line-height:1.4;}
+.ach .ar{font-family:var(--f-pixel); font-size:14px; color:var(--gold); margin-top:4px;}
 .avatar-row{display:flex; gap:10px; flex-wrap:wrap;}
-.av{width:52px; height:52px; font-size:26px; border:0; cursor:pointer; background:var(--deep);}
+.av{width:52px; height:52px; font-size:30px; border:0; cursor:pointer; background:var(--deep);}
 .av.on{--edge:var(--ember); background:#3a2250;}
 .shop-item{display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--deep); margin-bottom:10px;}
-.shop-item .si{font-size:28px; width:40px; text-align:center; flex:none;}
+.shop-item .si{font-size:32px; width:40px; text-align:center; flex:none;}
 .shop-item .sm{flex:1; min-width:0;}
-.shop-item .sn{font-size:15px; font-weight:500;}
+.shop-item .sn{font-size:17px; font-weight:500;}
 .shop-item .sd{font-size:12.5px; color:var(--ink-dim);}
-.shop-item .own{font-family:var(--f-pixel); font-size:12px; color:var(--rune);}
-.price{font-family:var(--f-pixel); font-size:15px;}
+.shop-item .own{font-family:var(--f-pixel); font-size:14px; color:var(--rune);}
+.price{font-family:var(--f-pixel); font-size:17px;}
 .tabs-inline{display:flex; gap:8px; margin:6px 0 14px;}
 
 /* ---------- settings ---------- */
 .set-row{padding:14px 16px; background:var(--deep); margin-bottom:12px;}
-.set-row .sl{font-size:14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;}
+.set-row .sl{font-size:16px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;}
 .set-row .sh{font-size:12.5px; color:var(--ink-dim); margin-top:6px;}
 .toggle{width:52px; height:28px; background:var(--shadow); border:0; position:relative; cursor:pointer; flex:none;}
 .toggle::after{content:""; position:absolute; top:4px; left:4px; width:20px; height:20px; background:var(--ink-faint); transition:left .15s, background .15s;}
@@ -379,11 +394,11 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 input[type=range]{width:100%; accent-color:var(--ember);}
 .ai-dot{display:inline-block; width:9px; height:9px; margin-right:6px;}
 .ai-dot.online{background:var(--leaf);} .ai-dot.offline{background:var(--ink-faint);} .ai-dot.unknown{background:var(--gold);}
-textarea.text-in{min-height:80px; resize:vertical; font-size:12px; font-family:monospace;}
+textarea.text-in{min-height:80px; resize:vertical; font-size:14px; font-family:monospace;}
 
 /* ---------- toast ---------- */
 .toasts{position:fixed; top:calc(70px + env(safe-area-inset-top,0px)); left:50%; transform:translateX(-50%); z-index:90; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; width:max-content; max-width:92vw;}
-.toast{background:var(--panel-2); --edge:var(--gold); padding:9px 16px; font-size:14px; animation:toastin .25s, fade .4s 2.6s forwards;}
+.toast{background:var(--panel-2); --edge:var(--gold); padding:9px 16px; font-size:16px; animation:toastin .25s, fade .4s 2.6s forwards;}
 @keyframes toastin{from{transform:translateY(-10px); opacity:0;}}
 
 @media (prefers-reduced-motion: reduce){
@@ -739,11 +754,37 @@ const CEFR_LEVELS = [
 ];
 const SRS_HOURS = [0, 12, 24, 72, 168, 384];
 
+/* ------------------------------ i18n ------------------------------ */
+const STR = {
+  th:{ tabHub:'ผจญภัย', tabLibrary:'คลังคำ', tabShop:'ร้านค้า', tabHero:'ฮีโร่', tabSettings:'ตั้งค่า',
+    viewHero:'ดูฮีโร่', wordsToLearn:'คำศัพท์ที่ต้องจำ', dueCount:'{n} คำถึงเวลาทบทวน', allCaughtUp:'ทบทวนครบแล้ว',
+    noWordsYet:'เก็บคำศัพท์จากการต่อสู้และเนื้อเรื่องก่อน', storyDesc:'ผจญภัยแบบเลือกทางเอง พิมพ์ตอบเป็นภาษาอังกฤษได้',
+    blitzDesc:'60 วินาที ตอบให้ไวที่สุด', towerDesc:'ตอบคำศัพท์ให้ถูกเพื่อฟันมอนสเตอร์ บอสรออยู่ทุก 5 ชั้น',
+    dailyQuests:'ภารกิจประจำวัน', resetsMidnight:'รีเซ็ตเที่ยงคืน', settingsTitle:'ตั้งค่า', heroName:'ชื่อฮีโร่',
+    heroClass:'อาชีพ', cefrLevel:'ระดับภาษาอังกฤษ (CEFR)', sfxVol:'เสียงเอฟเฟกต์', music:'เพลงประกอบ',
+    musicHint:'ดนตรีชิปทูนเบา ๆ ระหว่างเล่น', tts:'เสียงอ่านคำศัพท์', ttsHint:'ใช้เสียงอ่านภาษาอังกฤษของเครื่อง (ปุ่ม 🔊)',
+    autoSpeak:'อ่านออกเสียงอัตโนมัติ', autoSpeakHint:'อ่านคำตอบให้ฟังทุกครั้งหลังตอบ และตอนเปิดการ์ดทบทวน',
+    language:'ภาษา', backup:'สำรอง / ย้ายเซฟ', copySave:'คัดลอกรหัสเซฟ', importSave:'นำเข้ารหัสเซฟ',
+    backupHint:'ใช้ย้ายความคืบหน้าไปเครื่องอื่น', resetAll:'ล้างความคืบหน้าทั้งหมด', back:'← กลับ' },
+  en:{ tabHub:'Quests', tabLibrary:'Words', tabShop:'Shop', tabHero:'Hero', tabSettings:'Settings',
+    viewHero:'View hero', wordsToLearn:'Words to memorize', dueCount:'{n} words due for review', allCaughtUp:'All caught up',
+    noWordsYet:'Collect words from battles and stories first', storyDesc:'Choose-your-path adventure, type answers in English',
+    blitzDesc:'60 seconds — answer as fast as you can', towerDesc:'Answer vocab correctly to strike monsters. A boss awaits every 5 floors',
+    dailyQuests:'Daily quests', resetsMidnight:'Resets at midnight', settingsTitle:'Settings', heroName:'Hero name',
+    heroClass:'Class', cefrLevel:'English level (CEFR)', sfxVol:'Sound effects', music:'Music',
+    musicHint:'Light chiptune music while you play', tts:'Word read-aloud', ttsHint:"Use your device's English voice (🔊 button)",
+    autoSpeak:'Auto read-aloud', autoSpeakHint:'Speak the answer after every question and when flipping review cards',
+    language:'Language', backup:'Backup / transfer save', copySave:'Copy save code', importSave:'Import save code',
+    backupHint:'Use this to move your progress to another device', resetAll:'Reset all progress', back:'← Back' },
+};
+function t(key){ const lang = (save.settings && save.settings.lang) || 'th'; return (STR[lang] && STR[lang][key]) || STR.th[key] || key; }
+function T(lang){ return ((save.settings && save.settings.lang) || 'th') === lang; }
+
 /* ------------------------------ save ------------------------------ */
 function defaultSave(){
   return {
     v:2, onboarded:false, name:'Traveler', cls:'warrior', avatar:'🛡️', ownedAvatars:[], cefr:'B1',
-    settings:{ sfx:70, music:false, tts:true, autoSpeak:false },
+    settings:{ sfx:70, music:false, tts:true, autoSpeak:false, lang:'th' },
     level:1, xp:0, gold:40,
     upgrades:{ hp:0, atk:0, mp:0 }, items:{ potion:2, ether:1, scroll:1 },
     vocab:{}, achievements:{}, endings:{}, visited:{},
@@ -1243,15 +1284,15 @@ function hudHtml(){
   const need = xpNeeded(save.level), pct = Math.min(100, save.xp/need*100);
   return `<header class="hud">
     <div class="hud-avatar px">${save.avatar}<span class="hud-lv">LV ${save.level}</span></div>
-    <div class="hud-main"><div class="hud-name">${esc(save.name)} <span style="color:var(--ink-dim);font-size:12px;">· ${CLASSES[save.cls].name}</span></div>
+    <div class="hud-main"><div class="hud-name">${esc(save.name)} <span style="color:var(--ink-dim);font-size:14px;">· ${CLASSES[save.cls].name}</span></div>
       <div class="hud-xp"><i style="width:${pct}%"></i></div><div class="hud-xptext">${save.xp} / ${need} XP</div></div>
     <div class="hud-stats"><span title="ทอง">🪙 ${save.gold}</span><span title="วันต่อเนื่อง">🔥 ${save.streak.days||0}</span></div>
   </header>`;
 }
 function tabbarHtml(){
   const due = dueWords().length;
-  const t = (id,ico,label)=>`<button class="tab ${ui.screen===id?'on':''}" data-act="tab" data-to="${id}" aria-label="${label}"><b>${ico}</b>${label}${id==='library'&&due?` <span style="color:var(--ember)">(${due})</span>`:''}</button>`;
-  return `<div class="tabbar-in px">${t('hub','🏰','ผจญภัย')}${t('library','📚','คลังคำ')}${t('shop','🛒','ร้านค้า')}${t('hero','🎒','ฮีโร่')}${t('settings','⚙️','ตั้งค่า')}</div>`;
+  const tb = (id,ico,label)=>`<button class="tab ${ui.screen===id?'on':''}" data-act="tab" data-to="${id}" aria-label="${label}"><b>${ico}</b>${label}${id==='library'&&due?` <span style="color:var(--ember)">(${due})</span>`:''}</button>`;
+  return `<div class="tabbar-in px">${tb('hub','🏰',t('tabHub'))}${tb('library','📚',t('tabLibrary'))}${tb('shop','🛒',t('tabShop'))}${tb('hero','🎒',t('tabHero'))}${tb('settings','⚙️',t('tabSettings'))}</div>`;
 }
 
 /* ------------------------------ onboarding ------------------------------ */
@@ -1276,23 +1317,31 @@ function renderOnboarding(){
 /* ------------------------------ hub ------------------------------ */
 function checkpointFloor(){ return save.stats.bestFloor>=5 ? Math.floor(save.stats.bestFloor/5)*5+1 : 1; }
 function renderHub(){
-  const best = save.stats.bestFloor, next = checkpointFloor();
-  const due = dueWords().length;
+  const due = dueWords();
   const quests = save.daily.quests.map(questInfo);
-  const nextSeed = hashStr('preview'+next);
+  const need = xpNeeded(save.level), pct = Math.min(100, save.xp/need*100);
+  const preview = (due.length ? due : vocabList()).slice(0,3);
   return `
-  <div class="title-block"><h1 class="game-title" style="font-size:36px;">QUEST LINES</h1></div>
-  <button class="tower-tile px" data-act="towerMenu">
-    <div class="tower-scene"><span class="tower-badge">สถิติสูงสุด · ชั้น ${best}</span>
-      <canvas data-mon="${nextSeed}|${next%5===0?1:0}" style="animation:bob 2.2s ease-in-out infinite;"></canvas><div class="tower-floor"></div></div>
-    <div class="tower-info"><div><h3>Monster Tower</h3><p>ตอบคำศัพท์ให้ถูกเพื่อฟันมอนสเตอร์ บอสรออยู่ทุก 5 ชั้น</p></div><span class="go">สู้เลย</span></div>
+  <div class="title-block"><h1 class="game-title" style="font-size:41px;">QUEST LINES</h1></div>
+  <button class="char-tile px" data-act="tab" data-to="hero">
+    <div class="ava">${save.avatar}<span class="lv">LV ${save.level}</span></div>
+    <div class="ci">
+      <h3>${esc(save.name)}</h3>
+      <p>${CLASSES[save.cls].name} · ${save.xp} / ${need} XP</p>
+      <div class="hud-xp"><i style="width:${pct}%"></i></div>
+    </div>
+    <span class="go">${t('viewHero')} →</span>
+  </button>
+  <button class="vocab-tile px ${due.length?'hot':''}" data-act="review">
+    <div class="vh"><h4>${t('wordsToLearn')}</h4><span>${due.length ? t('dueCount').replace('{n}',due.length) : t('allCaughtUp')}</span></div>
+    <div class="words">${preview.length ? preview.map(v=>`<div class="w">${esc(v.word||v.key)}<small>${esc(v.thai||'')}</small></div>`).join('') : `<div class="w"><small>${t('noWordsYet')}</small></div>`}</div>
   </button>
   <div class="mode-grid">
-    <button class="mode-tile px" data-act="goStory"><div class="ico">📖</div><div><h4>Story</h4><p>ผจญภัยแบบเลือกทางเอง พิมพ์ตอบเป็นภาษาอังกฤษได้</p></div></button>
-    <button class="mode-tile px" data-act="blitz"><div class="ico">⚡</div><div><h4>Word Blitz</h4><p>60 วินาที ตอบให้ไวที่สุด</p><span class="pill">BEST ${save.stats.bestChallenge}</span></div></button>
-    <button class="mode-tile wide px ${due?'hot':''}" data-act="review"><div class="ico">🃏</div><div style="flex:1"><h4>ทบทวนคำศัพท์</h4><p>${due ? `มี ${due} คำถึงเวลาทบทวน — ทบทวนตรงเวลาช่วยให้จำได้นานขึ้น` : Object.keys(save.vocab).length ? 'ยังไม่มีคำที่ถึงกำหนด ทบทวนคำที่ยังอ่อนได้เลย' : 'เก็บคำศัพท์จากการต่อสู้และเนื้อเรื่องก่อน แล้วค่อยมาทบทวน'}</p></div></button>
+    <button class="mode-tile px" data-act="goStory"><div class="ico">📖</div><div><h4>Story</h4><p>${t('storyDesc')}</p></div></button>
+    <button class="mode-tile px" data-act="blitz"><div class="ico">⚡</div><div><h4>Word Blitz</h4><p>${t('blitzDesc')}</p><span class="pill">BEST ${save.stats.bestChallenge}</span></div></button>
+    <button class="mode-tile wide px" data-act="towerMenu"><div class="ico">🗼</div><div style="flex:1"><h4>Monster Tower</h4><p>${t('towerDesc')}</p></div></button>
   </div>
-  <div class="section-h"><h3>ภารกิจประจำวัน</h3><small>รีเซ็ตเที่ยงคืน</small></div>
+  <div class="section-h"><h3>${t('dailyQuests')}</h3><small>${t('resetsMidnight')}</small></div>
   ${quests.map(q=>`<div class="quest px ${q.claimed?'done':''}">
     <div class="q-txt"><div class="q-name">${esc(q.text)}</div><div class="q-bar"><i style="width:${q.progress/q.target*100}%"></i></div><div class="q-num">${q.progress}/${q.target}</div></div>
     ${q.claimed ? '<span class="price">✓</span>' : `<button class="btn small ${q.done?'primary':''} px" data-act="claim" data-id="${q.id}" ${q.done?'':'disabled'}>🪙 ${q.gold}</button>`}
@@ -1311,9 +1360,9 @@ function renderStoryPick(){
       <div><h4>${esc(st.title)}</h4><p>${esc(st.blurb)}</p><div class="endc">ฉากจบที่พบ ${found}/${total}${resume?' · มีเซฟค้างไว้':''}</div></div></button>
       ${resume?`<button class="btn small px" style="margin:-4px 3px 14px;" data-act="storyResume" data-theme="${k}">▶ เล่นต่อจากเดิม</button>`:''}`;
   }).join('');
-  return `<button class="back" data-act="tab" data-to="hub">← กลับ</button>
+  return `<button class="back" data-act="tab" data-to="hub">${t('back')}</button>
   <h2 style="margin:0 0 4px; font-weight:500;">เลือกการผจญภัย</h2>
-  <p style="color:var(--ink-dim); font-size:13px; margin:0 0 16px;">แต่ละเรื่องมีหลายฉากจบ — เลือกผิดทางได้ ย้อนกลับได้</p>
+  <p style="color:var(--ink-dim); font-size:15px; margin:0 0 16px;">แต่ละเรื่องมีหลายฉากจบ — เลือกผิดทางได้ ย้อนกลับได้</p>
   ${cards}`;
 }
 function offlineScene(){
@@ -1340,7 +1389,7 @@ function renderStory(){
       <div class="free-row"><input class="text-in px" id="freeIn" data-input="free" placeholder="หรือพิมพ์สิ่งที่จะทำเป็นภาษาอังกฤษ…" value="${esc(st.free||'')}" ${dis} autocomplete="off" enterkeyhint="send">
       <button class="btn rune px" data-act="storyFree" ${dis}>ส่ง</button></div>`;
   }
-  const lf = st.lastFree ? `<div style="font-size:13px; color:var(--ink-dim); margin:10px 4px 0;">คุณพิมพ์: “${esc(st.lastFree.text)}”${st.lastFree.matched?` → ${st.lastFree.guessed?'ตีความใกล้เคียงเป็น':'ตรงกับ'}ทางเลือก “${esc(st.lastFree.matched)}”`:''}</div>` : '';
+  const lf = st.lastFree ? `<div style="font-size:15px; color:var(--ink-dim); margin:10px 4px 0;">คุณพิมพ์: “${esc(st.lastFree.text)}”${st.lastFree.matched?` → ${st.lastFree.guessed?'ตีความใกล้เคียงเป็น':'ตรงกับ'}ทางเลือก “${esc(st.lastFree.matched)}”`:''}</div>` : '';
   const corr = sc.correction ? `<div class="grammar px"><b>ตรวจแกรมม่า</b><br>${esc(sc.correction)}</div>` : '';
   const vocab = sc.vocab && sc.vocab.length ? `<div class="vocab-box px"><h4>คำศัพท์ในฉากนี้ · เก็บเข้าคลังแล้ว</h4>${sc.vocab.map(v=>`<div class="vocab-row"><b>${esc(v.word)}</b><span>${esc(v.thai)}</span><button class="speak" data-act="speak" data-w="${esc(v.word)}" aria-label="ฟังเสียง">🔊</button></div>`).join('')}</div>` : '';
   return head + `<div class="scene-wrap px">${art}<span class="scene-tag">${tag}</span></div>
@@ -1420,7 +1469,7 @@ function submitFree(){
 /* ------------------------------ battle ------------------------------ */
 function towerMenu(){
   const cp = checkpointFloor(), ps = playerStats(), c = CLASSES[save.cls];
-  openModal(`<div class="big">🗼</div><h2 class="lvl" style="font-size:24px;">Monster Tower</h2>
+  openModal(`<div class="big">🗼</div><h2 class="lvl" style="font-size:28px;">Monster Tower</h2>
     <p>HP ${ps.maxHp} · MP ${ps.maxMp} · ATK ${ps.atk}</p>
     <p style="margin-top:10px;">สกิลของคุณ: ${c.skill.ico} ${c.skill.name} · ${INSIGHT.ico} Insight<br>ไอเทม: 🧪${save.items.potion} 💧${save.items.ether} 📜${save.items.scroll}</p>
     <p style="font-size:12.5px; margin-top:10px;">ตอบถูก = โจมตี · ตอบผิดหรือหมดเวลา = โดนโจมตี · ตอบไวและคอมโบสูงยิ่งแรง</p>
@@ -1574,7 +1623,7 @@ function renderBattle(){
   let reveal = '';
   if(b.answered!==null){
     const w = q.word, ok = b.answered===q.correct;
-    reveal = `<div class="reveal px ${ok?'':'hot'}"><div style="display:flex;align-items:center;gap:8px;"><span class="rw">${esc(w.word)}</span><span style="color:var(--ink-dim);font-size:13px;">${esc(w.pron||'')}</span><button class="speak" data-act="speak" data-w="${esc(w.word)}" aria-label="ฟังเสียง">🔊</button><span style="margin-left:auto;">${esc(w.thai)}</span></div>
+    reveal = `<div class="reveal px ${ok?'':'hot'}"><div style="display:flex;align-items:center;gap:8px;"><span class="rw">${esc(w.word)}</span><span style="color:var(--ink-dim);font-size:15px;">${esc(w.pron||'')}</span><button class="speak" data-act="speak" data-w="${esc(w.word)}" aria-label="ฟังเสียง">🔊</button><span style="margin-left:auto;">${esc(w.thai)}</span></div>
       ${w.def?`<div class="rdef">${esc(w.def)}</div>`:''}</div>
       ${!ok && b.phase==='reveal' ? `<button class="btn primary px block" style="margin-top:12px;" data-act="bNext">คำถามถัดไป (Enter)</button>` : ''}`;
   }
@@ -1590,7 +1639,7 @@ function renderBattle(){
     <div class="bar mp"><i style="width:${b.run.mp/ps.maxMp*100}%"></i><span>MP ${b.run.mp}/${ps.maxMp}</span></div></div>
   <div class="qcard px"><div class="qmeta"><span class="qtype">${esc(q.label)}</span><span>${b.power?'⚡ x2':''}</span></div>
     <div class="prompt ${q.promptThai?'thai':''}">${esc(q.prompt)}</div>
-    ${q.type==='en2th'?`<div style="font-size:13px;color:#6a5aa8;">${esc(q.word.pron||'')}</div>`:''}
+    ${q.type==='en2th'?`<div style="font-size:15px;color:#6a5aa8;">${esc(q.word.pron||'')}</div>`:''}
     <div class="timer"><i id="qtimer" style="width:${inQ?Math.max(0,(b.qTotal-(Date.now()-b.qStart))/b.qTotal*100):0}%"></i></div></div>
   <div class="answers">${ans}</div>
   ${reveal}
@@ -1642,7 +1691,7 @@ function renderChallenge(){
   }).join('');
   return `<button class="back" data-act="chQuit">← ออก</button>
   <div class="ch-top px"><div class="ch-time pixel ${ch.left<10?'urgent':''}" id="chTime">${Math.ceil(ch.left)}</div>
-    <div><div class="ch-mult">×${(1+Math.min(ch.combo,20)*0.1).toFixed(1)}</div><div style="font-size:12px;color:var(--ink-dim);">คอมโบ ${ch.combo} · ทุก 5 คอมโบ +3 วิ</div></div>
+    <div><div class="ch-mult">×${(1+Math.min(ch.combo,20)*0.1).toFixed(1)}</div><div style="font-size:14px;color:var(--ink-dim);">คอมโบ ${ch.combo} · ทุก 5 คอมโบ +3 วิ</div></div>
     <div class="ch-score"><b>${ch.score}</b><small>คะแนน</small></div></div>
   <div class="qcard px"><div class="qmeta"><span class="qtype">${esc(q.label)}</span><span>ผิด −3 วินาที</span></div>
     <div class="prompt ${q.promptThai?'thai':''}">${esc(q.prompt)}</div></div>
@@ -1655,7 +1704,7 @@ function renderLibrary(){
   return `<div class="lib-stats"><div class="px"><b>${all.length}</b>คำในคลัง</div><div class="px"><b style="color:var(--ember)">${due}</b>ถึงเวลาทบทวน</div><div class="px"><b style="color:var(--gold)">${mast}</b>เชี่ยวชาญ</div></div>
   <button class="btn primary px block" style="margin-top:14px;" data-act="review" ${all.length?'':'disabled'}>🃏 ${due?`ทบทวน ${Math.min(due,15)} คำที่ถึงกำหนด`:'ฝึกคำที่ยังอ่อน'}</button>
   <input class="text-in px" style="margin-top:16px;" data-input="libq" placeholder="ค้นหาคำศัพท์หรือคำแปล…" value="${esc(ui.lib.q)}" autocomplete="off">
-  <div class="tabs-inline">${[['all','ทั้งหมด'],['due','ต้องทบทวน'],['weak','ยังไม่แม่น'],['master','เชี่ยวชาญ']].map(([k,l])=>`<button class="chip px ${ui.lib.filter===k?'on':''}" style="flex:none;min-width:0;padding:7px 12px;font-size:13px;" data-act="libFilter" data-v="${k}">${l}</button>`).join('')}</div>
+  <div class="tabs-inline">${[['all','ทั้งหมด'],['due','ต้องทบทวน'],['weak','ยังไม่แม่น'],['master','เชี่ยวชาญ']].map(([k,l])=>`<button class="chip px ${ui.lib.filter===k?'on':''}" style="flex:none;min-width:0;padding:7px 12px;font-size:15px;" data-act="libFilter" data-v="${k}">${l}</button>`).join('')}</div>
   <div id="libList"></div>`;
 }
 function renderLibList(){
@@ -1685,7 +1734,7 @@ function startReview(){
 function renderReview(){
   const r = ui.review, v = save.vocab[r.keys[r.i]];
   return `<button class="back" data-act="tab" data-to="library">← คลังคำ</button>
-  <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--ink-dim);margin:0 4px;"><span>การ์ด ${r.i+1}/${r.keys.length}</span><span>${'★'.repeat(v.mastery)}${'☆'.repeat(5-v.mastery)}</span></div>
+  <div style="display:flex;justify-content:space-between;font-size:15px;color:var(--ink-dim);margin:0 4px;"><span>การ์ด ${r.i+1}/${r.keys.length}</span><span>${'★'.repeat(v.mastery)}${'☆'.repeat(5-v.mastery)}</span></div>
   <div class="hud-xp" style="margin:8px 3px 0;"><i style="width:${r.i/r.keys.length*100}%"></i></div>
   <button class="flash px" data-act="flip">
     <div class="fw">${esc(v.word)}</div><div class="fp">${esc(v.pron||'')}</div>
@@ -1751,20 +1800,24 @@ function renderHero(){
 function renderSettings(){
   const st = save.settings;
   const tg = (k,label,hint)=>`<div class="set-row px"><div class="sl"><span>${label}</span><button class="toggle ${st[k]?'on':''}" data-act="toggle" data-k="${k}" aria-pressed="${!!st[k]}" aria-label="${label}"></button></div>${hint?`<div class="sh">${hint}</div>`:''}</div>`;
-  return `<h2 style="margin:0 0 14px;font-weight:500;">ตั้งค่า</h2>
-  <div class="set-row px"><div class="sl"><span>ชื่อฮีโร่</span></div><input class="text-in px" data-input="rename" maxlength="16" value="${esc(save.name)}"></div>
-  <div class="set-row px"><div class="sl"><span>อาชีพ</span></div><div class="chips">${Object.entries(CLASSES).map(([k,c])=>`<button class="chip px ${save.cls===k?'on':''}" data-act="setCls" data-v="${k}">${c.emoji} ${c.name}</button>`).join('')}</div><div class="sh">เปลี่ยนได้ตลอด เลเวลและอัปเกรดยังอยู่ครบ</div></div>
-  <div class="set-row px"><div class="sl"><span>ระดับภาษาอังกฤษ (CEFR)</span></div><div class="chips">${CEFR_LEVELS.map(l=>`<button class="chip px ${save.cefr===l.id?'on':''}" data-act="setCefr" data-v="${l.id}">${l.id}<small>${l.th}</small></button>`).join('')}</div></div>
-  <div class="set-row px"><div class="sl"><span>เสียงเอฟเฟกต์</span><span class="pixel" id="sfxVal">${st.sfx}%</span></div><input type="range" min="0" max="100" value="${st.sfx}" data-input="sfx" aria-label="ระดับเสียง"></div>
-  ${tg('music','เพลงประกอบ','ดนตรีชิปทูนเบา ๆ ระหว่างเล่น')}
-  ${tg('tts','เสียงอ่านคำศัพท์','ใช้เสียงอ่านภาษาอังกฤษของเครื่อง (ปุ่ม 🔊)')}
-  ${tg('autoSpeak','อ่านออกเสียงอัตโนมัติ','อ่านคำตอบให้ฟังทุกครั้งหลังตอบ และตอนเปิดการ์ดทบทวน')}
-  <div class="set-row px"><div class="sl"><span>สำรอง / ย้ายเซฟ</span></div>
-    <div class="chips"><button class="chip px" data-act="exportSave">คัดลอกรหัสเซฟ</button><button class="chip px" data-act="importOpen">นำเข้ารหัสเซฟ</button></div>
+  return `<h2 style="margin:0 0 14px;font-weight:500;">${t('settingsTitle')}</h2>
+  <div class="set-row px"><div class="sl"><span>${t('language')}</span></div><div class="chips">
+    <button class="chip px ${T('th')?'on':''}" data-act="setLang" data-v="th">ไทย</button>
+    <button class="chip px ${T('en')?'on':''}" data-act="setLang" data-v="en">English</button>
+  </div></div>
+  <div class="set-row px"><div class="sl"><span>${t('heroName')}</span></div><input class="text-in px" data-input="rename" maxlength="16" value="${esc(save.name)}"></div>
+  <div class="set-row px"><div class="sl"><span>${t('heroClass')}</span></div><div class="chips">${Object.entries(CLASSES).map(([k,c])=>`<button class="chip px ${save.cls===k?'on':''}" data-act="setCls" data-v="${k}">${c.emoji} ${c.name}</button>`).join('')}</div><div class="sh">เปลี่ยนได้ตลอด เลเวลและอัปเกรดยังอยู่ครบ</div></div>
+  <div class="set-row px"><div class="sl"><span>${t('cefrLevel')}</span></div><div class="chips">${CEFR_LEVELS.map(l=>`<button class="chip px ${save.cefr===l.id?'on':''}" data-act="setCefr" data-v="${l.id}">${l.id}<small>${l.th}</small></button>`).join('')}</div></div>
+  <div class="set-row px"><div class="sl"><span>${t('sfxVol')}</span><span class="pixel" id="sfxVal">${st.sfx}%</span></div><input type="range" min="0" max="100" value="${st.sfx}" data-input="sfx" aria-label="${t('sfxVol')}"></div>
+  ${tg('music',t('music'),t('musicHint'))}
+  ${tg('tts',t('tts'),t('ttsHint'))}
+  ${tg('autoSpeak',t('autoSpeak'),t('autoSpeakHint'))}
+  <div class="set-row px"><div class="sl"><span>${t('backup')}</span></div>
+    <div class="chips"><button class="chip px" data-act="exportSave">${t('copySave')}</button><button class="chip px" data-act="importOpen">${t('importSave')}</button></div>
     ${ui.exportCode?`<textarea class="text-in px" style="margin-top:12px;" readonly>${esc(ui.exportCode)}</textarea>`:''}
-    <div class="sh">ใช้ย้ายความคืบหน้าไปเครื่องอื่น</div></div>
-  <button class="btn danger px block" data-act="resetAsk">ล้างความคืบหน้าทั้งหมด</button>
-  <p style="text-align:center;font-size:12px;color:var(--ink-faint);margin-top:18px;">Quest Lines v2 · เล่นได้ฟรี ไม่ต้องใช้เน็ต</p>`;
+    <div class="sh">${t('backupHint')}</div></div>
+  <button class="btn danger px block" data-act="resetAsk">${t('resetAll')}</button>
+  <p style="text-align:center;font-size:14px;color:var(--ink-faint);margin-top:18px;">Quest Lines v2 · เล่นได้ฟรี ไม่ต้องใช้เน็ต</p>`;
 }
 
 /* ======================================================================
@@ -1808,7 +1861,7 @@ function act(a, d){
     case 'runLeave': ui.modals=[]; ui.battle = null; goto('hub'); break;
     case 'runRetry': ui.modals=[]; ui.battle = null; goto('hub'); towerMenu(); break;
     case 'bQuit': if(ui.battle && (ui.battle.phase==='won'||ui.battle.phase==='lost')){ goto('hub'); break; }
-      openModal(`<div class="big">🏳️</div><h2 class="lose" style="font-size:24px;">ถอยออก?</h2><p>รอบนี้จะจบลง รางวัลที่ได้ไปแล้วยังอยู่ครบ</p>
+      openModal(`<div class="big">🏳️</div><h2 class="lose" style="font-size:28px;">ถอยออก?</h2><p>รอบนี้จะจบลง รางวัลที่ได้ไปแล้วยังอยู่ครบ</p>
         <button class="btn danger px block" data-act="runLeave">ถอยกลับเมือง</button><button class="btn px block" data-act="closeModal">สู้ต่อ</button>`); break;
     /* blitz */
     case 'chAns': answerBlitz(+d.i); break;
@@ -1826,12 +1879,13 @@ function act(a, d){
     /* settings */
     case 'setCls': save.cls = d.v; if(Object.values(CLASSES).some(c=>c.emoji===save.avatar)) save.avatar = CLASSES[d.v].emoji; persist(); render(); break;
     case 'setCefr': save.cefr = d.v; persist(); render(); break;
+    case 'setLang': save.settings.lang = d.v; persist(); render(); break;
     case 'toggle': save.settings[d.k] = !save.settings[d.k]; persist(); if(d.k==='music') setMusic(save.settings.music); if(d.k==='tts' && save.settings.tts) speak('Hello, hero!'); render(); break;
     case 'exportSave': try{ ui.exportCode = btoa(unescape(encodeURIComponent(JSON.stringify(save)))); navigator.clipboard && navigator.clipboard.writeText(ui.exportCode).then(()=>toast('คัดลอกรหัสเซฟแล้ว')).catch(()=>{}); }catch(e){} render(); break;
-    case 'importOpen': openModal(`<h2 class="lvl" style="font-size:22px;">นำเข้าเซฟ</h2><p>วางรหัสเซฟ ความคืบหน้าปัจจุบันจะถูกแทนที่</p>
+    case 'importOpen': openModal(`<h2 class="lvl" style="font-size:25px;">นำเข้าเซฟ</h2><p>วางรหัสเซฟ ความคืบหน้าปัจจุบันจะถูกแทนที่</p>
       <textarea class="text-in px" id="importBox" style="margin-top:12px;"></textarea><button class="btn primary px block" data-act="importDo">นำเข้า</button><button class="btn ghost px block" data-act="closeModal">ยกเลิก</button>`); break;
     case 'importDo': { try{ const data = JSON.parse(decodeURIComponent(escape(atob($('#importBox').value.trim())))); if(!data || data.v!==2) throw 0; save = mergeDeep(defaultSave(), data); persist(); ui.modals=[]; toast('นำเข้าเซฟเรียบร้อย'); goto('hub'); }catch(e){ toast('รหัสเซฟไม่ถูกต้อง ตรวจว่าคัดลอกมาครบ'); } break; }
-    case 'resetAsk': openModal(`<div class="big">⚠️</div><h2 class="lose" style="font-size:22px;">ล้างทุกอย่าง?</h2><p>เลเวล ทอง คำศัพท์ ความสำเร็จ จะหายทั้งหมดและกู้คืนไม่ได้</p>
+    case 'resetAsk': openModal(`<div class="big">⚠️</div><h2 class="lose" style="font-size:25px;">ล้างทุกอย่าง?</h2><p>เลเวล ทอง คำศัพท์ ความสำเร็จ จะหายทั้งหมดและกู้คืนไม่ได้</p>
       <button class="btn danger px block" data-act="resetDo">ล้างความคืบหน้า</button><button class="btn px block" data-act="closeModal">ยกเลิก</button>`); break;
     case 'resetDo': try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(OLD_SAVE_KEY); }catch(e){} save = defaultSave(); ui.modals=[]; ui.onboard = { name:'', cls:'warrior', cefr:'B1' }; setMusic(false); goto('onboarding'); break;
   }
@@ -1877,10 +1931,10 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) setMusic
 function paintSky(){
   const c = $('#sky'); const W = 160, H = Math.round(160*innerHeight/Math.max(innerWidth,1)); c.width = W; c.height = H;
   const x = c.getContext('2d'); const rng = mulberry(7);
-  const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#140f2b'); g.addColorStop(.7,'#1c1540'); g.addColorStop(1,'#2a1a4a'); x.fillStyle=g; x.fillRect(0,0,W,H);
-  for(let i=0;i<W*H/60;i++){ x.fillStyle = rng()<.15 ? '#cfc2ff' : '#5a4d99'; x.fillRect(Math.floor(rng()*W), Math.floor(rng()*H*.8), 1, 1); }
-  x.fillStyle = '#1a1236'; for(let i=0;i<W;i++){ const y = H - 14 - Math.sin(i*.05)*6 - Math.sin(i*.13+2)*3; x.fillRect(i,y,1,H-y); }
-  x.fillStyle = '#120c28'; for(let i=0;i<W;i++){ const y = H - 6 - Math.sin(i*.09+1)*3; x.fillRect(i,y,1,H-y); }
+  const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0e1f27'); g.addColorStop(.7,'#142b34'); g.addColorStop(1,'#1d3f45'); x.fillStyle=g; x.fillRect(0,0,W,H);
+  for(let i=0;i<W*H/60;i++){ x.fillStyle = rng()<.15 ? '#cdeee6' : '#4d7a78'; x.fillRect(Math.floor(rng()*W), Math.floor(rng()*H*.8), 1, 1); }
+  x.fillStyle = '#16323a'; for(let i=0;i<W;i++){ const y = H - 14 - Math.sin(i*.05)*6 - Math.sin(i*.13+2)*3; x.fillRect(i,y,1,H-y); }
+  x.fillStyle = '#0f2429'; for(let i=0;i<W;i++){ const y = H - 6 - Math.sin(i*.09+1)*3; x.fillRect(i,y,1,H-y); }
 }
 
 /* ------------------------------ boot ------------------------------ */
