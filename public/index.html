@@ -12,22 +12,23 @@
 <title>Quest Lines — English RPG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Mitr:wght@300;400;500;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Sarabun:wght@400;500;600;700&family=Cinzel:wght@600;700;800&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
   --void:#0e1f27; --deep:#142b34; --panel:#1b3540; --panel-2:#224353; --edge:#3d6b72; --edge-hi:#5fa3a0;
-  --ink:#eaf5f0; --ink-dim:#9fc0bd; --ink-faint:#5f8583;
+  --ink:#f2faf6; --ink-dim:#aecdca; --ink-faint:#6f9997;
   --ember:#ff9d5c; --ember-hi:#ffc386; --rune:#7fe0cf; --gold:#e8c477;
   --blood:#e2705a; --leaf:#7fd88a; --shadow:#081418;
   --px:3px;
-  --f-pixel:'Pixelify Sans', 'Mitr', monospace;
-  --f-ui:'Mitr', 'Noto Sans Thai', 'Leelawadee UI', system-ui, sans-serif;
+  --f-pixel:'Pixelify Sans', 'Sarabun', monospace;
+  --f-display:'Cinzel', 'Pixelify Sans', serif;
+  --f-ui:'Sarabun', 'Noto Sans Thai', 'Leelawadee UI', system-ui, sans-serif;
   --f-story:'Spectral', Georgia, serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);}
 body{
-  margin:0; min-height:100%; color:var(--ink); font-family:var(--f-ui); font-weight:300; font-size:17px; line-height:1.55;
+  margin:0; min-height:100%; color:var(--ink); font-family:var(--f-ui); font-weight:400; font-size:17px; line-height:1.65;
   background:var(--void);
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
   overflow-x:hidden;
@@ -60,10 +61,10 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
   background:linear-gradient(180deg, rgba(20,15,43,.97) 70%, rgba(20,15,43,0));
   display:flex; align-items:center; gap:12px;
 }
-.hud-avatar{width:46px; height:46px; flex:none; display:grid; place-items:center; font-size:28px; background:var(--panel-2); position:relative;}
-.hud-lv{position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); font-family:var(--f-pixel); font-size:13px; background:var(--ember); color:#2a0f00; padding:0 5px; line-height:15px; white-space:nowrap;}
+.hud-avatar{width:46px; height:46px; flex:none; display:grid; place-items:center; font-size:28px; background:var(--panel-2); position:relative; box-shadow:0 0 0 2px rgba(255,157,92,.35), 0 0 10px rgba(255,157,92,.3);}
+.hud-lv{position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); font-family:var(--f-pixel); font-size:13px; background:var(--ember); color:#2a0f00; padding:0 5px; line-height:15px; white-space:nowrap; box-shadow:0 0 6px rgba(255,157,92,.6);}
 .hud-main{flex:1; min-width:0;}
-.hud-name{font-weight:500; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.hud-name{font-weight:600; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .hud-xp{height:7px; background:var(--shadow); margin-top:5px; position:relative;}
 .hud-xp > i{position:absolute; inset:0 auto 0 0; background:linear-gradient(90deg,var(--ember),var(--ember-hi)); transition:width .5s;}
 .hud-xptext{font-family:var(--f-pixel); font-size:10.5px; color:var(--ink-dim); margin-top:2px;}
@@ -71,31 +72,39 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .hud-stats span{display:flex; align-items:center; gap:4px;}
 
 /* ---------- title ---------- */
-.title-block{text-align:center; margin:6px 0 18px;}
-.game-title{
-  font-family:var(--f-pixel); font-weight:700; font-size:51px; line-height:1; margin:0; letter-spacing:.04em;
-  color:var(--ember-hi);
-  text-shadow: 3px 3px 0 #a3321a, 6px 6px 0 var(--shadow), 0 0 28px rgba(255,122,61,.45);
+.title-block{text-align:center; margin:10px 0 22px; position:relative;}
+.title-block::before{
+  content:""; position:absolute; left:50%; top:50%; width:340px; height:180px; transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side, rgba(255,157,92,.28), rgba(255,157,92,0) 72%); pointer-events:none; z-index:-1;
 }
-.game-sub{color:var(--ink-dim); font-size:15px; margin-top:8px;}
+.game-title{
+  font-family:var(--f-display); font-weight:800; font-size:46px; line-height:1.1; margin:0; letter-spacing:.06em;
+  background:linear-gradient(180deg, var(--ember-hi) 20%, var(--ember) 60%, #d9612c 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:var(--ember-hi);
+  text-shadow: 0 3px 0 rgba(0,0,0,.35), 0 0 34px rgba(255,122,61,.55);
+  animation: titleGlow 3.2s ease-in-out infinite;
+}
+@keyframes titleGlow{ 0%,100%{filter:drop-shadow(0 0 6px rgba(255,157,92,.35));} 50%{filter:drop-shadow(0 0 18px rgba(255,157,92,.75));} }
+.game-sub{color:var(--ink-dim); font-size:15px; margin-top:10px; letter-spacing:.02em;}
 
 /* ---------- buttons ---------- */
 .btn{
   display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; border:0;
-  font-family:var(--f-ui); font-weight:500; font-size:17px; padding:12px 18px; color:var(--ink);
-  background:var(--panel-2); transition:transform .06s, filter .15s; user-select:none;
+  font-family:var(--f-ui); font-weight:600; font-size:17px; padding:12px 18px; color:var(--ink);
+  background:var(--panel-2); transition:transform .08s, filter .15s, box-shadow .15s; user-select:none;
 }
 .btn.px{margin:var(--px);}
-.btn:hover:not(:disabled){filter:brightness(1.15);}
+.btn:hover:not(:disabled){filter:brightness(1.15); transform:translateY(-1px);}
 .btn:active:not(:disabled){transform:translateY(2px);}
 .btn:disabled{opacity:.45; cursor:default;}
-.btn.primary{background:linear-gradient(180deg,var(--ember-hi),var(--ember)); color:#2a0f00; --edge:#ffd2a6; font-weight:600;}
-.btn.rune{background:linear-gradient(180deg,#8ff7ee,var(--rune)); color:#062a28; --edge:#c8fff9; font-weight:600;}
+.btn.primary{background:linear-gradient(180deg,var(--ember-hi),var(--ember)); color:#2a0f00; --edge:#ffd2a6; font-weight:700; box-shadow:0 0 16px rgba(255,157,92,.4);}
+.btn.primary:hover:not(:disabled){box-shadow:0 0 24px rgba(255,157,92,.65);}
+.btn.rune{background:linear-gradient(180deg,#8ff7ee,var(--rune)); color:#062a28; --edge:#c8fff9; font-weight:700; box-shadow:0 0 14px rgba(127,224,207,.35);}
 .btn.ghost{background:transparent;}
 .btn.danger{--edge:var(--blood); color:#ffd0d8; background:rgba(255,77,109,.12);}
 .btn.block{display:flex; width:calc(100% - 6px);}
 .btn.small{font-size:15px; padding:7px 12px;}
-.back{background:none; border:0; color:var(--ink-dim); cursor:pointer; font-size:16px; padding:4px 0; margin-bottom:8px;}
+.back{background:none; border:0; color:var(--ink-dim); cursor:pointer; font-size:16px; padding:4px 0; margin-bottom:8px; font-weight:500;}
 .back:hover{color:var(--ink);}
 
 /* ---------- hub ---------- */
@@ -156,20 +165,20 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
   background:linear-gradient(0deg, rgba(20,15,43,1) 60%, rgba(20,15,43,.0));
 }
 .tabbar-in{max-width:520px; margin:0 auto; display:flex; gap:6px; background:var(--deep);}
-.tab{flex:1; border:0; background:none; cursor:pointer; padding:8px 2px 6px; display:flex; flex-direction:column; align-items:center; gap:1px; color:var(--ink-dim); font-size:11.5px;}
-.tab b{font-size:23px; line-height:1.1; font-weight:400; filter:grayscale(.7); opacity:.8;}
+.tab{flex:1; border:0; background:none; cursor:pointer; padding:8px 2px 6px; display:flex; flex-direction:column; align-items:center; gap:1px; color:var(--ink-dim); font-size:11.5px; font-weight:500; transition:color .15s;}
+.tab b{font-size:23px; line-height:1.1; font-weight:400; filter:grayscale(.7); opacity:.8; transition:filter .15s, opacity .15s, transform .15s;}
 .tab.on{color:var(--ink);}
-.tab.on b{filter:none; opacity:1;}
-.tab.on::after{content:""; width:18px; height:3px; background:var(--ember); margin-top:2px;}
+.tab.on b{filter:none; opacity:1; transform:translateY(-1px); text-shadow:0 0 10px rgba(255,157,92,.6);}
+.tab.on::after{content:""; width:18px; height:3px; background:var(--ember); margin-top:2px; box-shadow:0 0 8px var(--ember);}
 
 /* ---------- forms / chips ---------- */
 .field-label{display:block; font-size:15px; color:var(--ink-dim); margin:16px 0 8px;}
 .text-in{width:calc(100% - 6px); font-family:var(--f-ui); font-size:17px; color:var(--ink); background:var(--shadow); border:0; padding:12px 14px; --edge:var(--edge);}
 .text-in::placeholder{color:var(--ink-faint);}
 .chips{display:flex; gap:10px; flex-wrap:wrap;}
-.chip{flex:1 1 0; min-width:84px; cursor:pointer; border:0; padding:10px 8px; background:var(--deep); text-align:center; font-size:16px;}
+.chip{flex:1 1 0; min-width:84px; cursor:pointer; border:0; padding:10px 8px; background:var(--deep); text-align:center; font-size:16px; font-weight:500; transition:background .15s, box-shadow .15s;}
 .chip small{display:block; font-size:11.5px; color:var(--ink-dim);}
-.chip.on{--edge:var(--ember); background:#3a2250;}
+.chip.on{--edge:var(--ember); background:#3a2250; box-shadow:0 0 12px rgba(255,157,92,.3);}
 .class-card{flex:1 1 0; min-width:0; cursor:pointer; border:0; padding:12px 8px 10px; background:var(--deep); text-align:center;}
 .class-card .e{font-size:37px;}
 .class-card .n{font-weight:500; font-size:16px; margin-top:4px;}
