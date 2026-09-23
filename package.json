@@ -1,12 +1,12 @@
 {
   "name": "quest-lines-app",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
-  "description": "Quest Lines v2 — English vocab RPG (single-file PWA + one serverless API function)",
+  "description": "Quest Lines v2 — English vocab RPG (static single-file PWA, no backend)",
   "scripts": {
     "start": "node server.mjs",
-    "dev": "node server.mjs"
-  },
-  "engines": { "node": ">=18" }
+    "dev": "node server.mjs",
+    "build": "echo \"Static site - nothing to build\""
+  }
 }
