@@ -111,7 +111,8 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .tower-info .go{margin-left:auto; font-family:var(--f-pixel); font-size:17px; background:var(--ember); color:#2a0f00; padding:6px 12px; white-space:nowrap;}
 .tower-badge{position:absolute; top:10px; left:12px; font-family:var(--f-pixel); font-size:15px; background:rgba(10,7,24,.7); padding:3px 8px; color:var(--gold);}
 .char-tile{display:flex; align-items:center; gap:14px; width:calc(100% - 6px); text-align:left; cursor:pointer; border:0; padding:16px; background:var(--deep); --edge:var(--ember);}
-.char-tile .ava{width:64px; height:64px; flex:none; display:grid; place-items:center; font-size:38px; background:var(--panel-2); position:relative;}
+.char-tile .ava{width:64px; height:64px; flex:none; display:grid; place-items:center; font-size:38px; background:var(--panel-2); position:relative; overflow:hidden;}
+.char-tile .ava img{width:100%; height:100%; object-fit:cover;}
 .char-tile .ava .lv{position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); font-family:var(--f-pixel); font-size:13px; background:var(--ember); color:#2a0f00; padding:0 6px; line-height:16px; white-space:nowrap;}
 .char-tile .ci{flex:1; min-width:0;}
 .char-tile h3{margin:0; font-family:var(--f-pixel); font-size:20px; color:var(--ember-hi); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
@@ -264,7 +265,8 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 
 .me-bars{display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center; padding:12px 14px; margin-top:14px; background:var(--deep);}
 .me-bars .who{grid-row:span 2; display:flex; align-items:center; gap:8px;}
-.me-bars .who .e{font-size:34px; position:relative;}
+.me-bars .who .e{font-size:34px; position:relative; width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; overflow:hidden;}
+.me-bars .who .e img{width:100%; height:100%; object-fit:cover;}
 .me-bars .who .e.shield::after{content:"🛡️"; position:absolute; right:-10px; bottom:-4px; font-size:18px;}
 .bar{height:14px; background:var(--shadow); position:relative;}
 .bar i{position:absolute; inset:0 auto 0 0; transition:width .35s;}
@@ -358,7 +360,9 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 
 /* ---------- hero / shop ---------- */
 .hero-top{display:flex; gap:16px; align-items:center; padding:16px; background:var(--panel);}
-.hero-top .e{font-size:62px; width:84px; height:84px; display:grid; place-items:center; background:var(--deep); flex:none;}
+.hero-top .e{font-size:62px; width:84px; height:84px; display:grid; place-items:center; background:var(--deep); flex:none; overflow:hidden;}
+.hero-top .e img{width:100%; height:100%; object-fit:cover;}
+.hud-avatar img{width:100%; height:100%; object-fit:cover;}
 .hero-top h2{margin:0; font-weight:500; font-size:23px;}
 .hero-top p{margin:2px 0 0; color:var(--ink-dim); font-size:15px;}
 .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
@@ -391,6 +395,12 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .toggle{width:52px; height:28px; background:var(--shadow); border:0; position:relative; cursor:pointer; flex:none;}
 .toggle::after{content:""; position:absolute; top:4px; left:4px; width:20px; height:20px; background:var(--ink-faint); transition:left .15s, background .15s;}
 .toggle.on::after{left:28px; background:var(--leaf);}
+.color-in{width:52px; height:36px; border:0; background:none; padding:0; cursor:pointer;}
+.color-in::-webkit-color-swatch-wrapper{padding:0;} .color-in::-webkit-color-swatch{border:2px solid var(--edge);}
+.avatar-upload{width:84px; height:84px; flex:none; border-radius:0; overflow:hidden; position:relative; cursor:pointer; background:var(--deep);}
+.avatar-upload img{width:100%; height:100%; object-fit:cover; image-rendering:pixelated;}
+.avatar-upload .up-badge{position:absolute; right:2px; bottom:2px; background:var(--panel-2); font-size:13px; padding:2px 4px; --edge:var(--edge);}
+.hud-avatar img{width:100%; height:100%; object-fit:cover;}
 input[type=range]{width:100%; accent-color:var(--ember);}
 .ai-dot{display:inline-block; width:9px; height:9px; margin-right:6px;}
 .ai-dot.online{background:var(--leaf);} .ai-dot.offline{background:var(--ink-faint);} .ai-dot.unknown{background:var(--gold);}
@@ -413,162 +423,163 @@ textarea.text-in{min-height:80px; resize:vertical; font-size:14px; font-family:m
 <nav class="tabbar" id="tabbar"></nav>
 <div class="toasts" id="toasts"></div>
 <div id="overlay-root"></div>
+<input type="file" id="avatarFileInput" accept="image/*" class="hidden">
 <script>
 /* ======================================================================
    DATA — built-in word bank (works offline) and handcrafted adventures
    Format: word | pronunciation | Thai | English definition
    ====================================================================== */
 const WORD_BANK_RAW = {
-A2: `brave|/breɪv/|กล้าหาญ|Not afraid of danger or pain.
-hungry|/ˈhʌŋ.ɡri/|หิว|Wanting or needing food.
-forest|/ˈfɒr.ɪst/|ป่า|A large area covered with trees.
-river|/ˈrɪv.ər/|แม่น้ำ|A long line of water that flows to the sea.
-key|/kiː/|กุญแจ|A small metal object used to open a lock.
-bridge|/brɪdʒ/|สะพาน|Something built over a river so people can cross it.
-quiet|/ˈkwaɪ.ət/|เงียบ|Making very little noise.
-heavy|/ˈhev.i/|หนัก|Weighing a lot; hard to lift.
-danger|/ˈdeɪn.dʒər/|อันตราย|The possibility of being hurt or killed.
-journey|/ˈdʒɜː.ni/|การเดินทาง|A trip from one place to another, often a long one.
-castle|/ˈkɑː.səl/|ปราสาท|A large strong building where kings and queens lived long ago.
-friendly|/ˈfrend.li/|เป็นมิตร|Kind and pleasant to other people.
-empty|/ˈemp.ti/|ว่างเปล่า|Containing nothing.
-escape|/ɪˈskeɪp/|หลบหนี|To get away from a dangerous place.
-gift|/ɡɪft/|ของขวัญ|Something you give to someone, for example on a birthday.
-lucky|/ˈlʌk.i/|โชคดี|Having good things happen by chance.
-map|/mæp/|แผนที่|A drawing that shows where places and roads are.
-strong|/strɒŋ/|แข็งแรง|Having a lot of physical power.
-tired|/taɪəd/|เหนื่อย|Feeling that you need to rest or sleep.
-village|/ˈvɪl.ɪdʒ/|หมู่บ้าน|A very small town in the countryside.
-dark|/dɑːk/|มืด|With little or no light.
-shout|/ʃaʊt/|ตะโกน|To say something very loudly.
-thief|/θiːf/|ขโมย|A person who steals things.
-gold|/ɡəʊld/|ทองคำ|A valuable yellow metal used for coins and jewellery.
-hide|/haɪd/|ซ่อน|To put yourself or something where nobody can see it.
-climb|/klaɪm/|ปีน|To go up something using your hands and feet.
-storm|/stɔːm/|พายุ|Very bad weather with strong wind and rain.
-wet|/wet/|เปียก|Covered with water.
-sword|/sɔːd/|ดาบ|A weapon with a long sharp metal blade.
-dream|/driːm/|ความฝัน|Pictures and stories in your mind while you sleep.
-island|/ˈaɪ.lənd/|เกาะ|Land that has water all around it.
-answer|/ˈɑːn.sər/|คำตอบ|What you say or write when someone asks a question.
-careful|/ˈkeə.fəl/|ระมัดระวัง|Giving attention so you do not make mistakes or get hurt.
-dirty|/ˈdɜː.ti/|สกปรก|Not clean.
-enemy|/ˈen.ə.mi/|ศัตรู|A person who hates you or fights against you.
-wall|/wɔːl/|กำแพง|A side of a room or building, made of stone or brick.
-whisper|/ˈwɪs.pər/|กระซิบ|To speak very quietly.
-cheap|/tʃiːp/|ราคาถูก|Costing little money.
-borrow|/ˈbɒr.əʊ/|ยืม|To take something from someone and give it back later.
-remember|/rɪˈmem.bər/|จำได้|To keep something in your mind.
-frightened|/ˈfraɪ.tənd/|หวาดกลัว|Feeling fear.
-guard|/ɡɑːd/|ยาม, ผู้เฝ้า|A person whose job is to protect a place.
-cave|/keɪv/|ถ้ำ|A large hole in the side of a hill or under the ground.
-wizard|/ˈwɪz.əd/|พ่อมด|A man in stories who can do magic.
-carry|/ˈkær.i/|ถือ, แบก|To hold something and take it with you.
-broken|/ˈbrəʊ.kən/|แตก, เสีย|Damaged and not working.
-wide|/waɪd/|กว้าง|Large from one side to the other.
-invite|/ɪnˈvaɪt/|เชิญ|To ask someone to come to a party or event.
-knock|/nɒk/|เคาะ|To hit a door with your hand so people inside hear you.
-treasure|/ˈtreʒ.ər/|สมบัติ|A collection of gold, jewels and other valuable things.`,
-B1: `ancient|/ˈeɪn.ʃənt/|โบราณ|Existing for a very long time; from long ago.
-approach|/əˈprəʊtʃ/|เข้าใกล้|To come nearer to something or someone.
-avoid|/əˈvɔɪd/|หลีกเลี่ยง|To stay away from something or stop it from happening.
-clue|/kluː/|เบาะแส|A sign or piece of information that helps solve a mystery.
-courage|/ˈkʌr.ɪdʒ/|ความกล้าหาญ|The ability to do something that frightens you.
-destroy|/dɪˈstrɔɪ/|ทำลาย|To damage something so badly that it no longer exists.
-disappear|/ˌdɪs.əˈpɪər/|หายไป|To go where you can no longer be seen.
-exhausted|/ɪɡˈzɔː.stɪd/|เหนื่อยล้ามาก|Extremely tired.
-explore|/ɪkˈsplɔːr/|สำรวจ|To travel around a place to learn about it.
-fierce|/fɪəs/|ดุร้าย|Violent, angry and ready to attack.
-figure out|/ˈfɪɡ.ər aʊt/|คิดออก, หาคำตอบ|To finally understand something or solve a problem.
-footprint|/ˈfʊt.prɪnt/|รอยเท้า|A mark left by a foot or shoe on the ground.
-ghost|/ɡəʊst/|ผี|The spirit of a dead person that some people believe they can see.
-injured|/ˈɪn.dʒəd/|บาดเจ็บ|Hurt in an accident or attack.
-legend|/ˈledʒ.ənd/|ตำนาน|A very old story that may or may not be true.
-locate|/ləʊˈkeɪt/|ระบุตำแหน่ง|To find the exact position of something.
-mysterious|/mɪˈstɪə.ri.əs/|ลึกลับ|Strange and difficult to understand or explain.
-obvious|/ˈɒb.vi.əs/|ชัดเจน|Easy to see or understand.
-permission|/pəˈmɪʃ.ən/|การอนุญาต|The act of allowing someone to do something.
-rescue|/ˈres.kjuː/|ช่วยชีวิต|To save someone from a dangerous situation.
-reward|/rɪˈwɔːd/|รางวัล|Something given to you because you did something good.
-scream|/skriːm/|กรีดร้อง|To cry out loudly in a high voice because of fear or pain.
-shelter|/ˈʃel.tər/|ที่หลบภัย|A place that protects you from bad weather or danger.
-suspect|/ˈsʌs.pekt/|ผู้ต้องสงสัย|A person who may have committed a crime.
-survive|/səˈvaɪv/|รอดชีวิต|To continue to live after a dangerous event.
-threat|/θret/|ภัยคุกคาม|Something that may cause harm or danger.
-trap|/træp/|กับดัก|A device or trick used to catch an animal or person.
-warn|/wɔːn/|เตือน|To tell someone about a possible danger.
-weapon|/ˈwep.ən/|อาวุธ|An object such as a sword or gun used for fighting.
-witness|/ˈwɪt.nəs/|พยาน|A person who sees a crime or accident happen.
-abandoned|/əˈbæn.dənd/|ถูกทิ้งร้าง|Left alone and no longer used or wanted.
-ashamed|/əˈʃeɪmd/|ละอายใจ|Feeling bad because of something you did.
-confident|/ˈkɒn.fɪ.dənt/|มั่นใจ|Sure about your own abilities.
-curious|/ˈkjʊə.ri.əs/|อยากรู้อยากเห็น|Wanting to know or learn about something.
-deserve|/dɪˈzɜːv/|สมควรได้รับ|To have earned something because of your actions.
-emergency|/ɪˈmɜː.dʒən.si/|เหตุฉุกเฉิน|A sudden dangerous situation that needs fast action.
-gradually|/ˈɡrædʒ.u.ə.li/|ทีละน้อย|Slowly, over a period of time.
-hesitate|/ˈhez.ɪ.teɪt/|ลังเล|To pause before doing something because you are not sure.
-instinct|/ˈɪn.stɪŋkt/|สัญชาตญาณ|A natural feeling that makes you act without thinking.
-loyal|/ˈlɔɪ.əl/|จงรักภักดี|Always supporting a friend, group or leader.
-negotiate|/nəˈɡəʊ.ʃi.eɪt/|เจรจา|To talk with others to reach an agreement.
-opponent|/əˈpəʊ.nənt/|คู่ต่อสู้|A person you compete or fight against.
-precious|/ˈpreʃ.əs/|ล้ำค่า|Very valuable or important.
-reveal|/rɪˈviːl/|เปิดเผย|To show something that was hidden or secret.
-scatter|/ˈskæt.ər/|กระจัดกระจาย|To move or throw things in many different directions.
-stranger|/ˈstreɪn.dʒər/|คนแปลกหน้า|A person you do not know.
-supply|/səˈplaɪ/|เสบียง|An amount of food or equipment that people need.
-tremble|/ˈtrem.bəl/|ตัวสั่น|To shake slightly because you are afraid, cold or weak.
-wound|/wuːnd/|บาดแผล|An injury where the skin is cut or broken.
-recover|/rɪˈkʌv.ər/|ฟื้นตัว|To become healthy again after an illness or injury.`,
-B2: `ambush|/ˈæm.bʊʃ/|ซุ่มโจมตี|A surprise attack by people hiding and waiting.
-anticipate|/ænˈtɪs.ɪ.peɪt/|คาดการณ์ล่วงหน้า|To expect something and prepare for it.
-betray|/bɪˈtreɪ/|ทรยศ|To be disloyal to someone who trusted you.
-cunning|/ˈkʌn.ɪŋ/|เจ้าเล่ห์|Clever at getting what you want, often by tricking others.
-desolate|/ˈdes.əl.ət/|รกร้าง|Empty, with no people, and unpleasant.
-dilemma|/daɪˈlem.ə/|สถานการณ์ลำบากใจ|A situation where you must make a difficult choice.
-elusive|/iˈluː.sɪv/|จับตัวยาก|Difficult to find, catch or achieve.
-formidable|/fəˈmɪd.ə.bəl/|น่าเกรงขาม|Causing fear or respect because of great size or strength.
-grim|/ɡrɪm/|เคร่งเครียด, หดหู่|Very serious, unpleasant and without hope.
-inevitable|/ɪˈnev.ɪ.tə.bəl/|หลีกเลี่ยงไม่ได้|Certain to happen and impossible to prevent.
-lurk|/lɜːk/|ซุ่มซ่อน|To wait somewhere secretly, usually to do something bad.
-meticulous|/məˈtɪk.jə.ləs/|พิถีพิถัน|Very careful about every small detail.
-ominous|/ˈɒm.ɪ.nəs/|เป็นลางร้าย|Suggesting that something bad is going to happen.
-persevere|/ˌpɜː.sɪˈvɪər/|พากเพียร|To keep trying even when things are difficult.
-plunder|/ˈplʌn.dər/|ปล้นสะดม|To steal goods by force, especially in war.
-relentless|/rɪˈlent.ləs/|ไม่ลดละ|Never stopping or becoming less strong.
-resilient|/rɪˈzɪl.i.ənt/|ฟื้นตัวเร็ว|Able to recover quickly after difficulties.
-scrutinize|/ˈskruː.tɪ.naɪz/|พินิจพิเคราะห์|To examine something very carefully.
-treacherous|/ˈtretʃ.ər.əs/|อันตราย, ไว้ใจไม่ได้|Very dangerous, or likely to betray someone.
-vengeance|/ˈven.dʒəns/|การแก้แค้น|Punishment given to someone for harm they did to you.
-vigilant|/ˈvɪdʒ.əl.ənt/|ระแวดระวัง|Always watching carefully for danger.
-wreckage|/ˈrek.ɪdʒ/|ซากปรักหักพัง|The broken parts left after something is destroyed.
-alliance|/əˈlaɪ.əns/|พันธมิตร|An agreement between groups to work together.
-conceal|/kənˈsiːl/|ปกปิด|To hide something carefully.
-contradict|/ˌkɒn.trəˈdɪkt/|ขัดแย้ง|To say the opposite of what someone else has said.
-deceive|/dɪˈsiːv/|หลอกลวง|To make someone believe something that is not true.
-defiant|/dɪˈfaɪ.ənt/|ท้าทาย, ดื้อดึง|Refusing to obey, in an open and bold way.
-eerie|/ˈɪə.ri/|น่าขนลุก|Strange and frightening.
-endure|/ɪnˈdʒʊər/|อดทน|To suffer something painful for a long time.
-exploit|/ɪkˈsplɔɪt/|เอาเปรียบ|To use something or someone unfairly for your own advantage.
-feeble|/ˈfiː.bəl/|อ่อนแอ|Very weak.
-fugitive|/ˈfjuː.dʒə.tɪv/|ผู้หลบหนี|A person who is running away, especially from the police.
-hostile|/ˈhɒs.taɪl/|เป็นปฏิปักษ์|Unfriendly and ready to fight.
-indispensable|/ˌɪn.dɪˈspen.sə.bəl/|ขาดไม่ได้|So important that you cannot manage without it.
-intricate|/ˈɪn.trɪ.kət/|ซับซ้อน|Having many small parts arranged in a complicated way.
-lament|/ləˈment/|คร่ำครวญ|To express great sadness about something.
-notorious|/nəʊˈtɔː.ri.əs/|ฉาวโฉ่|Famous for something bad.
-oblivious|/əˈblɪv.i.əs/|ไม่รู้ตัว|Not aware of what is happening around you.
-perilous|/ˈper.əl.əs/|เต็มไปด้วยอันตราย|Extremely dangerous.
-prevail|/prɪˈveɪl/|มีชัย|To win or be successful after a struggle.
-reluctant|/rɪˈlʌk.tənt/|ไม่เต็มใจ|Not wanting to do something.
-salvage|/ˈsæl.vɪdʒ/|กู้คืน|To save things from a damaged ship, building or situation.
-siege|/siːdʒ/|การปิดล้อม|When an army surrounds a place to force the people inside to surrender.
-stealthy|/ˈstel.θi/|ลอบเร้น|Moving quietly and secretly so as not to be noticed.
-subdue|/səbˈdjuː/|ปราบ, ควบคุม|To bring someone or something under control, often by force.
-tenacious|/təˈneɪ.ʃəs/|ไม่ยอมแพ้ง่าย|Holding on firmly and refusing to give up.
-uncanny|/ʌnˈkæn.i/|ประหลาดอย่างอธิบายไม่ได้|Strange in a way that is hard to explain.
-unravel|/ʌnˈræv.əl/|คลี่คลาย|To solve or explain something complicated.
-vulnerable|/ˈvʌl.nər.ə.bəl/|เปราะบาง|Able to be easily hurt or attacked.
-wary|/ˈweə.ri/|ระแวง|Careful because you think something may be dangerous.`
+A2: `brave|เบรฟว์|กล้าหาญ|Not afraid of danger or pain.
+hungry|ฮังกรี|หิว|Wanting or needing food.
+forest|ฟอเรสต์|ป่า|A large area covered with trees.
+river|ริฟเวอร์|แม่น้ำ|A long line of water that flows to the sea.
+key|คีย์|กุญแจ|A small metal object used to open a lock.
+bridge|บริดจ์|สะพาน|Something built over a river so people can cross it.
+quiet|ไควเอ็ท|เงียบ|Making very little noise.
+heavy|เฮฟวี|หนัก|Weighing a lot; hard to lift.
+danger|เดนเจอร์|อันตราย|The possibility of being hurt or killed.
+journey|เจอร์นี|การเดินทาง|A trip from one place to another, often a long one.
+castle|คาสเซิล|ปราสาท|A large strong building where kings and queens lived long ago.
+friendly|เฟรนด์ลี|เป็นมิตร|Kind and pleasant to other people.
+empty|เอ็มพ์ตี|ว่างเปล่า|Containing nothing.
+escape|เอสเคป|หลบหนี|To get away from a dangerous place.
+gift|กิฟท์|ของขวัญ|Something you give to someone, for example on a birthday.
+lucky|ลักกี|โชคดี|Having good things happen by chance.
+map|แมพ|แผนที่|A drawing that shows where places and roads are.
+strong|สตรอง|แข็งแรง|Having a lot of physical power.
+tired|ไทเอิร์ด|เหนื่อย|Feeling that you need to rest or sleep.
+village|วิลเลจ|หมู่บ้าน|A very small town in the countryside.
+dark|ดาร์ก|มืด|With little or no light.
+shout|เชาท์|ตะโกน|To say something very loudly.
+thief|ธีฟ|ขโมย|A person who steals things.
+gold|โกลด์|ทองคำ|A valuable yellow metal used for coins and jewellery.
+hide|ไฮด์|ซ่อน|To put yourself or something where nobody can see it.
+climb|ไคลม์|ปีน|To go up something using your hands and feet.
+storm|สตอร์ม|พายุ|Very bad weather with strong wind and rain.
+wet|เว็ท|เปียก|Covered with water.
+sword|ซอร์ด|ดาบ|A weapon with a long sharp metal blade.
+dream|ดรีม|ความฝัน|Pictures and stories in your mind while you sleep.
+island|ไอแลนด์|เกาะ|Land that has water all around it.
+answer|อานเซอร์|คำตอบ|What you say or write when someone asks a question.
+careful|แคร์ฟูล|ระมัดระวัง|Giving attention so you do not make mistakes or get hurt.
+dirty|เดอร์ที|สกปรก|Not clean.
+enemy|เอนเนมี|ศัตรู|A person who hates you or fights against you.
+wall|วอลล์|กำแพง|A side of a room or building, made of stone or brick.
+whisper|วิสเพอร์|กระซิบ|To speak very quietly.
+cheap|ชีพ|ราคาถูก|Costing little money.
+borrow|บอร์โรว์|ยืม|To take something from someone and give it back later.
+remember|รีเม็มเบอร์|จำได้|To keep something in your mind.
+frightened|ไฟรเทินด์|หวาดกลัว|Feeling fear.
+guard|การ์ด|ยาม, ผู้เฝ้า|A person whose job is to protect a place.
+cave|เคฟ|ถ้ำ|A large hole in the side of a hill or under the ground.
+wizard|วิซเซิร์ด|พ่อมด|A man in stories who can do magic.
+carry|แคร์รี|ถือ, แบก|To hold something and take it with you.
+broken|โบรเคิน|แตก, เสีย|Damaged and not working.
+wide|ไวด์|กว้าง|Large from one side to the other.
+invite|อินไวท์|เชิญ|To ask someone to come to a party or event.
+knock|น็อค|เคาะ|To hit a door with your hand so people inside hear you.
+treasure|เทรชเชอร์|สมบัติ|A collection of gold, jewels and other valuable things.`,
+B1: `ancient|เอนเชียนท์|โบราณ|Existing for a very long time; from long ago.
+approach|อะโพรช|เข้าใกล้|To come nearer to something or someone.
+avoid|อะวอยด์|หลีกเลี่ยง|To stay away from something or stop it from happening.
+clue|คลู|เบาะแส|A sign or piece of information that helps solve a mystery.
+courage|เคอริจ|ความกล้าหาญ|The ability to do something that frightens you.
+destroy|ดิสทรอย|ทำลาย|To damage something so badly that it no longer exists.
+disappear|ดิสอะเพียร์|หายไป|To go where you can no longer be seen.
+exhausted|เอ็กซอสทิด|เหนื่อยล้ามาก|Extremely tired.
+explore|เอ็กซ์พลอร์|สำรวจ|To travel around a place to learn about it.
+fierce|เฟียร์ซ|ดุร้าย|Violent, angry and ready to attack.
+figure out|ฟิกเกอร์ เอาท์|คิดออก, หาคำตอบ|To finally understand something or solve a problem.
+footprint|ฟุตพรินท์|รอยเท้า|A mark left by a foot or shoe on the ground.
+ghost|โกสท์|ผี|The spirit of a dead person that some people believe they can see.
+injured|อินเจอร์ด|บาดเจ็บ|Hurt in an accident or attack.
+legend|เลเจนด์|ตำนาน|A very old story that may or may not be true.
+locate|โลเคท|ระบุตำแหน่ง|To find the exact position of something.
+mysterious|มิสทีเรียส|ลึกลับ|Strange and difficult to understand or explain.
+obvious|ออบเวียส|ชัดเจน|Easy to see or understand.
+permission|เพอร์มิชชั่น|การอนุญาต|The act of allowing someone to do something.
+rescue|เรสคิว|ช่วยชีวิต|To save someone from a dangerous situation.
+reward|ริวอร์ด|รางวัล|Something given to you because you did something good.
+scream|สกรีม|กรีดร้อง|To cry out loudly in a high voice because of fear or pain.
+shelter|เชลเทอร์|ที่หลบภัย|A place that protects you from bad weather or danger.
+suspect|ซัสเปกต์|ผู้ต้องสงสัย|A person who may have committed a crime.
+survive|เซอร์ไวฟ์|รอดชีวิต|To continue to live after a dangerous event.
+threat|เธรต|ภัยคุกคาม|Something that may cause harm or danger.
+trap|แทรป|กับดัก|A device or trick used to catch an animal or person.
+warn|วอร์น|เตือน|To tell someone about a possible danger.
+weapon|เวพเพิ่น|อาวุธ|An object such as a sword or gun used for fighting.
+witness|วิทเนส|พยาน|A person who sees a crime or accident happen.
+abandoned|อะแบนดันด์|ถูกทิ้งร้าง|Left alone and no longer used or wanted.
+ashamed|อะเชมด์|ละอายใจ|Feeling bad because of something you did.
+confident|คอนฟิเดนท์|มั่นใจ|Sure about your own abilities.
+curious|คิวเรียส|อยากรู้อยากเห็น|Wanting to know or learn about something.
+deserve|ดิเซิร์ฟ|สมควรได้รับ|To have earned something because of your actions.
+emergency|อีเมอร์เจนซี|เหตุฉุกเฉิน|A sudden dangerous situation that needs fast action.
+gradually|แกรดจวลลี|ทีละน้อย|Slowly, over a period of time.
+hesitate|เฮสซิเทท|ลังเล|To pause before doing something because you are not sure.
+instinct|อินสติงท์|สัญชาตญาณ|A natural feeling that makes you act without thinking.
+loyal|ลอยัล|จงรักภักดี|Always supporting a friend, group or leader.
+negotiate|นิโกชิเอท|เจรจา|To talk with others to reach an agreement.
+opponent|อะโพเนนท์|คู่ต่อสู้|A person you compete or fight against.
+precious|เพรเชียส|ล้ำค่า|Very valuable or important.
+reveal|ริวีล|เปิดเผย|To show something that was hidden or secret.
+scatter|สแคทเทอร์|กระจัดกระจาย|To move or throw things in many different directions.
+stranger|สเตรนเจอร์|คนแปลกหน้า|A person you do not know.
+supply|ซัพพลาย|เสบียง|An amount of food or equipment that people need.
+tremble|เทรมเบิล|ตัวสั่น|To shake slightly because you are afraid, cold or weak.
+wound|วูนด์|บาดแผล|An injury where the skin is cut or broken.
+recover|ริคัฟเวอร์|ฟื้นตัว|To become healthy again after an illness or injury.`,
+B2: `ambush|แอมบุช|ซุ่มโจมตี|A surprise attack by people hiding and waiting.
+anticipate|แอนทิซิเพท|คาดการณ์ล่วงหน้า|To expect something and prepare for it.
+betray|บิเทรย์|ทรยศ|To be disloyal to someone who trusted you.
+cunning|คันนิ่ง|เจ้าเล่ห์|Clever at getting what you want, often by tricking others.
+desolate|เดสโซเลท|รกร้าง|Empty, with no people, and unpleasant.
+dilemma|ไดเลมมา|สถานการณ์ลำบากใจ|A situation where you must make a difficult choice.
+elusive|อิลูซีฟ|จับตัวยาก|Difficult to find, catch or achieve.
+formidable|ฟอร์มิเดเบิล|น่าเกรงขาม|Causing fear or respect because of great size or strength.
+grim|กริม|เคร่งเครียด, หดหู่|Very serious, unpleasant and without hope.
+inevitable|อินเนวิเทเบิล|หลีกเลี่ยงไม่ได้|Certain to happen and impossible to prevent.
+lurk|เลิร์ก|ซุ่มซ่อน|To wait somewhere secretly, usually to do something bad.
+meticulous|เมทิคิวลัส|พิถีพิถัน|Very careful about every small detail.
+ominous|ออมมินัส|เป็นลางร้าย|Suggesting that something bad is going to happen.
+persevere|เพอร์เซเวียร์|พากเพียร|To keep trying even when things are difficult.
+plunder|พลันเดอร์|ปล้นสะดม|To steal goods by force, especially in war.
+relentless|ริเลนท์เลส|ไม่ลดละ|Never stopping or becoming less strong.
+resilient|รีซิลเลียนท์|ฟื้นตัวเร็ว|Able to recover quickly after difficulties.
+scrutinize|สครูทิไนซ์|พินิจพิเคราะห์|To examine something very carefully.
+treacherous|เทรชเชอรัส|อันตราย, ไว้ใจไม่ได้|Very dangerous, or likely to betray someone.
+vengeance|เวนเจียนซ์|การแก้แค้น|Punishment given to someone for harm they did to you.
+vigilant|วิจิแลนท์|ระแวดระวัง|Always watching carefully for danger.
+wreckage|เรกคิจ|ซากปรักหักพัง|The broken parts left after something is destroyed.
+alliance|อะไลอันซ์|พันธมิตร|An agreement between groups to work together.
+conceal|คอนซีล|ปกปิด|To hide something carefully.
+contradict|คอนทระดิกท์|ขัดแย้ง|To say the opposite of what someone else has said.
+deceive|ดิซีฟว์|หลอกลวง|To make someone believe something that is not true.
+defiant|ดิไฟอันท์|ท้าทาย, ดื้อดึง|Refusing to obey, in an open and bold way.
+eerie|เอียรี|น่าขนลุก|Strange and frightening.
+endure|เอ็นดิวร์|อดทน|To suffer something painful for a long time.
+exploit|เอ็กซ์พลอยท์|เอาเปรียบ|To use something or someone unfairly for your own advantage.
+feeble|ฟีเบิล|อ่อนแอ|Very weak.
+fugitive|ฟิวจิทิฟ|ผู้หลบหนี|A person who is running away, especially from the police.
+hostile|ฮอสไทล์|เป็นปฏิปักษ์|Unfriendly and ready to fight.
+indispensable|อินดิสเพนซะเบิล|ขาดไม่ได้|So important that you cannot manage without it.
+intricate|อินทริเคท|ซับซ้อน|Having many small parts arranged in a complicated way.
+lament|ละเมนท์|คร่ำครวญ|To express great sadness about something.
+notorious|โนโทเรียส|ฉาวโฉ่|Famous for something bad.
+oblivious|อ็อบลิเวียส|ไม่รู้ตัว|Not aware of what is happening around you.
+perilous|เพอริลัส|เต็มไปด้วยอันตราย|Extremely dangerous.
+prevail|พรีเวล|มีชัย|To win or be successful after a struggle.
+reluctant|รีลักแทนท์|ไม่เต็มใจ|Not wanting to do something.
+salvage|แซลวิจ|กู้คืน|To save things from a damaged ship, building or situation.
+siege|ซีจ|การปิดล้อม|When an army surrounds a place to force the people inside to surrender.
+stealthy|สเทลธี|ลอบเร้น|Moving quietly and secretly so as not to be noticed.
+subdue|ซับดิว|ปราบ, ควบคุม|To bring someone or something under control, often by force.
+tenacious|ทินาเชียส|ไม่ยอมแพ้ง่าย|Holding on firmly and refusing to give up.
+uncanny|อันแคนนี|ประหลาดอย่างอธิบายไม่ได้|Strange in a way that is hard to explain.
+unravel|อันแรฟเวิล|คลี่คลาย|To solve or explain something complicated.
+vulnerable|วัลเนอระเบิล|เปราะบาง|Able to be easily hurt or attacked.
+wary|แวรี|ระแวง|Careful because you think something may be dangerous.`
 };
 const WORD_BANK = {};
 Object.keys(WORD_BANK_RAW).forEach(lv=>{
@@ -747,6 +758,38 @@ const AVATAR_SHOP = [
   { emoji:'🦸', name:'ฮีโร่ในตำนาน', cost:480 },
   { emoji:'🐉', name:'มังกรผู้ตื่นรู้', cost:900 },
 ];
+/* ------------------------------ equipment ------------------------------ */
+const RARITY = {
+  common:{ th:'ธรรมดา', edge:'#5f8583' }, rare:{ th:'หายาก', edge:'#7fe0cf' },
+  epic:{ th:'เอปิก', edge:'#b98cf0' }, legendary:{ th:'ตำนาน', edge:'#e8c477' },
+};
+const SLOT_LABEL = { weapon:'อาวุธ', armor:'ชุดเกราะ', shield:'โล่' };
+const EQUIPMENT = {
+  woodSword:{ slot:'weapon', ico:'🗡️', name:'Wood Sword', th:'ดาบไม้', rarity:'common', bonus:{atk:3}, price:40,
+    desc:'ดาบซ้อมมือใหม่ แกะจากไม้โอ๊คแก่' },
+  ironSword:{ slot:'weapon', ico:'⚔️', name:'Iron Sword', th:'ดาบเหล็ก', rarity:'rare', bonus:{atk:8}, price:160,
+    desc:'ตีขึ้นรูปโดยช่างตีเหล็กประจำหมู่บ้าน คมกริบ' },
+  flameBlade:{ slot:'weapon', ico:'🔥', name:'Flame Blade', th:'ดาบอัคคี', rarity:'epic', bonus:{atk:15,crit:.04}, price:360,
+    desc:'ใบดาบลุกโชนด้วยเปลวเพลิงนิรันดร์ ตีแรงคริติคอลสูงขึ้น' },
+  dragonFang:{ slot:'weapon', ico:'🐉', name:'Dragon Fang', th:'เขี้ยวมังกร', rarity:'legendary', bonus:{atk:26,crit:.06}, price:750,
+    desc:'สลักจากเขี้ยวมังกรโบราณ เปล่งประกายสีทองยามฟาดฟัน' },
+  leatherArmor:{ slot:'armor', ico:'🧥', name:'Leather Armor', th:'เกราะหนัง', rarity:'common', bonus:{hp:18}, price:45,
+    desc:'เกราะหนังสัตว์เบา สวมใส่คล่องตัว' },
+  chainmail:{ slot:'armor', ico:'⛓️', name:'Chainmail', th:'เกราะโซ่', rarity:'rare', bonus:{hp:42}, price:170,
+    desc:'ห่วงโซ่เหล็กถักแน่น กันบาดแผลจากคมอาวุธได้ดี' },
+  runePlate:{ slot:'armor', ico:'🛡️', name:'Rune Plate', th:'เกราะจารึกเวท', rarity:'epic', bonus:{hp:75,mp:10}, price:380,
+    desc:'แผ่นเกราะสลักอักขระเวทมนตร์ เสริมทั้งพลังกายและมานา' },
+  dragonScale:{ slot:'armor', ico:'🐲', name:'Dragon Scale Mail', th:'เกราะเกล็ดมังกร', rarity:'legendary', bonus:{hp:130,atk:6}, price:780,
+    desc:'เกราะจากเกล็ดมังกรแท้ แข็งแกร่งราวกำแพงปราการ' },
+  woodShield:{ slot:'shield', ico:'🪵', name:'Wood Shield', th:'โล่ไม้', rarity:'common', bonus:{hp:10}, price:35,
+    desc:'โล่ไม้เนื้อแข็งขอบเหล็ก กันได้ระดับหนึ่ง' },
+  ironShield:{ slot:'shield', ico:'🛡️', name:'Iron Shield', th:'โล่เหล็ก', rarity:'rare', bonus:{hp:28,atk:2}, price:150,
+    desc:'โล่เหล็กหนักแน่น สลักตราประจำตระกูลนักรบ' },
+  runicAegis:{ slot:'shield', ico:'✨', name:'Runic Aegis', th:'โล่รูนศักดิ์สิทธิ์', rarity:'epic', bonus:{hp:55,mp:15}, price:400,
+    desc:'โล่ประดับรูนเรืองแสง ปกป้องทั้งร่างกายและจิตวิญญาณ' },
+  aegisEternal:{ slot:'shield', ico:'👑', name:'Aegis Eternal', th:'โล่นิรันดร์', rarity:'legendary', bonus:{hp:95,mp:20,crit:.03}, price:820,
+    desc:'โล่ในตำนานที่ไม่เคยแตกร้าว ผู้ถือครองไร้ซึ่งความหวาดกลัว' },
+};
 const CEFR_LEVELS = [
   { id:'A2', name:'Beginner', th:'พื้นฐาน' },
   { id:'B1', name:'Intermediate', th:'กลาง' },
@@ -784,9 +827,10 @@ function T(lang){ return ((save.settings && save.settings.lang) || 'th') === lan
 function defaultSave(){
   return {
     v:2, onboarded:false, name:'Traveler', cls:'warrior', avatar:'🛡️', ownedAvatars:[], cefr:'B1',
-    settings:{ sfx:70, music:false, tts:true, autoSpeak:false, lang:'th' },
+    settings:{ sfx:70, music:false, tts:true, autoSpeak:false, lang:'th', themeColor:'', avatarImg:'' },
     level:1, xp:0, gold:40,
     upgrades:{ hp:0, atk:0, mp:0 }, items:{ potion:2, ether:1, scroll:1 },
+    ownedEquipment:[], equipped:{ weapon:null, armor:null, shield:null },
     vocab:{}, achievements:{}, endings:{}, visited:{},
     stats:{ scenesPlayed:0, storiesWon:0, battlesWon:0, bossesDefeated:0, correct:0, wrong:0, bestCombo:0,
             challengesCompleted:0, bestChallenge:0, cardsReviewed:0, bestFloor:0, goldEarned:0 },
@@ -825,16 +869,40 @@ function persist(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
   catch(e){ if(storageOk){ storageOk=false; setTimeout(()=>toast('บันทึกข้อมูลในเครื่องไม่ได้ — ความคืบหน้าจะหายเมื่อปิดหน้า'),500); } }
 }
+/* --------------------------- custom theme color --------------------------- */
+const DEFAULT_ACCENT = '#ff9d5c';
+function shadeHex(hex, amt){ // amt: -1..1, negative darkens, positive lightens
+  const n = hex.replace('#',''); const num = parseInt(n.length===3 ? n.split('').map(c=>c+c).join('') : n, 16);
+  let r = (num>>16)&255, g = (num>>8)&255, b = num&255;
+  const f = amt<0 ? amt+1 : amt, t = amt<0 ? 0 : 255;
+  r = Math.round((t-r)*f)+r; g = Math.round((t-g)*f)+g; b = Math.round((t-b)*f)+b;
+  return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');
+}
+function avatarInner(){ const img = save.settings && save.settings.avatarImg; return img ? `<img src="${img}" alt="avatar">` : save.avatar; }
+function applyTheme(){
+  const c = (save.settings && save.settings.themeColor) || DEFAULT_ACCENT;
+  const root = document.documentElement.style;
+  root.setProperty('--ember', c);
+  root.setProperty('--ember-hi', shadeHex(c, .35));
+  const meta = document.querySelector('meta[name=theme-color]'); if(meta) meta.setAttribute('content', c);
+}
 
 /* --------------------------- derived stats --------------------------- */
 function xpNeeded(level){ return Math.round(100 * Math.pow(1.22, level-1)); }
+function equipBonus(){
+  const tot = { hp:0, mp:0, atk:0, crit:0 };
+  const eq = (save.equipped)||{};
+  Object.values(eq).forEach(id=>{ const it = id && EQUIPMENT[id]; if(!it) return;
+    Object.entries(it.bonus).forEach(([k,v])=>{ tot[k] = (tot[k]||0) + v; }); });
+  return tot;
+}
 function playerStats(){
-  const c = CLASSES[save.cls] || CLASSES.warrior, L = save.level-1, u = save.upgrades;
+  const c = CLASSES[save.cls] || CLASSES.warrior, L = save.level-1, u = save.upgrades, eq = equipBonus();
   return {
-    maxHp: c.hp + L*8 + u.hp*15,
-    maxMp: c.mp + L*3 + u.mp*10,
-    atk: c.atk + L*2 + u.atk*3,
-    crit: c.crit,
+    maxHp: c.hp + L*8 + u.hp*15 + eq.hp,
+    maxMp: c.mp + L*3 + u.mp*10 + eq.mp,
+    atk: c.atk + L*2 + u.atk*3 + eq.atk,
+    crit: c.crit + eq.crit,
   };
 }
 function todayStr(d){ const x = d || new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
@@ -1283,7 +1351,7 @@ function afterRender(){
 function hudHtml(){
   const need = xpNeeded(save.level), pct = Math.min(100, save.xp/need*100);
   return `<header class="hud">
-    <div class="hud-avatar px">${save.avatar}<span class="hud-lv">LV ${save.level}</span></div>
+    <div class="hud-avatar px">${avatarInner()}<span class="hud-lv">LV ${save.level}</span></div>
     <div class="hud-main"><div class="hud-name">${esc(save.name)} <span style="color:var(--ink-dim);font-size:14px;">· ${CLASSES[save.cls].name}</span></div>
       <div class="hud-xp"><i style="width:${pct}%"></i></div><div class="hud-xptext">${save.xp} / ${need} XP</div></div>
     <div class="hud-stats"><span title="ทอง">🪙 ${save.gold}</span><span title="วันต่อเนื่อง">🔥 ${save.streak.days||0}</span></div>
@@ -1324,7 +1392,7 @@ function renderHub(){
   return `
   <div class="title-block"><h1 class="game-title" style="font-size:41px;">QUEST LINES</h1></div>
   <button class="char-tile px" data-act="tab" data-to="hero">
-    <div class="ava">${save.avatar}<span class="lv">LV ${save.level}</span></div>
+    <div class="ava">${avatarInner()}<span class="lv">LV ${save.level}</span></div>
     <div class="ci">
       <h3>${esc(save.name)}</h3>
       <p>${CLASSES[save.cls].name} · ${save.xp} / ${need} XP</p>
@@ -1634,7 +1702,7 @@ function renderBattle(){
     ${monArt}<div class="arena-floor"></div>
     ${b.combo>1?`<div class="combo"><div class="n">×${b.combo}</div><div class="l">COMBO</div></div>`:''}
   </div>
-  <div class="me-bars px"><div class="who"><span class="e ${b.shield?'shield':''}">${save.avatar}</span></div>
+  <div class="me-bars px"><div class="who"><span class="e ${b.shield?'shield':''}">${avatarInner()}</span></div>
     <div class="bar hp ${hpPct<30?'low':''}"><i style="width:${hpPct}%"></i><span>HP ${b.run.hp}/${ps.maxHp}</span></div>
     <div class="bar mp"><i style="width:${b.run.mp/ps.maxMp*100}%"></i><span>MP ${b.run.mp}/${ps.maxMp}</span></div></div>
   <div class="qcard px"><div class="qmeta"><span class="qtype">${esc(q.label)}</span><span>${b.power?'⚡ x2':''}</span></div>
@@ -1773,7 +1841,12 @@ function renderShop(){
     return `<div class="shop-item px"><div class="si">${a.emoji}</div><div class="sm"><div class="sn">${a.name}</div><div class="sd">ร่างใหม่สำหรับฮีโร่ของคุณ</div></div>
     ${own ? (save.avatar===a.emoji?'<span class="own">ใช้อยู่</span>':`<button class="btn small px" data-act="setAvatar" data-v="${a.emoji}">ใช้ร่างนี้</button>`)
       : `<button class="btn small ${save.gold>=a.cost?'primary':''} px" data-act="buyAv" data-v="${a.emoji}" ${save.gold>=a.cost?'':'disabled'}><span class="price">🪙${a.cost}</span></button>`}</div>`; }).join('');
-  return `<div class="tabs-inline">${[['items','ไอเทม'],['upgrades','อัปเกรด'],['avatars','ร่างฮีโร่']].map(([k,l])=>`<button class="chip px ${t===k?'on':''}" data-act="shopTab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
+  if(t==='equip') body = Object.entries(EQUIPMENT).map(([k,it])=>{ const own = save.ownedEquipment.includes(k), worn = save.equipped[it.slot]===k, r = RARITY[it.rarity];
+    const bonusTxt = Object.entries(it.bonus).map(([bk,bv])=>`${bk==='crit'?'Crit +'+Math.round(bv*100)+'%':bk.toUpperCase()+' +'+bv}`).join(' · ');
+    return `<div class="shop-item px equip-card" style="--edge:${r.edge}"><div class="si">${it.ico}</div><div class="sm"><div class="sn">${it.th} <small class="rarity-tag" style="color:${r.edge}">${r.th}</small></div><div class="sd">${SLOT_LABEL[it.slot]} · ${bonusTxt}</div><div class="sd" style="opacity:.8">${it.desc}</div></div>
+    ${worn?'<span class="own">สวมอยู่</span>':own?`<button class="btn small px" data-act="setEquip" data-v="${k}">สวมใส่</button>`
+      :`<button class="btn small ${save.gold>=it.price?'primary':''} px" data-act="buyEquip" data-k="${k}" ${save.gold>=it.price?'':'disabled'}><span class="price">🪙${it.price}</span></button>`}</div>`; }).join('');
+  return `<div class="tabs-inline">${[['items','ไอเทม'],['equip','อุปกรณ์'],['upgrades','อัปเกรด'],['avatars','ร่างฮีโร่']].map(([k,l])=>`<button class="chip px ${t===k?'on':''}" data-act="shopTab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
 }
 
 /* ------------------------------ hero ------------------------------ */
@@ -1782,7 +1855,7 @@ function renderHero(){
   const avatars = [c.emoji].concat(save.ownedAvatars);
   const acc = s.correct+s.wrong ? Math.round(s.correct/(s.correct+s.wrong)*100) : 0;
   const unlocked = ACHIEVEMENTS.filter(a=>save.achievements[a.id]).length;
-  return `<div class="hero-top px"><div class="e px">${save.avatar}</div><div><h2>${esc(save.name)}</h2><p>${c.name} (${c.en}) · Level ${save.level} · ${save.cefr}</p><p>${c.skill.ico} ${c.skill.name}</p></div></div>
+  return `<div class="hero-top px"><div class="e px">${avatarInner()}</div><div><h2>${esc(save.name)}</h2><p>${c.name} (${c.en}) · Level ${save.level} · ${save.cefr}</p><p>${c.skill.ico} ${c.skill.name}</p></div></div>
   <div class="stat-grid">
     <div class="px">Max HP<b>${ps.maxHp}</b></div><div class="px">Max MP<b>${ps.maxMp}</b></div>
     <div class="px">ATK<b>${ps.atk}</b></div><div class="px">Crit<b>${Math.round(ps.crit*100)}%</b></div>
@@ -1790,6 +1863,9 @@ function renderHero(){
     <div class="px">คอมโบสูงสุด<b>${s.bestCombo}</b></div><div class="px">ความแม่นยำ<b>${acc}%</b></div>
     <div class="px">ฉากจบที่พบ<b>${Object.keys(save.endings).length}/${TOTAL_ENDINGS}</b></div><div class="px">Blitz สูงสุด<b>${s.bestChallenge}</b></div>
   </div>
+  <div class="section-h"><h3>อุปกรณ์</h3><small>ซื้อ/สวมใส่ได้ที่ร้านค้า → แท็บอุปกรณ์</small></div>
+  <div class="avatar-row">${['weapon','armor','shield'].map(slot=>{ const id = save.equipped[slot], it = id && EQUIPMENT[id];
+    return `<button class="av px equip-slot" data-act="goEquip" title="${SLOT_LABEL[slot]}">${it?it.ico:(slot==='weapon'?'⚔️':slot==='armor'?'🧥':'🛡️')}</button>`; }).join('')}</div>
   <div class="section-h"><h3>ร่างฮีโร่</h3><small>ซื้อเพิ่มได้ที่ร้านค้า</small></div>
   <div class="avatar-row">${avatars.map(a=>`<button class="av px ${save.avatar===a?'on':''}" data-act="setAvatar" data-v="${a}">${a}</button>`).join('')}</div>
   <div class="section-h"><h3>ความสำเร็จ</h3><small>${unlocked}/${ACHIEVEMENTS.length}</small></div>
@@ -1801,6 +1877,15 @@ function renderSettings(){
   const st = save.settings;
   const tg = (k,label,hint)=>`<div class="set-row px"><div class="sl"><span>${label}</span><button class="toggle ${st[k]?'on':''}" data-act="toggle" data-k="${k}" aria-pressed="${!!st[k]}" aria-label="${label}"></button></div>${hint?`<div class="sh">${hint}</div>`:''}</div>`;
   return `<h2 style="margin:0 0 14px;font-weight:500;">${t('settingsTitle')}</h2>
+  <div class="set-row px"><div class="sl"><span>${T('th')?'รูปโปรไฟล์':'Profile picture'}</span></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="avatar-upload px" data-act="avatarPick">${st.avatarImg?`<img src="${st.avatarImg}" alt="avatar">`:`<div style="width:100%;height:100%;display:grid;place-items:center;font-size:40px;">${save.avatar}</div>`}<span class="up-badge">📷</span></div>
+      <div class="chips" style="flex-wrap:wrap;">
+        <button class="chip px" data-act="avatarPick">${T('th')?'อัปโหลดรูป':'Upload photo'}</button>
+        ${st.avatarImg?`<button class="chip px" data-act="avatarClear">${T('th')?'ลบรูป':'Remove'}</button>`:''}
+      </div>
+    </div>
+    <div class="sh">${T('th')?'ใช้รูปของคุณเองเป็นอวาตาร์แทนไอคอนร่างฮีโร่':'Use your own photo instead of the character icon'}</div></div>
   <div class="set-row px"><div class="sl"><span>${t('language')}</span></div><div class="chips">
     <button class="chip px ${T('th')?'on':''}" data-act="setLang" data-v="th">ไทย</button>
     <button class="chip px ${T('en')?'on':''}" data-act="setLang" data-v="en">English</button>
@@ -1808,6 +1893,12 @@ function renderSettings(){
   <div class="set-row px"><div class="sl"><span>${t('heroName')}</span></div><input class="text-in px" data-input="rename" maxlength="16" value="${esc(save.name)}"></div>
   <div class="set-row px"><div class="sl"><span>${t('heroClass')}</span></div><div class="chips">${Object.entries(CLASSES).map(([k,c])=>`<button class="chip px ${save.cls===k?'on':''}" data-act="setCls" data-v="${k}">${c.emoji} ${c.name}</button>`).join('')}</div><div class="sh">เปลี่ยนได้ตลอด เลเวลและอัปเกรดยังอยู่ครบ</div></div>
   <div class="set-row px"><div class="sl"><span>${t('cefrLevel')}</span></div><div class="chips">${CEFR_LEVELS.map(l=>`<button class="chip px ${save.cefr===l.id?'on':''}" data-act="setCefr" data-v="${l.id}">${l.id}<small>${l.th}</small></button>`).join('')}</div></div>
+  <div class="set-row px"><div class="sl"><span>${T('th')?'สีธีมเว็บ':'Theme color'}</span></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <input type="color" class="color-in" data-input="themeColor" value="${st.themeColor||DEFAULT_ACCENT}" aria-label="สีธีม">
+      <button class="chip px" data-act="resetTheme">${T('th')?'ค่าเริ่มต้น':'Reset'}</button>
+    </div>
+    <div class="sh">${T('th')?'เลือกสีอะไรก็ได้ ระบบจะปรับโทนสีหลักของเว็บให้ทันที':'Pick any color — the site accent updates instantly'}</div></div>
   <div class="set-row px"><div class="sl"><span>${t('sfxVol')}</span><span class="pixel" id="sfxVal">${st.sfx}%</span></div><input type="range" min="0" max="100" value="${st.sfx}" data-input="sfx" aria-label="${t('sfxVol')}"></div>
   ${tg('music',t('music'),t('musicHint'))}
   ${tg('tts',t('tts'),t('ttsHint'))}
@@ -1876,11 +1967,17 @@ function act(a, d){
     case 'buyUp': { const u = UPGRADES[d.k], lv = save.upgrades[d.k], cost = u.base*(lv+1); if(lv<u.max && save.gold>=cost){ save.gold -= cost; save.upgrades[d.k]++; persist(); sfx.level(); toast(`${u.ico} ${u.name} ระดับ ${lv+1}`); render(); } break; }
     case 'buyAv': { const a = AVATAR_SHOP.find(x=>x.emoji===d.v); if(a && save.gold>=a.cost && !save.ownedAvatars.includes(a.emoji)){ save.gold -= a.cost; save.ownedAvatars.push(a.emoji); save.avatar = a.emoji; persist(); sfx.coin(); toast(`ปลดล็อก ${a.name} แล้ว`); render(); } break; }
     case 'setAvatar': save.avatar = d.v; persist(); render(); break;
+    case 'goEquip': ui.shopTab = 'equip'; goto('shop'); break;
+    case 'buyEquip': { const it = EQUIPMENT[d.k]; if(it && save.gold>=it.price && !save.ownedEquipment.includes(d.k)){ save.gold -= it.price; save.ownedEquipment.push(d.k); save.equipped[it.slot] = d.k; persist(); sfx.coin(); toast(`สวมใส่ ${it.ico} ${it.th} แล้ว`); render(); } break; }
+    case 'setEquip': { const it = EQUIPMENT[d.v]; if(it && save.ownedEquipment.includes(d.v)){ save.equipped[it.slot] = (save.equipped[it.slot]===d.v) ? null : d.v; persist(); sfx.click(); render(); } break; }
     /* settings */
     case 'setCls': save.cls = d.v; if(Object.values(CLASSES).some(c=>c.emoji===save.avatar)) save.avatar = CLASSES[d.v].emoji; persist(); render(); break;
     case 'setCefr': save.cefr = d.v; persist(); render(); break;
     case 'setLang': save.settings.lang = d.v; persist(); render(); break;
     case 'toggle': save.settings[d.k] = !save.settings[d.k]; persist(); if(d.k==='music') setMusic(save.settings.music); if(d.k==='tts' && save.settings.tts) speak('Hello, hero!'); render(); break;
+    case 'resetTheme': save.settings.themeColor = ''; applyTheme(); persist(); render(); break;
+    case 'avatarPick': { const inp = $('#avatarFileInput'); if(inp) inp.click(); break; }
+    case 'avatarClear': save.settings.avatarImg = ''; persist(); render(); break;
     case 'exportSave': try{ ui.exportCode = btoa(unescape(encodeURIComponent(JSON.stringify(save)))); navigator.clipboard && navigator.clipboard.writeText(ui.exportCode).then(()=>toast('คัดลอกรหัสเซฟแล้ว')).catch(()=>{}); }catch(e){} render(); break;
     case 'importOpen': openModal(`<h2 class="lvl" style="font-size:25px;">นำเข้าเซฟ</h2><p>วางรหัสเซฟ ความคืบหน้าปัจจุบันจะถูกแทนที่</p>
       <textarea class="text-in px" id="importBox" style="margin-top:12px;"></textarea><button class="btn primary px block" data-act="importDo">นำเข้า</button><button class="btn ghost px block" data-act="closeModal">ยกเลิก</button>`); break;
@@ -1903,8 +2000,34 @@ document.addEventListener('input', e=>{
   if(k==='libq'){ ui.lib.q = v; renderLibList(); }
   if(k==='rename'){ save.name = v.trim() || 'Traveler'; persist(); }
   if(k==='sfx'){ save.settings.sfx = +v; persist(); const s = $('#sfxVal'); if(s) s.textContent = v+'%'; }
+  if(k==='themeColor'){ save.settings.themeColor = v; applyTheme(); persist(); }
 });
 document.addEventListener('change', e=>{ if(e.target.dataset && e.target.dataset.input==='sfx') sfx.click(); if(e.target.dataset && e.target.dataset.input==='rename') render(); });
+document.getElementById('avatarFileInput').addEventListener('change', e=>{
+  const file = e.target.files && e.target.files[0]; e.target.value = '';
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ toast(T('th')?'เลือกไฟล์รูปภาพเท่านั้น':'Please choose an image file'); return; }
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const size = 160;
+      const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const s = Math.min(img.width, img.height);
+      const sx = (img.width-s)/2, sy = (img.height-s)/2;
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      try{
+        save.settings.avatarImg = canvas.toDataURL('image/jpeg', .85);
+        persist(); toast(T('th')?'อัปเดตรูปโปรไฟล์แล้ว':'Profile picture updated'); render();
+      }catch(err){ toast(T('th')?'ตั้งรูปโปรไฟล์ไม่สำเร็จ':'Could not set profile picture'); }
+    };
+    img.onerror = ()=> toast(T('th')?'เปิดไฟล์รูปไม่สำเร็จ':'Could not read image');
+    img.src = ev.target.result;
+  };
+  reader.onerror = ()=> toast(T('th')?'อ่านไฟล์ไม่สำเร็จ':'Could not read file');
+  reader.readAsDataURL(file);
+});
 document.addEventListener('keydown', e=>{
   const typing = /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName);
   if(e.key==='Enter' && typing && document.activeElement.id==='freeIn'){ e.preventDefault(); if(ui.story && !ui.story.loading){ submitFree(); flushEvents(); } return; }
@@ -1938,6 +2061,7 @@ function paintSky(){
 }
 
 /* ------------------------------ boot ------------------------------ */
+applyTheme();
 paintSky(); addEventListener('resize', paintSky);
 if(save.onboarded) ensureDaily();
 render();
