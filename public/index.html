@@ -696,7 +696,7 @@ survival: {
 const STORY_ORDER = ['fantasy','mystery','survival'];
 const TOTAL_ENDINGS = STORY_ORDER.reduce((n,k)=>n+Object.values(STORIES[k].nodes).filter(x=>x.end).length,0);
 /* ======================================================================
-   ENGINE — save data, progression, audio, speech, pixel art, AI bridge
+   ENGINE — save data, progression, audio, speech, pixel art
    ====================================================================== */
 const SAVE_KEY = 'questlines_save_v2';
 const OLD_SAVE_KEY = 'questlines_save_v1';
@@ -737,19 +737,13 @@ const CEFR_LEVELS = [
   { id:'B1', name:'Intermediate', th:'กลาง' },
   { id:'B2', name:'Advanced', th:'สูง' },
 ];
-const AI_THEMES = [
-  { id:'fantasy', th:'แฟนตาซี', en:'Fantasy', scene:'ruins' },
-  { id:'mystery', th:'สืบสวน', en:'Mystery', scene:'train' },
-  { id:'survival', th:'เอาชีวิตรอด', en:'Survival', scene:'beach' },
-  { id:'scifi', th:'ไซไฟ', en:'Sci-fi space station', scene:'cave' },
-];
 const SRS_HOURS = [0, 12, 24, 72, 168, 384];
 
 /* ------------------------------ save ------------------------------ */
 function defaultSave(){
   return {
     v:2, onboarded:false, name:'Traveler', cls:'warrior', avatar:'🛡️', ownedAvatars:[], cefr:'B1',
-    settings:{ sfx:70, music:false, tts:true, autoSpeak:false, source:'auto' },
+    settings:{ sfx:70, music:false, tts:true, autoSpeak:false },
     level:1, xp:0, gold:40,
     upgrades:{ hp:0, atk:0, mp:0 }, items:{ potion:2, ether:1, scroll:1 },
     vocab:{}, achievements:{}, endings:{}, visited:{},
@@ -993,29 +987,6 @@ function speak(text){
 /* ======================================================================
    PIXEL ART
    ====================================================================== */
-const PIXEL_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-function validatePixelArt(raw){
-  if(!raw || typeof raw!=='object') return null;
-  let { width, height, palette, rows } = raw;
-  width = parseInt(width,10); height = parseInt(height,10);
-  if(!Number.isFinite(width)||!Number.isFinite(height)||width<8||width>64||height<8||height>64) return null;
-  if(!Array.isArray(palette)||!palette.length||palette.length>36) return null;
-  if(!palette.every(c=>typeof c==='string' && /^#[0-9a-fA-F]{3,8}$/.test(c.trim()))) return null;
-  if(!Array.isArray(rows)||rows.length<Math.floor(height*0.8)) return null;
-  const clean = [];
-  for(let y=0;y<height;y++){ let r = String(rows[y]||rows[rows.length-1]||''); if(r.length<width) r = r.padEnd(width, r.slice(-1)||'0'); clean.push(r.slice(0,width)); }
-  return { width, height, palette:palette.map(c=>c.trim()), rows:clean };
-}
-function drawPixelArt(canvas, art){
-  if(!canvas||!art) return;
-  canvas.width = art.width; canvas.height = art.height;
-  const ctx = canvas.getContext('2d');
-  for(let y=0;y<art.height;y++) for(let x=0;x<art.width;x++){
-    const idx = PIXEL_CHARSET.indexOf((art.rows[y][x]||'0').toUpperCase());
-    ctx.fillStyle = art.palette[idx>=0 && idx<art.palette.length ? idx : 0]; ctx.fillRect(x,y,1,1);
-  }
-}
-
 /* ---------------------- procedural scenes (160x90) ---------------------- */
 function paintScene(canvas, key, seed){
   const W=160, H=90; canvas.width=W; canvas.height=H;
@@ -1167,49 +1138,7 @@ function monsterName(seed, boss){
 }
 
 /* ======================================================================
-   AI BRIDGE — talks to /api/claude (your own server keeps the API key)
-   ====================================================================== */
-let aiStatus = 'unknown'; // 'online' | 'offline' | 'unknown'
-async function checkAI(){
-  aiStatus = 'unknown';
-  if(location.protocol==='file:'){ aiStatus = 'offline'; if(typeof onAIStatus === 'function') onAIStatus(); return aiStatus; }
-  try{
-    const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 5000);
-    const res = await fetch('/api/claude', { method:'GET', signal:ctl.signal });
-    clearTimeout(t);
-    const data = await res.json().catch(()=>null);
-    aiStatus = (res.ok && data && data.ok && data.configured) ? 'online' : 'offline';
-  }catch(e){ aiStatus = 'offline'; }
-  if(typeof onAIStatus === 'function') onAIStatus();
-  return aiStatus;
-}
-function useAI(){ const s = save.settings.source; return s==='ai' || (s==='auto' && aiStatus==='online'); }
-async function callClaude(turns, maxTokens){
-  let res;
-  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 90000);
-  try{
-    res = await fetch('/api/claude', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ turns, maxTokens }), signal:ctl.signal });
-  }catch(e){ clearTimeout(t); throw { code: e && e.name==='AbortError' ? 'timeout' : 'network_error' }; }
-  clearTimeout(t);
-  let data; try{ data = await res.json(); }catch(e){ throw { code: res.status===404 ? 'no_backend' : 'invalid_json' }; }
-  if(!res.ok) throw { code: data.code || (res.status===404?'no_backend':'server_error'), message:data.error };
-  return data;
-}
-function errorCopy(e){
-  switch(e && e.code){
-    case 'network_error': return 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่';
-    case 'no_backend': return 'ไม่พบเซิร์ฟเวอร์ /api/claude — เปิดผ่าน Vercel หรือ npm start แล้วลองใหม่ หรือเล่นโหมดออฟไลน์';
-    case 'not_configured': return 'เซิร์ฟเวอร์ยังไม่มี ANTHROPIC_API_KEY — ตั้งค่าใน Environment Variables แล้ว Redeploy';
-    case 'server_error': return 'เซิร์ฟเวอร์ตอบกลับผิดพลาด ลองใหม่อีกครั้ง';
-    case 'rate_limited': return 'เรียกใช้ถี่เกินไป รอสักครู่แล้วลองใหม่';
-    case 'invalid_json': return 'AI ส่งข้อมูลรูปแบบไม่ถูกต้อง ลองใหม่อีกครั้ง';
-    case 'timeout': return 'AI ใช้เวลานานเกินไป ลองใหม่อีกครั้ง';
-    default: return 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง';
-  }
-}
-
-/* ======================================================================
-   QUESTIONS — built-in generator (+ AI batches when available)
+   QUESTIONS — built-in generator
    ====================================================================== */
 function levelPool(){
   const lv = save.cefr;
@@ -1237,23 +1166,6 @@ function makeQuestion(recent){
   else { prompt = word.word; options = opts.map(o=>({ text:o.thai, sub:'', thai:true, after:o.word })); }
   return { type, label:QTYPES[type], prompt, promptThai, options, correct, word };
 }
-function aiQuestionsToLocal(list){
-  return (list||[]).map(q=>{
-    const keys = ['A','B','C','D']; if(!q || !q.options || !keys.every(k=>q.options[k]&&q.options[k].word) || !keys.includes(q.correct)) return null;
-    const c = q.options[q.correct];
-    return { type:'def', ai:true, label:'✨ AI · ความหมายนี้คือคำไหน?', prompt:String(q.prompt||''), promptThai:false,
-      options: keys.map(k=>({ text:q.options[k].word, sub:q.options[k].pron||'', thai:false, after:q.options[k].thai||'' })),
-      correct: keys.indexOf(q.correct), word:{ word:c.word, pron:c.pron||'', thai:c.thai||'', def:String(q.prompt||'') } };
-  }).filter(Boolean);
-}
-function aiBattlePrompt(){
-  return `You are designing ONE vocabulary battle for an English-learning RPG for a Thai learner at CEFR ${save.cefr} level.
-Invent an original (non-copyrighted) fantasy monster.
-Create exactly 8 multiple-choice vocabulary questions at CEFR ${save.cefr}, increasing slightly in difficulty. Each question gives an English definition or short context clue (never containing the answer word), plus 4 options (A-D): one correct English word and three plausible distractors of the same difficulty. For every option give the word, a simple pronunciation guide in slashes, and its Thai meaning.
-Draw the monster as retro pixel art: {"width":32,"height":18,"palette":[up to 12 hex colors, index 0 is the dark background],"rows":[18 strings of exactly 32 characters from "0123456789AB"]}. Bold readable silhouette centered, no text, never depict real people or copyrighted characters.
-Respond with ONLY this JSON:
-{"monsterName":"string","monsterArt":{...},"questions":[{"prompt":"string","options":{"A":{"word":"","pron":"/.../","thai":""},"B":{...},"C":{...},"D":{...}},"correct":"A"}]}`;
-}
 /* ======================================================================
    UI — screens, game loops and one delegated action handler
    ====================================================================== */
@@ -1262,7 +1174,7 @@ const ui = {
   screen: save.onboarded ? 'hub' : 'onboarding',
   onboard:{ name:'', cls:'warrior', cefr:'B1' },
   story:null, battle:null, ch:null, review:null,
-  lib:{ q:'', filter:'all' }, shopTab:'items', aiTheme:'fantasy',
+  lib:{ q:'', filter:'all' }, shopTab:'items',
   modals:[], exportCode:'',
 };
 const $ = s=>document.querySelector(s);
@@ -1323,10 +1235,6 @@ function render(){
 function afterRender(){
   document.querySelectorAll('canvas[data-scene]').forEach(c=>paintScene(c, c.dataset.scene, c.dataset.seed||0));
   document.querySelectorAll('canvas[data-mon]').forEach(c=>{ const [seed,boss] = c.dataset.mon.split('|'); drawMonster(c, genMonster(+seed, boss==='1')); });
-  document.querySelectorAll('canvas[data-art]').forEach(c=>{
-    const art = c.dataset.art==='story' ? ui.story && ui.story.scene && ui.story.scene.art : ui.battle && ui.battle.monster && ui.battle.monster.art;
-    if(art) drawPixelArt(c, art);
-  });
   if(ui.screen==='story') runTyping();
   if(ui.screen==='battle') battleFx();
   if(ui.screen==='library') renderLibList();
@@ -1403,18 +1311,10 @@ function renderStoryPick(){
       <div><h4>${esc(st.title)}</h4><p>${esc(st.blurb)}</p><div class="endc">ฉากจบที่พบ ${found}/${total}${resume?' · มีเซฟค้างไว้':''}</div></div></button>
       ${resume?`<button class="btn small px" style="margin:-4px 3px 14px;" data-act="storyResume" data-theme="${k}">▶ เล่นต่อจากเดิม</button>`:''}`;
   }).join('');
-  const aiOk = aiStatus==='online';
   return `<button class="back" data-act="tab" data-to="hub">← กลับ</button>
   <h2 style="margin:0 0 4px; font-weight:500;">เลือกการผจญภัย</h2>
   <p style="color:var(--ink-dim); font-size:13px; margin:0 0 16px;">แต่ละเรื่องมีหลายฉากจบ — เลือกผิดทางได้ ย้อนกลับได้</p>
-  ${cards}
-  <div class="section-h"><h3>✨ AI Story</h3><small><span class="ai-dot ${aiStatus}"></span>${aiOk?'พร้อมใช้งาน':aiStatus==='unknown'?'กำลังตรวจสอบ…':'ออฟไลน์'}</small></div>
-  <div class="px panel dark">
-    <p style="margin:0 0 12px; font-size:13.5px; color:var(--ink-dim);">Claude แต่งเรื่องใหม่ทุกครั้งตามระดับ ${save.cefr} วาดภาพพิกเซล และตรวจแกรมม่าเมื่อคุณพิมพ์ตอบเอง</p>
-    <div class="chips">${AI_THEMES.map(t=>`<button class="chip px ${ui.aiTheme===t.id?'on':''}" data-act="aiTheme" data-v="${t.id}">${t.th}<small>${t.en.split(' ')[0]}</small></button>`).join('')}</div>
-    <button class="btn rune px block" style="margin-top:14px;" data-act="aiStoryStart" ${aiOk||save.settings.source==='ai'?'':'disabled'}>เริ่มเรื่องใหม่ด้วย AI</button>
-    ${aiOk?'':`<p style="font-size:12.5px; color:var(--ink-faint); margin:10px 0 0;">ต้อง deploy พร้อมเซิร์ฟเวอร์ /api/claude และตั้งค่า ANTHROPIC_API_KEY ก่อน (ดู README) — เรื่องด้านบนเล่นได้เลยโดยไม่ต้องใช้เน็ต</p>`}
-  </div>`;
+  ${cards}`;
 }
 function offlineScene(){
   const st = ui.story, node = STORIES[st.theme].nodes[st.node];
@@ -1423,42 +1323,28 @@ function offlineScene(){
 }
 function renderStory(){
   const st = ui.story;
-  const sc = st.mode==='offline' ? offlineScene() : st.scene;
-  const head = `<button class="back" data-act="storyExit">← ${st.mode==='offline'?'เลือกเรื่องอื่น':'ออกจากเรื่อง'}</button>`;
-  if(!sc){
-    return head + `<div class="scene-wrap px"><canvas data-scene="${(AI_THEMES.find(t=>t.id===st.theme)||{}).scene||'village'}"></canvas><span class="scene-tag">✨ AI</span></div>
-      ${st.error ? errBox(st.error, 'aiStoryRetry') : `<div class="status"><div class="spinner"></div>Claude กำลังแต่งฉากแรก…</div>`}`;
-  }
-  const art = st.mode==='ai' && sc.art ? `<canvas data-art="story"></canvas>` : `<canvas data-scene="${sc.sceneKey}"></canvas>`;
-  const tag = st.mode==='offline' ? esc(STORIES[st.theme].title) : '✨ AI · '+esc((AI_THEMES.find(t=>t.id===st.theme)||{}).en||'');
+  const sc = offlineScene();
+  const head = `<button class="back" data-act="storyExit">← เลือกเรื่องอื่น</button>`;
+  const art = `<canvas data-scene="${sc.sceneKey}"></canvas>`;
+  const tag = esc(STORIES[st.theme].title);
   let body = '';
   if(sc.end){
     const win = sc.end==='win';
     body += `<div class="ending-banner ${win?'win':'lose'}"><div class="t">${win?'VICTORY':'THE END'}</div><p>${esc(sc.title|| (win?'จบแบบชนะ':'จบแบบพ่ายแพ้'))}</p></div>`;
-    if(st.mode==='offline'){
-      body += `<div class="actions">${st.history.length>1?`<button class="btn px" style="flex:1" data-act="storyRewind">↶ ย้อนไปทางเลือกก่อนหน้า</button>`:''}
+    body += `<div class="actions">${st.history.length>1?`<button class="btn px" style="flex:1" data-act="storyRewind">↶ ย้อนไปทางเลือกก่อนหน้า</button>`:''}
         <button class="btn primary px" style="flex:1" data-act="storyStart" data-theme="${st.theme}">เล่นเรื่องนี้ใหม่</button></div>
         <button class="btn ghost px block" style="margin-top:8px;" data-act="goStory">เลือกเรื่องอื่น</button>`;
-    } else {
-      body += `<button class="btn primary px block" style="margin-top:14px;" data-act="aiStoryStart">เริ่มเรื่องใหม่ด้วย AI</button>
-        <button class="btn ghost px block" style="margin-top:8px;" data-act="goStory">กลับไปเลือกเรื่อง</button>`;
-    }
   } else {
     const dis = st.loading ? 'disabled' : '';
     body += `<div class="opts">${sc.options.map((o,i)=>`<button class="opt px" data-act="storyChoose" data-i="${i}" ${dis}><span class="k">${o.k}</span><span>${esc(o.text)}</span></button>`).join('')}</div>
       <div class="free-row"><input class="text-in px" id="freeIn" data-input="free" placeholder="หรือพิมพ์สิ่งที่จะทำเป็นภาษาอังกฤษ…" value="${esc(st.free||'')}" ${dis} autocomplete="off" enterkeyhint="send">
       <button class="btn rune px" data-act="storyFree" ${dis}>ส่ง</button></div>`;
-    if(st.loading) body += `<div class="status"><div class="spinner"></div>Claude กำลังแต่งเรื่องต่อ…</div>`;
-    if(st.error) body += errBox(st.error, 'aiStoryRetry');
   }
   const lf = st.lastFree ? `<div style="font-size:13px; color:var(--ink-dim); margin:10px 4px 0;">คุณพิมพ์: “${esc(st.lastFree.text)}”${st.lastFree.matched?` → ${st.lastFree.guessed?'ตีความใกล้เคียงเป็น':'ตรงกับ'}ทางเลือก “${esc(st.lastFree.matched)}”`:''}</div>` : '';
   const corr = sc.correction ? `<div class="grammar px"><b>ตรวจแกรมม่า</b><br>${esc(sc.correction)}</div>` : '';
   const vocab = sc.vocab && sc.vocab.length ? `<div class="vocab-box px"><h4>คำศัพท์ในฉากนี้ · เก็บเข้าคลังแล้ว</h4>${sc.vocab.map(v=>`<div class="vocab-row"><b>${esc(v.word)}</b><span>${esc(v.thai)}</span><button class="speak" data-act="speak" data-w="${esc(v.word)}" aria-label="ฟังเสียง">🔊</button></div>`).join('')}</div>` : '';
   return head + `<div class="scene-wrap px">${art}<span class="scene-tag">${tag}</span></div>
     <div class="scene-text px"><span data-type="${esc(sc.key||'')}">${esc(sc.text)}</span></div>${lf}${corr}${body}${vocab}`;
-}
-function errBox(msg, retryAct){
-  return `<div class="err px">${esc(msg)}<div class="btns"><button class="btn small danger px" data-act="${retryAct}">ลองอีกครั้ง</button><button class="btn small px" data-act="goStory">เล่นเรื่องออฟไลน์แทน</button></div></div>`;
 }
 let typeHandle = null, typedKey = null;
 function runTyping(){
@@ -1516,7 +1402,6 @@ function grammarCheck(text){
 }
 function chooseStory(i, freeText){
   const st = ui.story;
-  if(st.mode==='ai'){ const o = st.scene.options[i]; aiStoryAct(`I choose option ${o.k}: "${o.text}"`); return; }
   const node = STORIES[st.theme].nodes[st.node];
   const next = node.opts[i][1];
   st.history.push(next); st.correction = null; if(!freeText) st.lastFree = null;
@@ -1525,7 +1410,6 @@ function chooseStory(i, freeText){
 function submitFree(){
   const st = ui.story; const text = (st.free||'').trim(); if(!text) return;
   st.free = '';
-  if(st.mode==='ai'){ st.lastFree = { text }; aiStoryAct(`My action (free-typed, please check grammar): "${text}"`); return; }
   const node = STORIES[st.theme].nodes[st.node];
   const m = matchOption(text, node.opts.map(o=>o[0]));
   st.lastFree = { text, matched:node.opts[m.idx][0], guessed:m.score<2 };
@@ -1533,66 +1417,6 @@ function submitFree(){
   chooseStory(m.idx, true);
   st.correction = corr; render();
 }
-/* ---- AI story ---- */
-function aiStoryRules(){
-  const th = AI_THEMES.find(t=>t.id===ui.story.theme) || AI_THEMES[0];
-  return `You are a Game Master running an English-learning text RPG for a Thai learner.
-SETTING: ${th.en}. LANGUAGE LEVEL: CEFR ${save.cefr} — keep vocabulary and grammar at this level.
-EVERY TURN:
-1. Write the next scene in English only, 60–110 words, vivid and a little tense, continuing from the player's last action.
-2. Give exactly three choices A, B, C as short English sentences.
-3. Give 3–5 useful words or short phrases from your scene, each with a natural Thai translation.
-4. If the player's last message was FREE-TYPED, check its grammar and write a short, kind correction in Thai in "grammarCorrection" (show the corrected sentence). If it was correct, praise it briefly in Thai. If they chose A/B/C, use null.
-5. After about 6–9 scenes, end the story with a win or a loss that follows from the player's choices.
-6. "sceneType" must be one of: village, forest, mountain, ruins, cave, train, cabin, dining, beach, beachNight, jungle, lighthouse, camp.
-7. Draw the scene as retro pixel art: {"width":48,"height":27,"palette":[up to 16 hex colors],"rows":[27 strings of exactly 48 chars from "0123456789ABCDEF"]}. Bold shapes, mood-appropriate palette, no text, never real people or copyrighted characters.
-Respond with ONLY this JSON:
-{"story":"","sceneType":"","pixelArt":{...},"options":{"A":"","B":"","C":""},"vocab":[{"word":"","thai":""}],"grammarCorrection":null,"gameOver":false,"gameOverReason":null,"endingTitle":null}
-When the game ends set "gameOver": true, "gameOverReason": "win" or "lose", a short "endingTitle", and "options": {}.`;
-}
-const SCENE_KEYS = ['village','forest','mountain','ruins','cave','train','cabin','dining','beach','beachNight','jungle','lighthouse','camp'];
-function normalizeAIScene(d, idx){
-  const th = AI_THEMES.find(t=>t.id===ui.story.theme) || AI_THEMES[0];
-  const opts = d.options||{};
-  return {
-    key:'ai:'+idx, text:String(d.story||''), art:validatePixelArt(d.pixelArt), sceneKey: SCENE_KEYS.includes(d.sceneType) ? d.sceneType : th.scene,
-    options:['A','B','C'].filter(k=>opts[k]).map(k=>({ k, text:String(opts[k]) })),
-    vocab:(Array.isArray(d.vocab)?d.vocab:[]).slice(0,5).filter(v=>v&&v.word).map(v=>({ word:String(v.word), thai:String(v.thai||'') })),
-    correction: d.grammarCorrection || null,
-    end: d.gameOver ? (d.gameOverReason==='win'?'win':'lose') : null, title: d.endingTitle || '',
-  };
-}
-function startAIStory(){
-  ui.story = { mode:'ai', theme:ui.aiTheme, turns:[], scene:null, loading:true, error:null, free:'', lastFree:null, count:0, pending:null };
-  typedKey = null;
-  ui.story.turns = [{ role:'user', content: aiStoryRules() + '\n\nBegin the adventure now with an exciting opening scene.' }];
-  goto('story');
-  aiStoryRequest();
-}
-function aiStoryAct(msg){
-  const st = ui.story; st.pending = msg; st.turns.push({ role:'user', content:msg }); st.loading = true; st.error = null; render(); aiStoryRequest();
-}
-async function aiStoryRequest(){
-  const st = ui.story;
-  const turns = st.turns.length>11 ? [st.turns[0]].concat(st.turns.slice(-10)) : st.turns;
-  try{
-    const d = await callClaude(turns, 3000);
-    if(ui.story!==st) return;
-    const slim = Object.assign({}, d); delete slim.pixelArt;
-    st.turns.push({ role:'assistant', content:JSON.stringify(slim) });
-    st.count++; st.scene = normalizeAIScene(d, st.count); st.loading = false; st.pending = null;
-    bump('scenesPlayed'); addXp(6); addGold(1);
-    st.scene.vocab.forEach(v=>learnWord(v));
-    if(st.scene.end){ if(st.scene.end==='win'){ bump('storiesWon'); addXp(40); addGold(25); sfx.victory(); } else { addXp(5); sfx.defeat(); } }
-    checkAchievements();
-    if(ui.screen==='story'){ render(); window.scrollTo({top:0}); flushEvents(); }
-  }catch(e){
-    if(ui.story!==st) return;
-    if(st.pending) st.turns.pop();
-    st.loading = false; st.error = errorCopy(e); if(ui.screen==='story') render();
-  }
-}
-
 /* ------------------------------ battle ------------------------------ */
 function towerMenu(){
   const cp = checkpointFloor(), ps = playerStats(), c = CLASSES[save.cls];
@@ -1606,33 +1430,19 @@ function towerMenu(){
 }
 function startRun(floor){
   const ps = playerStats();
-  ui.battle = { id:Date.now(), floor, run:{ hp:ps.maxHp, mp:ps.maxMp, xp:0, gold:0, kills:0, start:floor, correct:0 }, recent:new Set(), aiQueue:[], aiMonsterNext:null, combo:0, shield:false, power:false, fx:null };
+  ui.battle = { id:Date.now(), floor, run:{ hp:ps.maxHp, mp:ps.maxMp, xp:0, gold:0, kills:0, start:floor, correct:0 }, recent:new Set(), combo:0, shield:false, power:false, fx:null };
   spawnMonster(); nextQ(); ui.modals = []; goto('battle'); startBattleTimer();
-  if(useAI()) fetchAIBatch();
-}
-function fetchAIBatch(){
-  const b = ui.battle, id = b.id;
-  callClaude([{ role:'user', content:aiBattlePrompt() }], 3500).then(d=>{
-    if(!ui.battle || ui.battle.id!==id) return;
-    const qs = aiQuestionsToLocal(d.questions); b.aiQueue.push(...qs);
-    if(d.monsterName) b.aiMonsterNext = { name:String(d.monsterName).slice(0,28), art:validatePixelArt(d.monsterArt) };
-    if(qs.length) toast(`✨ AI เตรียมคำถามใหม่ ${qs.length} ข้อ และมอนสเตอร์ตัวต่อไปแล้ว`);
-  }).catch(()=>{});
 }
 function spawnMonster(){
   const b = ui.battle, f = b.floor, boss = f%5===0;
   const hp = Math.round((40 + f*14) * (boss?2.3:1)), atk = Math.round((6 + f*2.2) * (boss?1.35:1));
-  if(b.aiMonsterNext && b.aiMonsterNext.art && !boss){
-    b.monster = { name:b.aiMonsterNext.name, art:b.aiMonsterNext.art, ai:true, boss, hp, maxHp:hp, atk }; b.aiMonsterNext = null;
-  } else {
-    const seed = f===checkpointFloor() && f===b.run.start ? hashStr('preview'+f) : hashStr('m'+f+':'+b.id);
-    b.monster = { name:monsterName(seed,boss), seed, boss, hp, maxHp:hp, atk };
-  }
+  const seed = f===checkpointFloor() && f===b.run.start ? hashStr('preview'+f) : hashStr('m'+f+':'+b.id);
+  b.monster = { name:monsterName(seed,boss), seed, boss, hp, maxHp:hp, atk };
   b.phase = 'question';
 }
 function nextQ(){
   const b = ui.battle;
-  b.q = b.aiQueue.length ? b.aiQueue.shift() : makeQuestion(b.recent);
+  b.q = makeQuestion(b.recent);
   b.answered = null; b.removed = []; b.truth = false; b.phase = 'question';
   b.qStart = Date.now(); b.qTotal = 20000;
 }
@@ -1744,8 +1554,7 @@ function loseRun(){
 function renderBattle(){
   const b = ui.battle, m = b.monster, q = b.q, ps = playerStats(), c = CLASSES[save.cls];
   const phase = (performance.now()/1000)%2.2;
-  const monArt = m.ai && m.art ? `<div class="monster wide" style="animation-delay:-${phase}s"><canvas data-art="battle"></canvas></div>`
-    : `<div class="monster" style="animation-delay:-${phase}s"><canvas data-mon="${m.seed}|${m.boss?1:0}"></canvas></div>`;
+  const monArt = `<div class="monster" style="animation-delay:-${phase}s"><canvas data-mon="${m.seed}|${m.boss?1:0}"></canvas></div>`;
   const hpPct = b.run.hp/ps.maxHp*100;
   const ans = q.options.map((o,i)=>{
     let cls = 'ans px';
@@ -1772,7 +1581,7 @@ function renderBattle(){
   return `<button class="back" data-act="bQuit">← ถอยออกจากหอคอย</button>
   <div class="arena px ${m.boss?'boss':''}">
     <div class="mon-head"><span class="mon-name">${m.boss?'👑 ':''}${esc(m.name)}</span><div class="mon-bar"><u style="width:${m.hp/m.maxHp*100}%"></u><i style="width:${m.hp/m.maxHp*100}%"></i></div><span class="mon-hpnum">${m.hp}/${m.maxHp}</span></div>
-    <div class="floor-tag">ชั้น ${b.floor}${m.ai?' · ✨ AI':''}</div><div class="intent">⚔ ${m.atk}</div>
+    <div class="floor-tag">ชั้น ${b.floor}</div><div class="intent">⚔ ${m.atk}</div>
     ${monArt}<div class="arena-floor"></div>
     ${b.combo>1?`<div class="combo"><div class="n">×${b.combo}</div><div class="l">COMBO</div></div>`:''}
   </div>
@@ -1946,9 +1755,6 @@ function renderSettings(){
   <div class="set-row px"><div class="sl"><span>ชื่อฮีโร่</span></div><input class="text-in px" data-input="rename" maxlength="16" value="${esc(save.name)}"></div>
   <div class="set-row px"><div class="sl"><span>อาชีพ</span></div><div class="chips">${Object.entries(CLASSES).map(([k,c])=>`<button class="chip px ${save.cls===k?'on':''}" data-act="setCls" data-v="${k}">${c.emoji} ${c.name}</button>`).join('')}</div><div class="sh">เปลี่ยนได้ตลอด เลเวลและอัปเกรดยังอยู่ครบ</div></div>
   <div class="set-row px"><div class="sl"><span>ระดับภาษาอังกฤษ (CEFR)</span></div><div class="chips">${CEFR_LEVELS.map(l=>`<button class="chip px ${save.cefr===l.id?'on':''}" data-act="setCefr" data-v="${l.id}">${l.id}<small>${l.th}</small></button>`).join('')}</div></div>
-  <div class="set-row px"><div class="sl"><span>แหล่งเนื้อหา</span><span style="font-size:12.5px;color:var(--ink-dim);"><span class="ai-dot ${aiStatus}"></span>AI ${aiStatus==='online'?'พร้อม':aiStatus==='unknown'?'กำลังตรวจ…':'ไม่พร้อม'}</span></div>
-    <div class="chips">${[['auto','อัตโนมัติ'],['offline','ออฟไลน์'],['ai','AI เท่านั้น']].map(([k,l])=>`<button class="chip px ${st.source===k?'on':''}" data-act="setSource" data-v="${k}">${l}</button>`).join('')}</div>
-    <div class="sh">อัตโนมัติ = ใช้ Claude เมื่อเซิร์ฟเวอร์พร้อม ถ้าไม่พร้อมจะใช้คลังคำและเนื้อเรื่องในเครื่อง · <button class="back" style="margin:0;font-size:12.5px;text-decoration:underline;" data-act="recheck">ตรวจอีกครั้ง</button></div></div>
   <div class="set-row px"><div class="sl"><span>เสียงเอฟเฟกต์</span><span class="pixel" id="sfxVal">${st.sfx}%</span></div><input type="range" min="0" max="100" value="${st.sfx}" data-input="sfx" aria-label="ระดับเสียง"></div>
   ${tg('music','เพลงประกอบ','ดนตรีชิปทูนเบา ๆ ระหว่างเล่น')}
   ${tg('tts','เสียงอ่านคำศัพท์','ใช้เสียงอ่านภาษาอังกฤษของเครื่อง (ปุ่ม 🔊)')}
@@ -1958,9 +1764,8 @@ function renderSettings(){
     ${ui.exportCode?`<textarea class="text-in px" style="margin-top:12px;" readonly>${esc(ui.exportCode)}</textarea>`:''}
     <div class="sh">ใช้ย้ายความคืบหน้าไปเครื่องอื่น</div></div>
   <button class="btn danger px block" data-act="resetAsk">ล้างความคืบหน้าทั้งหมด</button>
-  <p style="text-align:center;font-size:12px;color:var(--ink-faint);margin-top:18px;">Quest Lines v2 · ขับเคลื่อนด้วย Claude</p>`;
+  <p style="text-align:center;font-size:12px;color:var(--ink-faint);margin-top:18px;">Quest Lines v2 · เล่นได้ฟรี ไม่ต้องใช้เน็ต</p>`;
 }
-function onAIStatus(){ if(['settings','story-pick'].includes(ui.screen)) render(); }
 
 /* ======================================================================
    ACTIONS
@@ -1994,9 +1799,6 @@ function act(a, d){
     case 'storyFree': if(!ui.story.loading){ submitFree(); flushEvents(); } break;
     case 'storyRewind': { const st = ui.story; if(st.history.length>1){ st.history.pop(); st.node = st.history[st.history.length-1]; st.correction=null; st.lastFree=null; save.storySave = { theme:st.theme, node:st.node, history:st.history.slice() }; persist(); typedKey = st.theme+':'+st.node; render(); } break; }
     case 'storyExit': goto('story-pick'); break;
-    case 'aiTheme': ui.aiTheme = d.v; render(); break;
-    case 'aiStoryStart': startAIStory(); break;
-    case 'aiStoryRetry': { const st = ui.story; st.error = null; if(st.pending){ st.turns.push({ role:'user', content:st.pending }); } st.loading = true; render(); aiStoryRequest(); break; }
     /* battle */
     case 'runStart': startRun(+d.floor); break;
     case 'ans': answerBattle(+d.i); break;
@@ -2024,8 +1826,6 @@ function act(a, d){
     /* settings */
     case 'setCls': save.cls = d.v; if(Object.values(CLASSES).some(c=>c.emoji===save.avatar)) save.avatar = CLASSES[d.v].emoji; persist(); render(); break;
     case 'setCefr': save.cefr = d.v; persist(); render(); break;
-    case 'setSource': save.settings.source = d.v; persist(); render(); break;
-    case 'recheck': checkAI(); render(); break;
     case 'toggle': save.settings[d.k] = !save.settings[d.k]; persist(); if(d.k==='music') setMusic(save.settings.music); if(d.k==='tts' && save.settings.tts) speak('Hello, hero!'); render(); break;
     case 'exportSave': try{ ui.exportCode = btoa(unescape(encodeURIComponent(JSON.stringify(save)))); navigator.clipboard && navigator.clipboard.writeText(ui.exportCode).then(()=>toast('คัดลอกรหัสเซฟแล้ว')).catch(()=>{}); }catch(e){} render(); break;
     case 'importOpen': openModal(`<h2 class="lvl" style="font-size:22px;">นำเข้าเซฟ</h2><p>วางรหัสเซฟ ความคืบหน้าปัจจุบันจะถูกแทนที่</p>
@@ -2062,7 +1862,7 @@ document.addEventListener('keydown', e=>{
   } else if(ui.screen==='challenge' && ui.ch){ if(n>=1 && n<=4) answerBlitz(n-1); }
   else if(ui.screen==='story' && ui.story && !ui.story.loading){
     const idx = 'abc'.indexOf(e.key.toLowerCase()); const ok = n>=1&&n<=3 ? n-1 : idx;
-    const sc = ui.story.mode==='offline' ? offlineScene() : ui.story.scene;
+    const sc = offlineScene();
     if(ok>=0 && sc && !sc.end && sc.options[ok]){ chooseStory(ok); flushEvents(); }
   } else if(ui.screen==='review' && ui.review){
     if(e.key===' '){ e.preventDefault(); act('flip', {}); }
@@ -2087,7 +1887,6 @@ function paintSky(){
 paintSky(); addEventListener('resize', paintSky);
 if(save.onboarded) ensureDaily();
 render();
-checkAI();
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
 }
