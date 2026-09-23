@@ -1,0 +1,2095 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#140f2b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Quest Lines — English RPG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Mitr:wght@300;400;500;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#140f2b; --deep:#1c1540; --panel:#251c52; --panel-2:#30246a; --edge:#4b3a93; --edge-hi:#6a55c4;
+  --ink:#f1ebff; --ink-dim:#a99fd0; --ink-faint:#6f66a0;
+  --ember:#ff7a3d; --ember-hi:#ffb347; --rune:#4ff0e0; --gold:#ffd166;
+  --blood:#ff4d6d; --leaf:#6ee7a0; --shadow:#0a0718;
+  --px:3px;
+  --f-pixel:'Pixelify Sans', 'Mitr', monospace;
+  --f-ui:'Mitr', 'Noto Sans Thai', 'Leelawadee UI', system-ui, sans-serif;
+  --f-story:'Spectral', Georgia, serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);}
+body{
+  margin:0; min-height:100%; color:var(--ink); font-family:var(--f-ui); font-weight:300; font-size:15px; line-height:1.55;
+  background:var(--void);
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  overflow-x:hidden;
+}
+#sky{position:fixed; inset:0; width:100%; height:100%; z-index:0; image-rendering:pixelated; pointer-events:none;}
+button{font-family:inherit; color:inherit;}
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--rune); outline-offset:3px;}
+.app{position:relative; z-index:1; max-width:520px; margin:0 auto; padding:10px 14px 110px;}
+.pixel{font-family:var(--f-pixel); letter-spacing:.02em;}
+.hidden{display:none !important;}
+
+/* ---------- pixel box: notched corners made from four offset shadows ---------- */
+.px{
+  background:var(--panel);
+  box-shadow: 0 calc(var(--px) * -1) 0 var(--edge), 0 var(--px) 0 var(--edge),
+              calc(var(--px) * -1) 0 0 var(--edge), var(--px) 0 0 var(--edge),
+              inset 0 var(--px) 0 rgba(255,255,255,.06), inset 0 calc(var(--px) * -1) 0 rgba(0,0,0,.25);
+  margin:var(--px);
+}
+.px.dark{background:var(--deep);}
+.px.hot{--edge:var(--ember);}
+.px.cool{--edge:var(--rune);}
+.px.gold{--edge:var(--gold);}
+.panel{padding:16px;}
+
+/* ---------- HUD ---------- */
+.hud{
+  position:sticky; top:0; z-index:20; margin:0 -14px 14px; padding:10px 14px 10px;
+  padding-top:calc(10px + env(safe-area-inset-top,0px)); margin-top:calc(-10px - env(safe-area-inset-top,0px));
+  background:linear-gradient(180deg, rgba(20,15,43,.97) 70%, rgba(20,15,43,0));
+  display:flex; align-items:center; gap:12px;
+}
+.hud-avatar{width:46px; height:46px; flex:none; display:grid; place-items:center; font-size:24px; background:var(--panel-2); position:relative;}
+.hud-lv{position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); font-family:var(--f-pixel); font-size:11px; background:var(--ember); color:#2a0f00; padding:0 5px; line-height:15px; white-space:nowrap;}
+.hud-main{flex:1; min-width:0;}
+.hud-name{font-weight:500; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.hud-xp{height:7px; background:var(--shadow); margin-top:5px; position:relative;}
+.hud-xp > i{position:absolute; inset:0 auto 0 0; background:linear-gradient(90deg,var(--ember),var(--ember-hi)); transition:width .5s;}
+.hud-xptext{font-family:var(--f-pixel); font-size:10.5px; color:var(--ink-dim); margin-top:2px;}
+.hud-stats{display:flex; gap:10px; font-family:var(--f-pixel); font-size:15px; flex:none;}
+.hud-stats span{display:flex; align-items:center; gap:4px;}
+
+/* ---------- title ---------- */
+.title-block{text-align:center; margin:6px 0 18px;}
+.game-title{
+  font-family:var(--f-pixel); font-weight:700; font-size:44px; line-height:1; margin:0; letter-spacing:.04em;
+  color:var(--ember-hi);
+  text-shadow: 3px 3px 0 #a3321a, 6px 6px 0 var(--shadow), 0 0 28px rgba(255,122,61,.45);
+}
+.game-sub{color:var(--ink-dim); font-size:13px; margin-top:8px;}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; border:0;
+  font-family:var(--f-ui); font-weight:500; font-size:15px; padding:12px 18px; color:var(--ink);
+  background:var(--panel-2); transition:transform .06s, filter .15s; user-select:none;
+}
+.btn.px{margin:var(--px);}
+.btn:hover:not(:disabled){filter:brightness(1.15);}
+.btn:active:not(:disabled){transform:translateY(2px);}
+.btn:disabled{opacity:.45; cursor:default;}
+.btn.primary{background:linear-gradient(180deg,var(--ember-hi),var(--ember)); color:#2a0f00; --edge:#ffd2a6; font-weight:600;}
+.btn.rune{background:linear-gradient(180deg,#8ff7ee,var(--rune)); color:#062a28; --edge:#c8fff9; font-weight:600;}
+.btn.ghost{background:transparent;}
+.btn.danger{--edge:var(--blood); color:#ffd0d8; background:rgba(255,77,109,.12);}
+.btn.block{display:flex; width:calc(100% - 6px);}
+.btn.small{font-size:13px; padding:7px 12px;}
+.back{background:none; border:0; color:var(--ink-dim); cursor:pointer; font-size:14px; padding:4px 0; margin-bottom:8px;}
+.back:hover{color:var(--ink);}
+
+/* ---------- hub ---------- */
+.tower-tile{display:block; width:calc(100% - 6px); text-align:left; cursor:pointer; border:0; padding:0; overflow:hidden; position:relative; background:var(--deep); --edge:var(--ember);}
+.tower-scene{height:170px; position:relative; background:
+  radial-gradient(ellipse 60% 70% at 50% 110%, rgba(255,122,61,.35), transparent 70%),
+  linear-gradient(180deg,#221647,#130d2a);}
+.tower-scene canvas{position:absolute; left:50%; bottom:18px; transform:translateX(-50%); width:120px; height:120px; image-rendering:pixelated;}
+.tower-floor{position:absolute; left:0; right:0; bottom:0; height:22px; background:repeating-linear-gradient(90deg,#2b1e5c 0 16px,#241950 16px 32px); border-top:3px solid #3d2d7e;}
+.tower-info{padding:12px 16px 14px; display:flex; align-items:center; gap:12px;}
+.tower-info h3{margin:0; font-family:var(--f-pixel); font-size:22px; color:var(--ember-hi); font-weight:700;}
+.tower-info p{margin:2px 0 0; font-size:13px; color:var(--ink-dim);}
+.tower-info .go{margin-left:auto; font-family:var(--f-pixel); font-size:15px; background:var(--ember); color:#2a0f00; padding:6px 12px; white-space:nowrap;}
+.tower-badge{position:absolute; top:10px; left:12px; font-family:var(--f-pixel); font-size:13px; background:rgba(10,7,24,.7); padding:3px 8px; color:var(--gold);}
+
+.mode-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 14px; margin-top:16px;}
+.mode-tile{cursor:pointer; border:0; text-align:left; padding:14px; min-height:112px; display:flex; flex-direction:column; justify-content:space-between; background:var(--panel);}
+.mode-tile.wide{grid-column:1 / -1; flex-direction:row; align-items:center; gap:14px; min-height:0;}
+.mode-tile .ico{font-size:30px; line-height:1;}
+.mode-tile h4{margin:8px 0 2px; font-weight:500; font-size:16px;}
+.mode-tile.wide h4{margin-top:0;}
+.mode-tile p{margin:0; font-size:12.5px; color:var(--ink-dim); line-height:1.4;}
+.mode-tile .pill{font-family:var(--f-pixel); font-size:12px; color:var(--rune);}
+
+.section-h{display:flex; align-items:baseline; justify-content:space-between; margin:24px 4px 10px;}
+.section-h h3{margin:0; font-size:16px; font-weight:500;}
+.section-h small{color:var(--ink-dim); font-size:12px;}
+
+.quest{display:flex; align-items:center; gap:12px; padding:11px 14px; margin-bottom:10px; background:var(--deep);}
+.quest .q-txt{flex:1; min-width:0;}
+.quest .q-name{font-size:14px;}
+.quest .q-bar{height:6px; background:var(--shadow); margin-top:6px; position:relative;}
+.quest .q-bar i{position:absolute; inset:0 auto 0 0; background:var(--rune);}
+.quest .q-num{font-family:var(--f-pixel); font-size:12px; color:var(--ink-dim); margin-top:3px;}
+.quest .btn{flex:none;}
+.quest.done{opacity:.55;}
+
+/* ---------- tab bar ---------- */
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:30;
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(0deg, rgba(20,15,43,1) 60%, rgba(20,15,43,.0));
+}
+.tabbar-in{max-width:520px; margin:0 auto; display:flex; gap:6px; background:var(--deep);}
+.tab{flex:1; border:0; background:none; cursor:pointer; padding:8px 2px 6px; display:flex; flex-direction:column; align-items:center; gap:1px; color:var(--ink-dim); font-size:11.5px;}
+.tab b{font-size:20px; line-height:1.1; font-weight:400; filter:grayscale(.7); opacity:.8;}
+.tab.on{color:var(--ink);}
+.tab.on b{filter:none; opacity:1;}
+.tab.on::after{content:""; width:18px; height:3px; background:var(--ember); margin-top:2px;}
+
+/* ---------- forms / chips ---------- */
+.field-label{display:block; font-size:13px; color:var(--ink-dim); margin:16px 0 8px;}
+.text-in{width:calc(100% - 6px); font-family:var(--f-ui); font-size:15px; color:var(--ink); background:var(--shadow); border:0; padding:12px 14px; --edge:var(--edge);}
+.text-in::placeholder{color:var(--ink-faint);}
+.chips{display:flex; gap:10px; flex-wrap:wrap;}
+.chip{flex:1 1 0; min-width:84px; cursor:pointer; border:0; padding:10px 8px; background:var(--deep); text-align:center; font-size:14px;}
+.chip small{display:block; font-size:11.5px; color:var(--ink-dim);}
+.chip.on{--edge:var(--ember); background:#3a2250;}
+.class-card{flex:1 1 0; min-width:0; cursor:pointer; border:0; padding:12px 8px 10px; background:var(--deep); text-align:center;}
+.class-card .e{font-size:32px;}
+.class-card .n{font-weight:500; font-size:14px; margin-top:4px;}
+.class-card .s{font-family:var(--f-pixel); font-size:11.5px; color:var(--ink-dim); line-height:1.5; margin-top:4px;}
+.class-card.on{--edge:var(--ember); background:#3a2250;}
+.class-desc{font-size:13px; color:var(--ink-dim); margin-top:10px; min-height:40px;}
+
+/* ---------- story ---------- */
+.scene-wrap{position:relative; aspect-ratio:16/9; background:#000; overflow:hidden;}
+.scene-wrap canvas{width:100%; height:100%; display:block; image-rendering:pixelated;}
+.scene-tag{position:absolute; top:8px; left:8px; font-family:var(--f-pixel); font-size:12px; background:rgba(10,7,24,.75); padding:2px 8px; color:var(--gold);}
+.scene-text{font-family:var(--f-story); font-size:18px; line-height:1.7; padding:16px 18px; margin-top:14px; background:var(--deep);}
+.scene-text .typing::after{content:"▌"; color:var(--ember); animation:blink 1s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+.opts{margin-top:14px; display:flex; flex-direction:column; gap:8px;}
+.opt{display:flex; gap:12px; align-items:flex-start; text-align:left; cursor:pointer; border:0; background:var(--panel); padding:12px 14px; font-family:var(--f-story); font-size:16px; line-height:1.45; width:calc(100% - 6px);}
+.opt .k{font-family:var(--f-pixel); font-size:14px; background:var(--edge); color:var(--ink); width:24px; height:24px; flex:none; display:grid; place-items:center;}
+.opt:hover:not(:disabled){--edge:var(--ember);}
+.opt:hover:not(:disabled) .k{background:var(--ember); color:#2a0f00;}
+.opt:disabled{opacity:.45; cursor:default;}
+.free-row{display:flex; gap:8px; margin-top:6px;}
+.free-row .text-in{flex:1; width:auto;}
+.vocab-box{margin-top:16px; padding:14px 16px; background:var(--deep); --edge:#3a2f70;}
+.vocab-box h4{margin:0 0 8px; font-size:13px; color:var(--ink-dim); font-weight:400;}
+.vocab-row{display:flex; align-items:center; gap:10px; padding:5px 0; border-top:1px dashed #33296a;}
+.vocab-row:first-of-type{border-top:0;}
+.vocab-row b{font-family:var(--f-story); font-weight:600; font-size:16px; min-width:110px;}
+.vocab-row span{flex:1; font-size:14px;}
+.speak{border:0; background:none; cursor:pointer; font-size:16px; padding:2px 6px; opacity:.8;}
+.speak:hover{opacity:1;}
+.grammar{margin-top:14px; padding:12px 14px; background:rgba(79,240,224,.08); --edge:var(--rune); font-size:14px;}
+.grammar b{color:var(--rune); font-weight:500;}
+.ending-banner{text-align:center; margin:16px 0 4px;}
+.ending-banner .t{font-family:var(--f-pixel); font-size:28px; font-weight:700;}
+.ending-banner.win .t{color:var(--gold); text-shadow:3px 3px 0 #8a5a00;}
+.ending-banner.lose .t{color:var(--blood); text-shadow:3px 3px 0 #5a0018;}
+.ending-banner p{color:var(--ink-dim); font-size:13px; margin:4px 0 0;}
+.status{display:flex; align-items:center; gap:10px; color:var(--ink-dim); font-size:14px; margin:14px 4px;}
+.spinner{width:14px; height:14px; background:var(--ember); animation:spin .9s steps(4) infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.err{padding:12px 14px; margin:14px 3px; --edge:var(--blood); background:rgba(255,77,109,.1); font-size:14px;}
+.err .btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+.story-card{display:flex; gap:14px; align-items:center; padding:12px; cursor:pointer; border:0; width:calc(100% - 6px); text-align:left; background:var(--panel); margin-bottom:12px;}
+.story-card canvas{width:120px; height:68px; image-rendering:pixelated; flex:none; background:#000;}
+.story-card h4{margin:0; font-size:16px; font-weight:500;}
+.story-card p{margin:3px 0 0; font-size:12.5px; color:var(--ink-dim);}
+.story-card .endc{font-family:var(--f-pixel); font-size:12px; color:var(--gold); margin-top:4px;}
+.story-card.on{--edge:var(--ember);}
+
+/* ---------- battle ---------- */
+.arena{position:relative; height:250px; overflow:hidden; background:
+  radial-gradient(ellipse 55% 45% at 50% 88%, rgba(255,77,109,.28), transparent 70%),
+  linear-gradient(180deg,#1b1240 0%,#2a1650 60%,#1a1034 100%); --edge:var(--blood);}
+.arena.boss{background:
+  radial-gradient(ellipse 60% 50% at 50% 85%, rgba(255,179,71,.35), transparent 70%),
+  linear-gradient(180deg,#2a0f22 0%,#3d1230 60%,#1d0a1a 100%); --edge:var(--gold);}
+.arena-floor{position:absolute; left:0; right:0; bottom:0; height:46px; background:
+  repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 24px), linear-gradient(180deg,#2f1f5e,#1a1136); border-top:3px solid #43308a;}
+.arena.boss .arena-floor{background:repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 24px), linear-gradient(180deg,#4a1a36,#240b1c); border-top-color:#6e2448;}
+.monster{position:absolute; left:50%; bottom:30px; transform:translateX(-50%); width:176px; height:176px; animation:bob 2.2s ease-in-out infinite;}
+.arena.boss .monster{width:208px; height:208px; bottom:24px;}
+.monster canvas{width:100%; height:100%; image-rendering:pixelated; display:block;}
+.monster.wide{width:92%; height:auto; aspect-ratio:16/9; bottom:40px;}
+.monster.hit canvas{animation:hitflash .35s steps(2) 1;}
+.monster.dead{animation:die .8s forwards;}
+@keyframes bob{0%,100%{transform:translate(-50%,0);}50%{transform:translate(-50%,-8px);}}
+@keyframes hitflash{0%{filter:brightness(3) saturate(0);}100%{filter:none;}}
+@keyframes die{to{transform:translate(-50%,30px) scale(.6); opacity:0; filter:brightness(3);}}
+.mon-head{position:absolute; top:10px; left:12px; right:12px; display:flex; align-items:center; gap:10px;}
+.mon-name{font-family:var(--f-pixel); font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55%;}
+.mon-bar{flex:1; height:12px; background:var(--shadow); position:relative;}
+.mon-bar i{position:absolute; inset:0 auto 0 0; background:linear-gradient(180deg,#ff8aa0,var(--blood)); transition:width .35s;}
+.mon-bar u{position:absolute; inset:0 auto 0 0; background:#fff3; transition:width .9s .25s; text-decoration:none;}
+.mon-hpnum{font-family:var(--f-pixel); font-size:12px; color:var(--ink-dim); min-width:58px; text-align:right;}
+.floor-tag{position:absolute; top:34px; left:12px; font-family:var(--f-pixel); font-size:12px; color:var(--gold);}
+.intent{position:absolute; top:34px; right:12px; font-size:12px; color:#ffb3c1;}
+.dmg{position:absolute; left:50%; top:45%; font-family:var(--f-pixel); font-weight:700; font-size:30px; color:#fff; pointer-events:none; text-shadow:3px 3px 0 var(--shadow); animation:float 1s ease-out forwards; z-index:5; white-space:nowrap;}
+.dmg.crit{font-size:40px; color:var(--gold);}
+.dmg.heal{color:var(--leaf);}
+.dmg.hurt{color:var(--blood);}
+.dmg.mp{color:var(--rune);}
+.dmg.tag{font-size:17px; color:var(--rune);}
+@keyframes float{0%{transform:translate(-50%,0) scale(.6); opacity:0;}15%{transform:translate(-50%,-10px) scale(1.15); opacity:1;}100%{transform:translate(-50%,-70px) scale(1); opacity:0;}}
+.combo{position:absolute; right:12px; bottom:56px; text-align:right; font-family:var(--f-pixel); line-height:1;}
+.combo .n{font-size:34px; font-weight:700; color:var(--ember-hi); text-shadow:3px 3px 0 #a3321a;}
+.combo .l{font-size:12px; color:var(--ember-hi);}
+.combo.pop{animation:pop .25s;}
+@keyframes pop{50%{transform:scale(1.3);}}
+.shake{animation:shake .35s;}
+@keyframes shake{20%{transform:translate(-6px,3px);}40%{transform:translate(5px,-4px);}60%{transform:translate(-4px,2px);}80%{transform:translate(3px,-1px);}}
+.hurt-flash{position:fixed; inset:0; background:rgba(255,77,109,.28); pointer-events:none; z-index:60; animation:fade .4s forwards;}
+@keyframes fade{to{opacity:0;}}
+
+.me-bars{display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center; padding:12px 14px; margin-top:14px; background:var(--deep);}
+.me-bars .who{grid-row:span 2; display:flex; align-items:center; gap:8px;}
+.me-bars .who .e{font-size:30px; position:relative;}
+.me-bars .who .e.shield::after{content:"🛡️"; position:absolute; right:-10px; bottom:-4px; font-size:16px;}
+.bar{height:14px; background:var(--shadow); position:relative;}
+.bar i{position:absolute; inset:0 auto 0 0; transition:width .35s;}
+.bar.hp i{background:linear-gradient(180deg,#a6f5c6,var(--leaf));}
+.bar.hp.low i{background:linear-gradient(180deg,#ff9fb0,var(--blood)); animation:blink 0.8s steps(1) infinite;}
+.bar.mp i{background:linear-gradient(180deg,#b5fff8,var(--rune));}
+.bar span{position:absolute; right:6px; top:50%; transform:translateY(-50%); font-family:var(--f-pixel); font-size:11px; color:#fff; text-shadow:1px 1px 0 #000;}
+
+.qcard{margin-top:14px; padding:14px 16px; background:#efe7ff; color:#1c1540; --edge:#cbbcf7;}
+.qcard .qmeta{display:flex; justify-content:space-between; font-size:12px; color:#6a5aa8; margin-bottom:6px;}
+.qcard .qtype{font-weight:500;}
+.qcard .prompt{font-family:var(--f-story); font-size:19px; line-height:1.45; font-weight:600;}
+.qcard .prompt.thai{font-family:var(--f-ui); font-weight:500;}
+.timer{height:6px; background:#d4c8f5; margin-top:10px; position:relative;}
+.timer i{position:absolute; inset:0 auto 0 0; background:var(--ember);}
+.timer.urgent i{background:var(--blood);}
+
+.answers{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;}
+@media (max-width:380px){ .answers{grid-template-columns:1fr;} }
+.ans{cursor:pointer; border:0; text-align:left; padding:12px 12px; background:var(--panel); min-height:62px; display:flex; flex-direction:column; justify-content:center; width:calc(100% - 6px);}
+.ans .w{font-family:var(--f-story); font-size:17px; font-weight:600; line-height:1.25;}
+.ans .w.thai{font-family:var(--f-ui); font-weight:400; font-size:15px;}
+.ans .sub{font-size:12px; color:var(--ink-dim); margin-top:2px;}
+.ans .key{font-family:var(--f-pixel); font-size:11px; color:var(--ink-faint);}
+.ans:hover:not(:disabled){--edge:var(--ember);}
+.ans.ok{--edge:var(--leaf); background:#1d4a3a;}
+.ans.no{--edge:var(--blood); background:#4a1d2c;}
+.ans.gone{opacity:.18;}
+.ans.truth{--edge:var(--gold);}
+.ans:disabled{cursor:default;}
+
+.actions{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+.skill{flex:1 1 0; min-width:64px; cursor:pointer; border:0; background:var(--deep); padding:8px 4px 6px; display:flex; flex-direction:column; align-items:center; gap:2px;}
+.skill b{font-size:20px; font-weight:400; line-height:1.2;}
+.skill span{font-size:11px; color:var(--ink-dim); white-space:nowrap;}
+.skill em{font-style:normal; font-family:var(--f-pixel); font-size:11px; color:var(--rune);}
+.skill em.item{color:var(--gold);}
+.skill:disabled{opacity:.35; cursor:default;}
+.skill:hover:not(:disabled){--edge:var(--rune);}
+.reveal{margin-top:12px; padding:12px 14px; background:var(--deep); font-size:14px;}
+.reveal .rw{font-family:var(--f-story); font-weight:600; font-size:17px;}
+.reveal .rdef{color:var(--ink-dim); font-size:13px; margin-top:2px;}
+
+/* ---------- overlay / modal ---------- */
+.overlay{position:fixed; inset:0; z-index:80; background:rgba(8,5,20,.8); display:flex; align-items:center; justify-content:center; padding:20px; animation:fadein .2s;}
+@keyframes fadein{from{opacity:0;}}
+.modal{width:100%; max-width:400px; padding:22px 20px; text-align:center; background:var(--panel); max-height:90vh; overflow:auto;}
+.modal .big{font-size:52px; line-height:1.1;}
+.modal h2{font-family:var(--f-pixel); font-size:30px; margin:8px 0 4px; font-weight:700;}
+.modal h2.win{color:var(--gold); text-shadow:3px 3px 0 #8a5a00;}
+.modal h2.lose{color:var(--blood); text-shadow:3px 3px 0 #5a0018;}
+.modal h2.lvl{color:var(--ember-hi); text-shadow:3px 3px 0 #a3321a;}
+.modal p{color:var(--ink-dim); font-size:14px; margin:4px 0;}
+.loot{display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:16px 0;}
+.loot div{background:var(--deep); padding:8px 12px; font-family:var(--f-pixel); font-size:15px;}
+.modal .btn{margin-top:8px;}
+.stat-ups{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:14px 0;}
+.stat-ups div{background:var(--deep); padding:8px 4px; font-size:12px; color:var(--ink-dim);}
+.stat-ups b{display:block; font-family:var(--f-pixel); font-size:18px; color:var(--leaf);}
+
+/* ---------- challenge ---------- */
+.ch-top{display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--deep);}
+.ch-time{font-family:var(--f-pixel); font-size:36px; font-weight:700; color:var(--rune); min-width:64px;}
+.ch-time.urgent{color:var(--blood);}
+.ch-score{margin-left:auto; text-align:right; font-family:var(--f-pixel);}
+.ch-score b{display:block; font-size:28px; color:var(--gold); line-height:1;}
+.ch-score small{font-size:12px; color:var(--ink-dim);}
+.ch-mult{font-family:var(--f-pixel); font-size:16px; color:var(--ember-hi);}
+.bump{position:fixed; left:50%; top:40%; transform:translateX(-50%); font-family:var(--f-pixel); font-weight:700; font-size:26px; pointer-events:none; z-index:70; animation:float 0.9s ease-out forwards; text-shadow:3px 3px 0 var(--shadow);}
+
+/* ---------- library ---------- */
+.lib-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.lib-stats div{background:var(--deep); padding:10px 8px; text-align:center; font-size:12px; color:var(--ink-dim);}
+.lib-stats b{display:block; font-family:var(--f-pixel); font-size:24px; color:var(--ink); font-weight:600;}
+.word-row{display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--deep); margin-bottom:9px;}
+.word-row .wm{flex:1; min-width:0;}
+.word-row .ww{font-family:var(--f-story); font-weight:600; font-size:17px;}
+.word-row .wp{font-size:12px; color:var(--ink-faint); margin-left:6px; font-family:var(--f-ui);}
+.word-row .wt{font-size:14px; color:var(--ink-dim);}
+.stars{font-size:11px; letter-spacing:1px; color:var(--gold); white-space:nowrap;}
+.stars s{color:#3d3373; text-decoration:none;}
+.due-dot{width:8px; height:8px; background:var(--ember); flex:none;}
+.empty{text-align:center; color:var(--ink-dim); padding:30px 16px; font-size:14px;}
+.flash{margin-top:14px; min-height:220px; padding:24px 18px; text-align:center; cursor:pointer; background:#efe7ff; color:#1c1540; --edge:#cbbcf7; display:flex; flex-direction:column; justify-content:center; align-items:center; border:0; width:calc(100% - 6px);}
+.flash .fw{font-family:var(--f-story); font-size:34px; font-weight:600; line-height:1.2;}
+.flash .fp{font-size:14px; color:#6a5aa8; margin-top:4px;}
+.flash .ft{font-size:22px; font-weight:500; margin-top:14px;}
+.flash .fd{font-family:var(--f-story); font-size:15px; color:#4b3f80; margin-top:6px; font-style:italic;}
+.flash .hint{font-size:12px; color:#8a7cc2; margin-top:16px;}
+.flash-btns{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;}
+
+/* ---------- hero / shop ---------- */
+.hero-top{display:flex; gap:16px; align-items:center; padding:16px; background:var(--panel);}
+.hero-top .e{font-size:54px; width:84px; height:84px; display:grid; place-items:center; background:var(--deep); flex:none;}
+.hero-top h2{margin:0; font-weight:500; font-size:20px;}
+.hero-top p{margin:2px 0 0; color:var(--ink-dim); font-size:13px;}
+.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+.stat-grid div{background:var(--deep); padding:10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--ink-dim);}
+.stat-grid b{font-family:var(--f-pixel); font-size:17px; color:var(--ink); font-weight:600;}
+.ach-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.ach{padding:12px; background:var(--deep); --edge:#2e2663; opacity:.55;}
+.ach.on{--edge:var(--gold); opacity:1; background:#2d2350;}
+.ach .ai{font-size:26px; filter:grayscale(1);}
+.ach.on .ai{filter:none;}
+.ach .an{font-size:14px; font-weight:500; margin-top:4px;}
+.ach .ad{font-size:12px; color:var(--ink-dim); line-height:1.4;}
+.ach .ar{font-family:var(--f-pixel); font-size:12px; color:var(--gold); margin-top:4px;}
+.avatar-row{display:flex; gap:10px; flex-wrap:wrap;}
+.av{width:52px; height:52px; font-size:26px; border:0; cursor:pointer; background:var(--deep);}
+.av.on{--edge:var(--ember); background:#3a2250;}
+.shop-item{display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--deep); margin-bottom:10px;}
+.shop-item .si{font-size:28px; width:40px; text-align:center; flex:none;}
+.shop-item .sm{flex:1; min-width:0;}
+.shop-item .sn{font-size:15px; font-weight:500;}
+.shop-item .sd{font-size:12.5px; color:var(--ink-dim);}
+.shop-item .own{font-family:var(--f-pixel); font-size:12px; color:var(--rune);}
+.price{font-family:var(--f-pixel); font-size:15px;}
+.tabs-inline{display:flex; gap:8px; margin:6px 0 14px;}
+
+/* ---------- settings ---------- */
+.set-row{padding:14px 16px; background:var(--deep); margin-bottom:12px;}
+.set-row .sl{font-size:14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;}
+.set-row .sh{font-size:12.5px; color:var(--ink-dim); margin-top:6px;}
+.toggle{width:52px; height:28px; background:var(--shadow); border:0; position:relative; cursor:pointer; flex:none;}
+.toggle::after{content:""; position:absolute; top:4px; left:4px; width:20px; height:20px; background:var(--ink-faint); transition:left .15s, background .15s;}
+.toggle.on::after{left:28px; background:var(--leaf);}
+input[type=range]{width:100%; accent-color:var(--ember);}
+.ai-dot{display:inline-block; width:9px; height:9px; margin-right:6px;}
+.ai-dot.online{background:var(--leaf);} .ai-dot.offline{background:var(--ink-faint);} .ai-dot.unknown{background:var(--gold);}
+textarea.text-in{min-height:80px; resize:vertical; font-size:12px; font-family:monospace;}
+
+/* ---------- toast ---------- */
+.toasts{position:fixed; top:calc(70px + env(safe-area-inset-top,0px)); left:50%; transform:translateX(-50%); z-index:90; display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; width:max-content; max-width:92vw;}
+.toast{background:var(--panel-2); --edge:var(--gold); padding:9px 16px; font-size:14px; animation:toastin .25s, fade .4s 2.6s forwards;}
+@keyframes toastin{from{transform:translateY(-10px); opacity:0;}}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001s !important; animation-iteration-count:1 !important; transition:none !important;}
+  .monster{animation:none;}
+}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div class="app" id="app"></div>
+<nav class="tabbar" id="tabbar"></nav>
+<div class="toasts" id="toasts"></div>
+<div id="overlay-root"></div>
+<script>
+/* ======================================================================
+   DATA — built-in word bank (works offline) and handcrafted adventures
+   Format: word | pronunciation | Thai | English definition
+   ====================================================================== */
+const WORD_BANK_RAW = {
+A2: `brave|/breɪv/|กล้าหาญ|Not afraid of danger or pain.
+hungry|/ˈhʌŋ.ɡri/|หิว|Wanting or needing food.
+forest|/ˈfɒr.ɪst/|ป่า|A large area covered with trees.
+river|/ˈrɪv.ər/|แม่น้ำ|A long line of water that flows to the sea.
+key|/kiː/|กุญแจ|A small metal object used to open a lock.
+bridge|/brɪdʒ/|สะพาน|Something built over a river so people can cross it.
+quiet|/ˈkwaɪ.ət/|เงียบ|Making very little noise.
+heavy|/ˈhev.i/|หนัก|Weighing a lot; hard to lift.
+danger|/ˈdeɪn.dʒər/|อันตราย|The possibility of being hurt or killed.
+journey|/ˈdʒɜː.ni/|การเดินทาง|A trip from one place to another, often a long one.
+castle|/ˈkɑː.səl/|ปราสาท|A large strong building where kings and queens lived long ago.
+friendly|/ˈfrend.li/|เป็นมิตร|Kind and pleasant to other people.
+empty|/ˈemp.ti/|ว่างเปล่า|Containing nothing.
+escape|/ɪˈskeɪp/|หลบหนี|To get away from a dangerous place.
+gift|/ɡɪft/|ของขวัญ|Something you give to someone, for example on a birthday.
+lucky|/ˈlʌk.i/|โชคดี|Having good things happen by chance.
+map|/mæp/|แผนที่|A drawing that shows where places and roads are.
+strong|/strɒŋ/|แข็งแรง|Having a lot of physical power.
+tired|/taɪəd/|เหนื่อย|Feeling that you need to rest or sleep.
+village|/ˈvɪl.ɪdʒ/|หมู่บ้าน|A very small town in the countryside.
+dark|/dɑːk/|มืด|With little or no light.
+shout|/ʃaʊt/|ตะโกน|To say something very loudly.
+thief|/θiːf/|ขโมย|A person who steals things.
+gold|/ɡəʊld/|ทองคำ|A valuable yellow metal used for coins and jewellery.
+hide|/haɪd/|ซ่อน|To put yourself or something where nobody can see it.
+climb|/klaɪm/|ปีน|To go up something using your hands and feet.
+storm|/stɔːm/|พายุ|Very bad weather with strong wind and rain.
+wet|/wet/|เปียก|Covered with water.
+sword|/sɔːd/|ดาบ|A weapon with a long sharp metal blade.
+dream|/driːm/|ความฝัน|Pictures and stories in your mind while you sleep.
+island|/ˈaɪ.lənd/|เกาะ|Land that has water all around it.
+answer|/ˈɑːn.sər/|คำตอบ|What you say or write when someone asks a question.
+careful|/ˈkeə.fəl/|ระมัดระวัง|Giving attention so you do not make mistakes or get hurt.
+dirty|/ˈdɜː.ti/|สกปรก|Not clean.
+enemy|/ˈen.ə.mi/|ศัตรู|A person who hates you or fights against you.
+wall|/wɔːl/|กำแพง|A side of a room or building, made of stone or brick.
+whisper|/ˈwɪs.pər/|กระซิบ|To speak very quietly.
+cheap|/tʃiːp/|ราคาถูก|Costing little money.
+borrow|/ˈbɒr.əʊ/|ยืม|To take something from someone and give it back later.
+remember|/rɪˈmem.bər/|จำได้|To keep something in your mind.
+frightened|/ˈfraɪ.tənd/|หวาดกลัว|Feeling fear.
+guard|/ɡɑːd/|ยาม, ผู้เฝ้า|A person whose job is to protect a place.
+cave|/keɪv/|ถ้ำ|A large hole in the side of a hill or under the ground.
+wizard|/ˈwɪz.əd/|พ่อมด|A man in stories who can do magic.
+carry|/ˈkær.i/|ถือ, แบก|To hold something and take it with you.
+broken|/ˈbrəʊ.kən/|แตก, เสีย|Damaged and not working.
+wide|/waɪd/|กว้าง|Large from one side to the other.
+invite|/ɪnˈvaɪt/|เชิญ|To ask someone to come to a party or event.
+knock|/nɒk/|เคาะ|To hit a door with your hand so people inside hear you.
+treasure|/ˈtreʒ.ər/|สมบัติ|A collection of gold, jewels and other valuable things.`,
+B1: `ancient|/ˈeɪn.ʃənt/|โบราณ|Existing for a very long time; from long ago.
+approach|/əˈprəʊtʃ/|เข้าใกล้|To come nearer to something or someone.
+avoid|/əˈvɔɪd/|หลีกเลี่ยง|To stay away from something or stop it from happening.
+clue|/kluː/|เบาะแส|A sign or piece of information that helps solve a mystery.
+courage|/ˈkʌr.ɪdʒ/|ความกล้าหาญ|The ability to do something that frightens you.
+destroy|/dɪˈstrɔɪ/|ทำลาย|To damage something so badly that it no longer exists.
+disappear|/ˌdɪs.əˈpɪər/|หายไป|To go where you can no longer be seen.
+exhausted|/ɪɡˈzɔː.stɪd/|เหนื่อยล้ามาก|Extremely tired.
+explore|/ɪkˈsplɔːr/|สำรวจ|To travel around a place to learn about it.
+fierce|/fɪəs/|ดุร้าย|Violent, angry and ready to attack.
+figure out|/ˈfɪɡ.ər aʊt/|คิดออก, หาคำตอบ|To finally understand something or solve a problem.
+footprint|/ˈfʊt.prɪnt/|รอยเท้า|A mark left by a foot or shoe on the ground.
+ghost|/ɡəʊst/|ผี|The spirit of a dead person that some people believe they can see.
+injured|/ˈɪn.dʒəd/|บาดเจ็บ|Hurt in an accident or attack.
+legend|/ˈledʒ.ənd/|ตำนาน|A very old story that may or may not be true.
+locate|/ləʊˈkeɪt/|ระบุตำแหน่ง|To find the exact position of something.
+mysterious|/mɪˈstɪə.ri.əs/|ลึกลับ|Strange and difficult to understand or explain.
+obvious|/ˈɒb.vi.əs/|ชัดเจน|Easy to see or understand.
+permission|/pəˈmɪʃ.ən/|การอนุญาต|The act of allowing someone to do something.
+rescue|/ˈres.kjuː/|ช่วยชีวิต|To save someone from a dangerous situation.
+reward|/rɪˈwɔːd/|รางวัล|Something given to you because you did something good.
+scream|/skriːm/|กรีดร้อง|To cry out loudly in a high voice because of fear or pain.
+shelter|/ˈʃel.tər/|ที่หลบภัย|A place that protects you from bad weather or danger.
+suspect|/ˈsʌs.pekt/|ผู้ต้องสงสัย|A person who may have committed a crime.
+survive|/səˈvaɪv/|รอดชีวิต|To continue to live after a dangerous event.
+threat|/θret/|ภัยคุกคาม|Something that may cause harm or danger.
+trap|/træp/|กับดัก|A device or trick used to catch an animal or person.
+warn|/wɔːn/|เตือน|To tell someone about a possible danger.
+weapon|/ˈwep.ən/|อาวุธ|An object such as a sword or gun used for fighting.
+witness|/ˈwɪt.nəs/|พยาน|A person who sees a crime or accident happen.
+abandoned|/əˈbæn.dənd/|ถูกทิ้งร้าง|Left alone and no longer used or wanted.
+ashamed|/əˈʃeɪmd/|ละอายใจ|Feeling bad because of something you did.
+confident|/ˈkɒn.fɪ.dənt/|มั่นใจ|Sure about your own abilities.
+curious|/ˈkjʊə.ri.əs/|อยากรู้อยากเห็น|Wanting to know or learn about something.
+deserve|/dɪˈzɜːv/|สมควรได้รับ|To have earned something because of your actions.
+emergency|/ɪˈmɜː.dʒən.si/|เหตุฉุกเฉิน|A sudden dangerous situation that needs fast action.
+gradually|/ˈɡrædʒ.u.ə.li/|ทีละน้อย|Slowly, over a period of time.
+hesitate|/ˈhez.ɪ.teɪt/|ลังเล|To pause before doing something because you are not sure.
+instinct|/ˈɪn.stɪŋkt/|สัญชาตญาณ|A natural feeling that makes you act without thinking.
+loyal|/ˈlɔɪ.əl/|จงรักภักดี|Always supporting a friend, group or leader.
+negotiate|/nəˈɡəʊ.ʃi.eɪt/|เจรจา|To talk with others to reach an agreement.
+opponent|/əˈpəʊ.nənt/|คู่ต่อสู้|A person you compete or fight against.
+precious|/ˈpreʃ.əs/|ล้ำค่า|Very valuable or important.
+reveal|/rɪˈviːl/|เปิดเผย|To show something that was hidden or secret.
+scatter|/ˈskæt.ər/|กระจัดกระจาย|To move or throw things in many different directions.
+stranger|/ˈstreɪn.dʒər/|คนแปลกหน้า|A person you do not know.
+supply|/səˈplaɪ/|เสบียง|An amount of food or equipment that people need.
+tremble|/ˈtrem.bəl/|ตัวสั่น|To shake slightly because you are afraid, cold or weak.
+wound|/wuːnd/|บาดแผล|An injury where the skin is cut or broken.
+recover|/rɪˈkʌv.ər/|ฟื้นตัว|To become healthy again after an illness or injury.`,
+B2: `ambush|/ˈæm.bʊʃ/|ซุ่มโจมตี|A surprise attack by people hiding and waiting.
+anticipate|/ænˈtɪs.ɪ.peɪt/|คาดการณ์ล่วงหน้า|To expect something and prepare for it.
+betray|/bɪˈtreɪ/|ทรยศ|To be disloyal to someone who trusted you.
+cunning|/ˈkʌn.ɪŋ/|เจ้าเล่ห์|Clever at getting what you want, often by tricking others.
+desolate|/ˈdes.əl.ət/|รกร้าง|Empty, with no people, and unpleasant.
+dilemma|/daɪˈlem.ə/|สถานการณ์ลำบากใจ|A situation where you must make a difficult choice.
+elusive|/iˈluː.sɪv/|จับตัวยาก|Difficult to find, catch or achieve.
+formidable|/fəˈmɪd.ə.bəl/|น่าเกรงขาม|Causing fear or respect because of great size or strength.
+grim|/ɡrɪm/|เคร่งเครียด, หดหู่|Very serious, unpleasant and without hope.
+inevitable|/ɪˈnev.ɪ.tə.bəl/|หลีกเลี่ยงไม่ได้|Certain to happen and impossible to prevent.
+lurk|/lɜːk/|ซุ่มซ่อน|To wait somewhere secretly, usually to do something bad.
+meticulous|/məˈtɪk.jə.ləs/|พิถีพิถัน|Very careful about every small detail.
+ominous|/ˈɒm.ɪ.nəs/|เป็นลางร้าย|Suggesting that something bad is going to happen.
+persevere|/ˌpɜː.sɪˈvɪər/|พากเพียร|To keep trying even when things are difficult.
+plunder|/ˈplʌn.dər/|ปล้นสะดม|To steal goods by force, especially in war.
+relentless|/rɪˈlent.ləs/|ไม่ลดละ|Never stopping or becoming less strong.
+resilient|/rɪˈzɪl.i.ənt/|ฟื้นตัวเร็ว|Able to recover quickly after difficulties.
+scrutinize|/ˈskruː.tɪ.naɪz/|พินิจพิเคราะห์|To examine something very carefully.
+treacherous|/ˈtretʃ.ər.əs/|อันตราย, ไว้ใจไม่ได้|Very dangerous, or likely to betray someone.
+vengeance|/ˈven.dʒəns/|การแก้แค้น|Punishment given to someone for harm they did to you.
+vigilant|/ˈvɪdʒ.əl.ənt/|ระแวดระวัง|Always watching carefully for danger.
+wreckage|/ˈrek.ɪdʒ/|ซากปรักหักพัง|The broken parts left after something is destroyed.
+alliance|/əˈlaɪ.əns/|พันธมิตร|An agreement between groups to work together.
+conceal|/kənˈsiːl/|ปกปิด|To hide something carefully.
+contradict|/ˌkɒn.trəˈdɪkt/|ขัดแย้ง|To say the opposite of what someone else has said.
+deceive|/dɪˈsiːv/|หลอกลวง|To make someone believe something that is not true.
+defiant|/dɪˈfaɪ.ənt/|ท้าทาย, ดื้อดึง|Refusing to obey, in an open and bold way.
+eerie|/ˈɪə.ri/|น่าขนลุก|Strange and frightening.
+endure|/ɪnˈdʒʊər/|อดทน|To suffer something painful for a long time.
+exploit|/ɪkˈsplɔɪt/|เอาเปรียบ|To use something or someone unfairly for your own advantage.
+feeble|/ˈfiː.bəl/|อ่อนแอ|Very weak.
+fugitive|/ˈfjuː.dʒə.tɪv/|ผู้หลบหนี|A person who is running away, especially from the police.
+hostile|/ˈhɒs.taɪl/|เป็นปฏิปักษ์|Unfriendly and ready to fight.
+indispensable|/ˌɪn.dɪˈspen.sə.bəl/|ขาดไม่ได้|So important that you cannot manage without it.
+intricate|/ˈɪn.trɪ.kət/|ซับซ้อน|Having many small parts arranged in a complicated way.
+lament|/ləˈment/|คร่ำครวญ|To express great sadness about something.
+notorious|/nəʊˈtɔː.ri.əs/|ฉาวโฉ่|Famous for something bad.
+oblivious|/əˈblɪv.i.əs/|ไม่รู้ตัว|Not aware of what is happening around you.
+perilous|/ˈper.əl.əs/|เต็มไปด้วยอันตราย|Extremely dangerous.
+prevail|/prɪˈveɪl/|มีชัย|To win or be successful after a struggle.
+reluctant|/rɪˈlʌk.tənt/|ไม่เต็มใจ|Not wanting to do something.
+salvage|/ˈsæl.vɪdʒ/|กู้คืน|To save things from a damaged ship, building or situation.
+siege|/siːdʒ/|การปิดล้อม|When an army surrounds a place to force the people inside to surrender.
+stealthy|/ˈstel.θi/|ลอบเร้น|Moving quietly and secretly so as not to be noticed.
+subdue|/səbˈdjuː/|ปราบ, ควบคุม|To bring someone or something under control, often by force.
+tenacious|/təˈneɪ.ʃəs/|ไม่ยอมแพ้ง่าย|Holding on firmly and refusing to give up.
+uncanny|/ʌnˈkæn.i/|ประหลาดอย่างอธิบายไม่ได้|Strange in a way that is hard to explain.
+unravel|/ʌnˈræv.əl/|คลี่คลาย|To solve or explain something complicated.
+vulnerable|/ˈvʌl.nər.ə.bəl/|เปราะบาง|Able to be easily hurt or attacked.
+wary|/ˈweə.ri/|ระแวง|Careful because you think something may be dangerous.`
+};
+const WORD_BANK = {};
+Object.keys(WORD_BANK_RAW).forEach(lv=>{
+  WORD_BANK[lv] = WORD_BANK_RAW[lv].trim().split('\n').map(line=>{
+    const [word, pron, thai, def] = line.split('|');
+    return { word, pron, thai, def, lv };
+  });
+});
+const ALL_WORDS = [].concat(WORD_BANK.A2, WORD_BANK.B1, WORD_BANK.B2);
+
+/* ---------------------------------------------------------------------
+   Offline adventures: each node = scene, text, vocab, options → next node
+   --------------------------------------------------------------------- */
+const STORIES = {
+fantasy: {
+  title:'The Ember Crown', th:'มงกุฎเพลิง', blurb:'มังกรขโมยมงกุฎที่ให้ไฟกับหมู่บ้าน ตามไปเอาคืนก่อนฤดูหนาว', scene:'ruins', start:'f1',
+  nodes:{
+    f1:{scene:'village', text:`The bells of Ashvale ring at midnight. A dragon has stolen the Ember Crown, and without it the village fire will die before winter. The old wizard gives you a map, a torch and a warning: "The path through the Whisper Forest is short, but something lives there. The mountain road is long and cold." The villagers look at you with hope.`,
+      vocab:[['bell','ระฆัง'],['stolen','ถูกขโมย'],['warning','คำเตือน'],['hope','ความหวัง']],
+      opts:[['Take the short path through the Whisper Forest.','f2'],['Take the long mountain road.','f3'],['Ask the wizard for a weapon first.','f4']]},
+    f2:{scene:'forest', text:`The trees are so tall that the moon disappears. Soon you hear soft voices calling your name. Between the trees, a small blue light floats toward you. It is a forest spirit, and it looks frightened. "The dragon's servants set traps here," it whispers. "Help me, and I will show you a secret way."`,
+      vocab:[['disappear','หายไป'],['float','ลอย'],['servant','คนรับใช้, สมุน'],['secret','ความลับ']],
+      opts:[['Help the spirit.','f5'],['Ignore it and walk faster.','f6'],['Ask the spirit where the dragon sleeps.','f5']]},
+    f3:{scene:'mountain', text:`The mountain road is icy and narrow. After hours of climbing, a storm begins. You find a cave, but inside you see fresh footprints — huge ones. Outside, the wind is so strong that you can barely stand.`,
+      vocab:[['icy','เป็นน้ำแข็ง'],['narrow','แคบ'],['footprint','รอยเท้า'],['barely','แทบจะไม่']],
+      opts:[['Wait for the storm to end inside the cave.','f7'],['Keep climbing through the storm.','fLoseStorm'],['Follow the footprints deeper into the cave.','f7']]},
+    f4:{scene:'village', text:`The wizard smiles and opens an old wooden box. Inside is a sword that glows like a candle. "This blade was made from dragon fire," he says. "It will protect you, but only if you are honest." As you leave, a stranger in a black cloak offers to be your guide — for a price.`,
+      vocab:[['glow','เรืองแสง'],['blade','ใบมีด'],['honest','ซื่อสัตย์'],['cloak','เสื้อคลุม']],
+      opts:[['Accept the stranger as your guide.','f8'],['Refuse and take the forest path alone.','f2'],['Ask the stranger why he wants to help.','f8']]},
+    f5:{scene:'ruins', text:`The spirit leads you through a hidden tunnel of roots to the ruins of an ancient temple. There, on a pile of gold, sleeps the dragon. Its breath is slow and hot. The Ember Crown shines on its claw. The spirit whispers: "Dragons can't resist riddles. Or you could simply take the crown."`,
+      vocab:[['tunnel','อุโมงค์'],['ancient','โบราณ'],['resist','ต้านทาน'],['riddle','ปริศนา']],
+      opts:[['Carefully take the crown while the dragon sleeps.','fLoseWake'],['Wake the dragon and challenge it to a riddle game.','fWinRiddle'],['Attack the dragon with your sword.','fLoseFight']]},
+    f6:{scene:'forest', text:`You walk fast and do not look back. Suddenly the ground opens under your feet and you fall into a net. Two goblins with lanterns laugh above you. "Another hero for the dragon's dinner!" one says. But the other goblin looks hungry and bored.`,
+      vocab:[['net','ตาข่าย'],['lantern','ตะเกียง'],['bored','เบื่อ'],['suddenly','ทันใดนั้น']],
+      opts:[['Offer the goblins your food.','f5'],['Cut the net with your knife and run.','f7'],['Shout for help.','fLoseGoblin']]},
+    f7:{scene:'cave', text:`Deep inside the cave, the path ends at a warm stone door covered in symbols. Behind it you hear the slow breathing of a giant creature — the dragon's lair. Next to the door is a message: "Only the one who says the true word may enter." Three words are carved below: POWER, GOLD, FRIEND.`,
+      vocab:[['symbol','สัญลักษณ์'],['creature','สิ่งมีชีวิต'],['lair','รัง, ถ้ำที่ซ่อน'],['carve','แกะสลัก']],
+      opts:[['Say "Power".','fLoseDoor'],['Say "Gold".','fLoseDoor'],['Say "Friend".','fWinFriend']]},
+    f8:{scene:'village', text:`The stranger lowers his hood. "I once served the dragon," he admits. "She is not evil — she is lonely. She took the crown because it is the last warm thing in her cold mountain." He offers to take you to her, but asks you to promise that you will not hurt her.`,
+      vocab:[['admit','ยอมรับ'],['evil','ชั่วร้าย'],['lonely','เหงา'],['promise','สัญญา']],
+      opts:[['Promise and follow him.','fWinFriend'],['Refuse — you don\'t trust him.','f2'],['Pretend to promise, but hide your sword.','fLoseBetray']]},
+    fWinRiddle:{scene:'ruins', end:'win', title:'The Riddle Keeper', text:`The dragon opens one golden eye. "A riddle? Nobody has asked me a riddle in three hundred years." You ask, "What grows stronger the more you share it?" The dragon thinks for a long time, then smiles. "Fire... and friendship." Impressed, she returns the crown and promises to keep Ashvale warm every winter. You are a legend now.`,
+      vocab:[['impressed','ประทับใจ'],['return','คืน'],['legend','ตำนาน']]},
+    fWinFriend:{scene:'cave', end:'win', title:'A Warm Friendship', text:`The dragon is old and tired, and her home is freezing. Instead of fighting, you sit with her and tell stories of the village. When you invite her to live near Ashvale, where the people could keep her warm, tears of fire fall from her eyes. She gives you the crown, and Ashvale gains the strongest guardian in the kingdom.`,
+      vocab:[['freezing','หนาวจัด'],['instead of','แทนที่จะ'],['guardian','ผู้พิทักษ์']]},
+    fLoseWake:{scene:'ruins', end:'lose', title:'Caught Red-Handed', text:`Your fingers touch the crown — and the dragon's eye opens. "A thief," she says calmly. With one breath of smoke, you fall asleep. When you wake up, you are back in the village with no crown and no memory of the way. Maybe next time, try talking first.`,
+      vocab:[['calmly','อย่างใจเย็น'],['smoke','ควัน'],['memory','ความทรงจำ']]},
+    fLoseStorm:{scene:'mountain', end:'lose', title:'Lost in the Snow', text:`The storm grows stronger and stronger. You cannot see your own hands. Finally, you slip and slide all the way down the mountain into deep snow. A shepherd finds you in the morning. You are safe, but the journey is over.`,
+      vocab:[['slip','ลื่น'],['slide','ไถล'],['shepherd','คนเลี้ยงแกะ']]},
+    fLoseDoor:{scene:'cave', end:'lose', title:'The Wrong Word', text:`The symbols flash red and the door shakes. A wave of hot air throws you out of the cave and into the snow. Behind you, a deep voice laughs: "Wrong word, little hero."`,
+      vocab:[['flash','วาบ'],['wave','คลื่น, ระลอก'],['shake','สั่น']]},
+    fLoseGoblin:{scene:'forest', end:'lose', title:'Dish Duty', text:`Your shout echoes through the forest, and more goblins arrive. They carry you away... to wash their dishes for a whole year. Heroes rarely end up in a kitchen, but you do.`,
+      vocab:[['echo','ก้อง, สะท้อน'],['arrive','มาถึง'],['rarely','แทบไม่เคย']]},
+    fLoseFight:{scene:'ruins', end:'lose', title:'Brave but Foolish', text:`Your sword glows, but the dragon is faster. One sweep of her tail sends you flying into the pile of gold. "Brave, but foolish," she says, and throws you out of her temple.`,
+      vocab:[['sweep','กวาด'],['tail','หาง'],['foolish','โง่เขลา']]},
+    fLoseBetray:{scene:'forest', end:'lose', title:'Broken Trust', text:`The stranger sees the sword under your cloak. "So you are just like the others," he says sadly, and disappears into the dark. Without a guide, you get lost for days and finally return home with empty hands.`,
+      vocab:[['sadly','อย่างเศร้าใจ'],['get lost','หลงทาง'],['guide','ผู้นำทาง']]},
+  }
+},
+mystery: {
+  title:'The Midnight Train', th:'รถไฟเที่ยงคืน', blurb:'เพชรหายบนรถไฟกลางดึก ผู้ร้ายยังอยู่บนขบวน หาให้เจอก่อนถึงสถานี', scene:'train', start:'m1',
+  nodes:{
+    m1:{scene:'train', text:`You are a young detective on the night train to the northern mountains. At 1 a.m. a scream fills the corridor. Mrs. Vale, a rich collector, stands outside her cabin. "My diamond is gone!" The train will not stop for two hours, so the thief must still be on board. Three passengers are awake: a nervous cook, a quiet student and a smiling businessman.`,
+      vocab:[['corridor','ทางเดิน'],['collector','นักสะสม'],['on board','อยู่บนยานพาหนะ'],['nervous','ประหม่า']],
+      opts:[['Examine Mrs. Vale\'s cabin for clues.','m2'],['Question the nervous cook.','m3'],['Question the smiling businessman.','m4']]},
+    m2:{scene:'cabin', text:`The window is closed and locked from inside. On the floor you find a small piece of blue thread and the faint smell of coffee. The jewellery box was not broken — someone opened it with the right key. Mrs. Vale says only she and her assistant have keys.`,
+      vocab:[['examine','ตรวจสอบ'],['thread','ด้าย'],['faint','จาง ๆ'],['assistant','ผู้ช่วย']],
+      opts:[['Find the assistant.','m5'],['Check who is wearing blue clothes.','m6'],['Follow the smell of coffee to the dining car.','m3']]},
+    m3:{scene:'dining', text:`The cook is cleaning cups with shaking hands. "I made coffee for the student at midnight," he says. "And the businessman asked for tea. Nobody else came." Under the counter you notice a key with a red ribbon.`,
+      vocab:[['shaking','สั่น'],['counter','เคาน์เตอร์'],['notice','สังเกตเห็น'],['ribbon','ริบบิ้น']],
+      opts:[['Ask the cook about the key.','m7'],['Accuse the cook of stealing the diamond.','mLoseWrong'],['Take the key quietly and look for its lock.','m7']]},
+    m4:{scene:'cabin', text:`The businessman gives you a big smile. "I sleep like a baby," he says. His jacket is grey, but his hands smell of coffee — strange, because the cook said he ordered tea. When you ask about it, his smile freezes.`,
+      vocab:[['strange','แปลก'],['order','สั่ง (อาหาร)'],['freeze','แข็งค้าง']],
+      opts:[['Ask him to show you his luggage.','m8'],['Pretend you believe him and watch him secretly.','m8'],['Leave him and talk to the student.','m6']]},
+    m5:{scene:'cabin', text:`The assistant, a tired young woman, admits that she lost her key this evening. "I left my bag in the dining car for five minutes," she says. Her bag is blue, and a thread is missing from the strap.`,
+      vocab:[['admit','ยอมรับ'],['missing','หายไป'],['strap','สายสะพาย']],
+      opts:[['Arrest the assistant.','mLoseWrong'],['Ask who was in the dining car at that time.','m3'],['Ask to see her bag more closely.','m6']]},
+    m6:{scene:'train', text:`The student wears a blue sweater and holds a cup of coffee. He looks up from his book calmly. "The businessman was walking in the corridor at one o'clock," he says. "He was carrying the assistant's blue bag." Then he goes back to reading as if nothing happened.`,
+      vocab:[['sweater','เสื้อสเวตเตอร์'],['calmly','อย่างใจเย็น'],['as if','ราวกับว่า']],
+      opts:[['Trust the student and search the businessman.','m8'],['Suspect the student — his sweater is blue.','mLoseWrong'],['Ask the student what else he saw.','m7']]},
+    m7:{scene:'dining', text:`The key with the red ribbon opens Mrs. Vale's jewellery box — it is the assistant's lost key. The cook shakes his head. "The businessman dropped it here when he paid for his tea... but he also took a coffee cup back to his cabin." Every clue points in one direction.`,
+      vocab:[['drop','ทำตก'],['clue','เบาะแส'],['direction','ทิศทาง']],
+      opts:[['Go to the businessman\'s cabin with the conductor.','mWin'],['Wait until the train stops.','mLoseEscape'],['Announce what you know to everyone on the train.','mLoseEscape']]},
+    m8:{scene:'cabin', text:`His suitcase contains only shirts and papers. But you notice something: he holds his coffee cup very carefully, and it never leaves his hand. Coffee he did not order, in a cup he will not put down.`,
+      vocab:[['suitcase','กระเป๋าเดินทาง'],['contain','บรรจุ, มี'],['carefully','อย่างระมัดระวัง']],
+      opts:[['Ask to see the cup.','mWin'],['Apologize and leave.','mLoseEscape'],['Knock the cup out of his hand.','mWin']]},
+    mWin:{scene:'train', end:'win', title:'Case Closed', text:`At the bottom of the businessman's cup, under the cold coffee, lies the diamond. He used the assistant's lost key, then hid the stone where nobody would look. When the train stops, the police are waiting. Mrs. Vale shakes your hand: "You have the sharpest eyes on this train."`,
+      vocab:[['bottom','ก้น, ด้านล่าง'],['stone','อัญมณี, หิน'],['sharp','เฉียบคม']]},
+    mLoseWrong:{scene:'dining', end:'lose', title:'The Wrong Suspect', text:`You accuse the wrong person. While everyone argues, the real thief quietly steps off the train at the next station. The diamond is never found, and your first big case ends in embarrassment.`,
+      vocab:[['accuse','กล่าวหา'],['argue','โต้เถียง'],['embarrassment','ความอับอาย']]},
+    mLoseEscape:{scene:'train', end:'lose', title:'Off at the Station', text:`You wait too long. At the next station, the businessman walks off the train with a small smile and a coffee cup in his hand. Only later do you realize the diamond left with him.`,
+      vocab:[['realize','ตระหนัก'],['station','สถานี'],['later','ภายหลัง']]},
+  }
+},
+survival: {
+  title:'Storm Island', th:'เกาะพายุ', blurb:'เรือแตกติดเกาะร้าง มีมีด ขวดน้ำครึ่งขวด และเวลาก่อนมืด', scene:'beach', start:'s1',
+  nodes:{
+    s1:{scene:'beach', text:`Your small boat is destroyed in a storm, and the waves throw you onto a strange island. You have a wet bag, a knife and half a bottle of water. The sun is going down. Behind the beach is a thick jungle, and on the hill you can see smoke.`,
+      vocab:[['destroy','ทำลาย'],['wave','คลื่น'],['thick','หนาทึบ'],['smoke','ควัน']],
+      opts:[['Build a shelter on the beach before dark.','s2'],['Walk toward the smoke on the hill.','s3'],['Search the wreckage of your boat.','s4']]},
+    s2:{scene:'beachNight', text:`You build a simple shelter from branches and leaves. At night the rain starts again, but you stay dry. In the morning you are very thirsty. You notice coconuts high in a palm tree and a small stream in the jungle.`,
+      vocab:[['shelter','ที่หลบภัย'],['branch','กิ่งไม้'],['thirsty','กระหายน้ำ'],['stream','ลำธาร']],
+      opts:[['Climb the palm tree for coconuts.','s5'],['Drink from the jungle stream.','sLoseSick'],['Collect rainwater with big leaves.','s5']]},
+    s3:{scene:'jungle', text:`In the dark jungle, strange animals call to each other. Halfway up the hill you step on something — the ground clicks. It is an old metal trap, but it is rusty and does not close. Near the top you see a camp with a fire, but nobody is there.`,
+      vocab:[['halfway','ครึ่งทาง'],['trap','กับดัก'],['rusty','เป็นสนิม'],['camp','ค่ายพัก']],
+      opts:[['Wait and watch the camp from the trees.','s6'],['Take some food from the camp.','sLoseTheft'],['Call out "Hello?"','s6']]},
+    s4:{scene:'beach', text:`Among the broken pieces of your boat, you find a flare gun with one flare, a rope and a torn map of the area. The map shows a lighthouse on the north side of the island.`,
+      vocab:[['wreckage','ซากปรักหักพัง'],['flare','พลุสัญญาณ'],['rope','เชือก'],['torn','ขาด']],
+      opts:[['Fire the flare right now.','sLoseFlare'],['Keep the flare and head north to the lighthouse.','s7'],['Use the rope to build a raft.','sLoseRaft']]},
+    s5:{scene:'beach', text:`With water and coconuts, you feel stronger. From the top of the palm tree, you see a lighthouse on the north side of the island — and a ship, far away on the horizon.`,
+      vocab:[['stronger','แข็งแรงขึ้น'],['lighthouse','ประภาคาร'],['horizon','เส้นขอบฟ้า']],
+      opts:[['Walk to the lighthouse.','s7'],['Build a big signal fire on the beach.','sWinFire'],['Swim toward the ship.','sLoseSwim']]},
+    s6:{scene:'camp', text:`An old woman steps out from the trees with a spear. She has lived alone on the island for years, since her own ship sank. She doesn't trust you, but she is curious.`,
+      vocab:[['spear','หอก'],['sink (sank)','จม'],['trust','ไว้ใจ'],['curious','อยากรู้อยากเห็น']],
+      opts:[['Share your water with her.','sWinFriend'],['Ask her how to leave the island.','s7'],['Threaten her with your knife.','sLoseTheft']]},
+    s7:{scene:'lighthouse', text:`The lighthouse is old and abandoned, but the big lamp at the top still has its glass. Night is coming, and you can hear the engine of a ship somewhere in the fog.`,
+      vocab:[['abandoned','ถูกทิ้งร้าง'],['engine','เครื่องยนต์'],['fog','หมอก']],
+      opts:[['Light a fire inside the lamp.','sWin'],['Wait until morning.','sLoseMiss'],['Fire a signal over the sea.','sWin']]},
+    sWin:{scene:'lighthouse', end:'win', title:'The Light in the Fog', text:`The light shines over the dark water. Minutes later, the ship turns toward the island and its horn sounds twice. A small rescue boat comes to the rocks. You survived Storm Island — and you will never forget it.`,
+      vocab:[['shine','ส่องแสง'],['rescue','กู้ภัย'],['survive','รอดชีวิต']]},
+    sWinFire:{scene:'beach', end:'win', title:'Smoke Signal', text:`Your signal fire burns high and bright. The ship sees the smoke and changes direction. By sunset you are on board, drinking hot tea and telling your story to the crew.`,
+      vocab:[['signal','สัญญาณ'],['sunset','พระอาทิตย์ตก'],['crew','ลูกเรือ']]},
+    sWinFriend:{scene:'camp', end:'win', title:'Two Survivors', text:`The woman lowers her spear and drinks. "You are the first kind visitor in years," she says. She shows you an old radio she could never repair. With your knife and her patience, you fix it together, and two days later a rescue helicopter lands on the beach — for both of you.`,
+      vocab:[['visitor','ผู้มาเยือน'],['repair','ซ่อม'],['patience','ความอดทน']]},
+    sLoseSick:{scene:'jungle', end:'lose', title:'Bad Water', text:`The water tastes strange. By noon you have a terrible fever and cannot stand up. Fishermen find you days later, but your adventure ends in a hospital bed.`,
+      vocab:[['taste','มีรสชาติ'],['fever','ไข้'],['fisherman','ชาวประมง']]},
+    sLoseTheft:{scene:'jungle', end:'lose', title:'Chased Away', text:`The owner of the camp returns and catches you. She takes your bag and chases you back into the jungle. Alone and without supplies, you grow weaker every day, until a passing boat finally finds you.`,
+      vocab:[['chase','ไล่ตาม'],['supplies','เสบียง'],['weak','อ่อนแอ']]},
+    sLoseFlare:{scene:'beachNight', end:'lose', title:'A Wasted Flare', text:`The red light flies into the sky — but there is no ship to see it. Your only flare is gone. Days later, when a ship finally passes, you have no way to signal it.`,
+      vocab:[['waste','สูญเปล่า'],['pass','ผ่าน'],['no way','ไม่มีทาง']]},
+    sLoseRaft:{scene:'beach', end:'lose', title:'The Raft Breaks', text:`Your raft is too weak for the waves. It breaks apart a few metres from the beach, and you lose the flare, the rope and the map. You crawl back onto the sand with nothing.`,
+      vocab:[['raft','แพ'],['break apart','แตกออก'],['crawl','คลาน']]},
+    sLoseSwim:{scene:'beach', end:'lose', title:'Too Far', text:`The ship is much farther than it looks. After twenty minutes, your arms are exhausted and the current pulls you back to the beach. The ship disappears over the horizon.`,
+      vocab:[['exhausted','เหนื่อยล้ามาก'],['current','กระแสน้ำ'],['pull','ดึง']]},
+    sLoseMiss:{scene:'lighthouse', end:'lose', title:'Gone by Morning', text:`In the morning the fog is gone — and so is the ship. You stay on the island for many more weeks before another one comes.`,
+      vocab:[['gone','หายไป'],['stay','อยู่'],['another','อีกอันหนึ่ง']]},
+  }
+}
+};
+const STORY_ORDER = ['fantasy','mystery','survival'];
+const TOTAL_ENDINGS = STORY_ORDER.reduce((n,k)=>n+Object.values(STORIES[k].nodes).filter(x=>x.end).length,0);
+/* ======================================================================
+   ENGINE — save data, progression, audio, speech, pixel art, AI bridge
+   ====================================================================== */
+const SAVE_KEY = 'questlines_save_v2';
+const OLD_SAVE_KEY = 'questlines_save_v1';
+const DAY = 86400000, HOUR = 3600000;
+
+const CLASSES = {
+  warrior:{ name:'นักรบ', en:'Warrior', emoji:'🛡️', hp:130, mp:30, atk:14, crit:.08,
+    desc:'เลือดหนา ทนทาน สกิล Iron Wall กันการโจมตีครั้งถัดไปได้เต็ม ๆ',
+    skill:{ id:'wall', ico:'🧱', name:'Iron Wall', cost:12 } },
+  mage:{ name:'จอมเวท', en:'Mage', emoji:'🔮', hp:95, mp:60, atk:12, crit:.08,
+    desc:'มานาเยอะ สกิล Arcane Blast ยิงเวทใส่มอนสเตอร์ทันทีแรงเป็น 2.5 เท่า',
+    skill:{ id:'blast', ico:'☄️', name:'Arcane Blast', cost:20 } },
+  rogue:{ name:'นักฆ่าเงา', en:'Rogue', emoji:'🗡️', hp:105, mp:40, atk:12, crit:.22,
+    desc:'คริติคอลสูง สกิล Shadow Step ข้ามคำถามยาก ๆ โดยไม่เสียคอมโบ แถมขโมยทอง',
+    skill:{ id:'step', ico:'💨', name:'Shadow Step', cost:12 } },
+};
+const INSIGHT = { id:'insight', ico:'👁️', name:'Insight', cost:8 };
+const ITEMS = {
+  potion:{ ico:'🧪', name:'Potion', th:'ยาฟื้นพลัง', desc:'ฟื้น HP 45%', price:30 },
+  ether:{ ico:'💧', name:'Ether', th:'น้ำมนตรา', desc:'ฟื้น MP 25', price:25 },
+  scroll:{ ico:'📜', name:'Truth Scroll', th:'คัมภีร์สัจจะ', desc:'เปิดเผยคำตอบที่ถูกของข้อนั้น', price:45 },
+};
+const UPGRADES = {
+  hp:{ ico:'❤️', name:'Vitality', th:'พลังชีวิต', desc:'Max HP +15', base:80, max:10 },
+  atk:{ ico:'⚔️', name:'Might', th:'พลังโจมตี', desc:'ATK +3', base:100, max:10 },
+  mp:{ ico:'✨', name:'Focus', th:'สมาธิ', desc:'Max MP +10', base:80, max:10 },
+};
+const AVATAR_SHOP = [
+  { emoji:'🧝', name:'เอลฟ์พราน', cost:150 },
+  { emoji:'🥷', name:'นินจาเงา', cost:220 },
+  { emoji:'🧛', name:'ท่านเคานต์', cost:300 },
+  { emoji:'🧞', name:'ยักษ์จินนี่', cost:380 },
+  { emoji:'🦸', name:'ฮีโร่ในตำนาน', cost:480 },
+  { emoji:'🐉', name:'มังกรผู้ตื่นรู้', cost:900 },
+];
+const CEFR_LEVELS = [
+  { id:'A2', name:'Beginner', th:'พื้นฐาน' },
+  { id:'B1', name:'Intermediate', th:'กลาง' },
+  { id:'B2', name:'Advanced', th:'สูง' },
+];
+const AI_THEMES = [
+  { id:'fantasy', th:'แฟนตาซี', en:'Fantasy', scene:'ruins' },
+  { id:'mystery', th:'สืบสวน', en:'Mystery', scene:'train' },
+  { id:'survival', th:'เอาชีวิตรอด', en:'Survival', scene:'beach' },
+  { id:'scifi', th:'ไซไฟ', en:'Sci-fi space station', scene:'cave' },
+];
+const SRS_HOURS = [0, 12, 24, 72, 168, 384];
+
+/* ------------------------------ save ------------------------------ */
+function defaultSave(){
+  return {
+    v:2, onboarded:false, name:'Traveler', cls:'warrior', avatar:'🛡️', ownedAvatars:[], cefr:'B1',
+    settings:{ sfx:70, music:false, tts:true, autoSpeak:false, source:'auto' },
+    level:1, xp:0, gold:40,
+    upgrades:{ hp:0, atk:0, mp:0 }, items:{ potion:2, ether:1, scroll:1 },
+    vocab:{}, achievements:{}, endings:{}, visited:{},
+    stats:{ scenesPlayed:0, storiesWon:0, battlesWon:0, bossesDefeated:0, correct:0, wrong:0, bestCombo:0,
+            challengesCompleted:0, bestChallenge:0, cardsReviewed:0, bestFloor:0, goldEarned:0 },
+    daily:{ date:'', quests:[], counters:{} },
+    streak:{ last:'', days:0 },
+    storySave:null,
+  };
+}
+function mergeDeep(base, extra){
+  for(const k in extra){
+    if(extra[k] && typeof extra[k]==='object' && !Array.isArray(extra[k]) && base[k] && typeof base[k]==='object' && !Array.isArray(base[k])) mergeDeep(base[k], extra[k]);
+    else base[k] = extra[k];
+  }
+  return base;
+}
+function loadSave(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw) return mergeDeep(defaultSave(), JSON.parse(raw));
+    const old = localStorage.getItem(OLD_SAVE_KEY);
+    if(old){ // migrate v1 progress
+      const o = JSON.parse(old), s = defaultSave();
+      s.onboarded = !!o.onboarded; s.name = o.name || s.name; s.avatar = o.avatar || s.avatar;
+      s.cefr = o.cefr || s.cefr; s.level = o.level || 1; s.gold = o.gold || s.gold;
+      s.achievements = o.achievements || {};
+      Object.values(o.vocab||{}).forEach(v=>{ s.vocab[v.word.toLowerCase()] = { word:v.word, thai:v.thai||'', pron:'', def:'', count:v.count||1, mastery:0, due:0 }; });
+      if(o.avatar && !Object.values(CLASSES).some(c=>c.emoji===o.avatar)) s.ownedAvatars.push(o.avatar);
+      return s;
+    }
+  }catch(e){}
+  return defaultSave();
+}
+let save = loadSave();
+let storageOk = true;
+function persist(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
+  catch(e){ if(storageOk){ storageOk=false; setTimeout(()=>toast('บันทึกข้อมูลในเครื่องไม่ได้ — ความคืบหน้าจะหายเมื่อปิดหน้า'),500); } }
+}
+
+/* --------------------------- derived stats --------------------------- */
+function xpNeeded(level){ return Math.round(100 * Math.pow(1.22, level-1)); }
+function playerStats(){
+  const c = CLASSES[save.cls] || CLASSES.warrior, L = save.level-1, u = save.upgrades;
+  return {
+    maxHp: c.hp + L*8 + u.hp*15,
+    maxMp: c.mp + L*3 + u.mp*10,
+    atk: c.atk + L*2 + u.atk*3,
+    crit: c.crit,
+  };
+}
+function todayStr(d){ const x = d || new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+
+/* ------------------------ rewards / progression ------------------------ */
+const pendingEvents = []; // level-ups and achievements shown after the current moment
+function addXp(n){
+  if(n<=0) return;
+  save.xp += n;
+  while(save.xp >= xpNeeded(save.level)){
+    const before = playerStats();
+    save.xp -= xpNeeded(save.level);
+    save.level += 1;
+    const after = playerStats();
+    pendingEvents.push({ type:'level', level:save.level, hp:after.maxHp-before.maxHp, mp:after.maxMp-before.maxMp, atk:after.atk-before.atk });
+    sfx.level();
+  }
+  persist();
+}
+function addGold(n){ if(n<=0) return; save.gold += n; save.stats.goldEarned += n; persist(); }
+function bump(key, n){
+  n = n===undefined ? 1 : n;
+  if(key in save.stats) save.stats[key] += n;
+  save.daily.counters[key] = (save.daily.counters[key]||0) + n;
+  persist();
+}
+function bumpMax(key, value){
+  if(value > (save.stats[key]||0)) save.stats[key] = value;
+  if(value > (save.daily.counters[key]||0)) save.daily.counters[key] = value;
+  persist();
+}
+
+/* ------------------------------ vocab / SRS ------------------------------ */
+function vkey(w){ return String(w||'').trim().toLowerCase(); }
+function learnWord(w){
+  const key = vkey(w.word); if(!key) return null;
+  let v = save.vocab[key];
+  if(!v){ v = save.vocab[key] = { word:w.word.trim(), thai:w.thai||'', pron:w.pron||'', def:w.def||'', count:0, mastery:0, due:Date.now() }; }
+  v.count += 1;
+  if(w.thai) v.thai = w.thai; if(w.pron && !v.pron) v.pron = w.pron; if(w.def && !v.def) v.def = w.def;
+  persist();
+  return v;
+}
+function grade(key, good){
+  const v = save.vocab[key]; if(!v) return;
+  if(good){ v.mastery = Math.min(5, v.mastery+1); v.due = Date.now() + SRS_HOURS[v.mastery]*HOUR; }
+  else { v.mastery = Math.max(0, v.mastery-1); v.due = Date.now() + 10*60000; }
+  persist();
+}
+function vocabList(){ return Object.entries(save.vocab).map(([k,v])=>Object.assign({key:k}, v)); }
+function dueWords(){ const now = Date.now(); return vocabList().filter(v=>v.due<=now); }
+function masteredCount(){ return vocabList().filter(v=>v.mastery>=4).length; }
+
+/* ------------------------------ achievements ------------------------------ */
+const ACHIEVEMENTS = [
+  { id:'first_step', ico:'👣', name:'First Step', desc:'เล่นฉากแรกในโหมด Story', gold:10, check:s=>s.stats.scenesPlayed>=1 },
+  { id:'story_win', ico:'📜', name:'Happy Ending', desc:'จบเนื้อเรื่องแบบชนะ 1 ครั้ง', gold:30, check:s=>s.stats.storiesWon>=1 },
+  { id:'endings_5', ico:'🗺️', name:'Path Finder', desc:'ค้นพบฉากจบ 5 แบบ', gold:60, check:s=>Object.keys(s.endings).length>=5 },
+  { id:'endings_all', ico:'🌌', name:'Every Road', desc:`ค้นพบฉากจบครบทั้ง ${TOTAL_ENDINGS} แบบ`, gold:200, check:s=>Object.keys(s.endings).length>=TOTAL_ENDINGS },
+  { id:'first_win', ico:'⚔️', name:'Monster Slayer', desc:'ชนะมอนสเตอร์ตัวแรก', gold:15, check:s=>s.stats.battlesWon>=1 },
+  { id:'win_25', ico:'🪓', name:'Veteran', desc:'ชนะมอนสเตอร์ 25 ตัว', gold:80, check:s=>s.stats.battlesWon>=25 },
+  { id:'boss_1', ico:'👑', name:'Boss Breaker', desc:'ล้มบอสได้ 1 ตัว', gold:40, check:s=>s.stats.bossesDefeated>=1 },
+  { id:'floor_10', ico:'🏯', name:'Tower Climber', desc:'ผ่านหอคอยถึงชั้น 10', gold:80, check:s=>s.stats.bestFloor>=10 },
+  { id:'floor_25', ico:'🌋', name:'Sky Piercer', desc:'ผ่านหอคอยถึงชั้น 25', gold:250, check:s=>s.stats.bestFloor>=25 },
+  { id:'combo_10', ico:'🔥', name:'On Fire', desc:'ทำคอมโบ x10', gold:40, check:s=>s.stats.bestCombo>=10 },
+  { id:'combo_25', ico:'☄️', name:'Unstoppable', desc:'ทำคอมโบ x25', gold:120, check:s=>s.stats.bestCombo>=25 },
+  { id:'words_25', ico:'📖', name:'Wordsmith', desc:'มีคำศัพท์ในคลัง 25 คำ', gold:30, check:s=>Object.keys(s.vocab).length>=25 },
+  { id:'words_100', ico:'📚', name:'Lexicon', desc:'มีคำศัพท์ในคลัง 100 คำ', gold:120, check:s=>Object.keys(s.vocab).length>=100 },
+  { id:'master_10', ico:'🧠', name:'Sharp Mind', desc:'เชี่ยวชาญ (4 ดาวขึ้นไป) 10 คำ', gold:60, check:()=>masteredCount()>=10 },
+  { id:'review_50', ico:'🃏', name:'Card Shark', desc:'ทบทวนการ์ดครบ 50 ใบ', gold:50, check:s=>s.stats.cardsReviewed>=50 },
+  { id:'ch_300', ico:'⏱️', name:'Quick Thinker', desc:'ทำคะแนน Blitz ได้ 300', gold:40, check:s=>s.stats.bestChallenge>=300 },
+  { id:'ch_800', ico:'⚡', name:'Lightning Mind', desc:'ทำคะแนน Blitz ได้ 800', gold:120, check:s=>s.stats.bestChallenge>=800 },
+  { id:'level_5', ico:'⭐', name:'Rising Hero', desc:'เลเวล 5', gold:50, check:s=>s.level>=5 },
+  { id:'level_12', ico:'🌟', name:'Living Legend', desc:'เลเวล 12', gold:150, check:s=>s.level>=12 },
+  { id:'rich', ico:'💰', name:'Treasure Hunter', desc:'หาทองได้รวม 1,000', gold:50, check:s=>s.stats.goldEarned>=1000 },
+];
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!save.achievements[a.id] && a.check(save)){
+      save.achievements[a.id] = Date.now();
+      save.gold += a.gold; // not counted as "earned" to avoid loops
+      pendingEvents.push({ type:'ach', a });
+    }
+  });
+  persist();
+}
+
+/* ------------------------------ daily ------------------------------ */
+const DAILY_POOL = [
+  { id:'win2', text:'ชนะมอนสเตอร์ 2 ตัว', key:'battlesWon', target:2, gold:40 },
+  { id:'correct15', text:'ตอบถูก 15 ข้อ', key:'correct', target:15, gold:30 },
+  { id:'review8', text:'ทบทวนการ์ดคำศัพท์ 8 ใบ', key:'cardsReviewed', target:8, gold:30 },
+  { id:'scene3', text:'เล่น Story 3 ฉาก', key:'scenesPlayed', target:3, gold:25 },
+  { id:'blitz1', text:'เล่น Word Blitz 1 รอบ', key:'challengesCompleted', target:1, gold:25 },
+  { id:'combo6', text:'ทำคอมโบ x6 ในการต่อสู้', key:'bestCombo', target:6, gold:35 },
+  { id:'boss1', text:'ล้มบอสได้ 1 ตัว', key:'bossesDefeated', target:1, gold:60 },
+];
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function ensureDaily(){
+  const t = todayStr();
+  if(save.daily.date === t) return;
+  const rng = mulberry(hashStr(t));
+  const pool = DAILY_POOL.slice().filter(q=>q.id!=='boss1' || save.stats.bestFloor>=3);
+  const picks = [];
+  while(picks.length<3 && pool.length){ picks.push(pool.splice(Math.floor(rng()*pool.length),1)[0].id); }
+  save.daily = { date:t, quests:picks.map(id=>({ id, claimed:false })), counters:{} };
+  // login streak
+  const y = todayStr(new Date(Date.now()-DAY));
+  save.streak.days = save.streak.last===y ? save.streak.days+1 : 1;
+  save.streak.last = t;
+  const bonus = 10 + Math.min(save.streak.days,7)*5;
+  save.gold += bonus;
+  persist();
+  if(save.onboarded) setTimeout(()=>toast(`🔥 เข้าเล่นต่อเนื่อง ${save.streak.days} วัน · รับ ${bonus} ทอง`), 600);
+}
+function questInfo(q){
+  const d = DAILY_POOL.find(x=>x.id===q.id);
+  const p = Math.min(d.target, save.daily.counters[d.key]||0);
+  return Object.assign({}, d, { progress:p, done:p>=d.target, claimed:q.claimed });
+}
+
+/* ------------------------------ RNG ------------------------------ */
+function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function pick(arr, rng){ return arr[Math.floor((rng||Math.random)()*arr.length)]; }
+function shuffle(arr){ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function rint(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+
+/* ------------------------------ audio ------------------------------ */
+let audioCtx = null, musicTimer = null;
+function ctxA(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
+function tone(freq, dur, type, vol, delay){
+  const v = (save.settings.sfx/100) * (vol||0.12);
+  if(v<=0) return;
+  const ctx = ctxA(); if(!ctx) return;
+  const t0 = ctx.currentTime + (delay||0);
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type||'square'; o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  o.connect(g).connect(ctx.destination); o.start(t0); o.stop(t0+dur+0.02);
+}
+function slide(f1, f2, dur, type, vol){
+  const v = (save.settings.sfx/100)*(vol||0.1); if(v<=0) return;
+  const ctx = ctxA(); if(!ctx) return; const t0 = ctx.currentTime;
+  const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type||'square';
+  o.frequency.setValueAtTime(f1,t0); o.frequency.exponentialRampToValueAtTime(f2,t0+dur);
+  g.gain.setValueAtTime(v,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.connect(g).connect(ctx.destination); o.start(t0); o.stop(t0+dur+0.02);
+}
+const sfx = {
+  click:()=>tone(420,.05,'square',.06),
+  hit:()=>{ slide(900,120,.18,'square',.12); },
+  crit:()=>{ slide(1400,100,.25,'sawtooth',.12); tone(1800,.08,'square',.08,.05); },
+  hurt:()=>{ slide(220,60,.3,'sawtooth',.14); },
+  wrong:()=>tone(130,.22,'sawtooth',.1),
+  heal:()=>{ [523,659,784].forEach((f,i)=>tone(f,.12,'triangle',.12,i*.07)); },
+  magic:()=>{ slide(300,1600,.35,'triangle',.12); },
+  coin:()=>{ tone(988,.07,'square',.08); tone(1319,.12,'square',.08,.07); },
+  victory:()=>{ [523,659,784,1046,784,1046].forEach((f,i)=>tone(f,.14,'square',.1,i*.1)); },
+  defeat:()=>{ [392,330,262,196].forEach((f,i)=>tone(f,.22,'triangle',.13,i*.16)); },
+  level:()=>{ [392,523,659,784,1046].forEach((f,i)=>tone(f,.12,'square',.09,i*.08)); },
+  tick:()=>tone(1200,.03,'square',.04),
+  flip:()=>slide(500,900,.08,'triangle',.08),
+};
+const SONG = [220,262,330,262, 196,247,294,247, 175,220,262,220, 196,247,294,330];
+function setMusic(on){
+  clearInterval(musicTimer); musicTimer = null;
+  if(!on) return;
+  let step = 0;
+  musicTimer = setInterval(()=>{
+    if(save.settings.sfx<=0) return;
+    const n = SONG[step % SONG.length];
+    tone(n*2, .16, 'triangle', .035);
+    if(step%4===0) tone(n/2, .4, 'square', .025);
+    step++;
+  }, 230);
+}
+
+/* ------------------------------ speech ------------------------------ */
+function speak(text){
+  if(!save.settings.tts || !('speechSynthesis' in window) || !text) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = .88;
+    const v = speechSynthesis.getVoices().find(x=>/en[-_]US/i.test(x.lang)) || speechSynthesis.getVoices().find(x=>/^en/i.test(x.lang));
+    if(v) u.voice = v;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ======================================================================
+   PIXEL ART
+   ====================================================================== */
+const PIXEL_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function validatePixelArt(raw){
+  if(!raw || typeof raw!=='object') return null;
+  let { width, height, palette, rows } = raw;
+  width = parseInt(width,10); height = parseInt(height,10);
+  if(!Number.isFinite(width)||!Number.isFinite(height)||width<8||width>64||height<8||height>64) return null;
+  if(!Array.isArray(palette)||!palette.length||palette.length>36) return null;
+  if(!palette.every(c=>typeof c==='string' && /^#[0-9a-fA-F]{3,8}$/.test(c.trim()))) return null;
+  if(!Array.isArray(rows)||rows.length<Math.floor(height*0.8)) return null;
+  const clean = [];
+  for(let y=0;y<height;y++){ let r = String(rows[y]||rows[rows.length-1]||''); if(r.length<width) r = r.padEnd(width, r.slice(-1)||'0'); clean.push(r.slice(0,width)); }
+  return { width, height, palette:palette.map(c=>c.trim()), rows:clean };
+}
+function drawPixelArt(canvas, art){
+  if(!canvas||!art) return;
+  canvas.width = art.width; canvas.height = art.height;
+  const ctx = canvas.getContext('2d');
+  for(let y=0;y<art.height;y++) for(let x=0;x<art.width;x++){
+    const idx = PIXEL_CHARSET.indexOf((art.rows[y][x]||'0').toUpperCase());
+    ctx.fillStyle = art.palette[idx>=0 && idx<art.palette.length ? idx : 0]; ctx.fillRect(x,y,1,1);
+  }
+}
+
+/* ---------------------- procedural scenes (160x90) ---------------------- */
+function paintScene(canvas, key, seed){
+  const W=160, H=90; canvas.width=W; canvas.height=H;
+  const c = canvas.getContext('2d'); const rng = mulberry(hashStr(key+':'+(seed||0)));
+  const R = (x,y,w,h,col)=>{ c.fillStyle=col; c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h)); };
+  const P = (x,y,col)=>R(x,y,1,1,col);
+  const bands = (cols, y0, y1)=>{ // dithered gradient bands
+    const h = (y1-y0)/cols.length;
+    cols.forEach((col,i)=>{ R(0,y0+i*h,W,Math.ceil(h)+1,col); });
+    for(let i=1;i<cols.length;i++){ const yy=Math.round(y0+i*h); for(let x=0;x<W;x++){ if((x+yy)%2===0) P(x,yy-1,cols[i]); if((x+yy)%2===1) P(x,yy,cols[i-1]); } }
+  };
+  const stars = (n,col,maxY)=>{ for(let i=0;i<n;i++) P(rng()*W, rng()*(maxY||50), rng()<.2?'#ffffff':col); };
+  const disc = (cx,cy,r,col)=>{ for(let y=-r;y<=r;y++) for(let x=-r;x<=r;x++) if(x*x+y*y<=r*r+r*.8) P(cx+x,cy+y,col); };
+  const ridge = (base, amp, fq, col, ph)=>{ ph = ph===undefined? rng()*10:ph; for(let x=0;x<W;x++){ const y = base - amp*(Math.sin(x*fq+ph)*.6 + Math.sin(x*fq*2.3+ph*1.7)*.3 + Math.sin(x*fq*5.1+ph)*.1); R(x,y,1,H-y,col);} };
+  const pine = (x,base,h,col)=>{ for(let i=0;i<h;i++){ const w = Math.max(1, Math.round((i/h)*h*.45)); R(x-w,base-h+i,w*2+1,1,col);} R(x,base,1,2,col); };
+  const house = (x,base,w,h,wall,roof,win)=>{ R(x,base-h,w,h,wall); for(let i=0;i<=w/2+1;i++) R(x-1+i, base-h-i, w+2-i*2, 1, roof); if(win){ R(x+2,base-h+3,2,2,win); if(w>7) R(x+w-4,base-h+3,2,2,win);} R(x+Math.floor(w/2)-1,base-3,2,3,'#120c1c'); };
+  const palm = (x,base,h,trunk,leaf)=>{ for(let i=0;i<h;i++) P(x+Math.round(Math.sin(i/h*1.4)*3), base-i, trunk); const tx=x+Math.round(Math.sin(1.4)*3), ty=base-h; [[-1,0],[1,0],[-1,1],[1,1],[0,-1]].forEach(([dx,dy])=>{ for(let i=1;i<9;i++) P(tx+dx*i, ty+dy*i*.5+(i*i)/14, leaf); }); };
+  const glow = (cx,cy,r,rgb)=>{ const g = c.createRadialGradient(cx,cy,0,cx,cy,r); g.addColorStop(0,`rgba(${rgb},.55)`); g.addColorStop(1,`rgba(${rgb},0)`); c.fillStyle=g; c.fillRect(cx-r,cy-r,r*2,r*2); };
+  const S = {
+    village(){ bands(['#0d0a24','#161236','#221a4a','#33245e'],0,62); stars(60,'#9d8fe0',45); disc(128,16,8,'#ffe9b0'); disc(125,14,7,'#fff6d8');
+      ridge(58,6,.04,'#241a48'); ridge(66,4,.07,'#1a1336');
+      [[18,70,12,10],[36,72,10,8],[64,70,14,11],[92,72,10,8],[112,70,12,10]].forEach(([x,b,w,h])=>house(x,b,w,h,'#2b2150','#3d2d6e','#ffb347'));
+      R(80,40,6,30,'#2b2150'); for(let i=0;i<5;i++) R(80-1+i*0,36-i,8-i*2+i*0,1,'#3d2d6e'); R(79,38,8,2,'#3d2d6e'); R(82,44,2,3,'#ffd166'); glow(83,45,12,'255,179,71');
+      R(0,70,W,20,'#120d28'); for(let i=0;i<30;i++) P(rng()*W,72+rng()*18,'#1d1640'); },
+    forest(){ bands(['#060f16','#0a1a1f','#0f2626'],0,60); stars(18,'#7aa39a',25);
+      for(let i=0;i<14;i++) pine(i*12+rng()*6, 70, 38+rng()*14, '#0f2a28');
+      for(let i=0;i<10;i++) pine(i*17+rng()*8, 80, 44+rng()*18, '#0a1f1c');
+      R(0,78,W,12,'#06120f'); for(let i=0;i<7;i++) pine(i*26+rng()*10, 92, 60, '#040d0b');
+      for(let i=0;i<14;i++){ const x=rng()*W,y=30+rng()*45; P(x,y,'#d8ff8a'); glow(x,y,4,'216,255,138'); }
+      glow(96,52,14,'79,200,255'); disc(96,52,2,'#bff4ff'); },
+    mountain(){ bands(['#161a29','#222a3f','#323c57','#46506e'],0,70);
+      [[20,70,34],[70,70,48],[125,70,40]].forEach(([x,b,h])=>{ for(let i=0;i<h;i++){ const w=i*1.1; R(x-w,b-h+i,w*2+1,1,i<h*.28?'#e8eef9':'#4a5572'); } });
+      [[45,78,26],[100,80,30],[150,78,24]].forEach(([x,b,h])=>{ for(let i=0;i<h;i++){ const w=i*1.3; R(x-w,b-h+i,w*2+1,1,i<h*.25?'#cfd8ea':'#343d57'); } });
+      R(0,78,W,12,'#dfe6f3'); R(96,66,14,12,'#0e0f18'); R(98,64,10,2,'#0e0f18');
+      for(let i=0;i<90;i++){ const x=rng()*W,y=rng()*H; R(x,y,1,1+(rng()<.4?1:0),'#ffffff'); } },
+    ruins(){ bands(['#2a0f2e','#4a1738','#7a2542','#b8443f','#e0703f'],0,64); disc(80,60,16,'#ffb347'); disc(80,60,12,'#ffd9a0');
+      ridge(64,5,.05,'#3a1432');
+      [[14,30],[34,40],[118,36],[140,26]].forEach(([x,h])=>{ R(x,70-h,8,h,'#3a1f3f'); R(x-2,70-h,12,3,'#4d2a52'); R(x+2,70-h+6,1,h-6,'#2b1630'); });
+      R(0,70,W,20,'#24112a');
+      for(let i=0;i<60;i++){ const x=50+rng()*60, y=76-Math.sqrt(rng())*10; P(x,y,rng()<.3?'#fff2b0':'#ffd166'); } glow(80,74,30,'255,209,102');
+      // sleeping dragon silhouette
+      for(let i=0;i<46;i++){ const y = 66 - Math.sin(i/46*Math.PI)*12; R(57+i,y,1,72-y,'#170a1c'); } R(98,56,10,5,'#170a1c'); R(106,58,4,2,'#170a1c'); P(101,57,'#ffd166'); for(let i=0;i<14;i++) R(43+i,68+Math.sin(i/3)*1.5,1,2,'#170a1c'); },
+    cave(){ R(0,0,W,H,'#120c1c'); for(let i=0;i<220;i++) R(rng()*W,rng()*H,2+rng()*4,1+rng()*2, rng()<.5?'#1b1328':'#0c0814');
+      R(0,74,W,16,'#1a1226'); ridge(14,8,.08,'#07040c'); R(0,0,W,8,'#07040c');
+      R(58,26,44,48,'#3a2d4a'); R(60,28,40,46,'#4a3a5c'); R(79,28,2,46,'#2c2138'); glow(80,50,40,'255,122,61');
+      for(let i=0;i<10;i++){ const x=63+(i%5)*7, y=34+Math.floor(i/5)*20; R(x,y,3,1,'#ff7a3d'); R(x+1,y-1,1,3,'#ffb347'); }
+      for(let i=0;i<12;i++){ const x=rng()*W; R(x,8,2,4+rng()*8,'#07040c'); } },
+    train(){ R(0,0,W,H,'#2a1a2c'); R(0,0,W,6,'#1a0f1c'); R(0,66,W,24,'#3b2433'); for(let x=0;x<W;x+=8) R(x,66,1,24,'#33202c');
+      [[8,14,40,34],[60,14,40,34],[112,14,40,34]].forEach(([x,y,w,h],i)=>{ R(x-2,y-2,w+4,h+4,'#5a3a2a'); const g=c.createLinearGradient(0,y,0,y+h); g.addColorStop(0,'#0d0b2a'); g.addColorStop(1,'#2b2466'); c.fillStyle=g; c.fillRect(x,y,w,h);
+        for(let s=0;s<8;s++) P(x+rng()*w,y+rng()*h*.6,'#cfc6ff'); for(let xx=0;xx<w;xx++){ const hh = 6+Math.sin((xx+i*40)*.15)*3; R(x+xx,y+h-hh,1,hh,'#140f30'); } if(i===1) disc(x+30,y+8,4,'#ffe9b0'); R(x+w/2-1,y,2,h,'#5a3a2a'); });
+      for(let i=0;i<3;i++){ R(20+i*52,56,24,10,'#6e2f3a'); R(20+i*52,54,24,3,'#8a3c48'); } for(let i=0;i<4;i++){ R(4+i*50,6,3,5,'#ffd166'); glow(5+i*50,10,10,'255,209,102'); } },
+    cabin(){ R(0,0,W,H,'#2c1f3d'); for(let x=0;x<W;x+=10) R(x,0,1,64,'#271b37'); R(0,64,W,26,'#3a2a24'); for(let x=0;x<W;x+=12) R(x,64,1,26,'#33241f');
+      R(96,14,40,26,'#5a3a2a'); R(98,16,36,22,'#0d0b2a'); for(let s=0;s<6;s++) P(98+rng()*36,16+rng()*12,'#cfc6ff'); R(98,32,36,6,'#140f30');
+      R(10,40,64,8,'#5a3a2a'); R(10,36,64,5,'#8a6a9a'); R(10,18,64,6,'#5a3a2a'); R(10,14,64,5,'#6a5a8a'); R(8,14,3,36,'#4a2e22'); R(72,14,3,36,'#4a2e22');
+      R(100,56,18,8,'#8a5a2a'); R(101,54,16,3,'#b07a3a'); R(108,57,2,2,'#ffd166'); R(140,20,4,6,'#ffd166'); glow(142,24,18,'255,209,102'); R(118,64,26,2,'#1e5aa0'); },
+    dining(){ R(0,0,W,H,'#3a2a1f'); for(let x=0;x<W;x+=16) R(x,0,2,58,'#33251b'); R(0,58,W,32,'#2a1c16');
+      R(0,50,W,10,'#6a4428'); R(0,48,W,3,'#8a5a34'); for(let i=0;i<9;i++){ R(10+i*17,42,5,6,'#efe6ff'); R(15+i*17,44,1,2,'#efe6ff'); }
+      for(let i=0;i<4;i++){ R(20+i*40,0,1,14,'#1a120c'); R(16+i*40,14,9,4,'#ffb347'); glow(20+i*40,18,16,'255,179,71'); }
+      R(120,62,10,4,'#c0392b'); R(126,60,2,6,'#c0392b'); P(124,63,'#ffd166'); },
+    beach(){ bands(['#2b1a4a','#5a2358','#a8385a','#e0603f','#ffb347'],0,52); disc(80,52,13,'#ffd9a0'); R(0,52,W,16,'#1f4b7a');
+      for(let i=0;i<40;i++) R(rng()*W,53+rng()*14,3+rng()*6,1,rng()<.5?'#ffb347':'#3a6fa0'); R(66,53,28,1,'#ffd9a0'); R(70,56,20,1,'#ffb347');
+      ridge(76,3,.05,'#e0b36a'); R(0,80,W,10,'#c9954f'); for(let i=0;i<50;i++) P(rng()*W,72+rng()*18,'#b8864a');
+      palm(24,82,34,'#5a3a1a','#1f5a3a'); palm(140,84,28,'#5a3a1a','#1f5a3a'); R(96,78,14,3,'#5a3a2a'); R(104,74,2,6,'#5a3a2a'); R(90,82,8,2,'#4a2e22'); },
+    beachNight(){ bands(['#070b1f','#0d1633','#16224a'],0,52); stars(70,'#9fb2ff',45); disc(36,18,6,'#e8f0ff'); R(0,52,W,16,'#0d2440');
+      for(let i=0;i<30;i++) R(rng()*W,53+rng()*14,3+rng()*5,1,'#1d3d66'); R(30,56,14,1,'#c8d8ff');
+      ridge(76,3,.05,'#4a4a6a'); R(0,80,W,10,'#3a3a58');
+      for(let i=0;i<16;i++){ R(98+i,72-i*0.9,1,i*0.9+6,'#2a2a1f'); R(130-i,72-i*0.9,1,i*0.9+6,'#2a2a1f'); } palm(20,82,30,'#1a1a14','#0f2a22'); },
+    jungle(){ bands(['#0a1a12','#10281a','#163420'],0,70); for(let i=0;i<9;i++) ridge(40+i*6,5,.07+i*.01, ['#12301e','#0f2a1a','#0c2416','#0a1f12'][i%4]);
+      for(let i=0;i<25;i++){ const x=rng()*W, y=10+rng()*60; for(let k=0;k<7;k++) R(x-k,y+k*.6,k*2+1,1,'#1f5a32'); }
+      for(let i=0;i<10;i++){ const x=rng()*W; for(let y=0;y<30+rng()*30;y++) P(x+Math.sin(y*.3)*1.5,y,'#2a6a3a'); }
+      for(let i=0;i<4;i++){ const x=20+rng()*120, y=40+rng()*30; P(x,y,'#ffd166'); P(x+3,y,'#ffd166'); }
+      R(0,82,W,8,'#07140c'); },
+    lighthouse(){ bands(['#1d1438','#3a2150','#6a3060','#a04a5a'],0,62); stars(20,'#cbb3ff',30);
+      ridge(72,4,.03,'#2a2f45'); R(0,64,W,26,'#1b2b40'); for(let i=0;i<20;i++) R(rng()*W,66+rng()*20,4+rng()*6,1,'#28405a');
+      R(92,56,68,34,'#231a2c'); R(100,50,50,8,'#231a2c');
+      for(let i=0;i<30;i++){ const w=10-i*0.12; R(120-w/2, 50-i, w, 1, Math.floor(i/5)%2?'#efe6ff':'#c0392b'); }
+      R(114,14,12,6,'#2a2a3a'); R(116,16,8,4,'#ffe9a0'); R(113,12,14,2,'#1a1a2a'); glow(120,18,22,'255,233,160');
+      c.fillStyle='rgba(255,233,160,.18)'; c.beginPath(); c.moveTo(118,17); c.lineTo(0,4); c.lineTo(0,34); c.closePath(); c.fill();
+      c.fillStyle='rgba(200,190,230,.18)'; for(let i=0;i<4;i++) c.fillRect(0,40+i*7,W,3); },
+    camp(){ bands(['#060d0a','#0a1812','#0f2218'],0,64); stars(12,'#8aa39a',20); for(let i=0;i<12;i++) pine(i*14+rng()*8, 70, 34+rng()*12, '#0b1c14');
+      R(0,70,W,20,'#10150e'); for(let i=0;i<14;i++){ R(40+i,70-i*1.1,1,i*1.1,'#4a3a22'); R(68-i,70-i*1.1,1,i*1.1,'#3a2c1a'); }
+      glow(100,74,34,'255,122,61'); R(92,76,16,3,'#3a2210'); [[100,68,'#ffd166'],[98,70,'#ff7a3d'],[102,71,'#ff7a3d'],[100,72,'#ffb347'],[97,73,'#ff7a3d'],[103,73,'#ffb347'],[99,66,'#ffe9a0']].forEach(([x,y,cl])=>R(x,y,2,3,cl)); },
+  };
+  (S[key] || S.village)();
+  // soft vignette
+  const v = c.createRadialGradient(W/2,H/2,H*.35,W/2,H/2,W*.62); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.45)'); c.fillStyle=v; c.fillRect(0,0,W,H);
+}
+
+/* ---------------------- procedural monsters ---------------------- */
+const MON_PALETTES = [
+  ['#1a0f14','#6b1f3a','#c43d5c','#ff7a9a','#ffe14f'],
+  ['#0f1a14','#1f5a3a','#3fae6a','#9af0b0','#ff5a5a'],
+  ['#0f1020','#2a2e7a','#4f5ad6','#9aa6ff','#ffd166'],
+  ['#1a120a','#6a3a12','#c0762a','#ffc27a','#6ef0ff'],
+  ['#140f20','#4a2a7a','#8a4fd6','#d0a6ff','#7aff8a'],
+  ['#0f1818','#1f5a5a','#2ec4b6','#a6fff6','#ff4d6d'],
+  ['#1a1a1a','#4a4a4a','#8a8a8a','#e0e0e0','#ff3030'],
+];
+const MON_PRE = ['Gloom','Ember','Frost','Rot','Hex','Murk','Grim','Thorn','Void','Ash','Bog','Rune','Skull','Moss','Storm','Blight','Dread','Cinder'];
+const MON_SUF = ['maw','fang','wing','shade','golem','crawler','wyrm','imp','hound','slime','eye','beast','wraith','spawn','horn','claw'];
+const BOSS_TITLES = ['the Relentless','the Cunning','the Formidable','the Treacherous','the Ominous','the Eerie','the Hostile','the Tenacious'];
+function genMonster(seed, boss){
+  const rng = mulberry(seed);
+  const N = 16, half = 8, grid = Array.from({length:N},()=>Array(N).fill(0));
+  const rx = 4.5 + rng()*3, ry = 5 + rng()*2.5, cy = 8 + (rng()-.5)*1.5;
+  for(let y=0;y<N;y++) for(let x=0;x<half;x++){
+    const dx = (7.5-x)/rx, dy = (y-cy)/ry, d = Math.sqrt(dx*dx+dy*dy);
+    if(rng() < 1.25 - d*1.05) grid[y][x] = 1;
+  }
+  for(let y=Math.round(cy-ry*.6); y<=Math.round(cy+ry*.7); y++) if(y>=0&&y<N){ grid[y][7]=1; grid[y][6]=1; }
+  // smoothing pass
+  const g2 = grid.map(r=>r.slice());
+  for(let y=1;y<N-1;y++) for(let x=1;x<half;x++){ let n=0; [[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,b])=>{ const xx = x+a>7 ? 7-(x+a-8) : x+a; n+=grid[y+b][xx]||0; }); if(n>=3) g2[y][x]=1; if(n<=1) g2[y][x]=0; }
+  // limbs
+  if(rng()<.7){ const ly = Math.round(cy+ry*.5); for(let i=0;i<3;i++){ const yy=Math.min(N-1,ly+i); const xx=Math.max(0, 7-Math.round(rx*.6)-i%2); g2[yy][xx]=1; } }
+  if(rng()<.5){ const ay = Math.round(cy); for(let i=0;i<3;i++){ const xx = Math.max(0, 7-Math.round(rx)-i+1); if(ay-i>=0) g2[ay-i][xx]=1; } }
+  // horns
+  if(boss || rng()<.35){ const top = g2.findIndex(r=>r.some(v=>v)); const hx = 7-Math.round(rx*.45); for(let i=1;i<=(boss?3:2);i++){ if(top-i>=0) g2[top-i][Math.max(0,hx-i+1)]=2; } }
+  // mirror
+  const full = g2.map(r=>{ const h = r.slice(0,half); return h.concat(h.slice().reverse()); });
+  const pal = pick(MON_PALETTES, rng);
+  const eyeY = Math.max(1, Math.round(cy - ry*.25)), cyclops = rng()<.3;
+  const eyes = cyclops ? [[7,eyeY],[8,eyeY]] : [[7-1-Math.floor(rng()*2),eyeY]];
+  if(!cyclops) eyes.push([15-eyes[0][0], eyeY]);
+  const mouthY = Math.min(N-2, eyeY + 3 + (rng()<.5?1:0)), mouthW = 1+Math.floor(rng()*3);
+  return { grid:full, pal, eyes, cyclops, mouthY, mouthW, boss };
+}
+function drawMonster(canvas, m){
+  const N = 16, S = 18; canvas.width = S; canvas.height = S;
+  const c = canvas.getContext('2d'); c.clearRect(0,0,S,S);
+  const [outline, dark, main, light, eyeCol] = m.pal;
+  const at = (x,y)=> (y>=0&&y<N&&x>=0&&x<N) ? m.grid[y][x] : 0;
+  for(let y=-1;y<=N;y++) for(let x=-1;x<=N;x++){
+    if(at(x,y)) continue;
+    if(at(x+1,y)||at(x-1,y)||at(x,y+1)||at(x,y-1)){ c.fillStyle = outline; c.fillRect(x+1,y+1,1,1); }
+  }
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    const v = at(x,y); if(!v) continue;
+    let col = main; if(v===2) col = m.boss ? '#ffd166' : light; else if(!at(x,y-1)) col = light; else if(!at(x,y+1)) col = dark;
+    c.fillStyle = col; c.fillRect(x+1,y+1,1,1);
+  }
+  m.eyes.forEach(([x,y])=>{ if(at(x,y)){ c.fillStyle='#ffffff'; c.fillRect(x+1,y+1,1,1); c.fillStyle=eyeCol; if(m.cyclops){ c.fillRect(x+1,y+2,1,1);} else c.fillRect(x+1,y+2,1,1); } });
+  for(let i=0;i<m.mouthW;i++){ [7-i,8+i].forEach(x=>{ if(at(x,m.mouthY)){ c.fillStyle = outline; c.fillRect(x+1,m.mouthY+1,1,1); if(i===m.mouthW-1){ c.fillStyle='#ffffff'; c.fillRect(x+1,m.mouthY+1,1,1);} } }); }
+}
+function monsterName(seed, boss){
+  const r = mulberry(seed*7+3);
+  const n = pick(MON_PRE,r) + pick(MON_SUF,r);
+  return boss ? n + ' ' + pick(BOSS_TITLES,r) : n;
+}
+
+/* ======================================================================
+   AI BRIDGE — talks to /api/claude (your own server keeps the API key)
+   ====================================================================== */
+let aiStatus = 'unknown'; // 'online' | 'offline' | 'unknown'
+async function checkAI(){
+  aiStatus = 'unknown';
+  if(location.protocol==='file:'){ aiStatus = 'offline'; if(typeof onAIStatus === 'function') onAIStatus(); return aiStatus; }
+  try{
+    const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 5000);
+    const res = await fetch('/api/claude', { method:'GET', signal:ctl.signal });
+    clearTimeout(t);
+    const data = await res.json().catch(()=>null);
+    aiStatus = (res.ok && data && data.ok && data.configured) ? 'online' : 'offline';
+  }catch(e){ aiStatus = 'offline'; }
+  if(typeof onAIStatus === 'function') onAIStatus();
+  return aiStatus;
+}
+function useAI(){ const s = save.settings.source; return s==='ai' || (s==='auto' && aiStatus==='online'); }
+async function callClaude(turns, maxTokens){
+  let res;
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 90000);
+  try{
+    res = await fetch('/api/claude', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ turns, maxTokens }), signal:ctl.signal });
+  }catch(e){ clearTimeout(t); throw { code: e && e.name==='AbortError' ? 'timeout' : 'network_error' }; }
+  clearTimeout(t);
+  let data; try{ data = await res.json(); }catch(e){ throw { code: res.status===404 ? 'no_backend' : 'invalid_json' }; }
+  if(!res.ok) throw { code: data.code || (res.status===404?'no_backend':'server_error'), message:data.error };
+  return data;
+}
+function errorCopy(e){
+  switch(e && e.code){
+    case 'network_error': return 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่';
+    case 'no_backend': return 'ไม่พบเซิร์ฟเวอร์ /api/claude — เปิดผ่าน Vercel หรือ npm start แล้วลองใหม่ หรือเล่นโหมดออฟไลน์';
+    case 'not_configured': return 'เซิร์ฟเวอร์ยังไม่มี ANTHROPIC_API_KEY — ตั้งค่าใน Environment Variables แล้ว Redeploy';
+    case 'server_error': return 'เซิร์ฟเวอร์ตอบกลับผิดพลาด ลองใหม่อีกครั้ง';
+    case 'rate_limited': return 'เรียกใช้ถี่เกินไป รอสักครู่แล้วลองใหม่';
+    case 'invalid_json': return 'AI ส่งข้อมูลรูปแบบไม่ถูกต้อง ลองใหม่อีกครั้ง';
+    case 'timeout': return 'AI ใช้เวลานานเกินไป ลองใหม่อีกครั้ง';
+    default: return 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง';
+  }
+}
+
+/* ======================================================================
+   QUESTIONS — built-in generator (+ AI batches when available)
+   ====================================================================== */
+function levelPool(){
+  const lv = save.cefr;
+  if(lv==='A2') return WORD_BANK.A2.concat(WORD_BANK.B1.slice(0,10));
+  if(lv==='B1') return WORD_BANK.B1.concat(WORD_BANK.A2.slice(0,12), WORD_BANK.B2.slice(0,8));
+  return WORD_BANK.B2.concat(WORD_BANK.B1.slice(0,15));
+}
+const QTYPES = { def:'ความหมายนี้คือคำไหน?', th2en:'คำไหนแปลว่า…', en2th:'คำนี้แปลว่าอะไร?' };
+function wordFromVocab(v){ const b = ALL_WORDS.find(w=>w.word.toLowerCase()===v.key); return b || (v.thai ? { word:v.word, pron:v.pron||'', thai:v.thai, def:v.def||'' } : null); }
+function makeQuestion(recent){
+  const pool = levelPool();
+  let word = null;
+  const due = dueWords().filter(v=>!recent.has(v.key)).map(wordFromVocab).filter(Boolean);
+  if(due.length && Math.random()<.3) word = pick(due);
+  let tries = 0;
+  while(!word || (recent.has(vkey(word.word)) && tries<30)){ word = pick(pool); tries++; }
+  recent.add(vkey(word.word)); if(recent.size>18){ recent.delete(recent.values().next().value); }
+  let type = pick(word.def ? ['def','def','th2en','en2th'] : ['th2en','en2th']);
+  const others = shuffle((pool.length>6?pool:ALL_WORDS).filter(w=>w.word!==word.word && w.thai!==word.thai)).slice(0,3);
+  const opts = shuffle([word].concat(others));
+  const correct = opts.indexOf(word);
+  let prompt, promptThai=false, options;
+  if(type==='def'){ prompt = word.def; options = opts.map(o=>({ text:o.word, sub:o.pron, thai:false, after:o.thai })); }
+  else if(type==='th2en'){ prompt = word.thai; promptThai = true; options = opts.map(o=>({ text:o.word, sub:o.pron, thai:false, after:o.thai })); }
+  else { prompt = word.word; options = opts.map(o=>({ text:o.thai, sub:'', thai:true, after:o.word })); }
+  return { type, label:QTYPES[type], prompt, promptThai, options, correct, word };
+}
+function aiQuestionsToLocal(list){
+  return (list||[]).map(q=>{
+    const keys = ['A','B','C','D']; if(!q || !q.options || !keys.every(k=>q.options[k]&&q.options[k].word) || !keys.includes(q.correct)) return null;
+    const c = q.options[q.correct];
+    return { type:'def', ai:true, label:'✨ AI · ความหมายนี้คือคำไหน?', prompt:String(q.prompt||''), promptThai:false,
+      options: keys.map(k=>({ text:q.options[k].word, sub:q.options[k].pron||'', thai:false, after:q.options[k].thai||'' })),
+      correct: keys.indexOf(q.correct), word:{ word:c.word, pron:c.pron||'', thai:c.thai||'', def:String(q.prompt||'') } };
+  }).filter(Boolean);
+}
+function aiBattlePrompt(){
+  return `You are designing ONE vocabulary battle for an English-learning RPG for a Thai learner at CEFR ${save.cefr} level.
+Invent an original (non-copyrighted) fantasy monster.
+Create exactly 8 multiple-choice vocabulary questions at CEFR ${save.cefr}, increasing slightly in difficulty. Each question gives an English definition or short context clue (never containing the answer word), plus 4 options (A-D): one correct English word and three plausible distractors of the same difficulty. For every option give the word, a simple pronunciation guide in slashes, and its Thai meaning.
+Draw the monster as retro pixel art: {"width":32,"height":18,"palette":[up to 12 hex colors, index 0 is the dark background],"rows":[18 strings of exactly 32 characters from "0123456789AB"]}. Bold readable silhouette centered, no text, never depict real people or copyrighted characters.
+Respond with ONLY this JSON:
+{"monsterName":"string","monsterArt":{...},"questions":[{"prompt":"string","options":{"A":{"word":"","pron":"/.../","thai":""},"B":{...},"C":{...},"D":{...}},"correct":"A"}]}`;
+}
+/* ======================================================================
+   UI — screens, game loops and one delegated action handler
+   ====================================================================== */
+const TAB_SCREENS = ['hub','library','shop','hero','settings'];
+const ui = {
+  screen: save.onboarded ? 'hub' : 'onboarding',
+  onboard:{ name:'', cls:'warrior', cefr:'B1' },
+  story:null, battle:null, ch:null, review:null,
+  lib:{ q:'', filter:'all' }, shopTab:'items', aiTheme:'fantasy',
+  modals:[], exportCode:'',
+};
+const $ = s=>document.querySelector(s);
+function esc(s){ return s===undefined||s===null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function goto(screen){ stopTimers(); ui.screen = screen; render(); window.scrollTo(0,0); }
+function stopTimers(){
+  if(ui.battle){ clearInterval(ui.battle.timer); clearTimeout(ui.battle.autoNext); }
+  if(ui.ch && ui.screen!=='challenge'){ clearInterval(ui.ch.timer); }
+  clearInterval(typeHandle);
+}
+
+/* ------------------------------ toast / modal ------------------------------ */
+function toast(msg){
+  const box = $('#toasts'); if(!box) return;
+  const el = document.createElement('div'); el.className = 'toast px'; el.textContent = msg; box.appendChild(el);
+  setTimeout(()=>el.remove(), 3100);
+}
+function openModal(html, opts){ ui.modals.push({ html, sticky:opts&&opts.sticky }); renderOverlay(); }
+function closeModal(){ ui.modals.shift(); renderOverlay(); }
+function renderOverlay(){
+  const root = $('#overlay-root');
+  if(!ui.modals.length){ root.innerHTML=''; return; }
+  root.innerHTML = `<div class="overlay" ${ui.modals[0].sticky?'':'data-act="overlayBg"'}><div class="modal px" role="dialog" aria-modal="true">${ui.modals[0].html}</div></div>`;
+  const b = root.querySelector('.modal .btn'); if(b) b.focus({preventScroll:true});
+}
+function flushEvents(){
+  while(pendingEvents.length){
+    const ev = pendingEvents.shift();
+    if(ev.type==='ach'){ toast(`🏆 ${ev.a.name} · +${ev.a.gold} ทอง`); sfx.coin(); }
+    if(ev.type==='level'){
+      openModal(`<div class="big">⬆️</div><h2 class="lvl">LEVEL ${ev.level}</h2><p>${esc(save.name)} แข็งแกร่งขึ้นอีกขั้น</p>
+        <div class="stat-ups"><div><b>+${ev.hp}</b>Max HP</div><div><b>+${ev.mp}</b>Max MP</div><div><b>+${ev.atk}</b>ATK</div></div>
+        <button class="btn primary px block" data-act="closeModal">ไปต่อ</button>`);
+    }
+  }
+}
+function fxBump(text, color){
+  const el = document.createElement('div'); el.className='bump'; el.textContent=text; el.style.color=color||'var(--gold)';
+  document.body.appendChild(el); setTimeout(()=>el.remove(), 950);
+}
+
+/* ------------------------------ render ------------------------------ */
+function render(){
+  const app = $('#app');
+  const showHud = TAB_SCREENS.includes(ui.screen);
+  let html = showHud ? hudHtml() : '';
+  const R = {
+    onboarding:renderOnboarding, hub:renderHub, 'story-pick':renderStoryPick, story:renderStory,
+    battle:renderBattle, challenge:renderChallenge, library:renderLibrary, review:renderReview,
+    shop:renderShop, hero:renderHero, settings:renderSettings,
+  }[ui.screen];
+  html += R ? R() : '';
+  app.innerHTML = html;
+  $('#tabbar').innerHTML = showHud ? tabbarHtml() : '';
+  afterRender();
+  renderOverlay();
+}
+function afterRender(){
+  document.querySelectorAll('canvas[data-scene]').forEach(c=>paintScene(c, c.dataset.scene, c.dataset.seed||0));
+  document.querySelectorAll('canvas[data-mon]').forEach(c=>{ const [seed,boss] = c.dataset.mon.split('|'); drawMonster(c, genMonster(+seed, boss==='1')); });
+  document.querySelectorAll('canvas[data-art]').forEach(c=>{
+    const art = c.dataset.art==='story' ? ui.story && ui.story.scene && ui.story.scene.art : ui.battle && ui.battle.monster && ui.battle.monster.art;
+    if(art) drawPixelArt(c, art);
+  });
+  if(ui.screen==='story') runTyping();
+  if(ui.screen==='battle') battleFx();
+  if(ui.screen==='library') renderLibList();
+}
+function hudHtml(){
+  const need = xpNeeded(save.level), pct = Math.min(100, save.xp/need*100);
+  return `<header class="hud">
+    <div class="hud-avatar px">${save.avatar}<span class="hud-lv">LV ${save.level}</span></div>
+    <div class="hud-main"><div class="hud-name">${esc(save.name)} <span style="color:var(--ink-dim);font-size:12px;">· ${CLASSES[save.cls].name}</span></div>
+      <div class="hud-xp"><i style="width:${pct}%"></i></div><div class="hud-xptext">${save.xp} / ${need} XP</div></div>
+    <div class="hud-stats"><span title="ทอง">🪙 ${save.gold}</span><span title="วันต่อเนื่อง">🔥 ${save.streak.days||0}</span></div>
+  </header>`;
+}
+function tabbarHtml(){
+  const due = dueWords().length;
+  const t = (id,ico,label)=>`<button class="tab ${ui.screen===id?'on':''}" data-act="tab" data-to="${id}" aria-label="${label}"><b>${ico}</b>${label}${id==='library'&&due?` <span style="color:var(--ember)">(${due})</span>`:''}</button>`;
+  return `<div class="tabbar-in px">${t('hub','🏰','ผจญภัย')}${t('library','📚','คลังคำ')}${t('shop','🛒','ร้านค้า')}${t('hero','🎒','ฮีโร่')}${t('settings','⚙️','ตั้งค่า')}</div>`;
+}
+
+/* ------------------------------ onboarding ------------------------------ */
+function renderOnboarding(){
+  const o = ui.onboard;
+  return `<div style="padding-top:30px;">
+    <div class="title-block"><h1 class="game-title">QUEST<br>LINES</h1><div class="game-sub">RPG ฝึกภาษาอังกฤษ — ตอบถูกคือการโจมตี</div></div>
+    <div class="px panel">
+      <label class="field-label" for="obName" style="margin-top:0;">ชื่อฮีโร่</label>
+      <input class="text-in px" id="obName" data-input="obName" maxlength="16" placeholder="เช่น Elysian" value="${esc(o.name)}" autocomplete="off">
+      <span class="field-label">เลือกอาชีพ</span>
+      <div class="chips">${Object.entries(CLASSES).map(([k,c])=>`<button class="class-card px ${o.cls===k?'on':''}" data-act="obCls" data-v="${k}">
+        <div class="e">${c.emoji}</div><div class="n">${c.name}</div><div class="s">HP ${c.hp} · MP ${c.mp}<br>ATK ${c.atk} · CRIT ${Math.round(c.crit*100)}%</div></button>`).join('')}</div>
+      <div class="class-desc">${esc(CLASSES[o.cls].desc)}</div>
+      <span class="field-label">ระดับภาษาอังกฤษ</span>
+      <div class="chips">${CEFR_LEVELS.map(l=>`<button class="chip px ${o.cefr===l.id?'on':''}" data-act="obCefr" data-v="${l.id}">${l.id}<small>${l.th}</small></button>`).join('')}</div>
+      <button class="btn primary px block" style="margin-top:22px;" data-act="obStart">เริ่มการผจญภัย</button>
+    </div>
+  </div>`;
+}
+
+/* ------------------------------ hub ------------------------------ */
+function checkpointFloor(){ return save.stats.bestFloor>=5 ? Math.floor(save.stats.bestFloor/5)*5+1 : 1; }
+function renderHub(){
+  const best = save.stats.bestFloor, next = checkpointFloor();
+  const due = dueWords().length;
+  const quests = save.daily.quests.map(questInfo);
+  const nextSeed = hashStr('preview'+next);
+  return `
+  <div class="title-block"><h1 class="game-title" style="font-size:36px;">QUEST LINES</h1></div>
+  <button class="tower-tile px" data-act="towerMenu">
+    <div class="tower-scene"><span class="tower-badge">สถิติสูงสุด · ชั้น ${best}</span>
+      <canvas data-mon="${nextSeed}|${next%5===0?1:0}" style="animation:bob 2.2s ease-in-out infinite;"></canvas><div class="tower-floor"></div></div>
+    <div class="tower-info"><div><h3>Monster Tower</h3><p>ตอบคำศัพท์ให้ถูกเพื่อฟันมอนสเตอร์ บอสรออยู่ทุก 5 ชั้น</p></div><span class="go">สู้เลย</span></div>
+  </button>
+  <div class="mode-grid">
+    <button class="mode-tile px" data-act="goStory"><div class="ico">📖</div><div><h4>Story</h4><p>ผจญภัยแบบเลือกทางเอง พิมพ์ตอบเป็นภาษาอังกฤษได้</p></div></button>
+    <button class="mode-tile px" data-act="blitz"><div class="ico">⚡</div><div><h4>Word Blitz</h4><p>60 วินาที ตอบให้ไวที่สุด</p><span class="pill">BEST ${save.stats.bestChallenge}</span></div></button>
+    <button class="mode-tile wide px ${due?'hot':''}" data-act="review"><div class="ico">🃏</div><div style="flex:1"><h4>ทบทวนคำศัพท์</h4><p>${due ? `มี ${due} คำถึงเวลาทบทวน — ทบทวนตรงเวลาช่วยให้จำได้นานขึ้น` : Object.keys(save.vocab).length ? 'ยังไม่มีคำที่ถึงกำหนด ทบทวนคำที่ยังอ่อนได้เลย' : 'เก็บคำศัพท์จากการต่อสู้และเนื้อเรื่องก่อน แล้วค่อยมาทบทวน'}</p></div></button>
+  </div>
+  <div class="section-h"><h3>ภารกิจประจำวัน</h3><small>รีเซ็ตเที่ยงคืน</small></div>
+  ${quests.map(q=>`<div class="quest px ${q.claimed?'done':''}">
+    <div class="q-txt"><div class="q-name">${esc(q.text)}</div><div class="q-bar"><i style="width:${q.progress/q.target*100}%"></i></div><div class="q-num">${q.progress}/${q.target}</div></div>
+    ${q.claimed ? '<span class="price">✓</span>' : `<button class="btn small ${q.done?'primary':''} px" data-act="claim" data-id="${q.id}" ${q.done?'':'disabled'}>🪙 ${q.gold}</button>`}
+  </div>`).join('')}`;
+}
+
+/* ------------------------------ story ------------------------------ */
+function renderStoryPick(){
+  const s = save.storySave;
+  const cards = STORY_ORDER.map(k=>{
+    const st = STORIES[k], total = Object.values(st.nodes).filter(n=>n.end).length;
+    const found = Object.keys(save.endings).filter(e=>e.startsWith(k+':')).length;
+    const resume = s && s.theme===k;
+    return `<button class="story-card px" data-act="storyStart" data-theme="${k}">
+      <canvas data-scene="${st.scene}"></canvas>
+      <div><h4>${esc(st.title)}</h4><p>${esc(st.blurb)}</p><div class="endc">ฉากจบที่พบ ${found}/${total}${resume?' · มีเซฟค้างไว้':''}</div></div></button>
+      ${resume?`<button class="btn small px" style="margin:-4px 3px 14px;" data-act="storyResume" data-theme="${k}">▶ เล่นต่อจากเดิม</button>`:''}`;
+  }).join('');
+  const aiOk = aiStatus==='online';
+  return `<button class="back" data-act="tab" data-to="hub">← กลับ</button>
+  <h2 style="margin:0 0 4px; font-weight:500;">เลือกการผจญภัย</h2>
+  <p style="color:var(--ink-dim); font-size:13px; margin:0 0 16px;">แต่ละเรื่องมีหลายฉากจบ — เลือกผิดทางได้ ย้อนกลับได้</p>
+  ${cards}
+  <div class="section-h"><h3>✨ AI Story</h3><small><span class="ai-dot ${aiStatus}"></span>${aiOk?'พร้อมใช้งาน':aiStatus==='unknown'?'กำลังตรวจสอบ…':'ออฟไลน์'}</small></div>
+  <div class="px panel dark">
+    <p style="margin:0 0 12px; font-size:13.5px; color:var(--ink-dim);">Claude แต่งเรื่องใหม่ทุกครั้งตามระดับ ${save.cefr} วาดภาพพิกเซล และตรวจแกรมม่าเมื่อคุณพิมพ์ตอบเอง</p>
+    <div class="chips">${AI_THEMES.map(t=>`<button class="chip px ${ui.aiTheme===t.id?'on':''}" data-act="aiTheme" data-v="${t.id}">${t.th}<small>${t.en.split(' ')[0]}</small></button>`).join('')}</div>
+    <button class="btn rune px block" style="margin-top:14px;" data-act="aiStoryStart" ${aiOk||save.settings.source==='ai'?'':'disabled'}>เริ่มเรื่องใหม่ด้วย AI</button>
+    ${aiOk?'':`<p style="font-size:12.5px; color:var(--ink-faint); margin:10px 0 0;">ต้อง deploy พร้อมเซิร์ฟเวอร์ /api/claude และตั้งค่า ANTHROPIC_API_KEY ก่อน (ดู README) — เรื่องด้านบนเล่นได้เลยโดยไม่ต้องใช้เน็ต</p>`}
+  </div>`;
+}
+function offlineScene(){
+  const st = ui.story, node = STORIES[st.theme].nodes[st.node];
+  return { key:st.theme+':'+st.node, text:node.text, sceneKey:node.scene, vocab:node.vocab.map(([w,t])=>({word:w,thai:t})),
+    options: (node.opts||[]).map((o,i)=>({ k:'ABC'[i], text:o[0] })), end:node.end||null, title:node.title||'', correction:st.correction };
+}
+function renderStory(){
+  const st = ui.story;
+  const sc = st.mode==='offline' ? offlineScene() : st.scene;
+  const head = `<button class="back" data-act="storyExit">← ${st.mode==='offline'?'เลือกเรื่องอื่น':'ออกจากเรื่อง'}</button>`;
+  if(!sc){
+    return head + `<div class="scene-wrap px"><canvas data-scene="${(AI_THEMES.find(t=>t.id===st.theme)||{}).scene||'village'}"></canvas><span class="scene-tag">✨ AI</span></div>
+      ${st.error ? errBox(st.error, 'aiStoryRetry') : `<div class="status"><div class="spinner"></div>Claude กำลังแต่งฉากแรก…</div>`}`;
+  }
+  const art = st.mode==='ai' && sc.art ? `<canvas data-art="story"></canvas>` : `<canvas data-scene="${sc.sceneKey}"></canvas>`;
+  const tag = st.mode==='offline' ? esc(STORIES[st.theme].title) : '✨ AI · '+esc((AI_THEMES.find(t=>t.id===st.theme)||{}).en||'');
+  let body = '';
+  if(sc.end){
+    const win = sc.end==='win';
+    body += `<div class="ending-banner ${win?'win':'lose'}"><div class="t">${win?'VICTORY':'THE END'}</div><p>${esc(sc.title|| (win?'จบแบบชนะ':'จบแบบพ่ายแพ้'))}</p></div>`;
+    if(st.mode==='offline'){
+      body += `<div class="actions">${st.history.length>1?`<button class="btn px" style="flex:1" data-act="storyRewind">↶ ย้อนไปทางเลือกก่อนหน้า</button>`:''}
+        <button class="btn primary px" style="flex:1" data-act="storyStart" data-theme="${st.theme}">เล่นเรื่องนี้ใหม่</button></div>
+        <button class="btn ghost px block" style="margin-top:8px;" data-act="goStory">เลือกเรื่องอื่น</button>`;
+    } else {
+      body += `<button class="btn primary px block" style="margin-top:14px;" data-act="aiStoryStart">เริ่มเรื่องใหม่ด้วย AI</button>
+        <button class="btn ghost px block" style="margin-top:8px;" data-act="goStory">กลับไปเลือกเรื่อง</button>`;
+    }
+  } else {
+    const dis = st.loading ? 'disabled' : '';
+    body += `<div class="opts">${sc.options.map((o,i)=>`<button class="opt px" data-act="storyChoose" data-i="${i}" ${dis}><span class="k">${o.k}</span><span>${esc(o.text)}</span></button>`).join('')}</div>
+      <div class="free-row"><input class="text-in px" id="freeIn" data-input="free" placeholder="หรือพิมพ์สิ่งที่จะทำเป็นภาษาอังกฤษ…" value="${esc(st.free||'')}" ${dis} autocomplete="off" enterkeyhint="send">
+      <button class="btn rune px" data-act="storyFree" ${dis}>ส่ง</button></div>`;
+    if(st.loading) body += `<div class="status"><div class="spinner"></div>Claude กำลังแต่งเรื่องต่อ…</div>`;
+    if(st.error) body += errBox(st.error, 'aiStoryRetry');
+  }
+  const lf = st.lastFree ? `<div style="font-size:13px; color:var(--ink-dim); margin:10px 4px 0;">คุณพิมพ์: “${esc(st.lastFree.text)}”${st.lastFree.matched?` → ${st.lastFree.guessed?'ตีความใกล้เคียงเป็น':'ตรงกับ'}ทางเลือก “${esc(st.lastFree.matched)}”`:''}</div>` : '';
+  const corr = sc.correction ? `<div class="grammar px"><b>ตรวจแกรมม่า</b><br>${esc(sc.correction)}</div>` : '';
+  const vocab = sc.vocab && sc.vocab.length ? `<div class="vocab-box px"><h4>คำศัพท์ในฉากนี้ · เก็บเข้าคลังแล้ว</h4>${sc.vocab.map(v=>`<div class="vocab-row"><b>${esc(v.word)}</b><span>${esc(v.thai)}</span><button class="speak" data-act="speak" data-w="${esc(v.word)}" aria-label="ฟังเสียง">🔊</button></div>`).join('')}</div>` : '';
+  return head + `<div class="scene-wrap px">${art}<span class="scene-tag">${tag}</span></div>
+    <div class="scene-text px"><span data-type="${esc(sc.key||'')}">${esc(sc.text)}</span></div>${lf}${corr}${body}${vocab}`;
+}
+function errBox(msg, retryAct){
+  return `<div class="err px">${esc(msg)}<div class="btns"><button class="btn small danger px" data-act="${retryAct}">ลองอีกครั้ง</button><button class="btn small px" data-act="goStory">เล่นเรื่องออฟไลน์แทน</button></div></div>`;
+}
+let typeHandle = null, typedKey = null;
+function runTyping(){
+  const el = document.querySelector('[data-type]'); if(!el) return;
+  const key = el.dataset.type; if(key===typedKey || matchMedia('(prefers-reduced-motion: reduce)').matches){ typedKey = key; return; }
+  typedKey = key; const full = el.textContent; let i = 0; el.textContent=''; el.classList.add('typing');
+  clearInterval(typeHandle);
+  typeHandle = setInterval(()=>{ i += 3; el.textContent = full.slice(0,i); if(i>=full.length){ clearInterval(typeHandle); el.classList.remove('typing'); } }, 16);
+  el.parentElement.onclick = ()=>{ clearInterval(typeHandle); el.textContent = full; el.classList.remove('typing'); };
+}
+
+function startOfflineStory(theme, resume){
+  const st = STORIES[theme];
+  let node = st.start, history = [st.start];
+  if(resume && save.storySave && save.storySave.theme===theme){ node = save.storySave.node; history = save.storySave.history.slice(); }
+  ui.story = { mode:'offline', theme, node, history, correction:null, lastFree:null, free:'' };
+  typedKey = null;
+  if(!resume) enterNode(node); else { ui.screen='story'; }
+  goto('story');
+}
+function enterNode(id){
+  const st = ui.story, node = STORIES[st.theme].nodes[id];
+  st.node = id;
+  save.storySave = node.end ? null : { theme:st.theme, node:id, history:st.history.slice() };
+  bump('scenesPlayed'); addXp(6);
+  const vk = st.theme+':'+id; if(!save.visited[vk]){ save.visited[vk]=1; addGold(2); }
+  node.vocab.forEach(([w,t])=>learnWord({ word:w, thai:t }));
+  if(node.end){
+    if(!save.endings[vk]){ save.endings[vk] = Date.now(); addGold(20); setTimeout(()=>toast('🗺️ ค้นพบฉากจบใหม่ · +20 ทอง'), 300); }
+    if(node.end==='win'){ bump('storiesWon'); addXp(40); addGold(25); sfx.victory(); } else { addXp(5); sfx.defeat(); }
+  }
+  checkAchievements(); persist();
+}
+const STOP = new Set('i the a an to and of in on at my me you it is will go for with into from up out now then'.split(' '));
+function tokens(s){ return String(s).toLowerCase().replace(/[^a-z\s']/g,' ').split(/\s+/).filter(w=>w && !STOP.has(w)); }
+function matchOption(text, opts){
+  const t = tokens(text); let best = -1, bestScore = 0;
+  opts.forEach((o,i)=>{ const ot = tokens(o); let s = 0; t.forEach(w=>{ if(ot.includes(w)) s += 2; else if(w.length>=4 && ot.some(x=>x.startsWith(w.slice(0,4)))) s += 1; }); if(s>bestScore){ bestScore=s; best=i; } });
+  return best<0 ? { idx:Math.floor(Math.random()*opts.length), score:0 } : { idx:best, score:bestScore };
+}
+function grammarCheck(text){
+  const notes = [], s = text.trim();
+  if(/^[a-z]/.test(s)) notes.push('ขึ้นต้นประโยคด้วยตัวพิมพ์ใหญ่ เช่น “'+s.charAt(0).toUpperCase()+s.slice(1,20)+'…”');
+  if(/(^|\s)i(\s|'|$)/.test(s)) notes.push('สรรพนาม “I” ต้องเป็นตัวพิมพ์ใหญ่เสมอ');
+  const an = s.match(/\ba ([aeiou]\w*)/i); if(an && !/^(uni|use|usu|one|euro)/i.test(an[1])) notes.push(`ใช้ “an” หน้าคำที่ขึ้นต้นด้วยเสียงสระ: “an ${an[1]}”`);
+  const v3 = s.match(/\b(he|she|it)\s+(go|do|have|want|walk|run|take|say|look|try|need|like|know|see|come|make|find|open|ask|help|climb|swim)\b/i);
+  if(v3) notes.push(`ประธาน ${v3[1]} ใช้กริยาเติม s/es (Present Simple): “${v3[1]} ${v3[2]==='have'?'has':v3[2]==='do'?'does':v3[2]==='go'?'goes':v3[2]==='try'?'tries':v3[2]+'s'}”`);
+  const i3 = s.match(/\bI\s+(goes|does|has|wants|walks|runs|takes|says|looks|needs|likes)\b/); if(i3) notes.push(`หลัง “I” ใช้กริยารูปปกติ ไม่เติม s`);
+  const modal = s.match(/\b(can|will|should|must|could|would)\s+to\s+(\w+)/i); if(modal) notes.push(`หลัง ${modal[1]} ใช้กริยาช่องที่ 1 โดยไม่มี to: “${modal[1]} ${modal[2]}”`);
+  const modal2 = s.match(/\b(can|will|should|must)\s+(goes|went|going|takes|took|runs|ran)\b/i); if(modal2) notes.push(`หลัง ${modal2[1]} ใช้กริยารูปพื้นฐาน (base form)`);
+  if(/\s{2,}/.test(s)) notes.push('มีการเว้นวรรคซ้ำ');
+  if(!/[.!?]$/.test(s) && s.split(/\s+/).length>=3) notes.push('จบประโยคด้วยเครื่องหมาย . ! หรือ ?');
+  if(s.split(/\s+/).length<3) notes.push('ลองเขียนเป็นประโยคเต็ม มีประธาน + กริยา เช่น “I open the door.”');
+  return notes.length ? notes.map(n=>'• '+n).join('\n') : '✓ ไม่พบข้อผิดพลาดที่ชัดเจน เขียนได้ดี!';
+}
+function chooseStory(i, freeText){
+  const st = ui.story;
+  if(st.mode==='ai'){ const o = st.scene.options[i]; aiStoryAct(`I choose option ${o.k}: "${o.text}"`); return; }
+  const node = STORIES[st.theme].nodes[st.node];
+  const next = node.opts[i][1];
+  st.history.push(next); st.correction = null; if(!freeText) st.lastFree = null;
+  enterNode(next); render(); window.scrollTo({top:0});
+}
+function submitFree(){
+  const st = ui.story; const text = (st.free||'').trim(); if(!text) return;
+  st.free = '';
+  if(st.mode==='ai'){ st.lastFree = { text }; aiStoryAct(`My action (free-typed, please check grammar): "${text}"`); return; }
+  const node = STORIES[st.theme].nodes[st.node];
+  const m = matchOption(text, node.opts.map(o=>o[0]));
+  st.lastFree = { text, matched:node.opts[m.idx][0], guessed:m.score<2 };
+  const corr = grammarCheck(text);
+  chooseStory(m.idx, true);
+  st.correction = corr; render();
+}
+/* ---- AI story ---- */
+function aiStoryRules(){
+  const th = AI_THEMES.find(t=>t.id===ui.story.theme) || AI_THEMES[0];
+  return `You are a Game Master running an English-learning text RPG for a Thai learner.
+SETTING: ${th.en}. LANGUAGE LEVEL: CEFR ${save.cefr} — keep vocabulary and grammar at this level.
+EVERY TURN:
+1. Write the next scene in English only, 60–110 words, vivid and a little tense, continuing from the player's last action.
+2. Give exactly three choices A, B, C as short English sentences.
+3. Give 3–5 useful words or short phrases from your scene, each with a natural Thai translation.
+4. If the player's last message was FREE-TYPED, check its grammar and write a short, kind correction in Thai in "grammarCorrection" (show the corrected sentence). If it was correct, praise it briefly in Thai. If they chose A/B/C, use null.
+5. After about 6–9 scenes, end the story with a win or a loss that follows from the player's choices.
+6. "sceneType" must be one of: village, forest, mountain, ruins, cave, train, cabin, dining, beach, beachNight, jungle, lighthouse, camp.
+7. Draw the scene as retro pixel art: {"width":48,"height":27,"palette":[up to 16 hex colors],"rows":[27 strings of exactly 48 chars from "0123456789ABCDEF"]}. Bold shapes, mood-appropriate palette, no text, never real people or copyrighted characters.
+Respond with ONLY this JSON:
+{"story":"","sceneType":"","pixelArt":{...},"options":{"A":"","B":"","C":""},"vocab":[{"word":"","thai":""}],"grammarCorrection":null,"gameOver":false,"gameOverReason":null,"endingTitle":null}
+When the game ends set "gameOver": true, "gameOverReason": "win" or "lose", a short "endingTitle", and "options": {}.`;
+}
+const SCENE_KEYS = ['village','forest','mountain','ruins','cave','train','cabin','dining','beach','beachNight','jungle','lighthouse','camp'];
+function normalizeAIScene(d, idx){
+  const th = AI_THEMES.find(t=>t.id===ui.story.theme) || AI_THEMES[0];
+  const opts = d.options||{};
+  return {
+    key:'ai:'+idx, text:String(d.story||''), art:validatePixelArt(d.pixelArt), sceneKey: SCENE_KEYS.includes(d.sceneType) ? d.sceneType : th.scene,
+    options:['A','B','C'].filter(k=>opts[k]).map(k=>({ k, text:String(opts[k]) })),
+    vocab:(Array.isArray(d.vocab)?d.vocab:[]).slice(0,5).filter(v=>v&&v.word).map(v=>({ word:String(v.word), thai:String(v.thai||'') })),
+    correction: d.grammarCorrection || null,
+    end: d.gameOver ? (d.gameOverReason==='win'?'win':'lose') : null, title: d.endingTitle || '',
+  };
+}
+function startAIStory(){
+  ui.story = { mode:'ai', theme:ui.aiTheme, turns:[], scene:null, loading:true, error:null, free:'', lastFree:null, count:0, pending:null };
+  typedKey = null;
+  ui.story.turns = [{ role:'user', content: aiStoryRules() + '\n\nBegin the adventure now with an exciting opening scene.' }];
+  goto('story');
+  aiStoryRequest();
+}
+function aiStoryAct(msg){
+  const st = ui.story; st.pending = msg; st.turns.push({ role:'user', content:msg }); st.loading = true; st.error = null; render(); aiStoryRequest();
+}
+async function aiStoryRequest(){
+  const st = ui.story;
+  const turns = st.turns.length>11 ? [st.turns[0]].concat(st.turns.slice(-10)) : st.turns;
+  try{
+    const d = await callClaude(turns, 3000);
+    if(ui.story!==st) return;
+    const slim = Object.assign({}, d); delete slim.pixelArt;
+    st.turns.push({ role:'assistant', content:JSON.stringify(slim) });
+    st.count++; st.scene = normalizeAIScene(d, st.count); st.loading = false; st.pending = null;
+    bump('scenesPlayed'); addXp(6); addGold(1);
+    st.scene.vocab.forEach(v=>learnWord(v));
+    if(st.scene.end){ if(st.scene.end==='win'){ bump('storiesWon'); addXp(40); addGold(25); sfx.victory(); } else { addXp(5); sfx.defeat(); } }
+    checkAchievements();
+    if(ui.screen==='story'){ render(); window.scrollTo({top:0}); flushEvents(); }
+  }catch(e){
+    if(ui.story!==st) return;
+    if(st.pending) st.turns.pop();
+    st.loading = false; st.error = errorCopy(e); if(ui.screen==='story') render();
+  }
+}
+
+/* ------------------------------ battle ------------------------------ */
+function towerMenu(){
+  const cp = checkpointFloor(), ps = playerStats(), c = CLASSES[save.cls];
+  openModal(`<div class="big">🗼</div><h2 class="lvl" style="font-size:24px;">Monster Tower</h2>
+    <p>HP ${ps.maxHp} · MP ${ps.maxMp} · ATK ${ps.atk}</p>
+    <p style="margin-top:10px;">สกิลของคุณ: ${c.skill.ico} ${c.skill.name} · ${INSIGHT.ico} Insight<br>ไอเทม: 🧪${save.items.potion} 💧${save.items.ether} 📜${save.items.scroll}</p>
+    <p style="font-size:12.5px; margin-top:10px;">ตอบถูก = โจมตี · ตอบผิดหรือหมดเวลา = โดนโจมตี · ตอบไวและคอมโบสูงยิ่งแรง</p>
+    ${cp>1?`<button class="btn primary px block" data-act="runStart" data-floor="${cp}">เริ่มที่จุดเช็กพอยต์ ชั้น ${cp}</button>`:''}
+    <button class="btn ${cp>1?'':'primary'} px block" data-act="runStart" data-floor="1">เริ่มจากชั้น 1</button>
+    <button class="btn ghost px block" data-act="closeModal">ยังก่อน</button>`);
+}
+function startRun(floor){
+  const ps = playerStats();
+  ui.battle = { id:Date.now(), floor, run:{ hp:ps.maxHp, mp:ps.maxMp, xp:0, gold:0, kills:0, start:floor, correct:0 }, recent:new Set(), aiQueue:[], aiMonsterNext:null, combo:0, shield:false, power:false, fx:null };
+  spawnMonster(); nextQ(); ui.modals = []; goto('battle'); startBattleTimer();
+  if(useAI()) fetchAIBatch();
+}
+function fetchAIBatch(){
+  const b = ui.battle, id = b.id;
+  callClaude([{ role:'user', content:aiBattlePrompt() }], 3500).then(d=>{
+    if(!ui.battle || ui.battle.id!==id) return;
+    const qs = aiQuestionsToLocal(d.questions); b.aiQueue.push(...qs);
+    if(d.monsterName) b.aiMonsterNext = { name:String(d.monsterName).slice(0,28), art:validatePixelArt(d.monsterArt) };
+    if(qs.length) toast(`✨ AI เตรียมคำถามใหม่ ${qs.length} ข้อ และมอนสเตอร์ตัวต่อไปแล้ว`);
+  }).catch(()=>{});
+}
+function spawnMonster(){
+  const b = ui.battle, f = b.floor, boss = f%5===0;
+  const hp = Math.round((40 + f*14) * (boss?2.3:1)), atk = Math.round((6 + f*2.2) * (boss?1.35:1));
+  if(b.aiMonsterNext && b.aiMonsterNext.art && !boss){
+    b.monster = { name:b.aiMonsterNext.name, art:b.aiMonsterNext.art, ai:true, boss, hp, maxHp:hp, atk }; b.aiMonsterNext = null;
+  } else {
+    const seed = f===checkpointFloor() && f===b.run.start ? hashStr('preview'+f) : hashStr('m'+f+':'+b.id);
+    b.monster = { name:monsterName(seed,boss), seed, boss, hp, maxHp:hp, atk };
+  }
+  b.phase = 'question';
+}
+function nextQ(){
+  const b = ui.battle;
+  b.q = b.aiQueue.length ? b.aiQueue.shift() : makeQuestion(b.recent);
+  b.answered = null; b.removed = []; b.truth = false; b.phase = 'question';
+  b.qStart = Date.now(); b.qTotal = 20000;
+}
+function startBattleTimer(){
+  const b = ui.battle; clearInterval(b.timer);
+  b.timer = setInterval(()=>{
+    if(ui.screen!=='battle' || b.phase!=='question' || ui.modals.length){ if(ui.modals.length && b.phase==='question') b.qStart += 100; return; }
+    const left = b.qTotal - (Date.now()-b.qStart);
+    const el = $('#qtimer'); if(el){ el.style.width = Math.max(0,left/b.qTotal*100)+'%'; el.parentElement.classList.toggle('urgent', left<5000); }
+    if(left<=0) answerBattle(-1);
+  }, 100);
+}
+function answerBattle(i){
+  const b = ui.battle; if(!b || b.phase!=='question') return;
+  clearTimeout(b.autoNext);
+  const q = b.q, ok = i===q.correct, elapsed = Date.now()-b.qStart;
+  b.answered = i; b.phase = 'reveal'; b.fx = { nums:[] };
+  learnWord(q.word); grade(vkey(q.word.word), ok);
+  const ps = playerStats();
+  if(ok){
+    bump('correct'); b.run.correct++; b.combo++; bumpMax('bestCombo', b.combo);
+    let mult = 1 + Math.min(b.combo-1, 12)*0.08; const quick = elapsed < b.qTotal*0.35; if(quick) mult += .25;
+    const crit = Math.random() < ps.crit; if(b.power){ mult *= 2; b.power = false; } if(crit) mult *= 1.8;
+    const dmg = Math.max(1, Math.round(ps.atk * mult * (0.9+Math.random()*0.2)));
+    b.monster.hp = Math.max(0, b.monster.hp-dmg); b.run.mp = Math.min(ps.maxMp, b.run.mp+4);
+    b.fx.hit = true; b.fx.combo = b.combo>1; b.fx.nums.push({ t:(crit?'CRIT ':'')+dmg, cls:crit?'crit':'' });
+    if(quick) b.fx.nums.push({ t:'QUICK!', cls:'tag', dy:-38 });
+    crit ? sfx.crit() : sfx.hit();
+  } else {
+    bump('wrong'); b.combo = 0; monsterAttack(i===-1);
+  }
+  if(save.settings.autoSpeak) speak(q.word.word);
+  render();
+  if(b.monster.hp<=0){ b.phase='dying'; clearInterval(b.timer); setTimeout(winFloor, 750); }
+  else if(b.run.hp<=0){ b.phase='dying'; clearInterval(b.timer); setTimeout(loseRun, 750); }
+  else if(ok) b.autoNext = setTimeout(()=>{ if(ui.battle===b && b.phase==='reveal'){ nextQ(); render(); } }, 1300);
+  flushEvents();
+}
+function monsterAttack(timeout){
+  const b = ui.battle;
+  if(b.shield){ b.shield = false; b.fx.nums.push({ t:'BLOCK', cls:'tag' }); sfx.click(); return; }
+  const dmg = Math.round(b.monster.atk * (0.85+Math.random()*0.3));
+  b.run.hp = Math.max(0, b.run.hp-dmg); b.fx.hurt = true; b.fx.nums.push({ t:(timeout?'TIME! ':'')+'-'+dmg, cls:'hurt', dy:60 }); sfx.hurt();
+}
+function battleFx(){
+  const b = ui.battle; if(!b || !b.fx) return;
+  const arena = $('.arena'), mon = $('.monster');
+  if(b.fx.hit && mon){ mon.classList.add('hit'); }
+  if(b.fx.hurt){ const app = $('#app'); app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake'); const f = document.createElement('div'); f.className='hurt-flash'; document.body.appendChild(f); setTimeout(()=>f.remove(),420); }
+  if(b.fx.combo){ const c = $('.combo'); if(c) c.classList.add('pop'); }
+  (b.fx.nums||[]).forEach((n,k)=>{ if(!arena) return; const el = document.createElement('div'); el.className='dmg '+(n.cls||''); el.textContent=n.t; el.style.top = `calc(45% + ${n.dy||0}px)`; el.style.left = `calc(50% + ${(k%2?1:-1)*Math.random()*30}px)`; arena.appendChild(el); setTimeout(()=>el.remove(), 1000); });
+  if(b.phase==='dying' && b.monster.hp<=0 && mon) mon.classList.add('dead');
+  b.fx = null;
+}
+function useSkill(kind){
+  const b = ui.battle; if(!b || b.phase!=='question') return;
+  const ps = playerStats(); b.fx = { nums:[] };
+  if(kind==='insight'){
+    if(b.run.mp<INSIGHT.cost || b.removed.length) return;
+    b.run.mp -= INSIGHT.cost;
+    b.removed = shuffle([0,1,2,3].filter(i=>i!==b.q.correct)).slice(0,2); sfx.magic();
+  } else if(kind==='class'){
+    const sk = CLASSES[save.cls].skill; if(b.run.mp<sk.cost) return;
+    b.run.mp -= sk.cost; sfx.magic();
+    if(sk.id==='wall'){ if(b.shield){ b.run.mp += sk.cost; return; } b.shield = true; b.fx.nums.push({ t:'IRON WALL', cls:'tag' }); }
+    if(sk.id==='blast'){ const dmg = Math.round(ps.atk*2.5*(0.9+Math.random()*0.2)); b.monster.hp = Math.max(0,b.monster.hp-dmg); b.fx.hit = true; b.fx.nums.push({ t:'☄ '+dmg, cls:'crit' }); sfx.crit(); }
+    if(sk.id==='step'){ const g = rint(5,15); addGold(g); b.run.gold += g; b.fx.nums.push({ t:'+'+g+' 🪙', cls:'tag' }); nextQ(); }
+  } else if(ITEMS[kind]){
+    if(!save.items[kind]) return;
+    if(kind==='potion'){ if(b.run.hp>=ps.maxHp) return; const h = Math.round(ps.maxHp*.45); b.run.hp = Math.min(ps.maxHp, b.run.hp+h); b.fx.nums.push({ t:'+'+h+' HP', cls:'heal', dy:60 }); sfx.heal(); }
+    if(kind==='ether'){ if(b.run.mp>=ps.maxMp) return; b.run.mp = Math.min(ps.maxMp, b.run.mp+25); b.fx.nums.push({ t:'+25 MP', cls:'mp', dy:60 }); sfx.heal(); }
+    if(kind==='scroll'){ if(b.truth) return; b.truth = true; sfx.magic(); }
+    save.items[kind]--; persist();
+  }
+  render();
+  if(b.monster.hp<=0){ b.phase='dying'; clearInterval(b.timer); render(); setTimeout(winFloor, 750); }
+}
+function winFloor(){
+  const b = ui.battle; if(!b) return;
+  const f = b.floor, boss = b.monster.boss;
+  let xp = 16 + f*6, gold = 8 + f*4; if(boss){ xp = Math.round(xp*2.5); gold *= 3; }
+  let drop = null;
+  if(boss || Math.random()<.18){ drop = pick(['potion','potion','ether','scroll']); save.items[drop]++; }
+  addXp(xp); addGold(gold); b.run.xp += xp; b.run.gold += gold; b.run.kills++;
+  bump('battlesWon'); if(boss) bump('bossesDefeated'); bumpMax('bestFloor', f);
+  sfx.victory(); b.phase = 'won';
+  checkAchievements();
+  const ps = playerStats(), heal = Math.round(ps.maxHp*.25);
+  openModal(`<div class="big">${boss?'👑':'⚔️'}</div><h2 class="win">${boss?'BOSS DOWN':'VICTORY'}</h2>
+    <p>ล้ม ${esc(b.monster.name)} ที่ชั้น ${f}</p>
+    <div class="loot"><div>✨ +${xp} XP</div><div>🪙 +${gold}</div>${drop?`<div>${ITEMS[drop].ico} ${ITEMS[drop].name}</div>`:''}</div>
+    <p style="font-size:12.5px;">HP ${b.run.hp}/${ps.maxHp} · ขึ้นชั้นถัดไปจะฟื้น HP ${heal} และ MP 10</p>
+    <button class="btn primary px block" data-act="runNext">ขึ้นชั้น ${f+1}${(f+1)%5===0?' · บอส!':''}</button>
+    <button class="btn ghost px block" data-act="runLeave">กลับเมือง</button>`, { sticky:true });
+  flushEvents();
+}
+function loseRun(){
+  const b = ui.battle; if(!b) return;
+  const xp = 5 + b.floor*2; addXp(xp); b.run.xp += xp; b.phase = 'lost';
+  sfx.defeat(); checkAchievements();
+  openModal(`<div class="big">💀</div><h2 class="lose">DEFEATED</h2>
+    <p>${esc(b.monster.name)} หยุดคุณไว้ที่ชั้น ${b.floor}</p>
+    <div class="loot"><div>ชั้นที่ผ่าน ${b.run.kills}</div><div>ตอบถูก ${b.run.correct}</div><div>✨ +${b.run.xp}</div><div>🪙 +${b.run.gold}</div></div>
+    <p style="font-size:12.5px;">รางวัลทั้งหมดในรอบนี้เก็บไว้แล้ว อัปเกรดที่ร้านค้าแล้วกลับมาใหม่</p>
+    <button class="btn primary px block" data-act="runRetry">ท้าทายอีกครั้ง</button>
+    <button class="btn ghost px block" data-act="runLeave">กลับเมือง</button>`, { sticky:true });
+  flushEvents();
+}
+function renderBattle(){
+  const b = ui.battle, m = b.monster, q = b.q, ps = playerStats(), c = CLASSES[save.cls];
+  const phase = (performance.now()/1000)%2.2;
+  const monArt = m.ai && m.art ? `<div class="monster wide" style="animation-delay:-${phase}s"><canvas data-art="battle"></canvas></div>`
+    : `<div class="monster" style="animation-delay:-${phase}s"><canvas data-mon="${m.seed}|${m.boss?1:0}"></canvas></div>`;
+  const hpPct = b.run.hp/ps.maxHp*100;
+  const ans = q.options.map((o,i)=>{
+    let cls = 'ans px';
+    if(b.answered!==null){ if(i===q.correct) cls+=' ok'; else if(i===b.answered) cls+=' no'; }
+    else { if(b.removed.includes(i)) cls+=' gone'; if(b.truth && i===q.correct) cls+=' truth'; }
+    const showAfter = b.answered!==null && o.after;
+    return `<button class="${cls}" data-act="ans" data-i="${i}" ${b.answered!==null||b.removed.includes(i)||b.phase!=='question'?'disabled':''}>
+      <span class="key">${i+1}</span><span class="w ${o.thai?'thai':''}">${esc(o.text)}</span>${o.sub||showAfter?`<span class="sub">${esc(o.sub||'')}${showAfter?` ${o.sub?'· ':''}${esc(o.after)}`:''}</span>`:''}</button>`;
+  }).join('');
+  const inQ = b.phase==='question';
+  const sk = c.skill;
+  const actions = `<div class="actions">
+    <button class="skill px" data-act="skill" data-k="insight" ${!inQ||b.run.mp<INSIGHT.cost||b.removed.length?'disabled':''}><b>${INSIGHT.ico}</b><span>${INSIGHT.name}</span><em>${INSIGHT.cost} MP</em></button>
+    <button class="skill px" data-act="skill" data-k="class" ${!inQ||b.run.mp<sk.cost||(sk.id==='wall'&&b.shield)?'disabled':''}><b>${sk.ico}</b><span>${sk.name}</span><em>${sk.cost} MP</em></button>
+    ${['potion','ether','scroll'].map(k=>`<button class="skill px" data-act="skill" data-k="${k}" ${!inQ||!save.items[k]?'disabled':''}><b>${ITEMS[k].ico}</b><span>${ITEMS[k].name}</span><em class="item">×${save.items[k]}</em></button>`).join('')}
+  </div>`;
+  let reveal = '';
+  if(b.answered!==null){
+    const w = q.word, ok = b.answered===q.correct;
+    reveal = `<div class="reveal px ${ok?'':'hot'}"><div style="display:flex;align-items:center;gap:8px;"><span class="rw">${esc(w.word)}</span><span style="color:var(--ink-dim);font-size:13px;">${esc(w.pron||'')}</span><button class="speak" data-act="speak" data-w="${esc(w.word)}" aria-label="ฟังเสียง">🔊</button><span style="margin-left:auto;">${esc(w.thai)}</span></div>
+      ${w.def?`<div class="rdef">${esc(w.def)}</div>`:''}</div>
+      ${!ok && b.phase==='reveal' ? `<button class="btn primary px block" style="margin-top:12px;" data-act="bNext">คำถามถัดไป (Enter)</button>` : ''}`;
+  }
+  return `<button class="back" data-act="bQuit">← ถอยออกจากหอคอย</button>
+  <div class="arena px ${m.boss?'boss':''}">
+    <div class="mon-head"><span class="mon-name">${m.boss?'👑 ':''}${esc(m.name)}</span><div class="mon-bar"><u style="width:${m.hp/m.maxHp*100}%"></u><i style="width:${m.hp/m.maxHp*100}%"></i></div><span class="mon-hpnum">${m.hp}/${m.maxHp}</span></div>
+    <div class="floor-tag">ชั้น ${b.floor}${m.ai?' · ✨ AI':''}</div><div class="intent">⚔ ${m.atk}</div>
+    ${monArt}<div class="arena-floor"></div>
+    ${b.combo>1?`<div class="combo"><div class="n">×${b.combo}</div><div class="l">COMBO</div></div>`:''}
+  </div>
+  <div class="me-bars px"><div class="who"><span class="e ${b.shield?'shield':''}">${save.avatar}</span></div>
+    <div class="bar hp ${hpPct<30?'low':''}"><i style="width:${hpPct}%"></i><span>HP ${b.run.hp}/${ps.maxHp}</span></div>
+    <div class="bar mp"><i style="width:${b.run.mp/ps.maxMp*100}%"></i><span>MP ${b.run.mp}/${ps.maxMp}</span></div></div>
+  <div class="qcard px"><div class="qmeta"><span class="qtype">${esc(q.label)}</span><span>${b.power?'⚡ x2':''}</span></div>
+    <div class="prompt ${q.promptThai?'thai':''}">${esc(q.prompt)}</div>
+    ${q.type==='en2th'?`<div style="font-size:13px;color:#6a5aa8;">${esc(q.word.pron||'')}</div>`:''}
+    <div class="timer"><i id="qtimer" style="width:${inQ?Math.max(0,(b.qTotal-(Date.now()-b.qStart))/b.qTotal*100):0}%"></i></div></div>
+  <div class="answers">${ans}</div>
+  ${reveal}
+  ${actions}`;
+}
+
+/* ------------------------------ word blitz ------------------------------ */
+function startBlitz(){
+  ui.ch = { end:Date.now()+60000, score:0, combo:0, correct:0, wrong:0, recent:new Set(), answered:null, running:true, left:60 };
+  ui.ch.q = makeQuestion(ui.ch.recent);
+  goto('challenge');
+  const ch = ui.ch;
+  ch.timer = setInterval(()=>{
+    if(ui.screen!=='challenge'){ clearInterval(ch.timer); return; }
+    const left = Math.max(0, ch.end-Date.now()); ch.left = left/1000;
+    const el = $('#chTime'); if(el){ el.textContent = Math.ceil(ch.left); el.classList.toggle('urgent', ch.left<10); }
+    if(left<=0) finishBlitz();
+  }, 100);
+}
+function answerBlitz(i){
+  const ch = ui.ch; if(!ch || !ch.running || ch.answered!==null) return;
+  const q = ch.q, ok = i===q.correct; ch.answered = i;
+  learnWord(q.word); grade(vkey(q.word.word), ok);
+  if(ok){
+    ch.combo++; ch.correct++; bump('correct');
+    const mult = 1 + Math.min(ch.combo,20)*0.1, pts = Math.round(10*mult); ch.score += pts;
+    fxBump('+'+pts, 'var(--gold)'); sfx.hit();
+    if(ch.combo%5===0){ ch.end += 3000; setTimeout(()=>fxBump('+3s ⏱', 'var(--rune)'), 250); sfx.coin(); }
+  } else { ch.combo = 0; ch.wrong++; ch.end -= 3000; fxBump('-3s', 'var(--blood)'); sfx.wrong(); }
+  render();
+  setTimeout(()=>{ if(ui.ch===ch && ch.running){ ch.q = makeQuestion(ch.recent); ch.answered = null; render(); } }, ok?320:1100);
+}
+function finishBlitz(){
+  const ch = ui.ch; if(!ch || !ch.running) return;
+  ch.running = false; clearInterval(ch.timer);
+  const xp = Math.round(ch.score/12)+5, gold = Math.round(ch.score/25)+3, best = ch.score > save.stats.bestChallenge;
+  addXp(xp); addGold(gold); bump('challengesCompleted'); bumpMax('bestChallenge', ch.score);
+  sfx.victory(); checkAchievements();
+  openModal(`<div class="big">⚡</div><h2 class="win">${ch.score}</h2><p>${best?'สถิติใหม่!':'คะแนนสูงสุด '+save.stats.bestChallenge}</p>
+    <div class="loot"><div>ถูก ${ch.correct}</div><div>ผิด ${ch.wrong}</div><div>✨ +${xp}</div><div>🪙 +${gold}</div></div>
+    <button class="btn primary px block" data-act="blitz">เล่นอีกรอบ</button><button class="btn ghost px block" data-act="toHub">กลับเมือง</button>`, { sticky:true });
+  flushEvents();
+}
+function renderChallenge(){
+  const ch = ui.ch, q = ch.q;
+  const ans = q.options.map((o,i)=>{
+    let cls = 'ans px'; if(ch.answered!==null){ if(i===q.correct) cls+=' ok'; else if(i===ch.answered) cls+=' no'; }
+    return `<button class="${cls}" data-act="chAns" data-i="${i}" ${ch.answered!==null||!ch.running?'disabled':''}><span class="key">${i+1}</span><span class="w ${o.thai?'thai':''}">${esc(o.text)}</span>${o.sub?`<span class="sub">${esc(o.sub)}</span>`:''}</button>`;
+  }).join('');
+  return `<button class="back" data-act="chQuit">← ออก</button>
+  <div class="ch-top px"><div class="ch-time pixel ${ch.left<10?'urgent':''}" id="chTime">${Math.ceil(ch.left)}</div>
+    <div><div class="ch-mult">×${(1+Math.min(ch.combo,20)*0.1).toFixed(1)}</div><div style="font-size:12px;color:var(--ink-dim);">คอมโบ ${ch.combo} · ทุก 5 คอมโบ +3 วิ</div></div>
+    <div class="ch-score"><b>${ch.score}</b><small>คะแนน</small></div></div>
+  <div class="qcard px"><div class="qmeta"><span class="qtype">${esc(q.label)}</span><span>ผิด −3 วินาที</span></div>
+    <div class="prompt ${q.promptThai?'thai':''}">${esc(q.prompt)}</div></div>
+  <div class="answers">${ans}</div>`;
+}
+
+/* ------------------------------ library & review ------------------------------ */
+function renderLibrary(){
+  const all = vocabList(), due = dueWords().length, mast = masteredCount();
+  return `<div class="lib-stats"><div class="px"><b>${all.length}</b>คำในคลัง</div><div class="px"><b style="color:var(--ember)">${due}</b>ถึงเวลาทบทวน</div><div class="px"><b style="color:var(--gold)">${mast}</b>เชี่ยวชาญ</div></div>
+  <button class="btn primary px block" style="margin-top:14px;" data-act="review" ${all.length?'':'disabled'}>🃏 ${due?`ทบทวน ${Math.min(due,15)} คำที่ถึงกำหนด`:'ฝึกคำที่ยังอ่อน'}</button>
+  <input class="text-in px" style="margin-top:16px;" data-input="libq" placeholder="ค้นหาคำศัพท์หรือคำแปล…" value="${esc(ui.lib.q)}" autocomplete="off">
+  <div class="tabs-inline">${[['all','ทั้งหมด'],['due','ต้องทบทวน'],['weak','ยังไม่แม่น'],['master','เชี่ยวชาญ']].map(([k,l])=>`<button class="chip px ${ui.lib.filter===k?'on':''}" style="flex:none;min-width:0;padding:7px 12px;font-size:13px;" data-act="libFilter" data-v="${k}">${l}</button>`).join('')}</div>
+  <div id="libList"></div>`;
+}
+function renderLibList(){
+  const box = $('#libList'); if(!box) return;
+  const now = Date.now(), q = ui.lib.q.trim().toLowerCase();
+  let list = vocabList();
+  if(ui.lib.filter==='due') list = list.filter(v=>v.due<=now);
+  if(ui.lib.filter==='weak') list = list.filter(v=>v.mastery<=1);
+  if(ui.lib.filter==='master') list = list.filter(v=>v.mastery>=4);
+  if(q) list = list.filter(v=>v.word.toLowerCase().includes(q) || (v.thai||'').includes(q));
+  list.sort((a,b)=>a.due-b.due);
+  if(!list.length){ box.innerHTML = `<div class="empty">${Object.keys(save.vocab).length ? 'ไม่พบคำที่ตรงเงื่อนไข' : 'คลังยังว่าง — สู้ในหอคอยหรือเล่น Story แล้วคำศัพท์จะถูกเก็บที่นี่อัตโนมัติ'}</div>`; return; }
+  box.innerHTML = list.slice(0,200).map(v=>`<div class="word-row px">${v.due<=now?'<span class="due-dot" title="ถึงเวลาทบทวน"></span>':''}
+    <div class="wm"><div><span class="ww">${esc(v.word)}</span><span class="wp">${esc(v.pron||'')}</span></div><div class="wt">${esc(v.thai||'—')}</div></div>
+    <span class="stars">${'★'.repeat(v.mastery)}<s>${'★'.repeat(5-v.mastery)}</s></span>
+    <button class="speak" data-act="speak" data-w="${esc(v.word)}" aria-label="ฟังเสียง ${esc(v.word)}">🔊</button></div>`).join('') + (list.length>200?`<div class="empty">แสดง 200 จาก ${list.length} คำ ใช้ช่องค้นหาเพื่อหาคำอื่น</div>`:'');
+}
+function startReview(){
+  let list = dueWords().sort((a,b)=>a.due-b.due);
+  if(list.length<8){ const extra = vocabList().filter(v=>!list.includes(v)).sort((a,b)=>a.mastery-b.mastery||a.due-b.due); list = list.concat(extra.slice(0, 8-list.length)); }
+  list = list.slice(0,15);
+  if(!list.length){ toast('ยังไม่มีคำศัพท์ในคลัง ลองสู้หรือเล่น Story ก่อน'); return; }
+  ui.review = { keys:list.map(v=>v.key), i:0, flipped:false, good:0 };
+  goto('review');
+  if(save.settings.autoSpeak) speak(save.vocab[list[0].key].word);
+}
+function renderReview(){
+  const r = ui.review, v = save.vocab[r.keys[r.i]];
+  return `<button class="back" data-act="tab" data-to="library">← คลังคำ</button>
+  <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--ink-dim);margin:0 4px;"><span>การ์ด ${r.i+1}/${r.keys.length}</span><span>${'★'.repeat(v.mastery)}${'☆'.repeat(5-v.mastery)}</span></div>
+  <div class="hud-xp" style="margin:8px 3px 0;"><i style="width:${r.i/r.keys.length*100}%"></i></div>
+  <button class="flash px" data-act="flip">
+    <div class="fw">${esc(v.word)}</div><div class="fp">${esc(v.pron||'')}</div>
+    ${r.flipped ? `<div class="ft">${esc(v.thai||'—')}</div>${v.def?`<div class="fd">${esc(v.def)}</div>`:''}` : `<div class="hint">นึกความหมายในใจ แล้วแตะเพื่อเปิดดู</div>`}
+  </button>
+  <div style="text-align:center;margin-top:6px;"><button class="btn small ghost" data-act="speak" data-w="${esc(v.word)}">🔊 ฟังเสียง</button></div>
+  ${r.flipped ? `<div class="flash-btns"><button class="btn danger px" data-act="rate" data-g="0">ยังจำไม่ได้</button><button class="btn primary px" data-act="rate" data-g="1">จำได้แล้ว</button></div>`
+    : `<button class="btn rune px block" style="margin-top:12px;" data-act="flip">เปิดดูคำแปล (Space)</button>`}`;
+}
+function rateCard(good){
+  const r = ui.review; if(!r || !r.flipped) return;
+  grade(r.keys[r.i], good); bump('cardsReviewed'); addXp(2); if(good) r.good++;
+  good ? sfx.coin() : sfx.wrong();
+  r.i++; r.flipped = false;
+  if(r.i>=r.keys.length){
+    checkAchievements();
+    openModal(`<div class="big">🃏</div><h2 class="win">DONE</h2><p>จำได้ ${r.good} จาก ${r.keys.length} คำ · +${r.keys.length*2} XP</p>
+      <p style="font-size:12.5px;">คำที่จำได้จะถูกเลื่อนไปทบทวนห่างขึ้นเรื่อย ๆ คำที่ยังจำไม่ได้จะกลับมาเร็ว ๆ นี้</p>
+      <button class="btn primary px block" data-act="toLibrary">กลับคลังคำ</button>`, { sticky:true });
+    flushEvents(); return;
+  }
+  render(); if(save.settings.autoSpeak) speak(save.vocab[r.keys[r.i]].word);
+  flushEvents();
+}
+
+/* ------------------------------ shop ------------------------------ */
+function renderShop(){
+  const t = ui.shopTab;
+  let body = '';
+  if(t==='items') body = Object.entries(ITEMS).map(([k,it])=>`<div class="shop-item px"><div class="si">${it.ico}</div><div class="sm"><div class="sn">${it.name} · ${it.th}</div><div class="sd">${it.desc}</div><div class="own">มีอยู่ ×${save.items[k]}</div></div>
+    <button class="btn small ${save.gold>=it.price?'primary':''} px" data-act="buyItem" data-k="${k}" ${save.gold>=it.price?'':'disabled'}><span class="price">🪙${it.price}</span></button></div>`).join('');
+  if(t==='upgrades') body = Object.entries(UPGRADES).map(([k,u])=>{ const lv = save.upgrades[k], cost = u.base*(lv+1), maxed = lv>=u.max;
+    return `<div class="shop-item px"><div class="si">${u.ico}</div><div class="sm"><div class="sn">${u.name} · ${u.th}</div><div class="sd">${u.desc} ต่อระดับ · ถาวร</div><div class="own">ระดับ ${lv}/${u.max}</div></div>
+    ${maxed?'<span class="price">MAX</span>':`<button class="btn small ${save.gold>=cost?'primary':''} px" data-act="buyUp" data-k="${k}" ${save.gold>=cost?'':'disabled'}><span class="price">🪙${cost}</span></button>`}</div>`; }).join('');
+  if(t==='avatars') body = AVATAR_SHOP.map(a=>{ const own = save.ownedAvatars.includes(a.emoji);
+    return `<div class="shop-item px"><div class="si">${a.emoji}</div><div class="sm"><div class="sn">${a.name}</div><div class="sd">ร่างใหม่สำหรับฮีโร่ของคุณ</div></div>
+    ${own ? (save.avatar===a.emoji?'<span class="own">ใช้อยู่</span>':`<button class="btn small px" data-act="setAvatar" data-v="${a.emoji}">ใช้ร่างนี้</button>`)
+      : `<button class="btn small ${save.gold>=a.cost?'primary':''} px" data-act="buyAv" data-v="${a.emoji}" ${save.gold>=a.cost?'':'disabled'}><span class="price">🪙${a.cost}</span></button>`}</div>`; }).join('');
+  return `<div class="tabs-inline">${[['items','ไอเทม'],['upgrades','อัปเกรด'],['avatars','ร่างฮีโร่']].map(([k,l])=>`<button class="chip px ${t===k?'on':''}" data-act="shopTab" data-v="${k}">${l}</button>`).join('')}</div>${body}`;
+}
+
+/* ------------------------------ hero ------------------------------ */
+function renderHero(){
+  const ps = playerStats(), s = save.stats, c = CLASSES[save.cls];
+  const avatars = [c.emoji].concat(save.ownedAvatars);
+  const acc = s.correct+s.wrong ? Math.round(s.correct/(s.correct+s.wrong)*100) : 0;
+  const unlocked = ACHIEVEMENTS.filter(a=>save.achievements[a.id]).length;
+  return `<div class="hero-top px"><div class="e px">${save.avatar}</div><div><h2>${esc(save.name)}</h2><p>${c.name} (${c.en}) · Level ${save.level} · ${save.cefr}</p><p>${c.skill.ico} ${c.skill.name}</p></div></div>
+  <div class="stat-grid">
+    <div class="px">Max HP<b>${ps.maxHp}</b></div><div class="px">Max MP<b>${ps.maxMp}</b></div>
+    <div class="px">ATK<b>${ps.atk}</b></div><div class="px">Crit<b>${Math.round(ps.crit*100)}%</b></div>
+    <div class="px">ชั้นสูงสุด<b>${s.bestFloor}</b></div><div class="px">บอสที่ล้ม<b>${s.bossesDefeated}</b></div>
+    <div class="px">คอมโบสูงสุด<b>${s.bestCombo}</b></div><div class="px">ความแม่นยำ<b>${acc}%</b></div>
+    <div class="px">ฉากจบที่พบ<b>${Object.keys(save.endings).length}/${TOTAL_ENDINGS}</b></div><div class="px">Blitz สูงสุด<b>${s.bestChallenge}</b></div>
+  </div>
+  <div class="section-h"><h3>ร่างฮีโร่</h3><small>ซื้อเพิ่มได้ที่ร้านค้า</small></div>
+  <div class="avatar-row">${avatars.map(a=>`<button class="av px ${save.avatar===a?'on':''}" data-act="setAvatar" data-v="${a}">${a}</button>`).join('')}</div>
+  <div class="section-h"><h3>ความสำเร็จ</h3><small>${unlocked}/${ACHIEVEMENTS.length}</small></div>
+  <div class="ach-grid">${ACHIEVEMENTS.map(a=>`<div class="ach px ${save.achievements[a.id]?'on':''}"><div class="ai">${a.ico}</div><div class="an">${esc(a.name)}</div><div class="ad">${esc(a.desc)}</div><div class="ar">🪙 ${a.gold}</div></div>`).join('')}</div>`;
+}
+
+/* ------------------------------ settings ------------------------------ */
+function renderSettings(){
+  const st = save.settings;
+  const tg = (k,label,hint)=>`<div class="set-row px"><div class="sl"><span>${label}</span><button class="toggle ${st[k]?'on':''}" data-act="toggle" data-k="${k}" aria-pressed="${!!st[k]}" aria-label="${label}"></button></div>${hint?`<div class="sh">${hint}</div>`:''}</div>`;
+  return `<h2 style="margin:0 0 14px;font-weight:500;">ตั้งค่า</h2>
+  <div class="set-row px"><div class="sl"><span>ชื่อฮีโร่</span></div><input class="text-in px" data-input="rename" maxlength="16" value="${esc(save.name)}"></div>
+  <div class="set-row px"><div class="sl"><span>อาชีพ</span></div><div class="chips">${Object.entries(CLASSES).map(([k,c])=>`<button class="chip px ${save.cls===k?'on':''}" data-act="setCls" data-v="${k}">${c.emoji} ${c.name}</button>`).join('')}</div><div class="sh">เปลี่ยนได้ตลอด เลเวลและอัปเกรดยังอยู่ครบ</div></div>
+  <div class="set-row px"><div class="sl"><span>ระดับภาษาอังกฤษ (CEFR)</span></div><div class="chips">${CEFR_LEVELS.map(l=>`<button class="chip px ${save.cefr===l.id?'on':''}" data-act="setCefr" data-v="${l.id}">${l.id}<small>${l.th}</small></button>`).join('')}</div></div>
+  <div class="set-row px"><div class="sl"><span>แหล่งเนื้อหา</span><span style="font-size:12.5px;color:var(--ink-dim);"><span class="ai-dot ${aiStatus}"></span>AI ${aiStatus==='online'?'พร้อม':aiStatus==='unknown'?'กำลังตรวจ…':'ไม่พร้อม'}</span></div>
+    <div class="chips">${[['auto','อัตโนมัติ'],['offline','ออฟไลน์'],['ai','AI เท่านั้น']].map(([k,l])=>`<button class="chip px ${st.source===k?'on':''}" data-act="setSource" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="sh">อัตโนมัติ = ใช้ Claude เมื่อเซิร์ฟเวอร์พร้อม ถ้าไม่พร้อมจะใช้คลังคำและเนื้อเรื่องในเครื่อง · <button class="back" style="margin:0;font-size:12.5px;text-decoration:underline;" data-act="recheck">ตรวจอีกครั้ง</button></div></div>
+  <div class="set-row px"><div class="sl"><span>เสียงเอฟเฟกต์</span><span class="pixel" id="sfxVal">${st.sfx}%</span></div><input type="range" min="0" max="100" value="${st.sfx}" data-input="sfx" aria-label="ระดับเสียง"></div>
+  ${tg('music','เพลงประกอบ','ดนตรีชิปทูนเบา ๆ ระหว่างเล่น')}
+  ${tg('tts','เสียงอ่านคำศัพท์','ใช้เสียงอ่านภาษาอังกฤษของเครื่อง (ปุ่ม 🔊)')}
+  ${tg('autoSpeak','อ่านออกเสียงอัตโนมัติ','อ่านคำตอบให้ฟังทุกครั้งหลังตอบ และตอนเปิดการ์ดทบทวน')}
+  <div class="set-row px"><div class="sl"><span>สำรอง / ย้ายเซฟ</span></div>
+    <div class="chips"><button class="chip px" data-act="exportSave">คัดลอกรหัสเซฟ</button><button class="chip px" data-act="importOpen">นำเข้ารหัสเซฟ</button></div>
+    ${ui.exportCode?`<textarea class="text-in px" style="margin-top:12px;" readonly>${esc(ui.exportCode)}</textarea>`:''}
+    <div class="sh">ใช้ย้ายความคืบหน้าไปเครื่องอื่น</div></div>
+  <button class="btn danger px block" data-act="resetAsk">ล้างความคืบหน้าทั้งหมด</button>
+  <p style="text-align:center;font-size:12px;color:var(--ink-faint);margin-top:18px;">Quest Lines v2 · ขับเคลื่อนด้วย Claude</p>`;
+}
+function onAIStatus(){ if(['settings','story-pick'].includes(ui.screen)) render(); }
+
+/* ======================================================================
+   ACTIONS
+   ====================================================================== */
+function act(a, d){
+  if(!['ans','chAns','flip','rate','speak'].includes(a)) sfx.click();
+  switch(a){
+    case 'overlayBg': break;
+    case 'closeModal': closeModal(); break;
+    case 'tab': if(ui.screen==='challenge' && ui.ch) ui.ch.running=false; goto(d.to); break;
+    case 'toHub': ui.modals=[]; goto('hub'); break;
+    case 'toLibrary': ui.modals=[]; goto('library'); break;
+    case 'speak': speak(d.w); break;
+    /* onboarding */
+    case 'obCls': ui.onboard.cls = d.v; render(); break;
+    case 'obCefr': ui.onboard.cefr = d.v; render(); break;
+    case 'obStart':
+      save.name = (ui.onboard.name||'').trim() || 'Traveler'; save.cls = ui.onboard.cls; save.avatar = CLASSES[save.cls].emoji;
+      save.cefr = ui.onboard.cefr; save.onboarded = true; persist(); ensureDaily(); goto('hub');
+      setTimeout(()=>toast('ยินดีต้อนรับ! เริ่มจาก Monster Tower ได้เลย'), 300); break;
+    /* hub */
+    case 'claim': { const q = save.daily.quests.find(x=>x.id===d.id), info = q && questInfo(q); if(info && info.done && !q.claimed){ q.claimed = true; addGold(info.gold); sfx.coin(); fxBump('+'+info.gold+' 🪙'); checkAchievements(); render(); flushEvents(); } break; }
+    case 'towerMenu': towerMenu(); break;
+    case 'goStory': ui.modals=[]; goto('story-pick'); break;
+    case 'blitz': ui.modals=[]; startBlitz(); break;
+    case 'review': startReview(); break;
+    /* story */
+    case 'storyStart': startOfflineStory(d.theme, false); flushEvents(); break;
+    case 'storyResume': startOfflineStory(d.theme, true); break;
+    case 'storyChoose': if(!ui.story.loading){ chooseStory(+d.i); flushEvents(); } break;
+    case 'storyFree': if(!ui.story.loading){ submitFree(); flushEvents(); } break;
+    case 'storyRewind': { const st = ui.story; if(st.history.length>1){ st.history.pop(); st.node = st.history[st.history.length-1]; st.correction=null; st.lastFree=null; save.storySave = { theme:st.theme, node:st.node, history:st.history.slice() }; persist(); typedKey = st.theme+':'+st.node; render(); } break; }
+    case 'storyExit': goto('story-pick'); break;
+    case 'aiTheme': ui.aiTheme = d.v; render(); break;
+    case 'aiStoryStart': startAIStory(); break;
+    case 'aiStoryRetry': { const st = ui.story; st.error = null; if(st.pending){ st.turns.push({ role:'user', content:st.pending }); } st.loading = true; render(); aiStoryRequest(); break; }
+    /* battle */
+    case 'runStart': startRun(+d.floor); break;
+    case 'ans': answerBattle(+d.i); break;
+    case 'bNext': if(ui.battle && ui.battle.phase==='reveal'){ nextQ(); render(); } break;
+    case 'skill': useSkill(d.k); break;
+    case 'runNext': { const b = ui.battle, ps = playerStats(); closeModal(); b.floor++; b.run.hp = Math.min(ps.maxHp, b.run.hp+Math.round(ps.maxHp*.25)); b.run.mp = Math.min(ps.maxMp, b.run.mp+10); b.combo = b.combo; spawnMonster(); nextQ(); render(); startBattleTimer(); break; }
+    case 'runLeave': ui.modals=[]; ui.battle = null; goto('hub'); break;
+    case 'runRetry': ui.modals=[]; ui.battle = null; goto('hub'); towerMenu(); break;
+    case 'bQuit': if(ui.battle && (ui.battle.phase==='won'||ui.battle.phase==='lost')){ goto('hub'); break; }
+      openModal(`<div class="big">🏳️</div><h2 class="lose" style="font-size:24px;">ถอยออก?</h2><p>รอบนี้จะจบลง รางวัลที่ได้ไปแล้วยังอยู่ครบ</p>
+        <button class="btn danger px block" data-act="runLeave">ถอยกลับเมือง</button><button class="btn px block" data-act="closeModal">สู้ต่อ</button>`); break;
+    /* blitz */
+    case 'chAns': answerBlitz(+d.i); break;
+    case 'chQuit': if(ui.ch){ ui.ch.running=false; clearInterval(ui.ch.timer); } goto('hub'); break;
+    /* library */
+    case 'libFilter': ui.lib.filter = d.v; render(); break;
+    case 'flip': if(!ui.review.flipped){ ui.review.flipped = true; sfx.flip(); render(); if(save.settings.autoSpeak) speak(save.vocab[ui.review.keys[ui.review.i]].word); } break;
+    case 'rate': rateCard(d.g==='1'); break;
+    /* shop */
+    case 'shopTab': ui.shopTab = d.v; render(); break;
+    case 'buyItem': { const it = ITEMS[d.k]; if(save.gold>=it.price){ save.gold -= it.price; save.items[d.k]++; persist(); sfx.coin(); toast(`ได้รับ ${it.ico} ${it.name}`); render(); } break; }
+    case 'buyUp': { const u = UPGRADES[d.k], lv = save.upgrades[d.k], cost = u.base*(lv+1); if(lv<u.max && save.gold>=cost){ save.gold -= cost; save.upgrades[d.k]++; persist(); sfx.level(); toast(`${u.ico} ${u.name} ระดับ ${lv+1}`); render(); } break; }
+    case 'buyAv': { const a = AVATAR_SHOP.find(x=>x.emoji===d.v); if(a && save.gold>=a.cost && !save.ownedAvatars.includes(a.emoji)){ save.gold -= a.cost; save.ownedAvatars.push(a.emoji); save.avatar = a.emoji; persist(); sfx.coin(); toast(`ปลดล็อก ${a.name} แล้ว`); render(); } break; }
+    case 'setAvatar': save.avatar = d.v; persist(); render(); break;
+    /* settings */
+    case 'setCls': save.cls = d.v; if(Object.values(CLASSES).some(c=>c.emoji===save.avatar)) save.avatar = CLASSES[d.v].emoji; persist(); render(); break;
+    case 'setCefr': save.cefr = d.v; persist(); render(); break;
+    case 'setSource': save.settings.source = d.v; persist(); render(); break;
+    case 'recheck': checkAI(); render(); break;
+    case 'toggle': save.settings[d.k] = !save.settings[d.k]; persist(); if(d.k==='music') setMusic(save.settings.music); if(d.k==='tts' && save.settings.tts) speak('Hello, hero!'); render(); break;
+    case 'exportSave': try{ ui.exportCode = btoa(unescape(encodeURIComponent(JSON.stringify(save)))); navigator.clipboard && navigator.clipboard.writeText(ui.exportCode).then(()=>toast('คัดลอกรหัสเซฟแล้ว')).catch(()=>{}); }catch(e){} render(); break;
+    case 'importOpen': openModal(`<h2 class="lvl" style="font-size:22px;">นำเข้าเซฟ</h2><p>วางรหัสเซฟ ความคืบหน้าปัจจุบันจะถูกแทนที่</p>
+      <textarea class="text-in px" id="importBox" style="margin-top:12px;"></textarea><button class="btn primary px block" data-act="importDo">นำเข้า</button><button class="btn ghost px block" data-act="closeModal">ยกเลิก</button>`); break;
+    case 'importDo': { try{ const data = JSON.parse(decodeURIComponent(escape(atob($('#importBox').value.trim())))); if(!data || data.v!==2) throw 0; save = mergeDeep(defaultSave(), data); persist(); ui.modals=[]; toast('นำเข้าเซฟเรียบร้อย'); goto('hub'); }catch(e){ toast('รหัสเซฟไม่ถูกต้อง ตรวจว่าคัดลอกมาครบ'); } break; }
+    case 'resetAsk': openModal(`<div class="big">⚠️</div><h2 class="lose" style="font-size:22px;">ล้างทุกอย่าง?</h2><p>เลเวล ทอง คำศัพท์ ความสำเร็จ จะหายทั้งหมดและกู้คืนไม่ได้</p>
+      <button class="btn danger px block" data-act="resetDo">ล้างความคืบหน้า</button><button class="btn px block" data-act="closeModal">ยกเลิก</button>`); break;
+    case 'resetDo': try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(OLD_SAVE_KEY); }catch(e){} save = defaultSave(); ui.modals=[]; ui.onboard = { name:'', cls:'warrior', cefr:'B1' }; setMusic(false); goto('onboarding'); break;
+  }
+}
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-act]'); if(!el || el.disabled) return;
+  if(el.dataset.act==='overlayBg' && e.target!==el) return;
+  act(el.dataset.act, el.dataset, el);
+});
+document.addEventListener('input', e=>{
+  const k = e.target.dataset && e.target.dataset.input; if(!k) return;
+  const v = e.target.value;
+  if(k==='obName') ui.onboard.name = v;
+  if(k==='free' && ui.story) ui.story.free = v;
+  if(k==='libq'){ ui.lib.q = v; renderLibList(); }
+  if(k==='rename'){ save.name = v.trim() || 'Traveler'; persist(); }
+  if(k==='sfx'){ save.settings.sfx = +v; persist(); const s = $('#sfxVal'); if(s) s.textContent = v+'%'; }
+});
+document.addEventListener('change', e=>{ if(e.target.dataset && e.target.dataset.input==='sfx') sfx.click(); if(e.target.dataset && e.target.dataset.input==='rename') render(); });
+document.addEventListener('keydown', e=>{
+  const typing = /INPUT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName);
+  if(e.key==='Enter' && typing && document.activeElement.id==='freeIn'){ e.preventDefault(); if(ui.story && !ui.story.loading){ submitFree(); flushEvents(); } return; }
+  if(typing || ui.modals.length) { if(ui.modals.length && e.key==='Escape' && !ui.modals[0].sticky) closeModal(); return; }
+  const n = parseInt(e.key,10);
+  if(ui.screen==='battle' && ui.battle){
+    if(n>=1 && n<=4) answerBattle(n-1);
+    if(e.key==='Enter' && ui.battle.phase==='reveal'){ nextQ(); render(); }
+  } else if(ui.screen==='challenge' && ui.ch){ if(n>=1 && n<=4) answerBlitz(n-1); }
+  else if(ui.screen==='story' && ui.story && !ui.story.loading){
+    const idx = 'abc'.indexOf(e.key.toLowerCase()); const ok = n>=1&&n<=3 ? n-1 : idx;
+    const sc = ui.story.mode==='offline' ? offlineScene() : ui.story.scene;
+    if(ok>=0 && sc && !sc.end && sc.options[ok]){ chooseStory(ok); flushEvents(); }
+  } else if(ui.screen==='review' && ui.review){
+    if(e.key===' '){ e.preventDefault(); act('flip', {}); }
+    else if(ui.review.flipped && (e.key==='1'||e.key==='ArrowLeft')) rateCard(false);
+    else if(ui.review.flipped && (e.key==='2'||e.key==='ArrowRight')) rateCard(true);
+  }
+});
+document.addEventListener('pointerdown', function first(){ ctxA(); if(save.settings.music) setMusic(true); document.removeEventListener('pointerdown', first); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) setMusic(false); else if(save.settings.music && audioCtx) setMusic(true); });
+
+/* ------------------------------ background sky ------------------------------ */
+function paintSky(){
+  const c = $('#sky'); const W = 160, H = Math.round(160*innerHeight/Math.max(innerWidth,1)); c.width = W; c.height = H;
+  const x = c.getContext('2d'); const rng = mulberry(7);
+  const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#140f2b'); g.addColorStop(.7,'#1c1540'); g.addColorStop(1,'#2a1a4a'); x.fillStyle=g; x.fillRect(0,0,W,H);
+  for(let i=0;i<W*H/60;i++){ x.fillStyle = rng()<.15 ? '#cfc2ff' : '#5a4d99'; x.fillRect(Math.floor(rng()*W), Math.floor(rng()*H*.8), 1, 1); }
+  x.fillStyle = '#1a1236'; for(let i=0;i<W;i++){ const y = H - 14 - Math.sin(i*.05)*6 - Math.sin(i*.13+2)*3; x.fillRect(i,y,1,H-y); }
+  x.fillStyle = '#120c28'; for(let i=0;i<W;i++){ const y = H - 6 - Math.sin(i*.09+1)*3; x.fillRect(i,y,1,H-y); }
+}
+
+/* ------------------------------ boot ------------------------------ */
+paintSky(); addEventListener('resize', paintSky);
+if(save.onboarded) ensureDaily();
+render();
+checkAI();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
+}
+</script>
+</body></html>
