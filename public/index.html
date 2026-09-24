@@ -301,6 +301,47 @@ input[type=range]{width:100%;accent-color:var(--gold)}
 .necro-aura{animation:glow 1.4s ease-in-out infinite}
 @media (max-width:900px), (max-aspect-ratio:4/3){ .hud-acc{top:54px} .hud-acc span{width:26px;height:26px;font-size:18px} }
 
+/* v5: elements */
+.items.wide{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.tray.elem .t{background:linear-gradient(#fffdf6,var(--c2,#fff));box-shadow:0 3px 0 var(--ol),0 0 16px 5px var(--ac);animation:pop .18s,glowT .45s ease-in-out infinite alternate}
+.tray.elem .aura-fx{opacity:.95;animation:auraPulse .35s ease-in-out infinite alternate}
+.tray.elem .aura-fx i{width:14px;height:24px;background:var(--ac);box-shadow:0 0 10px var(--ac)}
+.tray.elem .aura-fx i:nth-child(3n){background:var(--c2,#fff)}
+.el-fire{--ac:#ff7a2e;--c2:#ffd24a}.el-ice{--ac:#7fe6ff;--c2:#e6ffff}.el-thunder{--ac:#ffe14a;--c2:#fff9c0}.el-water{--ac:#3a9dff;--c2:#bfe6ff}.el-poison{--ac:#7fff3a;--c2:#d8a0ff}
+.el-wind{--ac:#9fffe0;--c2:#ffffff}.el-earth{--ac:#c8904a;--c2:#f0d8a8}.el-holy{--ac:#fff0a0;--c2:#ffffff}.el-shadow{--ac:#9a4aff;--c2:#e0c8ff}
+.tray.el-ice .aura-fx i{border-radius:2px;transform:rotate(45deg)}
+.tray.el-thunder .aura-fx{animation:auraPulse .12s steps(2) infinite alternate}
+.tray-msg.elem{border-color:var(--ac);background:rgba(20,12,7,.92);color:var(--c2)}
+.infuse{position:absolute;inset:0;z-index:5;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:radial-gradient(ellipse at 30% 60%,transparent 20%,rgba(0,0,0,.55) 75%);animation:fadeIn .25s}
+.infuse::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,var(--c1) 50%,transparent);opacity:.18;animation:sweep 1.2s ease-out}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.infuse.out{animation:fadeOut .35s forwards}
+.inf-word{display:flex;gap:4px;margin-top:-6%}
+.inf-word span{display:inline-block;font:clamp(28px,6vw,54px)/1 var(--display);color:#fff;-webkit-text-stroke:3px var(--ol);paint-order:stroke fill;
+  text-shadow:0 0 18px var(--c1),0 0 36px var(--c1);animation:letterIn .5s cubic-bezier(.3,1.7,.5,1) both}
+@keyframes letterIn{from{transform:translateY(30px) scale(.2);opacity:0}}
+.inf-title{font:clamp(22px,4.4vw,40px)/1.1 var(--display);color:var(--c2);-webkit-text-stroke:2.5px var(--ol);paint-order:stroke fill;text-shadow:0 0 20px var(--c1),0 4px 0 var(--ol);text-align:center;animation:pop .45s .25s both}
+.inf-title small{display:block;font:500 clamp(12px,2.4vw,15px) var(--thai);color:#fff;-webkit-text-stroke:0;text-shadow:0 2px 4px #000;margin-top:4px}
+.flash-white{position:absolute;inset:0;background:#fffbe0;opacity:.6;z-index:2;pointer-events:none;animation:fadeOut .35s forwards}
+#heroA.enchanted .wpn{filter:drop-shadow(0 0 6px var(--ec)) drop-shadow(0 0 12px var(--ec))}
+.enchant .ench-glow{animation:glow .5s ease-in-out infinite}
+.enchant .ench-p{animation:enchP 1s ease-in-out infinite}
+@keyframes enchP{0%{transform:translateY(6px);opacity:.2}50%{opacity:1}100%{transform:translateY(-14px);opacity:0}}
+.enchant .ench-flick{animation:flickO .15s steps(2) infinite}
+@keyframes flickO{50%{opacity:.25}}
+.enchant .ench-spin{transform-box:fill-box;transform-origin:50% 50%;animation:spin 1.2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.enemy.st-burn{filter:drop-shadow(0 0 6px #ff7a2e) sepia(.3) saturate(1.4)}
+.enemy.st-frozen{filter:drop-shadow(0 0 8px #7fe6ff) saturate(.35) brightness(1.25) hue-rotate(160deg)}
+.enemy.st-poison{filter:drop-shadow(0 0 6px #7fff3a) hue-rotate(40deg) saturate(1.3)}
+.enemy.st-frozen *{animation-play-state:paused!important}
+.sts{font:14px var(--thai);margin-left:4px}
+.actor .tail{animation:tail 1.3s ease-in-out infinite}
+@keyframes tail{50%{transform:rotate(-10deg)}}
+.actor .halo{animation:halo 2s ease-in-out infinite}
+@keyframes halo{50%{transform:translateY(-4px)}}
+
 /* modals & toasts */
 .overlay{position:fixed;inset:0;background:rgba(10,6,3,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;animation:fadeIn .2s}
 @keyframes fadeIn{from{opacity:0}}
@@ -633,7 +674,7 @@ function heroSVG(eq){
         <path d="M-32,4 Q-34,22 -20,28" stroke="#8d9aa8" stroke-width="3" fill="none"/>
       </g></g>
       <g transform="translate(16,-64)"><g class="armF">
-        <g transform="translate(4,24) rotate(28)">${weapon}</g>
+        <g transform="translate(4,24) rotate(28)"><g class="wpn">${weapon}</g></g>
         <rect x="-6" y="0" width="12" height="24" rx="6" fill="#4a86d8" ${S(2.5)}/>
         <circle cx="4" cy="25" r="7" fill="#ffd9b3" ${S(2.5)}/>${ov.pad?ov.pad(1):''}
       </g></g>
@@ -896,7 +937,7 @@ function knightSVG(eq){
         <path d="M6,10 L6,16 M12,10 L12,16 M18,10 L18,16" stroke="#2a1a10" stroke-width="2.5" stroke-linecap="round"/>
       </g></g>
       <g transform="translate(26,-114)"><g class="armF">
-        <g transform="translate(4,40) rotate(22) scale(1.3)">${weapon}</g>
+        <g transform="translate(4,40) rotate(22) scale(1.3)"><g class="wpn">${weapon}</g></g>
         <rect x="-7" y="0" width="15" height="38" rx="7" fill="#dbe4f0" ${S(2.5)}/>
         <circle cx="4" cy="40" r="9" fill="#9fb2d0" ${S(2.5)}/>
         <path d="M-16,4 Q-16,-12 0,-12 Q16,-12 16,4 Q14,14 0,14 Q-14,14 -16,4 Z" fill="#e3ebf5" ${S(2.5)}/><path d="M-10,6 Q0,10 10,6" stroke="#9fb2d0" stroke-width="2.5" fill="none"/>
@@ -904,8 +945,7 @@ function knightSVG(eq){
     </g>
   </g>`;
 }
-const CHAR_ART = { pip: heroSVG, bastion: knightSVG };
-const CHAR_FACE = { pip:'-40 -150 80 80', bastion:'-30 -182 70 70' };
+
 function charSVG(eq){ return (CHAR_ART[(eq||{}).char] || heroSVG)(eq); }
 
 /* ------------------------ Necromancer (boss) ------------------------ */
@@ -959,6 +999,115 @@ const ACC_ART = {
   phoenix:`<svg viewBox="0 0 40 40" class="ico"><path d="M8,36 Q10,16 30,4 Q34,18 22,28 Q16,33 8,36 Z" fill="#ff8a2a" ${S(3)}/><path d="M12,32 Q18,20 28,10" stroke="#ffe14a" stroke-width="3" fill="none"/><path d="M8,36 L4,40" stroke="${OL}" stroke-width="3"/></svg>`,
   sage:`<svg viewBox="0 0 40 40" class="ico"><circle cx="20" cy="18" r="14" fill="#5a8aff" opacity=".3"/><path d="M20,4 L30,14 L26,30 L14,30 L10,14 Z" fill="#6fa0ff" ${S(3)}/><path d="M20,4 L20,30 M10,14 L30,14" stroke="#fff" stroke-width="2" opacity=".6"/><rect x="12" y="30" width="16" height="6" rx="2" fill="#ffcf4a" ${S(2)}/></svg>`,
 };
+
+/* ------------------ chibi builder for the extra heroes ------------------ */
+function chibiSVG(eq, st){
+  eq = eq || {};
+  const weapon = (WEAPON_ART[eq.weapon]||WEAPON_ART.wood)();
+  const shield = (SHIELD_ART[eq.armor]||SHIELD_ART.none)();
+  const ov = ARMOR_OV[eq.armor] || ARMOR_OV.none;
+  const leg = (x,cls)=>`<g transform="translate(${x},-30)"><g class="${cls}">
+      <rect x="-7" y="0" width="14" height="22" rx="5" fill="${st.pants}" ${S(2.5)}/>
+      <path d="M-9,16 L10,16 Q16,16 16,22 L16,27 L-9,27 Z" fill="${st.boots}" ${S(2.5)}/></g></g>`;
+  const torso = st.robe
+    ? `<path d="M-24,-70 Q-28,-40 -30,-12 L30,-12 Q28,-40 24,-70 Q0,-80 -24,-70 Z" fill="${st.tunic}" ${S(3)}/><path d="M-4,-70 L-6,-12 L6,-12 L4,-70 Z" fill="${st.tunic2}"/><path d="M-30,-12 L30,-12" stroke="${st.trim||'#ffcf4a'}" stroke-width="4"/>`
+    : `<path d="M-24,-70 Q-26,-40 -22,-26 L22,-26 Q26,-40 24,-70 Q0,-80 -24,-70 Z" fill="${st.tunic}" ${S(3)}/><path d="M-10,-70 L-6,-28 M10,-70 L6,-28" stroke="${st.tunic2}" stroke-width="3"/>`;
+  return `<g class="hero-body">
+    <ellipse class="shadow" cx="0" cy="2" rx="36" ry="8" fill="rgba(0,0,0,.35)"/>
+    <g class="h-bob">
+      ${st.tail?`<g transform="translate(-20,-40)"><g class="tail">${st.tail}</g></g>`:''}
+      ${st.cape?`<g transform="translate(-10,-74)"><g class="scarf"><path d="M-4,0 Q-26,24 -24,62 L10,50 Q4,24 12,0 Z" fill="${st.cape}" ${S(2.5)}/></g></g>`:''}
+      ${st.robe?'':leg(-11,'legB')}
+      <g transform="translate(-18,-64)"><g class="armB">
+        <rect x="-6" y="0" width="12" height="24" rx="6" fill="${st.sleeve}" ${S(2.5)}/>
+        <circle cx="0" cy="26" r="6.5" fill="${st.skin}" ${S(2.5)}/>${ov.pad?ov.pad(0):''}
+        <g transform="translate(-4,26)">${shield}</g>
+      </g></g>
+      ${st.robe?`<g transform="translate(-9,-14)"><g class="legB"><path d="M-8,0 L8,0 L10,14 L-8,14 Z" fill="${st.boots}" ${S(2.5)}/></g></g><g transform="translate(11,-14)"><g class="legF"><path d="M-8,0 L8,0 Q16,6 14,14 L-8,14 Z" fill="${st.boots}" ${S(2.5)}/></g></g>`:leg(11,'legF')}
+      <g class="h-torso">${torso}
+        ${st.belt?`<rect x="-24" y="-42" width="48" height="8" rx="3" fill="${st.belt}" ${S(2.5)}/><rect x="-5" y="-44" width="10" height="12" rx="2" fill="#ffcf4a" ${S(2.5)}/>`:''}
+        ${st.chestX||''}${ov.chest||''}
+      </g>
+      ${st.scarf?`<g transform="translate(-14,-76)"><g class="scarf"><path d="M0,0 Q-16,4 -30,-2 Q-22,8 -34,14 Q-14,14 2,8 Z" fill="${st.scarf}" ${S(2.5)}/></g></g><path d="M-22,-78 Q0,-66 22,-78 L22,-68 Q0,-58 -22,-68 Z" fill="${st.scarf}" ${S(2.5)}/>`:''}
+      <g transform="translate(2,-104)"><g class="h-head">
+        ${st.hairBack||''}
+        <circle cx="4" cy="2" r="29" fill="${st.skin}" ${S(3)}/>
+        <g class="eyes"><g class="blink">
+          <ellipse cx="8" cy="6" rx="5.5" ry="8" fill="#fff" ${S(2)}/><ellipse cx="24" cy="6" rx="5.5" ry="8" fill="#fff" ${S(2)}/>
+          <circle cx="10" cy="8" r="3.2" fill="${st.eye||OL}"/><circle cx="26" cy="8" r="3.2" fill="${st.eye||OL}"/>
+          <circle cx="11" cy="6.6" r="1.1" fill="#fff"/><circle cx="27" cy="6.6" r="1.1" fill="#fff"/></g></g>
+        ${st.mask?st.mask:`<ellipse cx="2" cy="18" rx="4.5" ry="2.8" fill="#ff9a8a" opacity=".8"/><ellipse cx="30" cy="18" rx="3.5" ry="2.6" fill="#ff9a8a" opacity=".8"/>
+        <path class="mouth" d="M14,20 Q18,24 22,20" stroke="${OL}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
+        ${st.hairFront||''}
+      </g></g>
+      <g transform="translate(16,-64)"><g class="armF">
+        <g transform="translate(4,24) rotate(28)"><g class="wpn">${weapon}</g></g>
+        <rect x="-6" y="0" width="12" height="24" rx="6" fill="${st.sleeve}" ${S(2.5)}/>
+        <circle cx="4" cy="25" r="7" fill="${st.skin}" ${S(2.5)}/>${ov.pad?ov.pad(1):''}
+      </g></g>
+    </g>
+  </g>`;
+}
+const CHIBI = {
+  mira:{ skin:'#ffe0c8', pants:'#3a2a5a', boots:'#4a2f6a', tunic:'#7a4ac8', tunic2:'#5a32a0', trim:'#ffcf4a', sleeve:'#8a5ad8', robe:true, eye:'#5a3aa0',
+    hairBack:`<path d="M-26,-6 Q-34,24 -20,34 L-10,20 Q-18,4 -14,-10 Z" fill="#e8e8f4" ${S(2.5)}/>`,
+    hairFront:`<path d="M-24,-8 Q-10,-2 6,-10 Q18,-2 32,-6 L30,-16 L-24,-18 Z" fill="#e8e8f4" ${S(2.5)}/>
+      <path d="M-38,-12 Q4,-4 44,-14 Q40,-22 4,-22 Q-30,-22 -38,-12 Z" fill="#5a32a0" ${S(3)}/>
+      <path d="M-22,-18 Q-8,-40 0,-56 Q8,-44 26,-18 Z" fill="#7a4ac8" ${S(3)}/>
+      <g transform="translate(0,-54)"><g class="plume"><path d="M0,0 Q-16,-6 -24,4 Q-12,0 -8,8 Z" fill="#7a4ac8" ${S(2.5)}/><path d="M-24,4 L-22,-3 L-18,5 Z" fill="#ffe14a"/></g></g>
+      <path d="M4,-34 L6,-28 L12,-27 L7,-23 L9,-17 L4,-21 L-1,-17 L1,-23 L-4,-27 L2,-28 Z" fill="#ffe14a" ${S(1.5)}/>` },
+  rook:{ skin:'#f2c9a0', pants:'#2e3a3a', boots:'#3a2a1e', tunic:'#2f7a6a', tunic2:'#245e52', sleeve:'#2f7a6a', belt:'#4a3020', eye:'#1a4a3a',
+    cape:'#1f4a42',
+    hairBack:`<g transform="translate(-24,-8)"><g class="plume"><path d="M0,0 Q-20,4 -28,22 Q-14,16 -4,14 Z" fill="#2a2030" ${S(2.5)}/></g></g>`,
+    hairFront:`<path d="M-26,-2 Q-24,-30 4,-30 Q30,-30 34,-4 Q20,-14 4,-12 Q-12,-14 -26,-2 Z" fill="#2a2030" ${S(2.5)}/>
+      <path d="M-26,-6 Q4,-18 34,-8 L33,0 Q4,-10 -26,2 Z" fill="#c23a2a" ${S(2.5)}/><path d="M-26,-2 L-40,4 L-36,-8 Z" fill="#c23a2a" ${S(2)}/>`,
+    mask:`<path d="M-4,14 Q16,10 34,14 Q32,28 16,30 Q2,28 -4,14 Z" fill="#1f4a42" ${S(2.5)}/>` },
+  bruna:{ skin:'#e8b088', pants:'#6a4a2a', boots:'#4a2f1e', tunic:'#8a5a30', tunic2:'#6a4020', sleeve:'#e8b088', belt:'#3a2618', eye:'#2a5a8a',
+    chestX:`<path d="M-24,-70 Q0,-62 24,-70 L22,-60 Q0,-54 -22,-60 Z" fill="#d8c8a8" ${S(2.5)}/><path d="M-18,-66 l4,4 M-8,-64 l4,4 M2,-64 l4,4 M12,-66 l4,4" stroke="#a89878" stroke-width="2"/>`,
+    hairBack:`<path d="M-30,-8 Q-44,10 -36,34 Q-26,28 -22,36 Q-18,20 -12,14 Z" fill="#d8452a" ${S(2.5)}/><g transform="translate(-28,12)"><g class="plume"><path d="M0,0 Q-10,14 -6,30 L2,28 Q-2,14 6,4 Z" fill="#d8452a" ${S(2.5)}/><circle cx="-2" cy="30" r="4" fill="#ffcf4a" ${S(2)}/></g></g>`,
+    hairFront:`<path d="M-28,-4 Q-26,-28 4,-30 Q32,-28 34,-6 Q24,-12 18,-6 Q10,-14 0,-8 Q-10,-14 -28,-4 Z" fill="#d8452a" ${S(2.5)}/>
+      <path d="M-28,-10 Q4,-40 36,-10 L34,-2 Q4,-18 -28,-2 Z" fill="#9aa4b0" ${S(2.5)}/>
+      <path d="M-26,-12 Q-44,-22 -42,-44 Q-36,-30 -20,-24 Z" fill="#f4efe6" ${S(2.5)}/><path d="M32,-12 Q48,-24 44,-46 Q40,-30 26,-22 Z" fill="#f4efe6" ${S(2.5)}/>
+      <circle cx="16" cy="12" r="1.2" fill="#b86a4a"/><circle cx="20" cy="14" r="1.2" fill="#b86a4a"/><circle cx="28" cy="12" r="1.2" fill="#b86a4a"/>` },
+  luma:{ skin:'#ffe6d2', pants:'#e8e0f0', boots:'#c8a860', tunic:'#f4efe6', tunic2:'#e0d4b8', trim:'#ffcf4a', sleeve:'#f4efe6', robe:true, eye:'#3a7ac8',
+    chestX:`<path d="M-3,-66 L3,-66 L3,-58 L9,-58 L9,-52 L3,-52 L3,-40 L-3,-40 L-3,-52 L-9,-52 L-9,-58 L-3,-58 Z" fill="#ffcf4a" ${S(1.8)}/>`,
+    hairBack:`<path d="M-28,-4 Q-36,20 -26,34 Q-16,26 -14,10 Z" fill="#ffd66a" ${S(2.5)}/><circle cx="-24" cy="-22" r="12" fill="#ffd66a" ${S(2.5)}/>`,
+    hairFront:`<path d="M-26,-2 Q-24,-30 6,-30 Q32,-28 34,-4 Q20,-18 8,-10 Q-6,-20 -26,-2 Z" fill="#ffd66a" ${S(2.5)}/>
+      <path d="M-24,-14 Q6,-26 34,-14" stroke="#ffcf4a" stroke-width="4" fill="none"/><path d="M-24,-14 Q6,-26 34,-14" stroke="${OL}" stroke-width="1.5" fill="none" opacity=".6"/>
+      <path d="M6,-26 L10,-20 L6,-14 L2,-20 Z" fill="#6fe6ff" ${S(1.8)}/>
+      <g class="halo"><ellipse cx="4" cy="-44" rx="22" ry="6" fill="none" stroke="#ffe14a" stroke-width="5"/><ellipse cx="4" cy="-44" rx="22" ry="6" fill="none" stroke="#fff6b0" stroke-width="2"/></g>` },
+  kiko:{ skin:'#ffe0c8', pants:'#4a5a2a', boots:'#5a3a24', tunic:'#4f8a3a', tunic2:'#3a6a2a', sleeve:'#4f8a3a', belt:'#6b4428', eye:'#8a4a10', scarf:'#f4efe6',
+    tail:`<path d="M0,0 Q-30,-6 -40,-34 Q-32,-26 -22,-28 Q-34,-40 -30,-58 Q-12,-40 -2,-18 Z" fill="#f08a2a" ${S(2.5)}/><path d="M-30,-58 Q-36,-44 -32,-36 Q-26,-46 -30,-58 Z" fill="#fff"/>`,
+    hairBack:`<path d="M-26,-2 Q-36,20 -24,30 Q-16,18 -14,6 Z" fill="#f08a2a" ${S(2.5)}/>`,
+    hairFront:`<path d="M-26,-4 Q-24,-30 6,-30 Q32,-28 34,-6 Q26,-10 20,-4 Q16,-16 6,-10 Q-6,-18 -26,-4 Z" fill="#f08a2a" ${S(2.5)}/>
+      <path d="M-18,-22 L-26,-52 L-2,-30 Z" fill="#f08a2a" ${S(2.5)}/><path d="M-17,-28 L-22,-44 L-8,-31 Z" fill="#ffd9c0"/>
+      <path d="M14,-30 L26,-58 L32,-24 Z" fill="#f08a2a" ${S(2.5)}/><path d="M18,-30 L25,-48 L28,-28 Z" fill="#ffd9c0"/>
+      <path d="M22,14 L20,17 L24,17 Z" fill="${OL}"/>` },
+};
+const CHAR_ART = { pip: heroSVG, bastion: knightSVG };
+Object.keys(CHIBI).forEach(k=>{ CHAR_ART[k] = eq=>chibiSVG(eq, CHIBI[k]); });
+const CHAR_FACE = { pip:'-40 -150 80 80', bastion:'-30 -182 70 70', mira:'-36 -160 80 80', rook:'-36 -150 80 80', bruna:'-36 -155 80 80', luma:'-36 -158 80 80', kiko:'-36 -160 80 80' };
+
+/* --------------------- elemental weapon enchants --------------------- */
+const ELEM_COL = { fire:['#ff7a2e','#ffd24a'], ice:['#7fe6ff','#e6ffff'], thunder:['#ffe14a','#fff9c0'], water:['#3a9dff','#bfe6ff'], poison:['#7fff3a','#b04aff'],
+  wind:['#b8ffe6','#ffffff'], earth:['#b8864a','#e8c890'], holy:['#fff0a0','#ffffff'], shadow:['#9a4aff','#2a1040'] };
+function enchantSVG(el){
+  const [c1,c2] = ELEM_COL[el]||ELEM_COL.fire;
+  const glow = `<ellipse cx="0" cy="-48" rx="20" ry="58" fill="${c1}" opacity=".35" class="ench-glow"/>`;
+  const P = {
+    fire:[0,1,2,3,4].map(i=>`<g class="ench-p" style="animation-delay:${i*.12}s"><path d="M${-10+i*5},${-16-i*16} q-6,-12 2,-24 q2,10 8,6 q2,12 -10,18 z" fill="${i%2?c2:c1}" stroke="${OL}" stroke-width="1.5"/></g>`).join(''),
+    ice:[0,1,2,3].map(i=>`<path d="M${i%2?8:-8},${-20-i*20} l${i%2?10:-10},-6 l-4,10 z" fill="${c2}" stroke="${OL}" stroke-width="1.5"/>`).join('')+`<g class="ench-p"><circle cx="-12" cy="-70" r="3" fill="#fff"/><circle cx="12" cy="-40" r="2.5" fill="#fff"/></g>`,
+    thunder:`<g class="ench-flick"><path d="M-6,-10 L6,-30 L-4,-36 L8,-60 L-2,-66 L10,-92" stroke="${c1}" stroke-width="5" fill="none"/><path d="M-6,-10 L6,-30 L-4,-36 L8,-60 L-2,-66 L10,-92" stroke="#fff" stroke-width="2" fill="none"/></g>`,
+    water:[0,1,2,3,4].map(i=>`<g class="ench-p" style="animation-delay:${i*.2}s"><circle cx="${(i%2?1:-1)*(8+i*2)}" cy="${-14-i*18}" r="${4+i%3}" fill="${c2}" stroke="${c1}" stroke-width="2"/></g>`).join(''),
+    poison:[0,1,2,3].map(i=>`<g class="ench-p" style="animation-delay:${i*.18}s"><path d="M${-8+i*5},${-20-i*18} q-5,8 0,12 q5,-4 0,-12 z" fill="${i%2?c2:c1}" stroke="${OL}" stroke-width="1.5"/></g>`).join(''),
+    wind:`<g class="ench-spin"><path d="M-16,-48 A16,40 0 0 1 16,-48" stroke="${c1}" stroke-width="4" fill="none"/><path d="M16,-30 A16,40 0 0 1 -16,-60" stroke="#fff" stroke-width="3" fill="none"/></g>`,
+    earth:[0,1,2].map(i=>`<g class="ench-p" style="animation-delay:${i*.25}s"><path d="M${(i%2?10:-12)},${-24-i*24} l6,-4 l4,6 l-4,6 l-7,-2 z" fill="${c1}" stroke="${OL}" stroke-width="1.8"/></g>`).join(''),
+    holy:`<g class="ench-spin">${[0,45,90,135,180,225,270,315].map(r=>`<path d="M0,-66 L0,-84" transform="rotate(${r} 0 -48)" stroke="${c2}" stroke-width="3" opacity=".8"/>`).join('')}</g><circle cx="0" cy="-48" r="10" fill="#fff" opacity=".7"/>`,
+    shadow:[0,1,2,3].map(i=>`<g class="ench-p" style="animation-delay:${i*.2}s"><ellipse cx="${(i%2?1:-1)*8}" cy="${-20-i*20}" rx="9" ry="6" fill="${c1}" opacity=".7"/></g>`).join(''),
+  };
+  return `<g class="enchant">${glow}${P[el]||''}</g>`;
+}
+const ELEM_ICON = { fire:'🔥', ice:'❄️', thunder:'⚡', water:'💧', poison:'☠️', wind:'🌪️', earth:'🪨', holy:'✨', shadow:'🌑' };
 /* ======================================================================
    QUEST LINES — Word Battle
    Spell English words from letter tiles to attack monsters.
@@ -1043,9 +1192,31 @@ const ACCESSORIES = [
   { id:'phoenix',  name:'Phoenix Feather',th:'ขนนกฟีนิกซ์', price:900, desc:'เมื่อ HP หมด ฟื้นคืนชีพ 40% (1 ครั้ง/ด่าน)' },
 ];
 const CHARACTERS = [
-  { id:'pip',     name:'Pip',         th:'พิป อัศวินน้อย', price:0,   desc:'ฮีโร่เริ่มต้น คล่องแคล่ว สมดุลทุกด้าน', hpMul:1, dmgTaken:1 },
-  { id:'bastion', name:'Sir Bastion', th:'เซอร์บาสเตียน อัศวินเหล็ก', price:800, desc:'เกราะหนัก: HP +20% และรับดาเมจลดลง 10%', hpMul:1.2, dmgTaken:.9 },
+  { id:'pip',     name:'Pip',         th:'พิป อัศวินน้อย', price:0,    role:'สมดุล', skill:'นักเรียนขยัน', desc:'คำใบ้ +1 ครั้งต่อด่าน และคำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
+  { id:'mira',    name:'Mira',        th:'มิร่า แม่มดฝึกหัด', price:400,  role:'เวทธาตุ', skill:'ทอเวทมนตร์', desc:'คำธาตุ (fire, ice, storm…) แรง x1.5 และผลของธาตุอยู่นานขึ้น +1 เทิร์น แต่ HP -10%', hpMul:.9, dmgTaken:1 },
+  { id:'rook',    name:'Rook',        th:'รุก จอมโจรเงา', price:600,  role:'คริติคอล', skill:'ตาเหยี่ยว', desc:'25% ติดคริติคอล ดาเมจ x2 และได้ทองเพิ่ม +20%', hpMul:.95, dmgTaken:1 },
+  { id:'bastion', name:'Sir Bastion', th:'เซอร์บาสเตียน อัศวินเหล็ก', price:800, role:'แทงค์', skill:'ป้อมเหล็ก', desc:'HP +20% และรับดาเมจลดลง 10%', hpMul:1.2, dmgTaken:.9 },
+  { id:'luma',    name:'Luma',        th:'ลูมา นักบวชแสง', price:1000, role:'ฮีลเลอร์', skill:'พรแห่งแสง', desc:'ทุกคำที่โจมตีฟื้น HP 4% · คำธาตุแสง (light, holy…) ฮีลเป็น 2 เท่า · ดาเมจ -10%', hpMul:1.05, dmgTaken:1 },
+  { id:'bruna',   name:'Bruna',       th:'บรูน่า นักรบคลั่ง', price:1400, role:'เบอร์เซิร์ก', skill:'โทสะ', desc:'ยิ่งเลือดน้อยยิ่งแรง (สูงสุด x2 ตอนเลือดใกล้หมด) แต่เกราะกันได้แค่ครึ่งเดียว', hpMul:1.1, dmgTaken:1 },
+  { id:'kiko',    name:'Kiko',        th:'คิโกะ นักธนูจิ้งจอก', price:2200, role:'คอมโบ', skill:'ฟันสองจังหวะ', desc:'ทุกคำที่ 3 โจมตี 2 ครั้ง (ครั้งที่สองแรง 70%) และคำ 6 ตัวขึ้นไปนับคอมโบเพิ่ม', hpMul:1, dmgTaken:1 },
 ];
+/* ---------------- elemental words → weapon enchant ---------------- */
+const ELEMENTS = {
+  fire:   { th:'ไฟ', name:'FIRE', mult:1.2, desc:'ติดไฟ 3 เทิร์น', words:'fire fires fiery flame flames flaming blaze blazing burn burns burned burning burnt ember embers inferno heat hot lava magma torch torches sun solar scorch scorched bonfire campfire flare ash ashes smoke' },
+  ice:    { th:'น้ำแข็ง', name:'ICE', mult:1.1, desc:'แช่แข็งศัตรู ข้าม 1 เทิร์น', words:'ice icy iced frost frosty frozen freeze freezes freezing snow snows snowy cold chill chilly winter glacier blizzard hail iceberg icicle sleet' },
+  thunder:{ th:'สายฟ้า', name:'THUNDER', mult:1, desc:'ฟ้าผ่าซ้ำอีกครั้ง 60% + 30% มึนงง', words:'thunder lightning bolt bolts storm storms stormy spark sparks shock shocks zap zaps static volt volts electric thunderbolt' },
+  water:  { th:'น้ำ', name:'WATER', mult:1, desc:'ล้างหินออกจากกระดาน + ฟื้น HP 10%', words:'water waters wave waves rain rains rainy ocean oceans sea seas river rivers flood splash tide tides lake lakes wet stream bubble bubbles' },
+  poison: { th:'พิษ', name:'POISON', mult:1, desc:'พิษกัดกิน 4 เทิร์น', words:'poison poisons venom venoms toxic acid acids toxin plague rot rotten sting stings snake snakes' },
+  wind:   { th:'ลม', name:'WIND', mult:1.05, desc:'หลบการโจมตีครั้งถัดไป', words:'wind winds windy gust gusts breeze air tornado cyclone whirl whirlwind hurricane feather feathers fly flying sky' },
+  earth:  { th:'ดิน', name:'EARTH', mult:1.15, desc:'ผิวหิน: ดาเมจครั้งถัดไปลด 70%', words:'earth rock rocks stone stones quake mountain mountains boulder ground iron steel clay sand dirt' },
+  holy:   { th:'แสง', name:'HOLY', mult:1, desc:'ฟื้น HP 20% · แรง x1.5 ใส่ผีและโครงกระดูก', words:'holy light lights angel angels heal heals healing heaven bless blessed pray prayer saint hope grace pure divine halo shine shining glow' },
+  shadow: { th:'เงามืด', name:'SHADOW', mult:1, desc:'ดูดเลือด 50% ของดาเมจ', words:'shadow shadows dark darker darkness night nights ghost ghosts shade doom curse cursed evil death vampire bat bats' },
+};
+const ELWORD = {};
+Object.entries(ELEMENTS).forEach(([k,v])=>v.words.split(' ').forEach(w=>ELWORD[w]=k));
+function elementOf(w){ if(ELWORD[w]) return ELWORD[w]; for(const s of stems(w)) if(ELWORD[s]) return ELWORD[s]; return null; }
+const UNDEAD = new Set(['skeleton','ghost','necro']);
+const charIs = id=>save.eq.char===id;
 const POTIONS = {
   heal: { name:'Heal Potion', th:'ยาฟื้นพลัง', desc:'ฟื้น HP 50% ของสูงสุด (ไม่เสียเทิร์น)', price:35, icon:'potRed' },
   power:{ name:'Power Potion', th:'ยาพลังคูณ', desc:'คำถัดไปทำดาเมจ x2 (ไม่เสียเทิร์น)', price:55, icon:'potStar' },
@@ -1191,6 +1362,20 @@ sfx.letter = (n)=>{
   if(L>=3){ tone(f/4,.4,'sine',.1); noise(.25,.05+L*.01); }
   if(L>=5){ [0,.08,.16].forEach((d,i)=>tone(f*(1+i*.5),.35,'triangle',.05,.12+d)); }
 };
+sfx.elem = (el)=>{
+  const s = {
+    fire:()=>{ noise(.5,.18); slide(120,420,.5,'sawtooth',.07); tone(220,.4,'triangle',.06,.1); },
+    ice:()=>{ [1568,2093,2637,3136].forEach((f,i)=>tone(f,.25,'sine',.06,i*.06)); slide(2400,1200,.4,'triangle',.03); },
+    thunder:()=>{ noise(.35,.3); slide(900,60,.35,'sawtooth',.12); tone(55,.5,'square',.08,.05); },
+    water:()=>{ for(let i=0;i<6;i++) slide(300+i*80,900+i*80,.12,'sine',.06,i*.07); },
+    poison:()=>{ sfx.toxic(); for(let i=0;i<4;i++) slide(500,200,.15,'sine',.05,i*.1); },
+    wind:()=>{ noise(.6,.12); slide(200,800,.6,'sine',.04); },
+    earth:()=>{ tone(60,.5,'sine',.18); noise(.3,.2); tone(90,.3,'square',.06,.08); },
+    holy:()=>{ [523,659,784,1046,1318].forEach((f,i)=>tone(f,.8,'sine',.05,i*.05)); },
+    shadow:()=>{ [220,262,311].forEach((f,i)=>tone(f,.7,'sawtooth',.035,i*.04)); slide(300,80,.7,'sine',.07); },
+  }[el]; if(s) s();
+};
+sfx.elemReady = (el)=>{ const f = { fire:392, ice:1318, thunder:880, water:659, poison:330, wind:784, earth:196, holy:1046, shadow:262 }[el]||660; tone(f,.2,'sine',.08); tone(f*1.5,.25,'sine',.05,.08); tone(f*2,.3,'triangle',.04,.16); };
 sfx.toxic = ()=>{ slide(180,90,.45,'sawtooth',.1); slide(190,95,.45,'square',.05,.02); noise(.35,.08); tone(70,.4,'sine',.1); };
 function speakRude(){
   sfx.toxic();
@@ -1267,13 +1452,13 @@ function renderShop(){
   const tabs = [['char','ตัวละคร'],['weapon','อาวุธ'],['armor','ชุดเกราะ'],['acc','ไอเทมเสริม'],['potion','ยา'],['up','อัปเกรด']];
   let h = `<div class="panel shop-hero">${heroStandalone(save.eq)}<div><h2 class="title" style="margin:0">ร้านค้า</h2><div class="sub">ของที่ใส่จะแสดงบนตัวละครทันที</div>
     <div class="acc-slots">${[0,1].map(i=>{ const a=save.acc[i]; return `<span class="acc-slot ${a?'':'empty'}" title="${a?esc(ACC(a).th):'ช่องไอเทมว่าง'}">${a?ACC_ART[a]:'+'}</span>`; }).join('')}</div></div></div>
-    <div class="seg seg6">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="shopTab" data-v="${k}">${l}</button>`).join('')}</div><div class="items">`;
+    <div class="seg seg6">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="shopTab" data-v="${k}">${l}</button>`).join('')}</div><div class="items ${t==='char'?'wide':''}">`;
   const eqBtn = (on, act, id)=> on ? `<button class="cbtn small wood" disabled>ใส่อยู่</button>` : `<button class="cbtn small blue" data-act="${act}" data-v="${id}">ใส่</button>`;
   if(t==='char'){
     CHARACTERS.forEach(c=>{
       const own = save.chars.includes(c.id), eq = save.eq.char===c.id;
       h += `<div class="panel item char-item ${eq?'equipped':''}"><div class="pic big">${heroStandalone(Object.assign({}, save.eq, { char:c.id }))}</div><div class="meta"><h4>${esc(c.name)}<small>${esc(c.th)}</small></h4>
-        <p>${esc(c.desc)}</p>${own ? eqBtn(eq,'equipC',c.id) : buyBtn('buyC',c.id,c.price)}</div></div>`;
+        <div class="stat">${esc(c.role)} · ${esc(c.skill)}</div><p>${esc(c.desc)}</p>${own ? eqBtn(eq,'equipC',c.id) : buyBtn('buyC',c.id,c.price)}</div></div>`;
     });
     h += `<div class="panel item" style="opacity:.6"><div class="pic">${ICON.lock}</div><div class="meta"><h4>Coming soon<small>ฮีโร่ใหม่กำลังมา</small></h4><p>ตัวละครใหม่จะเพิ่มเข้ามาเรื่อยๆ</p></div></div>`;
   }
@@ -1355,6 +1540,7 @@ function howtoHtml(){
     <li>ตัวอักษรที่มีอัญมณี: ${gemSvg('gold')} ได้ทอง ${gemSvg('heart')} ฟื้น HP ${gemSvg('gem')} ดาเมจ +50%</li>
     <li>คำที่เป็น <b>คำศัพท์เป้าหมาย</b> ⭐ ได้ดาเมจเพิ่ม 50% และบันทึกลงสมุดคำศัพท์</li>
     <li>คำยาว 4 ตัวขึ้นไปจะมี<b>ออร่า</b> ยิ่งยาวยิ่งเท่และยิ่งแรง</li>
+    <li><b>คำธาตุ</b> เช่น FIRE, ICE, STORM, WATER, POISON, WIND, ROCK, LIGHT, DARK จะมอบพลังให้อาวุธ: ติดไฟ แช่แข็ง ฟ้าผ่าซ้ำ ฮีล ดูดเลือด ฯลฯ</li>
     <li>คำหยาบใช้ได้ 🤬 ดาเมจ x2 แต่<b>สะท้อนเข้าตัวเอง 30% ของ HP</b> — so rude!</li>
     <li>ร้านค้ามีตัวละคร อาวุธ ชุดเกราะ และไอเทมเสริม (ใส่ได้ 2 ชิ้น)</li>
     <li>คีย์บอร์ด: พิมพ์ตัวอักษร · Backspace ลบ · Enter โจมตี · Space สลับตัวอักษร</li></ol>
@@ -1387,7 +1573,7 @@ function balanceTiles(tiles, freshOnly){
 function startStage(ch, n){
   loadDict();
   const st = buildStage(ch, n);
-  ui.bat = { stage:st, idx:0, hp:maxHp(), max:maxHp(), score:0, kills:0, goldGain:0, busy:true, sel:[], tiles:[], hints:3+(hasAcc('lens')?1:0), power:false,
+  ui.bat = { stage:st, idx:0, hp:maxHp(), max:maxHp(), score:0, kills:0, goldGain:0, busy:true, sel:[], tiles:[], hints:3+(hasAcc('lens')?1:0)+(save.eq.char==='pip'?1:0), combo:0, evade:0, stoneSkin:0, power:false,
     recent:[], last:null, farX:0, nearX:0, words:0, bestWord:'', bestDmg:0, over:false, paused:false, phoenix:hasAcc('phoenix') };
   const b = ui.bat;
   for(let i=0;i<15;i++) b.tiles.push(newTile(st.s));
@@ -1401,7 +1587,7 @@ function applyAura(){
   let c = b.tiles.filter(t=>t.aura && !t.stone).length, guard = 0;
   while(c<2 && guard++<20){ const f = b.tiles.filter(t=>!t.aura && !t.stone && !t.sel); if(!f.length) break; f[rint(0,f.length-1)].aura = true; c++; }
 }
-const goldMul = ()=>hasAcc('luckyCoin') ? 1.35 : 1;
+const goldMul = ()=>(hasAcc('luckyCoin') ? 1.35 : 1) * (save.eq.char==='rook' ? 1.2 : 1);
 function curEnemy(){ const b=ui.bat; return b && b.stage.enemies[b.idx]; }
 
 function buildBattleDom(){
@@ -1517,6 +1703,10 @@ function evalWord(){
   const m = rude ? null : meaning(w), bank = !rude && (!!BANK[w] || (m && m.bank));
   if(bank){ const bm = hasAcc('lens') ? 2 : 1.5; mult *= bm; notes.push(`คำศัพท์เป้าหมาย x${bm}`); }
   if(rude){ mult *= 2; }
+  const el = rude ? null : elementOf(w);
+  if(el){ let em = ELEMENTS[el].mult; if(el==='holy' && e && UNDEAD.has(e.art)) em *= 1.5; if(charIs('mira')) em *= 1.5; mult *= em; notes.unshift(`${ELEM_ICON[el]} ${ELEMENTS[el].name}: ${ELEMENTS[el].desc}`); }
+  if(charIs('bruna')) mult *= 1 + (1 - Math.max(0,ui.bat.hp)/ui.bat.max);
+  if(charIs('luma')) mult *= .9;
   if(b.power){ mult *= 2; notes.push('ยาพลัง x2'); }
   if(e){
     if(e.traits.includes('weak') && w.includes(e.weak)){ mult *= 2; notes.push(`จุดอ่อน ${e.weak.toUpperCase()} x2`); }
@@ -1525,19 +1715,20 @@ function evalWord(){
   }
   const dmg = Math.max(1, Math.round(p * mult * wp.atk/5));
   const selfDmg = rude ? Math.round(ui.bat.max*.3) : 0;
-  return { w, state:'ok', dmg, bank, meaning:m, notes, rude, selfDmg };
+  return { w, state:'ok', dmg, bank, meaning:m, notes, rude, selfDmg, el };
 }
 function renderTray(){
   const b = ui.bat, r = evalWord(), tray = $('#tray');
   const lv = r.state==='ok' && r.w.length>=4 ? Math.min(5, r.w.length-3) : 0;
-  tray.className = 'tray ' + (r.state==='ok' ? (r.rude?'toxic':r.bank?'bank':'good') : r.state==='bad'?'bad':'') + (lv&&!r.rude?` lv${lv}`:'');
-  const embers = r.rude ? 10 : lv ? lv*3 : 0;
+  tray.className = 'tray ' + (r.state==='ok' ? (r.rude?'toxic':r.bank?'bank':'good') : r.state==='bad'?'bad':'') + (lv&&!r.rude&&!r.el?` lv${lv}`:'') + (r.el?` elem el-${r.el}`:'');
+  const embers = r.rude ? 10 : r.el ? 14 : lv ? lv*3 : 0;
+  if(r.el && b.elWarned!==r.w){ b.elWarned = r.w; sfx.elemReady(r.el); } if(!r.el) b.elWarned = null;
   tray.innerHTML = (embers ? `<div class="aura-fx">${Array.from({length:embers},(_,k)=>`<i style="left:${(k*97)%100}%;animation-delay:${(k*.137)%1.1}s;animation-duration:${.8+(k%4)*.25}s"></i>`).join('')}</div>` : '')
     + b.sel.map((i,k)=>{ const l=b.tiles[i].l; return `<button class="t ${l==='qu'?'qu':''}" data-act="untray" data-k="${k}">${l==='qu'?'Qu':l}</button>`; }).join('');
   if(r.rude && !b.rudeWarned){ b.rudeWarned = true; sfx.toxic(); }
   if(!r.rude) b.rudeWarned = false;
   const msg = $('#trayMsg');
-  msg.className = 'tray-msg' + (r.rude ? ' toxic' : lv>=3 ? ' epic' : '');
+  msg.className = 'tray-msg' + (r.rude ? ' toxic' : r.el ? ` elem el-${r.el}` : lv>=3 ? ' epic' : '');
   msg.textContent = r.state==='bad' ? 'ไม่พบคำนี้' : r.state==='short' ? 'อย่างน้อย 3 ตัวอักษร' : r.state==='ok' ? (r.rude ? `🤬 คำหยาบ! ดาเมจ x2 แต่เจ็บตัวเอง -${r.selfDmg} HP` : r.notes.length? r.notes.join(' · ') : (r.meaning?r.meaning.thai:(lv>=3?'สุดยอด!':''))) : '';
   const btn = $('#bAtk');
   btn.disabled = r.state!=='ok' || b.busy;
@@ -1558,7 +1749,8 @@ function renderEnemyPanel(){
   if(!e){ el.innerHTML=''; return; }
   const traits = e.traits.map(t=>`<div class="trait">${esc(traitText(t,e))}</div>`).join('') || `<div class="trait none">ไม่มีความสามารถพิเศษ</div>`;
   const heavyNote = e.traits.includes('heavy') ? `<div class="trait charge">${e.charge?'⚠ กำลังชาร์จ! จะโจมตีหนักเทิร์นหน้า':'พักหายใจ… เทิร์นนี้จะไม่โจมตี'}</div>` : '';
-  el.innerHTML = `<div class="en-name">${esc(e.name)} <span class="sub" style="font-family:var(--thai);font-size:13px">${esc(e.th)}</span></div>
+  const sts = [e.burn>0?`🔥${e.burn}`:'', e.frozen>0?`❄${e.frozen}`:'', e.poison>0?`☠${e.poison}`:'', e.stun?'💫':'', ui.bat.evade?`🌪️หลบ`:'', ui.bat.stoneSkin?'🪨หิน':''].filter(Boolean);
+  el.innerHTML = `<div class="en-name">${esc(e.name)}${sts.length?` <span class="sts">${sts.join(' ')}</span>`:''} <span class="sub" style="font-family:var(--thai);font-size:13px">${esc(e.th)}</span></div>
     <div class="estats"><span>${ICON.heart}${Math.max(0,Math.ceil(e.hp))}/${e.maxHp}</span><span>${ICON.sword}${e.atk}</span><span class="full">${ICON.coin}${e.gold}${e.boss?' · BOSS':''}</span></div>${traits}${heavyNote}`;
 }
 
@@ -1646,20 +1838,32 @@ async function doAttack(){
   let goldGem=0, healGem=0;
   b.sel.forEach(i=>{ const t=b.tiles[i]; if(t.gem==='gold') goldGem+=Math.round((2+Math.floor(b.stage.s/4))*goldMul()); if(t.gem==='heart') healGem+=Math.round(b.max*.05); });
   // aura burst + attack animation
-  if(r.rude) auraBurst(0, true); else if(lv) auraBurst(lv, false);
+  if(r.el) await infuseCutscene(r.el, r.w);
+  if(r.rude) auraBurst(0, true); else if(lv && !r.el) auraBurst(lv, false);
   if(r.rude) floatText('SO RUDE!', HERO_X, FLOOR_Y-190, '#9dff4a', 34, true);
+  let dmg = r.dmg;
+  const crit = charIs('rook') && Math.random() < .25; if(crit) dmg *= 2;
+  ui.slashEl = r.el;
   await heroAttack(lv, r.rude);
-  e.hp -= r.dmg; b.score += r.dmg;
+  e.hp -= dmg; b.score += dmg;
+  if(crit){ floatText('CRITICAL!', EN_X, FLOOR_Y-e.h*e.sc-70, '#ff5a5a', 30, true); }
+  if(r.el) elemImpact(r.el);
   if(wp.perk==='burn'){ e.burn = 2; e.burnDmg = Math.max(1, Math.round(r.dmg*.3)); }
   const stunned = wp.perk==='stun' && Math.random()<.25;
   if(stunned) e.stun = true;
-  sfx.hit(r.dmg>=30 || lv>=3 || r.rude);
-  enemyHurt(r.dmg, r.dmg>=Math.max(30,e.maxHp*.35) || lv>=4 || r.rude);
+  sfx.hit(dmg>=30 || lv>=3 || r.rude || crit);
+  enemyHurt(dmg, dmg>=Math.max(30,e.maxHp*.35) || lv>=4 || r.rude || crit);
+  if(r.el) await applyElement(r.el, dmg, e);
+  // Kiko: every third word strikes twice
+  if(charIs('kiko')){ b.combo += r.w.length>=6 ? 2 : 1;
+    if(b.combo>=3 && e.hp>0){ b.combo -= 3; await sleep(260); floatText('DOUBLE!', HERO_X+40, FLOOR_Y-200, '#ffb04a', 28, true); await heroAttack(lv, false); const d2 = Math.max(1, Math.round(dmg*.7)); e.hp -= d2; b.score += d2; sfx.hit(true); enemyHurt(d2, false); } }
+  if(charIs('luma')){ const h = Math.round(b.max*.04); b.hp = Math.min(b.max, b.hp+h); floatText(`+${h}`, HERO_X-45, FLOOR_Y-120, '#fff6a0', 20); }
+  if(charIs('pip') && r.bank){ save.gold += 3; b.goldGain += 3; }
   if(r.bank) floatText('⭐ WORD!', EN_X-10, FLOOR_Y-e.h*e.sc-60, '#ffe14a', 26);
   if(stunned) floatText('มึนงง!', EN_X, FLOOR_Y-e.h*e.sc-30, '#fff', 22);
   if(goldGem){ save.gold += goldGem; b.goldGain += goldGem; sfx.coin(.1); floatText(`+${goldGem}`, HERO_X, FLOOR_Y-170, '#ffcf4a', 24); }
   if(healGem){ b.hp = Math.min(b.max, b.hp+healGem); floatText(`+${healGem}`, HERO_X-30, FLOOR_Y-150, '#6ef08a', 24); }
-  if(hasAcc('fang')){ const h = Math.max(1, Math.round(r.dmg*.12)); b.hp = Math.min(b.max, b.hp+h); floatText(`+${h}`, HERO_X-40, FLOOR_Y-140, '#6ef08a', 22); }
+  if(hasAcc('fang')){ const h = Math.max(1, Math.round(dmg*.12)); b.hp = Math.min(b.max, b.hp+h); floatText(`+${h}`, HERO_X-40, FLOOR_Y-140, '#6ef08a', 22); }
   // consume tiles
   const used = b.sel.slice(); b.sel=[];
   used.forEach(i=>{ b.tiles[i] = newTile(b.stage.s); });
@@ -1673,7 +1877,7 @@ async function doAttack(){
     updateHud(); await sleep(500);
     if(await checkHeroDeath()) return;
   }
-  if(e.hp<=0){ await enemyDies(); return; }
+  if(e.hp<=0){ clearEnchant(); await enemyDies(); return; }
   await enemyTurn();
 }
 async function checkHeroDeath(){
@@ -1709,8 +1913,11 @@ async function enemyTurn(){
   // burn
   if(e.burn>0){ e.burn--; e.hp -= e.burnDmg; b.score += e.burnDmg; floatText(`🔥${e.burnDmg}`, EN_X+20, FLOOR_Y-e.h*e.sc-10, '#ffa040', 24); updateEnemyHp(); renderEnemyPanel(); await sleep(350);
     if(e.hp<=0){ await enemyDies(); return; } }
+  if(e.poison>0){ e.poison--; e.hp -= e.poisonDmg; b.score += e.poisonDmg; floatText(`☠${e.poisonDmg}`, EN_X-20, FLOOR_Y-e.h*e.sc-10, '#9dff4a', 24); updateEnemyHp(); updateEnemyStatus(); renderEnemyPanel(); await sleep(350);
+    if(e.hp<=0){ clearEnchant(); await enemyDies(); return; } }
   // stone decay
   b.tiles.forEach(t=>{ if(t.stone>0){ t.stone--; if(!t.stone) t.fresh=true; } });
+  if(e.frozen>0){ e.frozen--; floatText('❄ แข็งทื่อ!', EN_X, FLOOR_Y-e.h*e.sc-20, '#bff6ff', 24); sfx.elem('ice'); await sleep(600); updateEnemyStatus(); endTurn(); return; }
   if(e.stun){ e.stun=false; floatText('💫 ข้ามเทิร์น', EN_X, FLOOR_Y-e.h*e.sc-20, '#fff', 22); await sleep(500); endTurn(); return; }
   if(e.traits.includes('regen')){ const h = Math.round(e.maxHp*.06); if(e.hp<e.maxHp){ e.hp = Math.min(e.maxHp, e.hp+h); floatText(`+${h}`, EN_X+30, FLOOR_Y-e.h*e.sc-10, '#6ef08a', 22); updateEnemyHp(); } }
   if(e.traits.includes('heavy')){
@@ -1718,9 +1925,13 @@ async function enemyTurn(){
     e.charge = 0;
   }
   const heavy = e.traits.includes('heavy');
-  let dmg = Math.round(e.atk * (heavy?2.2:1) * rnd(.85,1.15) * (1 - AR(save.eq.armor).block) * CH(save.eq.char).dmgTaken);
+  let dmg = Math.round(e.atk * (heavy?2.2:1) * rnd(.85,1.15) * (1 - AR(save.eq.armor).block * (charIs('bruna')?.5:1)) * CH(save.eq.char).dmgTaken);
   dmg = Math.max(1, dmg);
   if(e.caster) await casterAttackAnim(); else await enemyAttackAnim();
+  if(b.evade>0){ b.evade--; floatText('MISS! 🌪️', HERO_X, FLOOR_Y-170, '#dfffff', 30, true); sfx.elem('wind');
+    anim($('#heroG'), [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X-50,FLOOR_Y-30)},{transform:tr(HERO_X,FLOOR_Y)}], { duration:420, easing:'ease-out' });
+    await sleep(500); endTurn(); return; }
+  if(b.stoneSkin>0){ b.stoneSkin--; dmg = Math.max(1, Math.round(dmg*.3)); floatText('🪨 ผิวหิน', HERO_X-10, FLOOR_Y-205, '#e8c890', 22); }
   b.hp -= dmg; sfx.hurt(); heroHurt(dmg, heavy);
   if(hasAcc('thorn')){ const rf = Math.max(1, Math.round(dmg*.3)); e.hp -= rf; b.score += rf; setTimeout(()=>floatText(`🌵${rf}`, EN_X-10, FLOOR_Y-e.h*e.sc-10, '#b8ff8a', 24), 250); updateEnemyHp(); }
   if(e.traits.includes('vamp')){ const h=Math.round(dmg*.5); e.hp=Math.min(e.maxHp,e.hp+h); floatText(`+${h}`, EN_X+30, FLOOR_Y-e.h*e.sc-10, '#6ef08a', 22); updateEnemyHp(); }
@@ -1734,7 +1945,77 @@ async function enemyTurn(){
   if(e.hp<=0){ await enemyDies(); return; }
   endTurn();
 }
-function endTurn(){ const b=ui.bat; b.busy=false; renderTiles(); renderTray(); updateHud(); renderEnemyPanel(); }
+function endTurn(){ const b=ui.bat; b.busy=false; clearEnchant(); updateEnemyStatus(); renderTiles(); renderTray(); updateHud(); renderEnemyPanel(); }
+/* ------------------------ elemental mechanics ------------------------ */
+const CHAR_TIP = { bastion:170 };
+function clearEnchant(){ document.querySelectorAll('#heroA .enchant').forEach(n=>n.remove()); const a=$('#heroA'); if(a){ a.classList.remove('enchanted'); a.style.removeProperty('--ec'); } }
+function enchantWeapon(el){
+  clearEnchant(); const w = document.querySelector('#heroA .wpn'); if(!w) return;
+  w.insertAdjacentHTML('beforeend', enchantSVG(el));
+  const a = $('#heroA'); a.classList.add('enchanted'); a.style.setProperty('--ec', ELEM_COL[el][0]);
+}
+async function infuseCutscene(el, w){
+  const st = $('#stage'), [c1,c2] = ELEM_COL[el], E = ELEMENTS[el];
+  const ov = document.createElement('div'); ov.className = 'infuse'; ov.style.setProperty('--c1', c1); ov.style.setProperty('--c2', c2);
+  ov.innerHTML = `<div class="inf-word">${w.toUpperCase().split('').map((c,i)=>`<span style="animation-delay:${i*45}ms">${c}</span>`).join('')}</div><div class="inf-title">${ELEM_ICON[el]} ${E.name} ENCHANT!<small>อาวุธได้รับพลัง${E.th} — ${E.desc}</small></div>`;
+  st.appendChild(ov);
+  sfx.elem(el);
+  const arm = document.querySelector('#heroA .armF');
+  anim(arm, [{transform:'rotate(0)'},{transform:'rotate(-40deg)',offset:.25},{transform:'rotate(-40deg)',offset:.85},{transform:'rotate(0)'}], { duration:1700, easing:'ease-in-out' });
+  const vb = ui.bat.vb || { x:0, y:0, w:800, h:400 }, fx = $('#fx');
+  const sx = vb.x + vb.w/2, sy = vb.y + vb.h - 30, wx = HERO_X + 34, wy = FLOOR_Y - (CHAR_TIP[save.eq.char] || 140);
+  for(let k=0;k<16;k++){
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('r', rint(4,9)); c.setAttribute('fill', k%3?c1:c2); c.setAttribute('stroke','#2a1a10'); c.setAttribute('stroke-width',1.5); fx.appendChild(c);
+    const x0 = sx + rint(-90,90), mx = (x0+wx)/2 + rint(-60,60), my = Math.min(sy,wy) - rint(20,90);
+    anim(c, [{transform:tr(x0,sy)+' scale(.3)',opacity:0},{transform:tr(mx,my)+' scale(1.1)',opacity:1,offset:.5},{transform:tr(wx,wy)+' scale(.4)',opacity:.9}], { duration:650, delay:120+k*38, easing:'ease-in', fill:'forwards' }).then(()=>c.remove());
+  }
+  await sleep(900);
+  enchantWeapon(el);
+  const ring = document.createElementNS('http://www.w3.org/2000/svg','circle'); ring.setAttribute('r',20); ring.setAttribute('fill','none'); ring.setAttribute('stroke',c2); ring.setAttribute('stroke-width',8); fx.appendChild(ring);
+  anim(ring, [{transform:tr(wx,wy)+' scale(.3)',opacity:1},{transform:tr(wx,wy)+' scale(4)',opacity:0}], { duration:600, easing:'ease-out' }).then(()=>ring.remove());
+  auraBurst(3, false, c1); sfx.power();
+  await sleep(750);
+  ov.classList.add('out'); setTimeout(()=>ov.remove(), 350);
+  await sleep(150);
+}
+function elemImpact(el){
+  const e = curEnemy(); if(!e) return; const fx = $('#fx'), [c1,c2] = ELEM_COL[el];
+  const cx = EN_X, cy = FLOOR_Y - e.h*e.sc*.5;
+  const shape = { fire:'M-6,0 Q-8,-14 0,-24 Q8,-14 6,0 Z', ice:'M0,-12 L6,0 L0,12 L-6,0 Z', thunder:'M-3,-12 L4,-2 L-1,-2 L3,12 L-4,1 L1,1 Z', earth:'M-7,-4 L0,-9 L7,-3 L5,6 L-5,7 Z', poison:'M0,-10 Q7,2 0,8 Q-7,2 0,-10 Z' }[el] || 'M-6,0 A6,6 0 1 0 6,0 A6,6 0 1 0 -6,0';
+  for(let k=0;k<16;k++){
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d', shape); p.setAttribute('fill', k%2?c1:c2); p.setAttribute('stroke','#2a1a10'); p.setAttribute('stroke-width',1.5); fx.appendChild(p);
+    const a = Math.random()*Math.PI*2, d = rint(40,110), s = rnd(1,2.2);
+    anim(p, [{transform:tr(cx,cy)+` scale(.4)`,opacity:1},{transform:tr(cx+Math.cos(a)*d, cy+Math.sin(a)*d*.8 - (el==='fire'?40:0))+` scale(${s}) rotate(${rint(-90,90)}deg)`,opacity:0}], { duration:650+rint(0,250), easing:'ease-out' }).then(()=>p.remove());
+  }
+  const flash = document.createElementNS('http://www.w3.org/2000/svg','circle'); flash.setAttribute('r', 60); flash.setAttribute('fill', c1); flash.setAttribute('opacity', .5); fx.appendChild(flash);
+  anim(flash, [{transform:tr(cx,cy)+' scale(.2)',opacity:.7},{transform:tr(cx,cy)+' scale(1.8)',opacity:0}], { duration:450 }).then(()=>flash.remove());
+}
+function lightningBolt(){
+  const e = curEnemy(); if(!e) return; const fx = $('#fx'), top = (ui.bat.vb||{y:0}).y;
+  let d = `M${EN_X+rint(-20,20)},${top}`, y = top, x = EN_X;
+  while(y < FLOOR_Y - e.h*e.sc*.4){ y += rint(25,45); x = EN_X + rint(-28,28); d += ` L${x},${y}`; }
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.innerHTML = `<path d="${d}" stroke="#ffe14a" stroke-width="14" fill="none" opacity=".5" stroke-linejoin="round"/><path d="${d}" stroke="#fff" stroke-width="5" fill="none" stroke-linejoin="round"/>`; fx.appendChild(g);
+  anim(g, [{opacity:1},{opacity:.2,offset:.3},{opacity:1,offset:.5},{opacity:0}], { duration:420 }).then(()=>g.remove());
+  const st = $('#stage'); const f = document.createElement('div'); f.className='flash-white'; st.appendChild(f); setTimeout(()=>f.remove(),350);
+}
+async function applyElement(el, dmg, e){
+  const b = ui.bat, extra = charIs('mira') ? 1 : 0;
+  if(el==='fire'){ e.burn = 3+extra; e.burnDmg = Math.max(e.burnDmg||0, Math.round(dmg*.3)); floatText('🔥 ติดไฟ!', EN_X, FLOOR_Y-e.h*e.sc-70, '#ffb04a', 24); }
+  if(el==='ice'){ e.frozen = 1+extra; floatText('❄ แช่แข็ง!', EN_X, FLOOR_Y-e.h*e.sc-70, '#bff6ff', 24); }
+  if(el==='poison'){ e.poison = 4+extra; e.poisonDmg = Math.max(e.poisonDmg||0, Math.round(dmg*.2)); floatText('☠ ติดพิษ!', EN_X, FLOOR_Y-e.h*e.sc-70, '#9dff4a', 24); }
+  if(el==='thunder' && e.hp>0){ await sleep(280); lightningBolt(); sfx.elem('thunder'); const d2 = Math.max(1, Math.round(dmg*.6)); e.hp -= d2; b.score += d2; enemyHurt(d2, true); if(Math.random()<.3){ e.stun = true; floatText('⚡ ช็อต!', EN_X, FLOOR_Y-e.h*e.sc-70, '#ffe14a', 24); } }
+  if(el==='water'){ let n=0; b.tiles.forEach(t=>{ if(t.stone){ t.stone=0; t.fresh=true; n++; } }); const h = Math.round(b.max*.1); b.hp = Math.min(b.max, b.hp+h); floatText(`💧 +${h}${n?` · ล้างหิน ${n}`:''}`, HERO_X, FLOOR_Y-190, '#bfe6ff', 22); }
+  if(el==='wind'){ b.evade = 1+extra; floatText('🌪️ หลบหลีก!', HERO_X, FLOOR_Y-190, '#dfffff', 22); }
+  if(el==='earth'){ b.stoneSkin = 1+extra; floatText('🪨 ผิวหิน!', HERO_X, FLOOR_Y-190, '#e8c890', 22); }
+  if(el==='holy'){ const h = Math.round(b.max*.2*(charIs('luma')?2:1)); b.hp = Math.min(b.max, b.hp+h); sfx.heal(); floatText(`✨ +${h}`, HERO_X, FLOOR_Y-190, '#fff6a0', 28, true); }
+  if(el==='shadow'){ const h = Math.round(dmg*.5); b.hp = Math.min(b.max, b.hp+h); floatText(`🌑 +${h}`, HERO_X, FLOOR_Y-190, '#d0a0ff', 26, true); }
+  updateEnemyStatus(); updateHud();
+}
+function updateEnemyStatus(){
+  const e = curEnemy(), body = document.querySelector('#enemyG .enemy'); if(!e || !body) return;
+  body.classList.toggle('st-burn', e.burn>0); body.classList.toggle('st-frozen', e.frozen>0); body.classList.toggle('st-poison', e.poison>0);
+}
 
 async function enemyDies(){
   const b = ui.bat, e = curEnemy();
@@ -1803,7 +2084,7 @@ function anim(el, frames, opts){ return el ? el.animate(frames, opts).finished.c
 const tr = (x,y,s)=>`translate(${x}px,${y}px)${s&&s!==1?` scale(${s})`:''}`;
 async function heroAttack(lv, rude){
   const g = $('#heroG'), arm = document.querySelector('#heroA .armF');
-  sfx.swing(); ui.slashLv = lv||0; ui.slashRude = !!rude;
+  sfx.swing(); ui.slashLv = lv||0; ui.slashRude = !!rude; if(rude) ui.slashEl = null;
   const p1 = anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X+70,FLOOR_Y-6),offset:.45},{transform:tr(HERO_X+84,FLOOR_Y),offset:.6},{transform:tr(HERO_X,FLOOR_Y)}], { duration:560, easing:'ease-in-out' });
   const p2 = anim(arm, [{transform:'rotate(0deg)'},{transform:'rotate(-55deg)',offset:.35},{transform:'rotate(110deg)',offset:.6},{transform:'rotate(90deg)',offset:.75},{transform:'rotate(0deg)'}], { duration:560, easing:'ease-in-out' });
   await sleep(330);
@@ -1851,7 +2132,7 @@ function slash(){
   const e = curEnemy(); if(!e) return;
   const fx = $('#fx'), y = FLOOR_Y - e.h*e.sc*.55;
   const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-  const lv = ui.slashLv||0, col = ui.slashRude ? '#7fff3a' : AURA_COL[lv] || '#ffe27a', w = 10 + lv*4;
+  const lv = Math.max(ui.slashLv||0, ui.slashEl?3:0), col = ui.slashRude ? '#7fff3a' : ui.slashEl ? ELEM_COL[ui.slashEl][0] : AURA_COL[lv] || '#ffe27a', w = 10 + lv*4;
   g.innerHTML = `<path d="M-50,-50 Q10,-10 50,50" stroke="${col}" stroke-width="${w+10}" fill="none" stroke-linecap="round" opacity="${lv||ui.slashRude?.45:0}"/><path d="M-50,-50 Q10,-10 50,50" stroke="#fff" stroke-width="${w}" fill="none" stroke-linecap="round" opacity=".9"/><path d="M-50,-50 Q10,-10 50,50" stroke="${col}" stroke-width="4" fill="none" stroke-linecap="round"/>${lv>=3?`<path d="M50,-50 Q-10,-10 -50,50" stroke="#fff" stroke-width="${w-2}" fill="none" stroke-linecap="round" opacity=".85"/><path d="M50,-50 Q-10,-10 -50,50" stroke="${col}" stroke-width="4" fill="none" stroke-linecap="round"/>`:''}`;
   g.style.transform = tr(EN_X, y); fx.appendChild(g);
   anim(g, [{opacity:1, transform:tr(EN_X,y)+' scale(.4)'},{opacity:1, transform:tr(EN_X,y)+' scale(1.1)',offset:.4},{opacity:0, transform:tr(EN_X,y)+' scale(1.2)'}], { duration:300 }).then(()=>g.remove());
