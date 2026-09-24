@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quest-lines-v5';
+const CACHE_NAME = 'quest-lines-v6';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -15,6 +15,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || req.url.includes('/api/')) return;
+  // translation lookups are cached by the game itself; let them go straight to the network
+  if (/translate\.googleapis\.com|mymemory\.translated\.net/.test(req.url)) return;
   const isPage = req.mode === 'navigate' || req.url.endsWith('.html') || req.url.endsWith('/');
   const save = (res) => { if (res && (res.ok || res.type === 'opaque')) { const c = res.clone(); caches.open(CACHE_NAME).then((cache) => cache.put(req, c)); } return res; };
   if (isPage) {
