@@ -1,13 +1,13 @@
 {
-  "name": "Quest Lines — English RPG",
+  "name": "Quest Lines — Word Battle",
   "short_name": "Quest Lines",
-  "description": "RPG ฝึกคำศัพท์ภาษาอังกฤษ — สู้มอนสเตอร์ ผจญภัยเลือกทางเอง เล่นได้แม้ออฟไลน์",
+  "description": "เกมสะกดคำภาษาอังกฤษสู้มอนสเตอร์ — ยิ่งคำยาว ยิ่งแรง เล่นได้แม้ออฟไลน์",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#1c0f08",
-  "theme_color": "#1c0f08",
+  "orientation": "any",
+  "background_color": "#1c120b",
+  "theme_color": "#1c120b",
   "icons": [
     {
       "src": "icons/icon-192.png",

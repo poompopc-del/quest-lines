@@ -1,9 +1,9 @@
 {
   "name": "quest-lines-app",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "Quest Lines v2 — English vocab RPG (static single-file PWA, no backend)",
+  "description": "Quest Lines — Word Battle (static single-file PWA, no backend)",
   "scripts": {
     "start": "node server.mjs",
     "dev": "node server.mjs",
