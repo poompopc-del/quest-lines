@@ -2,8 +2,8 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0e1f27">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1c0f08">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -15,18 +15,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Sarabun:wght@400;500;600;700&family=Cinzel:wght@600;700;800&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
-  --void:#0e1f27; --deep:#142b34; --panel:#1b3540; --panel-2:#224353; --edge:#3d6b72; --edge-hi:#5fa3a0;
-  --ink:#f2faf6; --ink-dim:#aecdca; --ink-faint:#6f9997;
-  --ember:#ff9d5c; --ember-hi:#ffc386; --rune:#7fe0cf; --gold:#e8c477;
-  --blood:#e2705a; --leaf:#7fd88a; --shadow:#081418;
+  --void:#1c0f08; --deep:#2a1710; --panel:#3a2116; --panel-2:#4a2c1a; --edge:#6b4326; --edge-hi:#a86b34;
+  --ink:#fbf1de; --ink-dim:#d9b98c; --ink-faint:#96754e;
+  --ember:#ff9d5c; --ember-hi:#ffc386; --rune:#e8c477; --gold:#f4cf6e;
+  --blood:#e2705a; --leaf:#7fd88a; --shadow:#0c0603;
   --px:3px;
   --f-pixel:'Pixelify Sans', 'Sarabun', monospace;
   --f-display:'Cinzel', 'Pixelify Sans', serif;
   --f-ui:'Sarabun', 'Noto Sans Thai', 'Leelawadee UI', system-ui, sans-serif;
   --f-story:'Spectral', Georgia, serif;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 body{
   margin:0; min-height:100%; color:var(--ink); font-family:var(--f-ui); font-weight:400; font-size:17px; line-height:1.65;
   background:var(--void);
@@ -58,7 +58,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .hud{
   position:sticky; top:0; z-index:20; margin:0 -14px 14px; padding:10px 14px 10px;
   padding-top:calc(10px + env(safe-area-inset-top,0px)); margin-top:calc(-10px - env(safe-area-inset-top,0px));
-  background:linear-gradient(180deg, rgba(20,15,43,.97) 70%, rgba(20,15,43,0));
+  background:linear-gradient(180deg, rgba(28,15,8,.97) 70%, rgba(28,15,8,0));
   display:flex; align-items:center; gap:12px;
 }
 .hud-avatar{width:46px; height:46px; flex:none; display:grid; place-items:center; font-size:28px; background:var(--panel-2); position:relative; box-shadow:0 0 0 2px rgba(255,157,92,.35), 0 0 10px rgba(255,157,92,.3);}
@@ -139,6 +139,9 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .mode-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 14px; margin-top:16px;}
 .mode-tile{cursor:pointer; border:0; text-align:left; padding:14px; min-height:112px; display:flex; flex-direction:column; justify-content:space-between; background:var(--panel);}
 .mode-tile.wide{grid-column:1 / -1; flex-direction:row; align-items:center; gap:14px; min-height:0;}
+.mode-tile.hero{--edge:var(--gold); box-shadow:0 0 0 var(--px) var(--gold), 0 0 18px rgba(244,207,110,.35); background:linear-gradient(180deg,var(--panel-2),var(--panel));}
+.mode-tile.hero .ico{font-size:44px;}
+.mode-tile.hero h4{color:var(--gold); font-size:21px;}
 .mode-tile .ico{font-size:34px; line-height:1;}
 .mode-tile h4{margin:8px 0 2px; font-weight:500; font-size:18px;}
 .mode-tile.wide h4{margin-top:0;}
@@ -162,7 +165,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .tabbar{
   position:fixed; left:0; right:0; bottom:0; z-index:30;
   padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));
-  background:linear-gradient(0deg, rgba(20,15,43,1) 60%, rgba(20,15,43,.0));
+  background:linear-gradient(0deg, rgba(28,15,8,1) 60%, rgba(28,15,8,.0));
 }
 .tabbar-in{max-width:520px; margin:0 auto; display:flex; gap:6px; background:var(--deep);}
 .tab{flex:1; border:0; background:none; cursor:pointer; padding:8px 2px 6px; display:flex; flex-direction:column; align-items:center; gap:1px; color:var(--ink-dim); font-size:11.5px; font-weight:500; transition:color .15s;}
@@ -230,14 +233,25 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 
 /* ---------- battle ---------- */
 .arena{position:relative; height:250px; overflow:hidden; background:
-  radial-gradient(ellipse 55% 45% at 50% 88%, rgba(226,112,90,.22), transparent 70%),
-  linear-gradient(180deg,#122a33 0%,#1a3d42 60%,#112a2c 100%); --edge:var(--blood);}
+  radial-gradient(ellipse 40% 60% at 12% 15%, rgba(255,180,90,.20), transparent 60%),
+  radial-gradient(ellipse 40% 60% at 88% 15%, rgba(255,180,90,.20), transparent 60%),
+  radial-gradient(ellipse 55% 45% at 50% 88%, rgba(244,207,110,.20), transparent 70%),
+  repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 3px, transparent 3px 46px),
+  linear-gradient(180deg,#3a2013 0%,#2a160c 55%,#190c06 100%); --edge:var(--blood);}
 .arena.boss{background:
-  radial-gradient(ellipse 60% 50% at 50% 85%, rgba(232,196,119,.30), transparent 70%),
-  linear-gradient(180deg,#173238 0%,#1f4a48 60%,#0f2828 100%); --edge:var(--gold);}
+  radial-gradient(ellipse 40% 60% at 12% 15%, rgba(255,190,110,.28), transparent 60%),
+  radial-gradient(ellipse 40% 60% at 88% 15%, rgba(255,190,110,.28), transparent 60%),
+  radial-gradient(ellipse 60% 50% at 50% 85%, rgba(244,207,110,.32), transparent 70%),
+  repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 3px, transparent 3px 46px),
+  linear-gradient(180deg,#432411 0%,#301909 60%,#1d0f05 100%); --edge:var(--gold);}
 .arena-floor{position:absolute; left:0; right:0; bottom:0; height:46px; background:
-  repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 24px), linear-gradient(180deg,#20444c,#112a2e); border-top:3px solid #3d6f6a;}
-.arena.boss .arena-floor{background:repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 24px), linear-gradient(180deg,#1f4740,#102625); border-top-color:#4a7a68;}
+  radial-gradient(ellipse 70% 100% at 20% 100%, rgba(244,207,110,.55), transparent 70%),
+  radial-gradient(ellipse 70% 100% at 80% 100%, rgba(244,207,110,.5), transparent 70%),
+  repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 24px), linear-gradient(180deg,#8a5a1f,#4a2c10); border-top:3px solid #c9932f;}
+.arena.boss .arena-floor{background:
+  radial-gradient(ellipse 70% 100% at 20% 100%, rgba(244,207,110,.65), transparent 70%),
+  radial-gradient(ellipse 70% 100% at 80% 100%, rgba(244,207,110,.6), transparent 70%),
+  repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 24px), linear-gradient(180deg,#9c6a26,#552f10); border-top-color:#e8c477;}
 .monster{position:absolute; left:50%; bottom:30px; transform:translateX(-50%); width:176px; height:176px; animation:bob 2.2s ease-in-out infinite;}
 .arena.boss .monster{width:208px; height:208px; bottom:24px;}
 .monster canvas{width:100%; height:100%; image-rendering:pixelated; display:block;}
@@ -328,10 +342,10 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{outline:2px 
 .forge-word .chip{font-family:var(--f-pixel); font-size:21px; font-weight:600; background:var(--panel-2); padding:3px 9px; color:var(--gold); box-shadow:0 0 0 1px var(--edge);}
 .forge-word .ph{color:var(--ink-faint); font-size:14px;}
 .forge-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:12px;}
-.tile{position:relative; cursor:pointer; border:0; background:var(--panel); aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-family:var(--f-pixel); font-size:24px; font-weight:700;}
-.tile em{position:absolute; right:4px; bottom:2px; font-style:normal; font-size:10px; color:var(--ink-faint);}
-.tile.used{opacity:.2; pointer-events:none;}
-.tile:hover:not(:disabled){--edge:var(--rune);}
+.tile{position:relative; cursor:pointer; border:0; background:linear-gradient(180deg,#faf2da,#ecd9ab); color:#2a160c; aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-family:var(--f-pixel); font-size:24px; font-weight:700; box-shadow:inset 0 -3px 0 rgba(0,0,0,.18), inset 0 2px 0 rgba(255,255,255,.6);}
+.tile em{position:absolute; right:4px; bottom:2px; font-style:normal; font-size:10px; color:#8a6a3c;}
+.tile.used{opacity:.25; pointer-events:none;}
+.tile:hover:not(:disabled){--edge:var(--gold); filter:brightness(1.05);}
 .tile:disabled{cursor:default;}
 .forge-ctrl{display:flex; gap:8px; margin-top:10px;}
 .forge-ctrl .btn{flex:1;}
@@ -1464,10 +1478,10 @@ function renderHub(){
     <div class="words">${preview.length ? preview.map(v=>`<div class="w">${esc(v.word||v.key)}<small>${esc(v.thai||'')}</small></div>`).join('') : `<div class="w"><small>${t('noWordsYet')}</small></div>`}</div>
   </button>
   <div class="mode-grid">
+    <button class="mode-tile wide hero px gold" data-act="forgeMenu"><div class="ico">🔤</div><div style="flex:1"><h4>Word Forge <span class="pill" style="margin-left:6px;">โหมดหลัก</span></h4><p>แตะตัวอักษรต่อกันเป็นคำ คำยิ่งยาว ตัวอักษรยิ่งหายาก ยิ่งโจมตีแรง ไต่ดันเจี้ยนตัวอักษรที่ยากขึ้นเรื่อยๆ</p></div></button>
     <button class="mode-tile px" data-act="goStory"><div class="ico">📖</div><div><h4>Story</h4><p>${t('storyDesc')}</p></div></button>
     <button class="mode-tile px" data-act="blitz"><div class="ico">⚡</div><div><h4>Word Blitz</h4><p>${t('blitzDesc')}</p><span class="pill">BEST ${save.stats.bestChallenge}</span></div></button>
     <button class="mode-tile wide px" data-act="towerMenu"><div class="ico">🗼</div><div style="flex:1"><h4>Monster Tower</h4><p>${t('towerDesc')}</p></div></button>
-    <button class="mode-tile wide px" data-act="forgeMenu"><div class="ico">🔤</div><div style="flex:1"><h4>Word Forge</h4><p>แตะตัวอักษรต่อกันเป็นคำ คำยิ่งยาว ตัวอักษรยิ่งหายาก ยิ่งโจมตีแรง ไต่ดันเจี้ยนตัวอักษรที่ยากขึ้นเรื่อยๆ</p></div></button>
   </div>
   <div class="section-h"><h3>${t('dailyQuests')}</h3><small>${t('resetsMidnight')}</small></div>
   ${quests.map(q=>`<div class="quest px ${q.claimed?'done':''}">
@@ -2167,7 +2181,7 @@ function act(a, d){
     case 'obCefr': ui.onboard.cefr = d.v; render(); break;
     case 'obStart':
       save.name = (ui.onboard.name||'').trim() || 'Traveler'; save.cls = ui.onboard.cls; save.avatar = CLASSES[save.cls].emoji;
-      save.cefr = ui.onboard.cefr; save.onboarded = true; persist(); ensureDaily(); goto('hub');
+      save.cefr = ui.onboard.cefr; save.onboarded = true; persist(); ensureDaily(); goto('hub'); forgeMenu();
       setTimeout(()=>toast('ยินดีต้อนรับ! เริ่มจาก Monster Tower ได้เลย'), 300); break;
     /* hub */
     case 'claim': { const q = save.daily.quests.find(x=>x.id===d.id), info = q && questInfo(q); if(info && info.done && !q.claimed){ q.claimed = true; addGold(info.gold); sfx.coin(); fxBump('+'+info.gold+' 🪙'); checkAchievements(); render(); flushEvents(); } break; }
@@ -2312,10 +2326,10 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) setMusic
 function paintSky(){
   const c = $('#sky'); const W = 160, H = Math.round(160*innerHeight/Math.max(innerWidth,1)); c.width = W; c.height = H;
   const x = c.getContext('2d'); const rng = mulberry(7);
-  const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0e1f27'); g.addColorStop(.7,'#142b34'); g.addColorStop(1,'#1d3f45'); x.fillStyle=g; x.fillRect(0,0,W,H);
-  for(let i=0;i<W*H/60;i++){ x.fillStyle = rng()<.15 ? '#cdeee6' : '#4d7a78'; x.fillRect(Math.floor(rng()*W), Math.floor(rng()*H*.8), 1, 1); }
-  x.fillStyle = '#16323a'; for(let i=0;i<W;i++){ const y = H - 14 - Math.sin(i*.05)*6 - Math.sin(i*.13+2)*3; x.fillRect(i,y,1,H-y); }
-  x.fillStyle = '#0f2429'; for(let i=0;i<W;i++){ const y = H - 6 - Math.sin(i*.09+1)*3; x.fillRect(i,y,1,H-y); }
+  const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#1c0f08'); g.addColorStop(.7,'#2a1710'); g.addColorStop(1,'#3a2116'); x.fillStyle=g; x.fillRect(0,0,W,H);
+  for(let i=0;i<W*H/60;i++){ x.fillStyle = rng()<.15 ? '#f4cf6e' : '#6b4326'; x.fillRect(Math.floor(rng()*W), Math.floor(rng()*H*.8), 1, 1); }
+  x.fillStyle = '#241209'; for(let i=0;i<W;i++){ const y = H - 14 - Math.sin(i*.05)*6 - Math.sin(i*.13+2)*3; x.fillRect(i,y,1,H-y); }
+  x.fillStyle = '#170b04'; for(let i=0;i<W;i++){ const y = H - 6 - Math.sin(i*.09+1)*3; x.fillRect(i,y,1,H-y); }
 }
 
 /* ------------------------------ boot ------------------------------ */
@@ -2323,6 +2337,7 @@ applyTheme();
 paintSky(); addEventListener('resize', paintSky);
 if(save.onboarded) ensureDaily();
 render();
+if(save.onboarded) forgeMenu();
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   addEventListener('load', ()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
 }
