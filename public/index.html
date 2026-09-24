@@ -247,7 +247,7 @@ input[type=range]{width:100%;accent-color:var(--gold)}
   .dock .left{padding:8px 10px}
   .dock .left .recent{display:none}
   .lastword{border:0;padding:0;margin:0}
-  .hud .face{width:44px;height:44px}.hud .bar{height:22px}.hud .score{font-size:24px;padding-top:4px}.hud .pill{font-size:15px}.hud .pause{width:38px;height:38px}
+  .hud .face{width:44px;height:44px}.hud .bar{height:22px}.hud .bar span{font-size:12px;padding-left:8px}.hud .score{font-size:24px;padding-top:4px}.hud .pill{font-size:15px}.hud .pause{width:38px;height:38px}
   .tray .t{width:32px;height:38px;font-size:24px;line-height:32px}
   .tray-msg{bottom:54px}
 }
@@ -255,6 +255,51 @@ input[type=range]{width:100%;accent-color:var(--gold)}
   .stage{max-height:none;aspect-ratio:auto}
   .tiles{--tile:min(13vh,58px)}
 }
+
+/* v4: items, auras, toxic */
+.seg.seg6{flex-wrap:wrap}.seg.seg6 button{flex:1 1 30%;padding:9px 4px;font-size:13.5px}
+.acc-slots{display:flex;gap:6px;margin-top:8px}
+.acc-slot{width:38px;height:38px;border-radius:10px;background:#140c07;border:2px solid var(--ol);display:flex;align-items:center;justify-content:center;font-size:26px}
+.acc-slot.empty{color:var(--ink-faint);font:22px var(--display);border-style:dashed;border-color:#5a4632}
+.item .pic.big{width:90px;height:110px}.item .pic.big .hero-svg{width:96px;height:112px}
+.eq-list{display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:13px;color:var(--ink-dim)}.eq-list .ico{font-size:18px}
+.hud-acc{position:absolute;left:10px;top:66px;display:flex;gap:4px;z-index:3;pointer-events:none}
+.hud-acc span{width:30px;height:30px;border-radius:9px;background:rgba(20,12,7,.8);border:2px solid var(--ol);display:flex;align-items:center;justify-content:center;font-size:22px}
+.tile.aura{background:linear-gradient(#fff6ff,#f3e2ff 60%,#e2c8ff);animation:auraTile 1.2s ease-in-out infinite}
+.tile.aura::after{content:'✦';position:absolute;top:1px;left:5px;font-size:14px;color:#b04aff;text-shadow:0 0 6px #c77dff}
+@keyframes auraTile{50%{box-shadow:0 5px 0 #b9a888,0 7px 0 var(--ol),0 0 16px 4px #c77dff}}
+.tile.aura.sel{animation:none}
+.tray{--ac:#ffe27a;--q:0px}
+.tray.lv1{--ac:#6fe6ff}.tray.lv2{--ac:#4a9dff}.tray.lv3{--ac:#ffb02e}.tray.lv4{--ac:#ff5ad8}.tray.lv5{--ac:#c77dff}.tray.toxic{--ac:#7fff3a}
+.tray[class*=lv] .t,.tray.toxic .t{box-shadow:0 3px 0 var(--ol),0 0 10px 2px var(--ac);border-color:var(--ol)}
+.tray.lv2 .t{box-shadow:0 3px 0 var(--ol),0 0 14px 4px var(--ac)}
+.tray.lv3 .t,.tray.lv4 .t,.tray.lv5 .t{background:linear-gradient(#fffdf2,#ffeeb8);animation:pop .18s,glowT .6s ease-in-out infinite alternate}
+.tray.lv4 .t{background:linear-gradient(#fff6fd,#ffc8f0)}
+.tray.lv5 .t{background:linear-gradient(#fffaff,#e8d4ff);animation:pop .18s,glowT .5s ease-in-out infinite alternate,rainbow 1.4s linear infinite}
+@keyframes glowT{to{box-shadow:0 3px 0 var(--ol),0 0 22px 7px var(--ac)}}
+.tray.toxic .t{background:linear-gradient(#e8ffd8,#a8f070);color:#2a3a10;animation:pop .18s,toxT .35s ease-in-out infinite alternate}
+@keyframes toxT{from{box-shadow:0 3px 0 var(--ol),0 0 12px 3px #7fff3a}to{box-shadow:0 3px 0 var(--ol),0 0 20px 6px #b04aff}}
+.aura-fx{position:absolute;left:-16px;right:-16px;top:-40px;bottom:-10px;pointer-events:none;z-index:-1;border-radius:30px;
+  background:radial-gradient(ellipse at 50% 80%,var(--ac) 0%,transparent 70%);opacity:.55;animation:auraPulse .7s ease-in-out infinite alternate}
+.tray.lv3 .aura-fx,.tray.lv4 .aura-fx{opacity:.8}
+.tray.lv5 .aura-fx{opacity:.9;animation:auraPulse .5s ease-in-out infinite alternate,rainbow 1.6s linear infinite}
+.tray.toxic .aura-fx{opacity:.9;background:radial-gradient(ellipse at 50% 85%,#7fff3a 0%,#5a1a8a 45%,transparent 72%);animation:auraPulse .3s ease-in-out infinite alternate,toxHue 1s linear infinite}
+@keyframes auraPulse{to{transform:scaleY(1.12);filter:brightness(1.25)}}
+@keyframes rainbow{to{filter:hue-rotate(360deg)}}
+@keyframes toxHue{50%{filter:hue-rotate(-30deg) brightness(1.3)}}
+.aura-fx i{position:absolute;bottom:4px;width:10px;height:16px;border-radius:50% 50% 40% 40%;background:var(--ac);box-shadow:0 0 8px var(--ac);animation:ember 1s ease-out infinite;opacity:0}
+.tray.lv3 .aura-fx i,.tray.lv4 .aura-fx i,.tray.lv5 .aura-fx i,.tray.toxic .aura-fx i{width:14px;height:24px;border-radius:50% 50% 45% 45%/60% 60% 40% 40%}
+.tray.toxic .aura-fx i{background:#9dff4a;box-shadow:0 0 10px #7fff3a}
+.tray.toxic .aura-fx i:nth-child(odd){background:#c77dff;box-shadow:0 0 10px #b04aff}
+@keyframes ember{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:1}100%{transform:translateY(-70px) scale(.2);opacity:0}}
+.tray.quake{animation:quake .32s}
+@keyframes quake{20%{transform:translateX(calc(-50% - var(--q))) rotate(-.6deg)}40%{transform:translateX(calc(-50% + var(--q))) rotate(.6deg)}60%{transform:translateX(calc(-50% - var(--q)*.6))}80%{transform:translateX(calc(-50% + var(--q)*.4))}}
+.stage.quiver{animation:quiver .3s}
+@keyframes quiver{25%{transform:translate(calc(var(--sq)*-1),calc(var(--sq)*.5))}50%{transform:translate(var(--sq),calc(var(--sq)*-.5))}75%{transform:translate(calc(var(--sq)*-.5),0)}}
+.tray-msg.toxic{background:#2a3a10;border-color:#7fff3a;color:#c8ff9a}
+.tray-msg.epic{background:#3a2a08;border-color:var(--gold);color:#ffe7a8}
+.necro-aura{animation:glow 1.4s ease-in-out infinite}
+@media (max-width:900px), (max-aspect-ratio:4/3){ .hud-acc{top:54px} .hud-acc span{width:26px;height:26px;font-size:18px} }
 
 /* modals & toasts */
 .overlay{position:fixed;inset:0;background:rgba(10,6,3,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;animation:fadeIn .2s}
@@ -540,6 +585,8 @@ const SHIELD_ART = {
   none: ()=>'',
   buckler: ()=>`<g><circle cx="0" cy="0" r="17" fill="#a0683a" ${S(3)}/><circle cx="0" cy="0" r="11" fill="#c98a4b" ${S(2)}/><circle cx="0" cy="0" r="4" fill="#ffcf4a" ${S(2)}/></g>`,
   kite: ()=>`<g><path d="M-18,-20 Q0,-26 18,-20 Q18,6 0,26 Q-18,6 -18,-20 Z" fill="#b9c4cf" ${S(3)}/><path d="M-11,-15 Q0,-19 11,-15 Q11,3 0,17 Q-11,3 -11,-15 Z" fill="#3f78c9"/><path d="M0,-16 L0,16 M-9,-4 L9,-4" stroke="#ffcf4a" stroke-width="3"/></g>`,
+  mythril: ()=>`<g><path d="M-20,-24 Q0,-32 20,-24 Q22,8 0,30 Q-22,8 -20,-24 Z" fill="#bfefff" ${S(3)}/><path d="M-12,-17 Q0,-22 12,-17 Q12,4 0,20 Q-12,4 -12,-17 Z" fill="#5ad0ff"/><path d="M0,-14 L6,0 L0,14 L-6,0 Z" fill="#fff" ${S(2)}/><g class="w-glow"><circle r="22" fill="#7ff4ff" opacity=".25"/></g></g>`,
+  knight: ()=>`<g><path d="M-24,-30 Q0,-38 24,-30 Q26,10 0,40 Q-26,10 -24,-30 Z" fill="#f08a3a" ${S(3)}/><path d="M-24,-30 Q-10,-34 2,-35 L18,34 Q10,38 0,40 Q-6,32 -10,24 Z" fill="#f4efe6"/><path d="M-24,-30 Q0,-38 24,-30 Q26,10 0,40 Q-26,10 -24,-30 Z" fill="none" ${S(3)}/><path d="M-4,-20 L6,-20 L2,4 L-8,4 Z" fill="#c9d6ea" ${S(2)}/></g>`,
   dragon: ()=>`<g><path d="M-20,-22 Q0,-30 20,-22 Q22,8 0,28 Q-22,8 -20,-22 Z" fill="#b8302a" ${S(3)}/><path d="M-8,-6 Q0,-18 8,-6 Q4,2 0,12 Q-4,2 -8,-6 Z" fill="#ffcf4a" ${S(2)}/><circle cx="-3" cy="-5" r="1.6" fill="${OL}"/><circle cx="3" cy="-5" r="1.6" fill="${OL}"/></g>`,
 };
 
@@ -548,7 +595,8 @@ const SHIELD_ART = {
 function heroSVG(eq){
   eq = eq || {};
   const weapon = (WEAPON_ART[eq.weapon]||WEAPON_ART.wood)();
-  const shield = (SHIELD_ART[eq.shield]||SHIELD_ART.none)();
+  const shield = (SHIELD_ART[eq.armor]||SHIELD_ART.none)();
+  const ov = ARMOR_OV[eq.armor] || ARMOR_OV.none;
   const leg = (x,cls)=>`<g transform="translate(${x},-30)"><g class="${cls}">
       <rect x="-7" y="0" width="14" height="22" rx="5" fill="#4b3d63" ${S(2.5)}/>
       <path d="M-9,16 L10,16 Q16,16 16,22 L16,27 L-9,27 Z" fill="#6b3f22" ${S(2.5)}/></g></g>`;
@@ -558,7 +606,7 @@ function heroSVG(eq){
       ${leg(-11,'legB')}
       <g transform="translate(-18,-64)"><g class="armB">
         <rect x="-6" y="0" width="12" height="24" rx="6" fill="#3a6bb5" ${S(2.5)}/>
-        <circle cx="0" cy="26" r="6.5" fill="#ffd9b3" ${S(2.5)}/>
+        <circle cx="0" cy="26" r="6.5" fill="#ffd9b3" ${S(2.5)}/>${ov.pad?ov.pad(0):''}
         <g transform="translate(-4,26)">${shield}</g>
       </g></g>
       ${leg(11,'legF')}
@@ -567,6 +615,7 @@ function heroSVG(eq){
         <path d="M-10,-70 L-6,-28 M10,-70 L6,-28" stroke="#346aa9" stroke-width="3"/>
         <rect x="-24" y="-42" width="48" height="9" rx="3" fill="#6b3f22" ${S(2.5)}/>
         <rect x="-5" y="-44" width="10" height="13" rx="2" fill="#ffcf4a" ${S(2.5)}/>
+        ${ov.chest||''}
       </g>
       <g transform="translate(-14,-76)"><g class="scarf"><path d="M0,0 Q-16,4 -30,-2 Q-22,8 -34,14 Q-14,14 2,8 Z" fill="#e0453a" ${S(2.5)}/></g></g>
       <path d="M-22,-78 Q0,-66 22,-78 L22,-68 Q0,-58 -22,-68 Z" fill="#e0453a" ${S(2.5)}/>
@@ -586,13 +635,13 @@ function heroSVG(eq){
       <g transform="translate(16,-64)"><g class="armF">
         <g transform="translate(4,24) rotate(28)">${weapon}</g>
         <rect x="-6" y="0" width="12" height="24" rx="6" fill="#4a86d8" ${S(2.5)}/>
-        <circle cx="4" cy="25" r="7" fill="#ffd9b3" ${S(2.5)}/>
+        <circle cx="4" cy="25" r="7" fill="#ffd9b3" ${S(2.5)}/>${ov.pad?ov.pad(1):''}
       </g></g>
     </g>
   </g>`;
 }
 function heroStandalone(eq, cls){
-  return `<svg class="hero-svg ${cls||''}" viewBox="-80 -175 180 190" aria-hidden="true"><g class="actor idle">${heroSVG(eq)}</g></svg>`;
+  return `<svg class="hero-svg ${cls||''}" viewBox="-92 -212 200 228" aria-hidden="true"><g class="actor idle">${charSVG(eq)}</g></svg>`;
 }
 function weaponIcon(id){ return `<svg viewBox="-45 -115 90 135" class="wicon" aria-hidden="true"><g transform="rotate(35 0 -40)">${(WEAPON_ART[id]||WEAPON_ART.wood)()}</g></svg>`; }
 function shieldIcon(id){ return `<svg viewBox="-30 -32 60 64" class="wicon" aria-hidden="true">${id==='none'?'':(SHIELD_ART[id]||SHIELD_ART.none)()}</svg>`; }
@@ -789,6 +838,127 @@ const ICON = {
   lock:`<svg viewBox="0 0 40 40" class="ico"><path d="M12,18 L12,12 Q12,4 20,4 Q28,4 28,12 L28,18" fill="none" stroke="${OL}" stroke-width="5"/><path d="M12,18 L12,12 Q12,4 20,4 Q28,4 28,12 L28,18" fill="none" stroke="#aab6c2" stroke-width="2.5"/><rect x="8" y="17" width="24" height="19" rx="4" fill="#ffcf4a" ${S(2.5)}/><circle cx="20" cy="26" r="3" fill="${OL}"/></svg>`,
   speaker:`<svg viewBox="0 0 40 40" class="ico"><path d="M6,15 L13,15 L22,7 L22,33 L13,25 L6,25 Z" fill="#fff" ${S(2.5)}/><path d="M27,14 Q31,20 27,26 M31,10 Q38,20 31,30" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
 };
+
+/* ------------------------- armor overlays (Pip) ------------------------- */
+const padSVG = (fill, dark, front)=>`<path d="M-11,-4 Q-12,-14 0,-14 Q12,-14 11,-4 Q11,6 0,8 Q-11,6 -11,-4 Z" fill="${fill}" ${S(2.5)} transform="translate(${front?1:0},2)"/><path d="M-8,0 Q0,4 8,0" stroke="${dark}" stroke-width="2.5" fill="none" transform="translate(${front?1:0},2)"/>`;
+const ARMOR_OV = {
+  none:{},
+  buckler:{ chest:`<path d="M-20,-68 Q-22,-50 -18,-44 L18,-44 Q22,-50 20,-68 Q10,-62 0,-62 Q-10,-62 -20,-68 Z" fill="#9a6a3e" ${S(2.5)}/><path d="M-12,-64 L-12,-48 M12,-64 L12,-48" stroke="#6b4428" stroke-width="2" stroke-dasharray="3 3"/>`,
+    pad:(f)=>padSVG('#9a6a3e','#6b4428',f) },
+  kite:{ chest:`<path d="M-21,-70 Q-23,-52 -18,-44 L18,-44 Q23,-52 21,-70 Q0,-60 -21,-70 Z" fill="#cfd8e2" ${S(2.5)}/><path d="M0,-64 L0,-46" stroke="#8d9aa8" stroke-width="3"/><path d="M-14,-62 Q-10,-56 -12,-50" stroke="#fff" stroke-width="2.5" fill="none"/>`,
+    pad:(f)=>padSVG('#cfd8e2','#8d9aa8',f) },
+  dragon:{ chest:`<path d="M-21,-70 Q-23,-52 -18,-44 L18,-44 Q23,-52 21,-70 Q0,-60 -21,-70 Z" fill="#c23a2a" ${S(2.5)}/><path d="M-14,-60 q4,5 8,0 q4,5 8,0 q4,5 8,0 M-12,-52 q4,5 8,0 q4,5 8,0 q4,5 8,0" stroke="#7a1f16" stroke-width="2" fill="none"/>`,
+    pad:(f)=>padSVG('#c23a2a','#ffcf4a',f) },
+  mythril:{ chest:`<path d="M-21,-70 Q-23,-52 -18,-44 L18,-44 Q23,-52 21,-70 Q0,-60 -21,-70 Z" fill="#bfefff" ${S(2.5)}/><path d="M0,-66 L6,-56 L0,-46 L-6,-56 Z" fill="#5ad0ff" ${S(2)}/><g class="w-glow"><ellipse cx="0" cy="-56" rx="22" ry="14" fill="#7ff4ff" opacity=".25"/></g>`,
+    pad:(f)=>padSVG('#bfefff','#5ad0ff',f) },
+};
+
+/* ---------------------- Sir Bastion — heavy knight ---------------------- */
+function knightSVG(eq){
+  eq = eq || {};
+  const weapon = (WEAPON_ART[eq.weapon]||WEAPON_ART.wood)();
+  const shId = (eq.armor && eq.armor!=='none') ? eq.armor : 'knight';
+  const shield = SHIELD_ART[shId]();
+  const trim = { none:'#4a62a8', buckler:'#8a5a30', kite:'#4a62a8', dragon:'#a8302a', mythril:'#2f9ad0' }[eq.armor||'none'] || '#4a62a8';
+  const leg = (x,cls)=>`<g transform="translate(${x},-60)"><g class="${cls}">
+      <rect x="-9" y="0" width="18" height="40" rx="7" fill="#c9d6ea" ${S(2.5)}/><rect x="-9" y="0" width="7" height="40" rx="3" fill="#9fb2d0"/>
+      <circle cx="0" cy="20" r="7" fill="#e3ebf5" ${S(2.5)}/>
+      <path d="M-11,38 L10,38 Q20,40 20,50 L20,60 L-11,60 Z" fill="${trim}" ${S(2.5)}/></g></g>`;
+  return `<g class="hero-body">
+    <ellipse class="shadow" cx="0" cy="2" rx="42" ry="9" fill="rgba(0,0,0,.35)"/>
+    <g class="h-bob">
+      ${leg(-13,'legB')}
+      <g transform="translate(-33,-116)"><g class="armB">
+        <rect x="-7" y="0" width="15" height="38" rx="7" fill="#c9d6ea" ${S(2.5)}/>
+        <circle cx="0" cy="40" r="8" fill="#9fb2d0" ${S(2.5)}/>
+        <g transform="translate(-10,40)">${shield}</g>
+        <path d="M-16,4 Q-16,-12 0,-12 Q16,-12 16,4 Q14,14 0,14 Q-14,14 -16,4 Z" fill="#e3ebf5" ${S(2.5)}/>
+      </g></g>
+      ${leg(13,'legF')}
+      <g class="h-torso">
+        <path d="M-30,-72 L30,-72 L34,-44 Q0,-38 -34,-44 Z" fill="${trim}" ${S(3)}/>
+        <path d="M-22,-70 L-24,-45 M-12,-71 L-13,-42 M0,-71 L0,-41 M12,-71 L13,-42 M22,-70 L24,-45" stroke="#2a1a10" stroke-width="2" opacity=".45"/>
+        <path d="M-30,-122 Q0,-134 30,-122 Q34,-96 28,-72 L-28,-72 Q-34,-96 -30,-122 Z" fill="#c9d6ea" ${S(3)}/>
+        <path d="M-30,-122 Q-16,-126 -6,-127 L-8,-72 L-28,-72 Q-34,-96 -30,-122 Z" fill="#9fb2d0"/>
+        <path d="M-30,-122 Q0,-134 30,-122 Q34,-96 28,-72 L-28,-72 Q-34,-96 -30,-122 Z" fill="none" ${S(3)}/>
+        <path d="M2,-126 L2,-76" stroke="#8a9cbc" stroke-width="3"/><path d="M14,-118 Q20,-104 16,-88" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/>
+        <rect x="-30" y="-80" width="60" height="9" rx="3" fill="#6b4428" ${S(2.5)}/><rect x="-6" y="-82" width="12" height="13" rx="2" fill="#ffcf4a" ${S(2.5)}/>
+        <path d="M-22,-126 q5,8 10,0 q5,8 10,0 q5,8 10,0 q5,8 10,0 L22,-132 Q0,-140 -22,-132 Z" fill="#f08a3a" ${S(2.5)}/>
+      </g>
+      <g transform="translate(4,-150)"><g class="h-head">
+        <g transform="translate(-6,-24)"><g class="plume"><path d="M0,0 Q-20,-14 -46,-6 Q-38,0 -52,8 Q-30,10 -14,6 Q-6,6 2,4 Z" fill="#f08a3a" ${S(2.5)}/></g></g>
+        <path d="M-22,22 L-22,-6 Q-22,-26 0,-26 Q22,-26 24,-6 L24,22 Q0,28 -22,22 Z" fill="#c9d6ea" ${S(3)}/>
+        <path d="M-22,22 L-22,-6 Q-22,-22 -8,-25 L-8,25 Q-16,24 -22,22 Z" fill="#9fb2d0"/>
+        <path d="M-22,22 L-22,-6 Q-22,-26 0,-26 Q22,-26 24,-6 L24,22 Q0,28 -22,22 Z" fill="none" ${S(3)}/>
+        <path d="M-2,-26 L2,-40 L6,-26" fill="#e3ebf5" ${S(2.5)}/>
+        <rect x="-4" y="-6" width="30" height="9" rx="3" fill="#1c1420" ${S(2.5)}/>
+        <g class="blink"><circle cx="8" cy="-1.5" r="2.4" fill="#ffe7a8"/><circle cx="18" cy="-1.5" r="2.4" fill="#ffe7a8"/></g>
+        <path d="M6,10 L6,16 M12,10 L12,16 M18,10 L18,16" stroke="#2a1a10" stroke-width="2.5" stroke-linecap="round"/>
+      </g></g>
+      <g transform="translate(26,-114)"><g class="armF">
+        <g transform="translate(4,40) rotate(22) scale(1.3)">${weapon}</g>
+        <rect x="-7" y="0" width="15" height="38" rx="7" fill="#dbe4f0" ${S(2.5)}/>
+        <circle cx="4" cy="40" r="9" fill="#9fb2d0" ${S(2.5)}/>
+        <path d="M-16,4 Q-16,-12 0,-12 Q16,-12 16,4 Q14,14 0,14 Q-14,14 -16,4 Z" fill="#e3ebf5" ${S(2.5)}/><path d="M-10,6 Q0,10 10,6" stroke="#9fb2d0" stroke-width="2.5" fill="none"/>
+      </g></g>
+    </g>
+  </g>`;
+}
+const CHAR_ART = { pip: heroSVG, bastion: knightSVG };
+const CHAR_FACE = { pip:'-40 -150 80 80', bastion:'-30 -182 70 70' };
+function charSVG(eq){ return (CHAR_ART[(eq||{}).char] || heroSVG)(eq); }
+
+/* ------------------------ Necromancer (boss) ------------------------ */
+MONSTER_ART.necro = (p)=>`<ellipse cx="0" cy="2" rx="40" ry="8" fill="rgba(0,0,0,.3)"/>
+  <g class="m-float"><g transform="translate(0,-30)">
+    <g class="necro-aura"><ellipse cx="0" cy="-70" rx="62" ry="80" fill="${p.c}" opacity=".12"/></g>
+    <path d="M20,-104 Q40,-80 38,-40 Q40,-10 46,6 L34,-2 L30,10 L20,0 L12,12 L4,0 L-6,12 L-14,0 L-24,10 L-30,-4 L-42,6 Q-36,-20 -34,-50 Q-34,-86 -18,-106 Z" fill="${p.a}" ${S(3)}/>
+    <path d="M-2,-100 L-6,6 M14,-96 Q22,-50 20,2" stroke="${p.b}" stroke-width="4" fill="none" opacity=".8"/>
+    <path d="M-22,-62 L22,-62" stroke="${p.b}" stroke-width="6"/><circle cx="-2" cy="-56" r="5" fill="${p.c}" ${S(2)}/>
+    <g transform="translate(22,-96)"><path d="M0,0 Q16,20 10,44 L0,44 Q4,20 -10,6 Z" fill="${p.b}" ${S(2.5)}/><path d="M2,42 Q6,50 12,46" fill="#cbb8a8" ${S(2)}/></g>
+    <g transform="translate(0,-118)">
+      <path d="M-30,20 Q-36,-10 -14,-30 Q0,-44 10,-40 Q6,-30 20,-24 Q34,-8 30,22 Q0,32 -30,20 Z" fill="${p.a}" ${S(3)}/>
+      <path d="M-22,16 Q-24,-12 -4,-20 Q14,-18 20,4 Q18,20 -2,24 Q-18,24 -22,16 Z" fill="#0e0a12"/>
+      <g class="blink"><ellipse cx="-12" cy="0" rx="4" ry="5" fill="${p.c}"/><ellipse cx="4" cy="0" rx="4" ry="5" fill="${p.c}"/></g>
+      <g class="necro-aura"><circle cx="-12" cy="0" r="9" fill="${p.c}" opacity=".3"/><circle cx="4" cy="0" r="9" fill="${p.c}" opacity=".3"/></g>
+    </g>
+    <g transform="translate(-26,-94)"><g class="armAtk">
+      <path d="M0,0 Q-14,14 -18,28" stroke="${p.a}" stroke-width="14" stroke-linecap="round"/><path d="M0,0 Q-14,14 -18,28" stroke="${OL}" stroke-width="2" opacity=".4" fill="none"/>
+      <g transform="translate(-20,30)">
+        <path d="M-2,-60 Q-6,-30 -2,0 Q2,40 -2,96 L4,96 Q8,40 4,0 Q8,-30 4,-60 Z" fill="#5a4630" ${S(2.5)}/>
+        <path d="M-4,-40 Q-10,-44 -12,-50 M4,10 Q10,6 12,0" stroke="#5a4630" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="-3" cy="30" r="6" fill="#cbb8a8" ${S(2)}/>
+        <g class="w-flame"><path d="M-16,-70 Q-22,-96 -6,-118 Q-4,-102 4,-108 Q2,-126 10,-134 Q24,-104 16,-80 Q18,-72 14,-66 Z" fill="${p.c}" opacity=".85"/></g>
+        <g class="w-glow"><circle cx="0" cy="-80" r="26" fill="${p.c}" opacity=".3"/></g>
+        <path d="M-14,-72 Q-14,-94 1,-94 Q16,-94 16,-72 Q16,-62 9,-60 L9,-54 L-7,-54 L-7,-60 Q-14,-62 -14,-72 Z" fill="#efe6d6" ${S(2.5)}/>
+        <circle cx="-5" cy="-74" r="4" fill="${OL}"/><circle cx="7" cy="-74" r="4" fill="${OL}"/><circle cx="-5" cy="-74" r="1.6" fill="${p.c}"/><circle cx="7" cy="-74" r="1.6" fill="${p.c}"/>
+      </g>
+      <circle cx="-18" cy="28" r="7" fill="#cbb8a8" ${S(2.5)}/>
+    </g></g>
+  </g></g>`;
+THEMES.necro = { wall:'#3d463b', brick:'#323a30', mortar:'#20261f', floor:'#262b24', floorTop:'#3c4438', arch:'#10130e', pillar:'#4f5849', pillarD:'#363d32', flame:'#7fff5a', flame2:'#e6ffd0', prop:'bones', sky:'#10130e' };
+const _pile = pileProp;
+pileProp = function(x,t){
+  if(t.prop!=='bones') return _pile(x,t);
+  const sk=(a,b,s)=>`<g transform="translate(${a},${b}) scale(${s})"><path d="M-12,0 Q-12,-18 0,-18 Q12,-18 12,0 Q12,6 7,8 L7,12 L-7,12 L-7,8 Q-12,6 -12,0 Z" fill="#e8dfcf" ${S(2.5)}/><circle cx="-5" cy="-2" r="3.5" fill="${OL}"/><circle cx="5" cy="-2" r="3.5" fill="${OL}"/></g>`;
+  return `<g transform="translate(${x},330)"><path d="M-80,0 Q-60,-34 -10,-40 Q40,-38 70,-14 Q82,-6 86,0 Z" fill="#b8ad98" ${S(3)}/>
+    <path d="M-50,-14 L-20,-24 M10,-26 L40,-12 M-30,-30 L-4,-20" stroke="#efe6d6" stroke-width="7" stroke-linecap="round"/><path d="M-50,-14 L-20,-24 M10,-26 L40,-12 M-30,-30 L-4,-20" stroke="${OL}" stroke-width="2" stroke-linecap="round" opacity=".35"/>
+    ${sk(-30,-40,1)}${sk(8,-50,1.15)}${sk(40,-26,.9)}${sk(-60,-16,.8)}
+    <g transform="translate(62,-30)"><rect x="-4" y="0" width="8" height="18" fill="#cfe8c0" ${S(1.5)}/><g class="torch-flame"><path d="M-4,0 Q0,-14 4,0 Z" fill="${t.flame}"/><circle cy="-4" r="8" fill="${t.flame}" opacity=".2"/></g></g>
+    <g class="sparkle"><circle cx="-40" cy="-70" r="3" fill="#b6ff9a"/></g></g>`;
+};
+
+/* ------------------------- accessory icons ------------------------- */
+const ACC_ART = {
+  auraRing:`<svg viewBox="0 0 40 40" class="ico"><circle cx="20" cy="22" r="16" fill="#c77dff" opacity=".3"/><circle cx="20" cy="24" r="11" fill="none" stroke="${OL}" stroke-width="7"/><circle cx="20" cy="24" r="11" fill="none" stroke="#ffcf4a" stroke-width="3.5"/><path d="M20,4 L27,11 L20,18 L13,11 Z" fill="#c77dff" ${S(2.5)}/><path d="M18,9 L20,7" stroke="#fff" stroke-width="2"/></svg>`,
+  luckyCoin:`<svg viewBox="0 0 40 40" class="ico"><circle cx="20" cy="20" r="16" fill="#ffcf4a" ${S(3)}/><g fill="#3fae4a" ${S(1.5)}><circle cx="16" cy="16" r="5"/><circle cx="24" cy="16" r="5"/><circle cx="16" cy="24" r="5"/><circle cx="24" cy="24" r="5"/></g><path d="M22,24 L27,31" stroke="${OL}" stroke-width="2.5"/></svg>`,
+  fang:`<svg viewBox="0 0 40 40" class="ico"><path d="M10,6 Q20,2 30,6 Q28,20 20,36 Q12,20 10,6 Z" fill="#f4efe6" ${S(3)}/><path d="M20,26 Q16,32 20,36 Q24,32 20,26 Z" fill="#e0453a" ${S(2)}/><path d="M14,9 Q15,16 17,20" stroke="#cbbfae" stroke-width="2.5" fill="none"/></svg>`,
+  lens:`<svg viewBox="0 0 40 40" class="ico"><path d="M26,26 L36,36" stroke="${OL}" stroke-width="8" stroke-linecap="round"/><path d="M26,26 L36,36" stroke="#8a5a30" stroke-width="4" stroke-linecap="round"/><circle cx="17" cy="17" r="12" fill="#bfefff" ${S(3)}/><path d="M11,13 Q13,9 17,9" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><text x="17" y="22" font-size="11" text-anchor="middle" fill="${OL}" font-family="Lilita One,sans-serif">Aa</text></svg>`,
+  thorn:`<svg viewBox="0 0 40 40" class="ico"><path d="M20,2 L23,10 L31,6 L28,14 L37,17 L29,21 L34,29 L25,27 L24,36 L19,29 L13,36 L13,27 L4,29 L10,21 L2,17 L11,14 L8,6 L16,10 Z" fill="#4fae3a" ${S(2.5)}/><circle cx="20" cy="20" r="6" fill="#e0453a" ${S(2)}/></svg>`,
+  boots:`<svg viewBox="0 0 40 40" class="ico"><path d="M26,10 Q36,4 38,8 Q34,10 36,14 Q30,14 28,16 Z" fill="#fff" ${S(2)}/><path d="M12,4 L24,4 L24,24 Q34,26 34,32 L34,36 L8,36 L8,28 Q12,24 12,18 Z" fill="#6b4428" ${S(3)}/><path d="M8,32 L34,32" stroke="#ffcf4a" stroke-width="3"/></svg>`,
+  phoenix:`<svg viewBox="0 0 40 40" class="ico"><path d="M8,36 Q10,16 30,4 Q34,18 22,28 Q16,33 8,36 Z" fill="#ff8a2a" ${S(3)}/><path d="M12,32 Q18,20 28,10" stroke="#ffe14a" stroke-width="3" fill="none"/><path d="M8,36 L4,40" stroke="${OL}" stroke-width="3"/></svg>`,
+  sage:`<svg viewBox="0 0 40 40" class="ico"><circle cx="20" cy="18" r="14" fill="#5a8aff" opacity=".3"/><path d="M20,4 L30,14 L26,30 L14,30 L10,14 Z" fill="#6fa0ff" ${S(3)}/><path d="M20,4 L20,30 M10,14 L30,14" stroke="#fff" stroke-width="2" opacity=".6"/><rect x="12" y="30" width="16" height="6" rx="2" fill="#ffcf4a" ${S(2)}/></svg>`,
+};
 /* ======================================================================
    QUEST LINES — Word Battle
    Spell English words from letter tiles to attack monsters.
@@ -855,18 +1025,38 @@ const WEAPONS = [
   { id:'flame',  name:'Flame Blade',  th:'ดาบเพลิง', atk:15, price:1900, perk:'burn', perkTh:'เผาไหม้ศัตรู 2 เทิร์น (30% ของดาเมจ)' },
   { id:'thunder',name:'Thunder Spear',th:'หอกสายฟ้า', atk:18, price:3000, perk:'rare', perkTh:'ตัวอักษรหายาก (J K Qu V X Z W Y F) พลัง x2' },
 ];
-const SHIELDS = [
-  { id:'none',    name:'No Shield',     th:'ไม่มีโล่', block:0,   price:0 },
-  { id:'buckler', name:'Wooden Buckler',th:'โล่ไม้กลม', block:.12, price:90 },
-  { id:'kite',    name:'Knight Shield', th:'โล่อัศวิน', block:.22, price:450 },
-  { id:'dragon',  name:'Dragon Shield', th:'โล่มังกร', block:.32, price:1500 },
+const ARMORS = [
+  { id:'none',    name:'Traveler Tunic', th:'เสื้อนักเดินทาง', block:0,   hp:0,  price:0 },
+  { id:'buckler', name:'Leather Guard',  th:'เกราะหนัง + โล่ไม้', block:.12, hp:10, price:90 },
+  { id:'kite',    name:'Knight Plate',   th:'เกราะอัศวิน + โล่เหล็ก', block:.22, hp:25, price:450 },
+  { id:'dragon',  name:'Dragon Mail',    th:'เกราะเกล็ดมังกร', block:.30, hp:40, price:1500 },
+  { id:'mythril', name:'Mythril Aegis',  th:'เกราะมิธริล', block:.38, hp:60, price:2800 },
+];
+const ACCESSORIES = [
+  { id:'auraRing', name:'Aura Ring',      th:'แหวนออร่า', price:250, desc:'ตัวอักษร 2 ตัวบนกระดานจะมีออร่า ✨ ใช้ตัวที่มีออร่าในคำ ดาเมจ x1.35 ต่อตัว' },
+  { id:'luckyCoin',name:'Lucky Clover',   th:'เหรียญโคลเวอร์', price:200, desc:'ได้ทองเพิ่ม +35% จากทุกแหล่ง' },
+  { id:'lens',     name:"Scholar's Lens", th:'แว่นนักปราชญ์', price:350, desc:'คำศัพท์เป้าหมาย ⭐ ดาเมจ x2 (ปกติ x1.5) และคำใบ้ +1' },
+  { id:'boots',    name:'Swift Boots',    th:'รองเท้าลมกรด', price:400, desc:'สลับตัวอักษรได้โดยไม่เสียเทิร์น' },
+  { id:'fang',     name:'Vampire Fang',   th:'เขี้ยวแวมไพร์', price:450, desc:'ฟื้น HP 12% ของดาเมจที่ทำได้' },
+  { id:'thorn',    name:'Thorn Amulet',   th:'เครื่องรางหนาม', price:500, desc:'สะท้อนดาเมจ 30% กลับไปหามอนสเตอร์' },
+  { id:'sage',     name:'Sage Stone',     th:'หินปราชญ์', price:600, desc:'คำ 5 ตัวอักษรขึ้นไป ดาเมจ +25%' },
+  { id:'phoenix',  name:'Phoenix Feather',th:'ขนนกฟีนิกซ์', price:900, desc:'เมื่อ HP หมด ฟื้นคืนชีพ 40% (1 ครั้ง/ด่าน)' },
+];
+const CHARACTERS = [
+  { id:'pip',     name:'Pip',         th:'พิป อัศวินน้อย', price:0,   desc:'ฮีโร่เริ่มต้น คล่องแคล่ว สมดุลทุกด้าน', hpMul:1, dmgTaken:1 },
+  { id:'bastion', name:'Sir Bastion', th:'เซอร์บาสเตียน อัศวินเหล็ก', price:800, desc:'เกราะหนัก: HP +20% และรับดาเมจลดลง 10%', hpMul:1.2, dmgTaken:.9 },
 ];
 const POTIONS = {
   heal: { name:'Heal Potion', th:'ยาฟื้นพลัง', desc:'ฟื้น HP 50% ของสูงสุด (ไม่เสียเทิร์น)', price:35, icon:'potRed' },
   power:{ name:'Power Potion', th:'ยาพลังคูณ', desc:'คำถัดไปทำดาเมจ x2 (ไม่เสียเทิร์น)', price:55, icon:'potStar' },
 };
 const W = id=>WEAPONS.find(w=>w.id===id)||WEAPONS[0];
-const SH = id=>SHIELDS.find(s=>s.id===id)||SHIELDS[0];
+const AR = id=>ARMORS.find(s=>s.id===id)||ARMORS[0];
+const ACC = id=>ACCESSORIES.find(s=>s.id===id);
+const CH = id=>CHARACTERS.find(s=>s.id===id)||CHARACTERS[0];
+const hasAcc = id=>(save.acc||[]).includes(id);
+/* rude words: allowed, but they hurt you too. (slurs stay blocked entirely) */
+const RUDE = new Set('fuck fucks fucked fucker fuckers fucking fuckin shit shits shitty shitted shitting bitch bitches bitchy bitching damn damned damnit goddamn crap craps crappy piss pissed pisses pissing ass asses asshole assholes bastard bastards dick dicks dickhead cock cocks prick pricks twat twats wank wanks wanker wankers bollocks bugger buggers arse arses arsehole douche douchebag tits titty boob boobs jerkoff dildo dildos porn porno horny slut sluts whore whores cunt cunts pussy'.split(' '));
 
 /* ----------------------------- monsters ----------------------------- */
 const MON = {
@@ -890,6 +1080,11 @@ const MON = {
   kingslime:{ name:'King Slime',  th:'ราชาสไลม์', art:'slime', pal:{a:'#5ccf6a',b:'#2f8a3a'}, sc:1.9, h:130, boss:true, traits:['regen','weak'] },
   ogre:    { name:'Forest Ogre',  th:'ยักษ์ป่า', art:'ogre', pal:{a:'#9ab86a',b:'#6a8a4a'}, sc:1.1, h:190, boss:true, traits:['heavy','armor3'] },
   frostgol:{ name:'Frost Titan',  th:'ไททันน้ำแข็ง', art:'golem', pal:{a:'#bfe0f6',b:'#86b4d8',c:'#2fd0ff'}, sc:1.3, h:190, boss:true, traits:['stone','armor4'] },
+  necroskel:{ name:'Grave Soldier', th:'ทหารหลุมศพ', art:'skeleton', pal:{a:'#d8dcc8',b:'#3a3f36',c:'#4a5a40',eye:'#7fff5a'}, sc:1.05, h:140, traits:['armor3'] },
+  wraith:  { name:'Wraith',        th:'วิญญาณพยาบาท', art:'ghost', pal:{a:'#b8e8b0',c:'#7fff5a'}, sc:1.2, h:120, traits:['vamp'] },
+  ooze:    { name:'Grave Ooze',    th:'เมือกสุสาน', art:'slime', pal:{a:'#8a6ab8',b:'#5a3a80'}, sc:1.15, h:80, traits:['regen'] },
+  gravebat:{ name:'Grave Bat',     th:'ค้างคาวสุสาน', art:'bat', pal:{a:'#3a3a48',b:'#5aff7a'}, sc:1.1, h:130, traits:['weak'] },
+  necro:   { name:'Necromancer',   th:'จอมเวทมรณะ', art:'necro', pal:{a:'#5a3a7a',b:'#3a2450',c:'#7fff5a'}, sc:.95, h:190, boss:true, traits:['stone','vamp'], caster:true },
   dragon:  { name:'Ember Dragon', th:'มังกรเพลิง', art:'dragon', pal:{a:'#d8453a',b:'#8a2a24',c:'#ffcf4a'}, sc:1.15, h:170, boss:true, traits:['heavy','regen'] },
 };
 const CHAPTERS = [
@@ -897,6 +1092,7 @@ const CHAPTERS = [
   { id:'woods', name:'Mossy Hollow',   th:'โพรงตะไคร่', color:'#4f8a3a', pool:['shroom','goblin','spider','mossbat'], boss:'ogre' },
   { id:'ice',   name:'Frozen Deep',    th:'ถ้ำน้ำแข็ง', color:'#3f7fb0', pool:['ghost','iceimp','iceslime','icegolem'], boss:'frostgol' },
   { id:'lava',  name:'Ember Keep',     th:'ป้อมเปลวเพลิง', color:'#b8392a', pool:['fireimp','redskel','lavaspid','fireghost'], boss:'dragon' },
+  { id:'necro', name:'Necro Catacombs',th:'สุสานจอมเวทมรณะ', color:'#5a3a7a', pool:['necroskel','wraith','ooze','gravebat'], boss:'necro' },
 ];
 const STAGES_PER = 8;
 const WEAK_LETTERS = 'abcdefghiklmnoprstuwy';
@@ -927,25 +1123,32 @@ function makeEnemy(key, s, rng, boss){
   const hp = Math.round((18 + s*2.1) * v * (boss?2.3:1));
   const atk = Math.round((4 + s*.6) * (boss?1.15:1));
   const gold = Math.round((4 + s*1) * (boss?5:1));
-  return { key, name:T.name, th:T.th, art:T.art, pal:T.pal, sc:T.sc, h:T.h, boss:!!boss, traits:T.traits.slice(),
+  return { key, name:T.name, th:T.th, art:T.art, pal:T.pal, sc:T.sc, h:T.h, boss:!!boss, traits:T.traits.slice(), caster:!!T.caster,
     weak: WEAK_LETTERS[Math.floor(rng()*WEAK_LETTERS.length)], hp, maxHp:hp, atk, gold, charge:0, burn:0, burnDmg:0, stun:false };
 }
 
 /* ------------------------------ save ------------------------------ */
 const SAVE_KEY = 'questlines_wordbattle_v1';
 function defaultSave(){
-  return { v:1, name:'', gold:0, hpLv:0, weapons:['wood'], shields:['none'], eq:{ weapon:'wood', shield:'none' },
+  return { v:2, name:'', gold:0, hpLv:0, weapons:['wood'], armors:['none'], accs:[], acc:[null,null], chars:['pip'], eq:{ weapon:'wood', armor:'none', char:'pip' },
     potions:{ heal:2, power:1 }, cleared:0, stars:{}, best:{},
     stats:{ words:0, longest:'', bestDmg:0, bestWord:'', kills:0, bosses:0, damage:0 },
     book:{}, tutorial:false, settings:{ sfx:70, music:false, tts:true, autoSpeak:true } };
 }
+function migrate(d){
+  if(d.shields && !d.armors) d.armors = d.shields;
+  if(d.eq && d.eq.shield && !d.eq.armor) d.eq.armor = d.eq.shield;
+  if(d.eq) delete d.eq.shield; delete d.shields;
+  if(!Array.isArray(d.acc)) d.acc=[null,null];
+  return d;
+}
 function loadSave(){
-  try{ const raw = localStorage.getItem(SAVE_KEY); if(raw){ const d = JSON.parse(raw); return Object.assign(defaultSave(), d, { settings:Object.assign(defaultSave().settings, d.settings||{}), stats:Object.assign(defaultSave().stats, d.stats||{}), potions:Object.assign({heal:0,power:0}, d.potions||{}), eq:Object.assign(defaultSave().eq, d.eq||{}) }); } }catch(e){}
+  try{ const raw = localStorage.getItem(SAVE_KEY); if(raw){ const d = migrate(JSON.parse(raw)); return Object.assign(defaultSave(), d, { settings:Object.assign(defaultSave().settings, d.settings||{}), stats:Object.assign(defaultSave().stats, d.stats||{}), potions:Object.assign({heal:0,power:0}, d.potions||{}), eq:Object.assign(defaultSave().eq, d.eq||{}) }); } }catch(e){}
   return defaultSave();
 }
 let save = loadSave();
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
-const maxHp = ()=>100 + save.hpLv*25;
+const maxHp = ()=>Math.round((100 + save.hpLv*25 + AR(save.eq.armor).hp) * CH(save.eq.char).hpMul);
 const hpPrice = ()=>60 + save.hpLv*70;
 
 /* ------------------------------ audio ------------------------------ */
@@ -977,6 +1180,24 @@ const sfx = {
   stone:()=>{ noise(.15,.15); tone(90,.15,'square',.08); },
   buy:()=>{ sfx.coin(); tone(1568,.12,'square',.06,.14); },
 };
+/* letter chain sounds: 1-3 plain, 4+ increasingly magical */
+const MAGIC_NOTES = [659,784,880,1046,1175,1318,1568,1760,2093];
+sfx.letter = (n)=>{
+  if(n<=3){ tone(480+n*60,.07,'triangle',.09); return; }
+  const L = n-3, f = MAGIC_NOTES[Math.min(L-1, MAGIC_NOTES.length-1)], v = Math.min(.16, .08+L*.015);
+  tone(f,.22,'sine',v); tone(f*1.5,.26,'triangle',v*.5,.03); tone(f*2,.3,'sine',v*.35,.06);
+  for(let k=0;k<=L;k++) tone(f*2*(1+k*.26), .09, 'sine', .035, .05+k*.04);
+  slide(f*.5, f*1.5, .3+L*.03, 'sine', .04);
+  if(L>=3){ tone(f/4,.4,'sine',.1); noise(.25,.05+L*.01); }
+  if(L>=5){ [0,.08,.16].forEach((d,i)=>tone(f*(1+i*.5),.35,'triangle',.05,.12+d)); }
+};
+sfx.toxic = ()=>{ slide(180,90,.45,'sawtooth',.1); slide(190,95,.45,'square',.05,.02); noise(.35,.08); tone(70,.4,'sine',.1); };
+function speakRude(){
+  sfx.toxic();
+  if(save.settings.sfx<=0 || !('speechSynthesis' in window)) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance('So rude!'); u.lang='en-US'; u.rate=.95; u.pitch=1.6;
+    const vs=speechSynthesis.getVoices(); const v=vs.find(x=>/en[-_]US/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)); if(v) u.voice=v; speechSynthesis.speak(u); }catch(e){}
+}
 const SONG=[262,330,392,330,294,349,440,349,262,330,392,523,494,392,330,294];
 function setMusic(on){ clearInterval(musicTimer); musicTimer=null; if(!on) return; let st=0;
   musicTimer=setInterval(()=>{ if(save.settings.sfx<=0) return; const n=SONG[st%SONG.length]; tone(n,.18,'triangle',.03); if(st%4===0) tone(n/2,.4,'square',.02); st++; },260); }
@@ -1022,7 +1243,7 @@ function starsHtml(n){ return [1,2,3].map(i=>i<=n?ICON.star:ICON.starOff).join('
 function renderMap(){
   const hp = maxHp();
   let h = `<div class="panel hero-card">${heroStandalone(save.eq)}<div class="st"><b>${esc(save.name)}</b>
-    <div class="sub">${esc(W(save.eq.weapon).th)} · ATK ${W(save.eq.weapon).atk}${save.eq.shield!=='none'?` · ${esc(SH(save.eq.shield).th)}`:''}</div>
+    <div class="sub">${esc(CH(save.eq.char).name)} · ${esc(W(save.eq.weapon).th)} · ATK ${W(save.eq.weapon).atk}${save.eq.armor!=='none'?` · ${esc(AR(save.eq.armor).th)}`:''}</div>
     <div class="bar" style="margin-top:8px"><i style="width:100%"></i><span>HP ${hp}</span></div>
     <div class="sub" style="margin-top:8px">ผ่านแล้ว ${save.cleared}/${CHAPTERS.length*STAGES_PER} ด่าน · คำที่สะกดได้ ${save.stats.words}</div></div></div>`;
   CHAPTERS.forEach((C,ci)=>{
@@ -1040,30 +1261,47 @@ function renderMap(){
 }
 
 /* ------------------------------ shop ------------------------------ */
+function buyBtn(act, id, price){ return `<button class="cbtn small gold" data-act="${act}" data-v="${id}" ${save.gold<price?'disabled':''}>${ICON.coin} ${price}</button>`; }
 function renderShop(){
   const t = ui.shopTab;
-  let h = `<div class="panel shop-hero">${heroStandalone(save.eq)}<div><h2 class="title" style="margin:0">ร้านค้า</h2><div class="sub">อาวุธที่ใส่จะแสดงบนตัวละครทันที</div></div></div>
-    <div class="seg">${[['weapon','อาวุธ'],['shield','โล่'],['potion','ยา'],['up','อัปเกรด']].map(([k,l])=>`<button class="${t===k?'on':''}" data-act="shopTab" data-v="${k}">${l}</button>`).join('')}</div><div class="items">`;
+  const tabs = [['char','ตัวละคร'],['weapon','อาวุธ'],['armor','ชุดเกราะ'],['acc','ไอเทมเสริม'],['potion','ยา'],['up','อัปเกรด']];
+  let h = `<div class="panel shop-hero">${heroStandalone(save.eq)}<div><h2 class="title" style="margin:0">ร้านค้า</h2><div class="sub">ของที่ใส่จะแสดงบนตัวละครทันที</div>
+    <div class="acc-slots">${[0,1].map(i=>{ const a=save.acc[i]; return `<span class="acc-slot ${a?'':'empty'}" title="${a?esc(ACC(a).th):'ช่องไอเทมว่าง'}">${a?ACC_ART[a]:'+'}</span>`; }).join('')}</div></div></div>
+    <div class="seg seg6">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="shopTab" data-v="${k}">${l}</button>`).join('')}</div><div class="items">`;
+  const eqBtn = (on, act, id)=> on ? `<button class="cbtn small wood" disabled>ใส่อยู่</button>` : `<button class="cbtn small blue" data-act="${act}" data-v="${id}">ใส่</button>`;
+  if(t==='char'){
+    CHARACTERS.forEach(c=>{
+      const own = save.chars.includes(c.id), eq = save.eq.char===c.id;
+      h += `<div class="panel item char-item ${eq?'equipped':''}"><div class="pic big">${heroStandalone(Object.assign({}, save.eq, { char:c.id }))}</div><div class="meta"><h4>${esc(c.name)}<small>${esc(c.th)}</small></h4>
+        <p>${esc(c.desc)}</p>${own ? eqBtn(eq,'equipC',c.id) : buyBtn('buyC',c.id,c.price)}</div></div>`;
+    });
+    h += `<div class="panel item" style="opacity:.6"><div class="pic">${ICON.lock}</div><div class="meta"><h4>Coming soon<small>ฮีโร่ใหม่กำลังมา</small></h4><p>ตัวละครใหม่จะเพิ่มเข้ามาเรื่อยๆ</p></div></div>`;
+  }
   if(t==='weapon') WEAPONS.forEach(w=>{
     const own = save.weapons.includes(w.id), eq = save.eq.weapon===w.id;
     h += `<div class="panel item ${eq?'equipped':''}"><div class="pic">${weaponIcon(w.id)}</div><div class="meta"><h4>${esc(w.name)}<small>${esc(w.th)}</small></h4>
-      <div class="stat">ATK ${w.atk}</div><p>${esc(w.perkTh||'อาวุธพื้นฐาน')}</p>
-      ${eq?`<button class="cbtn small wood" disabled>ใส่อยู่</button>`:own?`<button class="cbtn small blue" data-act="equipW" data-v="${w.id}">ใส่</button>`:`<button class="cbtn small gold" data-act="buyW" data-v="${w.id}" ${save.gold<w.price?'disabled':''}>${ICON.coin} ${w.price}</button>`}</div></div>`;
+      <div class="stat">ATK ${w.atk}</div><p>${esc(w.perkTh||'อาวุธพื้นฐาน')}</p>${own ? eqBtn(eq,'equipW',w.id) : buyBtn('buyW',w.id,w.price)}</div></div>`;
   });
-  if(t==='shield') SHIELDS.forEach(s=>{
-    const own = save.shields.includes(s.id), eq = save.eq.shield===s.id;
+  if(t==='armor') ARMORS.forEach(s=>{
+    const own = save.armors.includes(s.id), eq = save.eq.armor===s.id;
     h += `<div class="panel item ${eq?'equipped':''}"><div class="pic">${s.id==='none'?'<span class="sub">—</span>':shieldIcon(s.id)}</div><div class="meta"><h4>${esc(s.name)}<small>${esc(s.th)}</small></h4>
-      <div class="stat">กันดาเมจ ${Math.round(s.block*100)}%</div><p>${s.id==='none'?'ถอดโล่ออก':'ลดดาเมจจากการโจมตีของมอนสเตอร์'}</p>
-      ${eq?`<button class="cbtn small wood" disabled>ใส่อยู่</button>`:own?`<button class="cbtn small blue" data-act="equipS" data-v="${s.id}">ใส่</button>`:`<button class="cbtn small gold" data-act="buyS" data-v="${s.id}" ${save.gold<s.price?'disabled':''}>${ICON.coin} ${s.price}</button>`}</div></div>`;
+      <div class="stat">กันดาเมจ ${Math.round(s.block*100)}%${s.hp?` · HP +${s.hp}`:''}</div><p>${s.id==='none'?'ชุดพื้นฐาน ไม่มีเกราะ':'ลดดาเมจจากมอนสเตอร์ และเพิ่ม HP สูงสุด'}</p>${own ? eqBtn(eq,'equipA',s.id) : buyBtn('buyA',s.id,s.price)}</div></div>`;
   });
+  if(t==='acc'){
+    h += `<p class="sub" style="grid-column:1/-1;margin:0">ใส่ไอเทมเสริมได้ 2 ชิ้นพร้อมกัน</p>`;
+    ACCESSORIES.forEach(x=>{
+      const own = save.accs.includes(x.id), on = hasAcc(x.id);
+      h += `<div class="panel item ${on?'equipped':''}"><div class="pic">${ACC_ART[x.id]}</div><div class="meta"><h4>${esc(x.name)}<small>${esc(x.th)}</small></h4><p>${esc(x.desc)}</p>
+        ${!own ? buyBtn('buyX',x.id,x.price) : on ? `<button class="cbtn small wood" data-act="unequipX" data-v="${x.id}">ถอดออก</button>` : `<button class="cbtn small blue" data-act="equipX" data-v="${x.id}">ใส่</button>`}</div></div>`;
+    });
+  }
   if(t==='potion') Object.entries(POTIONS).forEach(([k,p])=>{
-    h += `<div class="panel item"><div class="pic">${ICON[p.icon]}</div><div class="meta"><h4>${esc(p.name)}<small>${esc(p.th)} · มีอยู่ ${save.potions[k]||0}</small></h4><p>${esc(p.desc)}</p>
-      <button class="cbtn small gold" data-act="buyP" data-v="${k}" ${save.gold<p.price?'disabled':''}>${ICON.coin} ${p.price}</button></div></div>`;
+    h += `<div class="panel item"><div class="pic">${ICON[p.icon]}</div><div class="meta"><h4>${esc(p.name)}<small>${esc(p.th)} · มีอยู่ ${save.potions[k]||0}</small></h4><p>${esc(p.desc)}</p>${buyBtn('buyP',k,p.price)}</div></div>`;
   });
   if(t==='up'){
     const max = save.hpLv>=10;
     h += `<div class="panel item"><div class="pic">${ICON.heart}</div><div class="meta"><h4>Heart Up<small>เพิ่ม HP สูงสุด · เลเวล ${save.hpLv}/10</small></h4>
-      <div class="stat">HP ${maxHp()}${max?'':` → ${maxHp()+25}`}</div><p>HP สูงขึ้นถาวร +25</p>
+      <div class="stat">HP ${maxHp()}</div><p>HP พื้นฐานสูงขึ้นถาวร +25</p>
       ${max?`<button class="cbtn small wood" disabled>สูงสุดแล้ว</button>`:`<button class="cbtn small gold" data-act="buyHp" ${save.gold<hpPrice()?'disabled':''}>${ICON.coin} ${hpPrice()}</button>`}</div></div>`;
   }
   return h + `</div>`;
@@ -1072,7 +1310,8 @@ function renderShop(){
 /* ------------------------------ hero ------------------------------ */
 function renderHero(){
   const st = save.stats, t = ui.heroTab;
-  let h = `<div class="panel hero-card">${heroStandalone(save.eq)}<div class="st"><b>${esc(save.name)}</b><div class="sub">${esc(W(save.eq.weapon).name)} · ${esc(SH(save.eq.shield).name)}</div></div></div>
+  let h = `<div class="panel hero-card">${heroStandalone(save.eq)}<div class="st"><b>${esc(save.name)}</b><div class="sub">${esc(CH(save.eq.char).th)}</div>
+      <div class="eq-list"><span>⚔ ${esc(W(save.eq.weapon).th)} (ATK ${W(save.eq.weapon).atk})</span><span>🛡 ${esc(AR(save.eq.armor).th)} (${Math.round(AR(save.eq.armor).block*100)}%)</span>${save.acc.map(a=>a?`<span>${ACC_ART[a]} ${esc(ACC(a).th)}</span>`:'').join('')}</div></div></div>
     <div class="seg" style="margin-top:14px">${[['stats','สถิติ'],['book','สมุดคำศัพท์']].map(([k,l])=>`<button class="${t===k?'on':''}" data-act="heroTab" data-v="${k}">${l}</button>`).join('')}</div>`;
   if(t==='stats'){
     h += `<div class="stats">
@@ -1115,6 +1354,9 @@ function howtoHtml(){
     <li>💡 คำใบ้ใช้ได้ 3 ครั้งต่อด่าน · ยาแดงฟื้น HP · ยาม่วงคูณดาเมจ x2</li>
     <li>ตัวอักษรที่มีอัญมณี: ${gemSvg('gold')} ได้ทอง ${gemSvg('heart')} ฟื้น HP ${gemSvg('gem')} ดาเมจ +50%</li>
     <li>คำที่เป็น <b>คำศัพท์เป้าหมาย</b> ⭐ ได้ดาเมจเพิ่ม 50% และบันทึกลงสมุดคำศัพท์</li>
+    <li>คำยาว 4 ตัวขึ้นไปจะมี<b>ออร่า</b> ยิ่งยาวยิ่งเท่และยิ่งแรง</li>
+    <li>คำหยาบใช้ได้ 🤬 ดาเมจ x2 แต่<b>สะท้อนเข้าตัวเอง 30% ของ HP</b> — so rude!</li>
+    <li>ร้านค้ามีตัวละคร อาวุธ ชุดเกราะ และไอเทมเสริม (ใส่ได้ 2 ชิ้น)</li>
     <li>คีย์บอร์ด: พิมพ์ตัวอักษร · Backspace ลบ · Enter โจมตี · Space สลับตัวอักษร</li></ol>
     <button class="cbtn gold block" data-act="closeModal">เข้าใจแล้ว!</button>`;
 }
@@ -1145,15 +1387,21 @@ function balanceTiles(tiles, freshOnly){
 function startStage(ch, n){
   loadDict();
   const st = buildStage(ch, n);
-  ui.bat = { stage:st, idx:0, hp:maxHp(), max:maxHp(), score:0, kills:0, goldGain:0, busy:true, sel:[], tiles:[], hints:3, power:false,
-    recent:[], last:null, farX:0, nearX:0, words:0, bestWord:'', bestDmg:0, over:false, paused:false };
+  ui.bat = { stage:st, idx:0, hp:maxHp(), max:maxHp(), score:0, kills:0, goldGain:0, busy:true, sel:[], tiles:[], hints:3+(hasAcc('lens')?1:0), power:false,
+    recent:[], last:null, farX:0, nearX:0, words:0, bestWord:'', bestDmg:0, over:false, paused:false, phoenix:hasAcc('phoenix') };
   const b = ui.bat;
   for(let i=0;i<15;i++) b.tiles.push(newTile(st.s));
-  balanceTiles(b.tiles);
+  balanceTiles(b.tiles); applyAura();
   ui.screen = 'battle';
   buildBattleDom();
   intro();
 }
+function applyAura(){
+  const b = ui.bat; if(!b || !hasAcc('auraRing')) return;
+  let c = b.tiles.filter(t=>t.aura && !t.stone).length, guard = 0;
+  while(c<2 && guard++<20){ const f = b.tiles.filter(t=>!t.aura && !t.stone && !t.sel); if(!f.length) break; f[rint(0,f.length-1)].aura = true; c++; }
+}
+const goldMul = ()=>hasAcc('luckyCoin') ? 1.35 : 1;
 function curEnemy(){ const b=ui.bat; return b && b.stage.enemies[b.idx]; }
 
 function buildBattleDom(){
@@ -1161,12 +1409,12 @@ function buildBattleDom(){
   $('#app').innerHTML = `<div class="battle">
     <div class="stage" id="stage">${sceneSVG(st.theme)}
       <div class="hud">
-        <div class="me"><div class="face"><svg viewBox="-40 -150 80 80">${heroSVG(save.eq)}</svg></div><div class="bar"><i id="hpBar"></i><span id="hpTxt"></span></div></div>
+        <div class="me"><div class="face"><svg viewBox="${CHAR_FACE[save.eq.char]||CHAR_FACE.pip}">${charSVG(save.eq)}</svg></div><div class="bar"><i id="hpBar"></i><span id="hpTxt"></span></div></div>
         <div class="score" id="score">0</div>
         <div class="right"><span class="pill">${ICON.skull}<b id="kills">0/${st.enemies.length}</b></span><span class="pill">${ICON.coin}<b id="goldH">${save.gold}</b></span><button class="pause" data-act="pause" aria-label="หยุดเกม">II</button></div>
       </div>
       <div class="tray-msg" id="trayMsg"></div>
-      <div class="tray" id="tray"></div>
+      <div class="tray" id="tray"></div><div class="hud-acc">${save.acc.filter(Boolean).map(a=>`<span title="${esc(ACC(a).th)}">${ACC_ART[a]}</span>`).join('')}</div>
     </div>
     <div class="dock">
       <div class="panel left"><div class="recent"><h5>คำล่าสุด</h5><div id="recent"></div></div><div class="lastword" id="lastWord"></div></div>
@@ -1187,7 +1435,7 @@ function buildBattleDom(){
   $('#overlay').innerHTML='';
   // actors
   const act = $('#actors');
-  act.innerHTML = `<g id="enemyQ"></g><g id="enemyG"></g><g id="heroG"><g class="actor idle" id="heroA">${heroSVG(save.eq)}</g></g>`;
+  act.innerHTML = `<g id="enemyQ"></g><g id="enemyG"></g><g id="heroG"><g class="actor idle" id="heroA">${charSVG(save.eq)}</g></g>`;
   setT($('#heroG'), -120, FLOOR_Y);
   placeEnemies(true);
   updateHud(); renderTiles(); renderTray(); renderSide(); renderEnemyPanel();
@@ -1240,7 +1488,7 @@ function renderTiles(){
   const b = ui.bat, el = $('#tiles');
   el.innerHTML = b.tiles.map((t,i)=>{
     const p = t.l==='qu'?4:pts(t.l);
-    return `<button class="tile ${t.l==='qu'?'qu':''} ${t.sel?'sel':''} ${t.stone?'stone':''} ${t.fresh?'drop':''} ${t.hint?'hint':''}" data-act="tile" data-i="${i}" ${t.stone?'disabled':''} style="${t.fresh?`animation-delay:${(i%5)*30}ms`:''}">
+    return `<button class="tile ${t.l==='qu'?'qu':''} ${t.sel?'sel':''} ${t.stone?'stone':''} ${t.aura&&!t.stone?'aura':''} ${t.fresh?'drop':''} ${t.hint?'hint':''}" data-act="tile" data-i="${i}" ${t.stone?'disabled':''} style="${t.fresh?`animation-delay:${(i%5)*30}ms`:''}">
       ${t.l==='qu'?'Qu':t.l}${t.stone?`<span class="stn">${t.stone}</span>`:''}<span class="pips p${p}">${'<i></i>'.repeat(Math.min(p,3))}</span>${t.gem&&!t.stone?gemSvg(t.gem):''}</button>`;
   }).join('');
   b.tiles.forEach(t=>t.fresh=false);
@@ -1251,20 +1499,24 @@ function evalWord(){
   const len = w.length;
   if(n===0) return { w, state:'empty' };
   if(len<3) return { w, state:'short' };
-  if(!DICT.has(w)) return { w, state:'bad' };
+  const rude = RUDE.has(w);
+  if(!rude && !DICT.has(w)) return { w, state:'bad' };
   const wp = W(save.eq.weapon);
-  let p = 0, gems = 0;
+  let p = 0, gems = 0, auras = 0;
   b.sel.forEach(i=>{ const t=b.tiles[i]; let v = t.l==='qu'?4:pts(t.l);
     if(wp.perk==='vowel' && VOWELS.has(t.l)) v += 1;
     if(wp.perk==='rare' && ['j','k','qu','v','x','z','w','y','f'].includes(t.l)) v *= 2;
-    if(t.gem==='gem') gems++; p += v; });
+    if(t.gem==='gem') gems++; if(t.aura && !t.stone) auras++; p += v; });
   let mult = 1 + Math.max(0,len-4)*.25;
   const notes = [];
   if(wp.perk==='long' && len>=6){ mult *= 1.4; notes.push('ขวาน +40%'); }
   if(wp.perk==='burn') mult *= 1.1;
   if(gems){ mult *= Math.pow(1.5,gems); notes.push(`อัญมณี x${Math.pow(1.5,gems).toFixed(1)}`); }
-  const m = meaning(w), bank = !!BANK[w] || (m && m.bank);
-  if(bank){ mult *= 1.5; notes.push('คำศัพท์เป้าหมาย +50%'); }
+  if(auras){ mult *= Math.pow(1.35,auras); notes.push(`ออร่า x${Math.pow(1.35,auras).toFixed(2)}`); }
+  if(hasAcc('sage') && len>=5){ mult *= 1.25; notes.push('หินปราชญ์ +25%'); }
+  const m = rude ? null : meaning(w), bank = !rude && (!!BANK[w] || (m && m.bank));
+  if(bank){ const bm = hasAcc('lens') ? 2 : 1.5; mult *= bm; notes.push(`คำศัพท์เป้าหมาย x${bm}`); }
+  if(rude){ mult *= 2; }
   if(b.power){ mult *= 2; notes.push('ยาพลัง x2'); }
   if(e){
     if(e.traits.includes('weak') && w.includes(e.weak)){ mult *= 2; notes.push(`จุดอ่อน ${e.weak.toUpperCase()} x2`); }
@@ -1272,14 +1524,21 @@ function evalWord(){
     if(e.traits.includes('armor4') && len<=4){ mult *= .5; notes.push('โปร่งแสง ครึ่งเดียว'); }
   }
   const dmg = Math.max(1, Math.round(p * mult * wp.atk/5));
-  return { w, state:'ok', dmg, bank, meaning:m, notes };
+  const selfDmg = rude ? Math.round(ui.bat.max*.3) : 0;
+  return { w, state:'ok', dmg, bank, meaning:m, notes, rude, selfDmg };
 }
 function renderTray(){
   const b = ui.bat, r = evalWord(), tray = $('#tray');
-  tray.className = 'tray ' + (r.state==='ok' ? (r.bank?'bank':'good') : r.state==='bad'?'bad':'');
-  tray.innerHTML = b.sel.map((i,k)=>{ const l=b.tiles[i].l; return `<button class="t ${l==='qu'?'qu':''}" data-act="untray" data-k="${k}">${l==='qu'?'Qu':l}</button>`; }).join('');
+  const lv = r.state==='ok' && r.w.length>=4 ? Math.min(5, r.w.length-3) : 0;
+  tray.className = 'tray ' + (r.state==='ok' ? (r.rude?'toxic':r.bank?'bank':'good') : r.state==='bad'?'bad':'') + (lv&&!r.rude?` lv${lv}`:'');
+  const embers = r.rude ? 10 : lv ? lv*3 : 0;
+  tray.innerHTML = (embers ? `<div class="aura-fx">${Array.from({length:embers},(_,k)=>`<i style="left:${(k*97)%100}%;animation-delay:${(k*.137)%1.1}s;animation-duration:${.8+(k%4)*.25}s"></i>`).join('')}</div>` : '')
+    + b.sel.map((i,k)=>{ const l=b.tiles[i].l; return `<button class="t ${l==='qu'?'qu':''}" data-act="untray" data-k="${k}">${l==='qu'?'Qu':l}</button>`; }).join('');
+  if(r.rude && !b.rudeWarned){ b.rudeWarned = true; sfx.toxic(); }
+  if(!r.rude) b.rudeWarned = false;
   const msg = $('#trayMsg');
-  msg.textContent = r.state==='bad' ? 'ไม่พบคำนี้' : r.state==='short' ? 'อย่างน้อย 3 ตัวอักษร' : r.state==='ok' ? (r.notes.length? r.notes.join(' · ') : (r.meaning?r.meaning.thai:'')) : '';
+  msg.className = 'tray-msg' + (r.rude ? ' toxic' : lv>=3 ? ' epic' : '');
+  msg.textContent = r.state==='bad' ? 'ไม่พบคำนี้' : r.state==='short' ? 'อย่างน้อย 3 ตัวอักษร' : r.state==='ok' ? (r.rude ? `🤬 คำหยาบ! ดาเมจ x2 แต่เจ็บตัวเอง -${r.selfDmg} HP` : r.notes.length? r.notes.join(' · ') : (r.meaning?r.meaning.thai:(lv>=3?'สุดยอด!':''))) : '';
   const btn = $('#bAtk');
   btn.disabled = r.state!=='ok' || b.busy;
   btn.classList.toggle('ready', r.state==='ok' && !b.busy);
@@ -1288,10 +1547,10 @@ function renderTray(){
 }
 function renderSide(){
   const b = ui.bat;
-  $('#recent').innerHTML = b.recent.slice(0,4).map(r=>`<div class="rw"><span>${esc(r.w.toUpperCase())}</span><em>${r.dmg}</em></div>`).join('') || `<div class="sub">ยังไม่มี</div>`;
+  $('#recent').innerHTML = b.recent.slice(0,4).map(r=>`<div class="rw"><span${r.rude?' style="color:#9dff4a"':''}>${esc(r.w.toUpperCase())}</span><em>${r.dmg}</em></div>`).join('') || `<div class="sub">ยังไม่มี</div>`;
   const L = b.last;
   $('#lastWord').innerHTML = L ? `<div class="lw"><b>${esc(L.w)}</b><button class="spk" data-act="say" data-v="${esc(L.w)}" aria-label="ฟังเสียง">🔊</button></div>
-    <div class="th">${L.meaning?esc(L.meaning.thai)+(L.meaning.base!==L.w?` <span class="sub">(${esc(L.meaning.base)})</span>`:''):'<span class="sub">คำถูกต้อง ✓</span>'}${L.bank?' ⭐':''}</div>`
+    <div class="th">${L.rude?'<span style="color:#9dff4a">🤬 คำหยาบ — so rude!</span>':L.meaning?esc(L.meaning.thai)+(L.meaning.base!==L.w?` <span class="sub">(${esc(L.meaning.base)})</span>`:''):'<span class="sub">คำถูกต้อง ✓</span>'}${L.bank?' ⭐':''}</div>`
     : `<div class="sub">แตะตัวอักษรเพื่อสะกดคำ แล้วกดดาบโจมตี</div>`;
 }
 function renderEnemyPanel(){
@@ -1308,8 +1567,16 @@ function tapTile(i){
   const b = ui.bat, t = b.tiles[i]; if(b.busy || t.stone) return;
   b.tiles.forEach(x=>x.hint=false);
   if(t.sel){ const k = b.sel.indexOf(i); b.sel.splice(k,1); t.sel=false; sfx.untap(); }
-  else { if(b.sel.length>=12) return; b.sel.push(i); t.sel=true; sfx.tap(b.sel.length); }
+  else { if(b.sel.length>=12) return; b.sel.push(i); t.sel=true; sfx.letter(b.sel.length); }
   renderTiles(); renderTray();
+  if(!t.sel) return;
+  const n = b.sel.length;
+  if(n>=4){
+    const tray = $('#tray'); tray.style.setProperty('--q', Math.min(9, (n-3)*1.6)+'px');
+    tray.classList.remove('quake'); void tray.offsetWidth; tray.classList.add('quake');
+    if(n>=6){ const s=$('#stage'); s.style.setProperty('--sq', Math.min(6,(n-5)*1.5)+'px'); s.classList.remove('quiver'); void s.offsetWidth; s.classList.add('quiver'); }
+    if(navigator.vibrate) try{ navigator.vibrate(Math.min(90, 12+(n-4)*14)); }catch(e){}
+  }
 }
 function untray(k){
   const b = ui.bat; if(b.busy) return;
@@ -1364,46 +1631,69 @@ async function doAttack(){
   if(b.busy || r.state!=='ok' || !e) return;
   b.busy = true; renderTray();
   const wp = W(save.eq.weapon);
-  if(save.settings.autoSpeak) speak(r.w);
+  const lv = r.w.length>=4 ? Math.min(5, r.w.length-3) : 0;
+  if(r.rude) speakRude(); else if(save.settings.autoSpeak) speak(r.w);
   // record
   b.words++; save.stats.words++; save.stats.damage += r.dmg;
-  if(r.w.length > (save.stats.longest||'').length) save.stats.longest = r.w;
-  if(r.dmg > save.stats.bestDmg){ save.stats.bestDmg = r.dmg; save.stats.bestWord = r.w; }
+  if(!r.rude){
+    if(r.w.length > (save.stats.longest||'').length) save.stats.longest = r.w;
+    if(r.dmg > save.stats.bestDmg){ save.stats.bestDmg = r.dmg; save.stats.bestWord = r.w; }
+  }
   if(r.meaning){ const k = r.meaning.base; const bk = save.book[k] || { th:r.meaning.thai, n:0, bank:r.meaning.bank }; bk.n++; bk.t = Date.now(); save.book[k]=bk; }
-  b.recent.unshift({ w:r.w, dmg:r.dmg }); b.last = { w:r.w, meaning:r.meaning, bank:r.bank };
+  b.recent.unshift({ w:r.w, dmg:r.dmg, rude:r.rude }); b.last = { w:r.w, meaning:r.meaning, bank:r.bank, rude:r.rude };
   if(b.power){ b.power=false; }
   // gem effects
   let goldGem=0, healGem=0;
-  b.sel.forEach(i=>{ const t=b.tiles[i]; if(t.gem==='gold') goldGem+=2+Math.floor(b.stage.s/4); if(t.gem==='heart') healGem+=Math.round(b.max*.05); });
-  // animate hero attack
-  await heroAttack();
+  b.sel.forEach(i=>{ const t=b.tiles[i]; if(t.gem==='gold') goldGem+=Math.round((2+Math.floor(b.stage.s/4))*goldMul()); if(t.gem==='heart') healGem+=Math.round(b.max*.05); });
+  // aura burst + attack animation
+  if(r.rude) auraBurst(0, true); else if(lv) auraBurst(lv, false);
+  if(r.rude) floatText('SO RUDE!', HERO_X, FLOOR_Y-190, '#9dff4a', 34, true);
+  await heroAttack(lv, r.rude);
   e.hp -= r.dmg; b.score += r.dmg;
   if(wp.perk==='burn'){ e.burn = 2; e.burnDmg = Math.max(1, Math.round(r.dmg*.3)); }
   const stunned = wp.perk==='stun' && Math.random()<.25;
   if(stunned) e.stun = true;
-  sfx.hit(r.dmg>=30);
-  enemyHurt(r.dmg, r.dmg>=Math.max(30,e.maxHp*.35));
+  sfx.hit(r.dmg>=30 || lv>=3 || r.rude);
+  enemyHurt(r.dmg, r.dmg>=Math.max(30,e.maxHp*.35) || lv>=4 || r.rude);
   if(r.bank) floatText('⭐ WORD!', EN_X-10, FLOOR_Y-e.h*e.sc-60, '#ffe14a', 26);
   if(stunned) floatText('มึนงง!', EN_X, FLOOR_Y-e.h*e.sc-30, '#fff', 22);
   if(goldGem){ save.gold += goldGem; b.goldGain += goldGem; sfx.coin(.1); floatText(`+${goldGem}`, HERO_X, FLOOR_Y-170, '#ffcf4a', 24); }
   if(healGem){ b.hp = Math.min(b.max, b.hp+healGem); floatText(`+${healGem}`, HERO_X-30, FLOOR_Y-150, '#6ef08a', 24); }
+  if(hasAcc('fang')){ const h = Math.max(1, Math.round(r.dmg*.12)); b.hp = Math.min(b.max, b.hp+h); floatText(`+${h}`, HERO_X-40, FLOOR_Y-140, '#6ef08a', 22); }
   // consume tiles
   const used = b.sel.slice(); b.sel=[];
   used.forEach(i=>{ b.tiles[i] = newTile(b.stage.s); });
-  balanceTiles(b.tiles, true);
+  balanceTiles(b.tiles, true); applyAura();
   updateEnemyHp(); updateHud(); renderTiles(); renderTray(); renderSide(); renderEnemyPanel(); persist();
   await sleep(380);
+  // toxic backlash from rude words
+  if(r.rude){
+    await sleep(200);
+    b.hp -= r.selfDmg; sfx.toxic(); heroHurt(r.selfDmg, true, true);
+    updateHud(); await sleep(500);
+    if(await checkHeroDeath()) return;
+  }
   if(e.hp<=0){ await enemyDies(); return; }
   await enemyTurn();
+}
+async function checkHeroDeath(){
+  const b = ui.bat; if(b.hp>0) return false;
+  if(b.phoenix){
+    b.phoenix = false; b.hp = Math.round(b.max*.4);
+    sfx.heal(); sfx.power(); auraBurst(3, false, '#ff8a2a'); banner('REVIVE!', 'ขนนกฟีนิกซ์ช่วยชีวิต');
+    floatText(`+${b.hp}`, HERO_X, FLOOR_Y-170, '#ffb04a', 34, true); updateHud(); await sleep(900); return false;
+  }
+  await heroDies(); return true;
 }
 async function doShuffle(){
   const b = ui.bat; if(b.busy) return;
   b.busy = true; clearSelSilent(); sfx.shuffle();
   b.tiles = b.tiles.map(t=>t.stone ? t : newTile(b.stage.s));
-  balanceTiles(b.tiles, true);
+  balanceTiles(b.tiles, true); applyAura();
   renderTiles(); renderTray();
   floatText('สลับ!', HERO_X, FLOOR_Y-170, '#8fe0ff', 24);
   await sleep(400);
+  if(hasAcc('boots')){ floatText('💨 ไม่เสียเทิร์น', HERO_X, FLOOR_Y-200, '#fff', 20); endTurn(); return; }
   await enemyTurn();
 }
 function clearSelSilent(){ const b=ui.bat; b.sel.forEach(i=>b.tiles[i].sel=false); b.sel=[]; }
@@ -1428,18 +1718,20 @@ async function enemyTurn(){
     e.charge = 0;
   }
   const heavy = e.traits.includes('heavy');
-  let dmg = Math.round(e.atk * (heavy?2.2:1) * rnd(.85,1.15) * (1 - SH(save.eq.shield).block));
+  let dmg = Math.round(e.atk * (heavy?2.2:1) * rnd(.85,1.15) * (1 - AR(save.eq.armor).block) * CH(save.eq.char).dmgTaken);
   dmg = Math.max(1, dmg);
-  await enemyAttackAnim();
+  if(e.caster) await casterAttackAnim(); else await enemyAttackAnim();
   b.hp -= dmg; sfx.hurt(); heroHurt(dmg, heavy);
+  if(hasAcc('thorn')){ const rf = Math.max(1, Math.round(dmg*.3)); e.hp -= rf; b.score += rf; setTimeout(()=>floatText(`🌵${rf}`, EN_X-10, FLOOR_Y-e.h*e.sc-10, '#b8ff8a', 24), 250); updateEnemyHp(); }
   if(e.traits.includes('vamp')){ const h=Math.round(dmg*.5); e.hp=Math.min(e.maxHp,e.hp+h); floatText(`+${h}`, EN_X+30, FLOOR_Y-e.h*e.sc-10, '#6ef08a', 22); updateEnemyHp(); }
   if(e.traits.includes('stone')){
     const c = b.tiles.map((t,i)=>i).filter(i=>!b.tiles[i].stone && !b.tiles[i].sel);
     if(c.length){ const i = c[rint(0,c.length-1)]; b.tiles[i].stone = 2; b.tiles[i].gem = null; sfx.stone(); }
   }
-  updateHud(); renderEnemyPanel();
+  applyAura(); updateHud(); renderEnemyPanel();
   await sleep(420);
-  if(b.hp<=0){ await heroDies(); return; }
+  if(await checkHeroDeath()) return;
+  if(e.hp<=0){ await enemyDies(); return; }
   endTurn();
 }
 function endTurn(){ const b=ui.bat; b.busy=false; renderTiles(); renderTray(); updateHud(); renderEnemyPanel(); }
@@ -1450,9 +1742,13 @@ async function enemyDies(){
   const g = $('#enemyG');
   sfx.poof();
   poof(EN_X, FLOOR_Y - e.h*e.sc*.5, e.boss?1.6:1);
-  g.animate([{ transform:`translate(${EN_X}px,${FLOOR_Y}px) scale(1)`, opacity:1 },{ transform:`translate(${EN_X+20}px,${FLOOR_Y}px) scale(1.2,.2)`, opacity:0 }], { duration:450, easing:'ease-in', fill:'forwards' });
+  const body = g.querySelector('.enemy');
+  if(body) body.animate(e.caster
+      ? [{ transform:'translate(0,0) scale(1)', opacity:1, filter:'brightness(1)' },{ transform:'translate(0,-40px) scale(.9,1.3)', opacity:.6, filter:'brightness(2.5) hue-rotate(60deg)', offset:.5 },{ transform:'translate(0,-90px) scale(.3,1.6)', opacity:0, filter:'brightness(3)' }]
+      : [{ transform:'translate(0,0) scale(1)', opacity:1 },{ transform:'translate(20px,0) scale(1.2,.2)', opacity:0 }],
+    { duration:e.caster?1000:450, easing:'ease-in', fill:'forwards' });
   // coins
-  const gold = e.gold; save.gold += gold; b.goldGain += gold;
+  const gold = Math.round(e.gold*goldMul()); save.gold += gold; b.goldGain += gold;
   for(let k=0;k<Math.min(8,3+Math.floor(gold/5));k++) coinFly(EN_X+rint(-30,30), FLOOR_Y-40, k*60);
   for(let k=0;k<4;k++) sfx.coin(.15+k*.09);
   floatText(`+${gold}`, EN_X, FLOOR_Y-e.h*e.sc-40, '#ffcf4a', 32);
@@ -1483,7 +1779,7 @@ async function heroDies(){
 async function stageClear(){
   const b = ui.bat, st = b.stage;
   const pct = b.hp/b.max, stars = pct>.6?3:pct>.3?2:1;
-  const bonus = 15 + st.s*4;
+  const bonus = Math.round((15 + st.s*4)*goldMul());
   save.gold += bonus; b.goldGain += bonus;
   const first = st.s === save.cleared;
   if(first) save.cleared = st.s+1;
@@ -1505,20 +1801,58 @@ async function stageClear(){
 /* ------------------------------ animation ------------------------------ */
 function anim(el, frames, opts){ return el ? el.animate(frames, opts).finished.catch(()=>{}) : Promise.resolve(); }
 const tr = (x,y,s)=>`translate(${x}px,${y}px)${s&&s!==1?` scale(${s})`:''}`;
-async function heroAttack(){
+async function heroAttack(lv, rude){
   const g = $('#heroG'), arm = document.querySelector('#heroA .armF');
-  sfx.swing();
+  sfx.swing(); ui.slashLv = lv||0; ui.slashRude = !!rude;
   const p1 = anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X+70,FLOOR_Y-6),offset:.45},{transform:tr(HERO_X+84,FLOOR_Y),offset:.6},{transform:tr(HERO_X,FLOOR_Y)}], { duration:560, easing:'ease-in-out' });
   const p2 = anim(arm, [{transform:'rotate(0deg)'},{transform:'rotate(-55deg)',offset:.35},{transform:'rotate(110deg)',offset:.6},{transform:'rotate(90deg)',offset:.75},{transform:'rotate(0deg)'}], { duration:560, easing:'ease-in-out' });
   await sleep(330);
   slash();
   await Promise.all([p1,p2]).catch(()=>{});
 }
+const AURA_COL = ['#ffe27a','#6fe6ff','#4a9dff','#ffb02e','#ff5ad8','#c77dff'];
+function auraBurst(lv, toxic, override){
+  const fx = $('#fx'); if(!fx) return;
+  const cols = toxic ? ['#7fff3a','#b04aff'] : override ? [override] : lv>=5 ? ['#ff5a5a','#ffcf4a','#5aff7a','#5ac8ff','#c77dff'] : [AURA_COL[lv]];
+  const cx = HERO_X, cy = FLOOR_Y-70, n = toxic ? 3 : Math.max(1, Math.min(3, lv-1));
+  for(let k=0;k<n;k++){
+    const e = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    e.setAttribute('rx', 46); e.setAttribute('ry', 78); e.setAttribute('fill','none'); e.setAttribute('stroke', cols[k%cols.length]); e.setAttribute('stroke-width', 8); fx.appendChild(e);
+    anim(e, [{transform:tr(cx,cy)+' scale(.6)',opacity:.9},{transform:tr(cx,cy)+' scale(1.6)',opacity:0}], { duration:700, delay:k*140, easing:'ease-out' }).then(()=>e.remove());
+  }
+  const flames = toxic ? 14 : lv>=3 ? 6+lv*3 : lv*2;
+  for(let k=0;k<flames;k++){
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d','M-6,0 Q-8,-14 0,-24 Q8,-14 6,0 Z'); p.setAttribute('fill', cols[k%cols.length]); p.setAttribute('opacity','.85'); fx.appendChild(p);
+    const x = cx + rint(-44,44), y = FLOOR_Y - rint(0,30), s = rnd(.8,1.8);
+    anim(p, [{transform:tr(x,y)+` scale(${s*.3})`,opacity:0},{transform:tr(x,y-30)+` scale(${s})`,opacity:.9,offset:.3},{transform:tr(x+rint(-10,10),y-rint(90,150))+` scale(${s*.2})`,opacity:0}], { duration:900+rint(0,400), delay:rint(0,300), easing:'ease-out' }).then(()=>p.remove());
+  }
+  if(lv>=3 || toxic) heroFlash(cols[0]);
+  if(lv>=4 || toxic) shake(false);
+}
+async function casterAttackAnim(){
+  const e = curEnemy(), g = $('#enemyG'), arm = g && g.querySelector('.armAtk'), fx = $('#fx');
+  if(arm) anim(arm, [{transform:'rotate(0)'},{transform:'rotate(28deg)',offset:.4},{transform:'rotate(28deg)',offset:.8},{transform:'rotate(0)'}], { duration:900 });
+  anim(g, [{transform:tr(EN_X,FLOOR_Y)},{transform:tr(EN_X,FLOOR_Y-14)},{transform:tr(EN_X,FLOOR_Y)}], { duration:900 });
+  sfx.power();
+  await sleep(380);
+  const col = (e.pal && e.pal.c) || '#7fff5a';
+  const orb = document.createElementNS('http://www.w3.org/2000/svg','g');
+  orb.innerHTML = `<circle r="26" fill="${col}" opacity=".3"/><circle r="15" fill="${col}" stroke="#2a1a10" stroke-width="3"/><circle cx="-4" cy="-3" r="3" fill="#10130e"/><circle cx="5" cy="-3" r="3" fill="#10130e"/><path d="M-4,6 L4,6" stroke="#10130e" stroke-width="2.5"/>`;
+  fx.appendChild(orb);
+  const sx = EN_X-70, sy = FLOOR_Y - e.h*e.sc - 10, hx = HERO_X+15, hy = FLOOR_Y-80;
+  slide(900,200,.45,'sawtooth',.06);
+  await anim(orb, [{transform:tr(sx,sy)+' scale(.3)'},{transform:tr((sx+hx)/2,sy-40)+' scale(1.1)',offset:.5},{transform:tr(hx,hy)+' scale(1)'}], { duration:480, easing:'ease-in' });
+  orb.remove();
+  for(let k=0;k<8;k++){ const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('r',rint(5,10)); c.setAttribute('fill',col); fx.appendChild(c);
+    const a=k/8*Math.PI*2; anim(c,[{transform:tr(hx,hy),opacity:1},{transform:tr(hx+Math.cos(a)*55,hy+Math.sin(a)*55),opacity:0}],{duration:420,easing:'ease-out'}).then(()=>c.remove()); }
+}
 function slash(){
   const e = curEnemy(); if(!e) return;
   const fx = $('#fx'), y = FLOOR_Y - e.h*e.sc*.55;
   const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-  g.innerHTML = `<path d="M-50,-50 Q10,-10 50,50" stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round" opacity=".9"/><path d="M-50,-50 Q10,-10 50,50" stroke="#ffe27a" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  const lv = ui.slashLv||0, col = ui.slashRude ? '#7fff3a' : AURA_COL[lv] || '#ffe27a', w = 10 + lv*4;
+  g.innerHTML = `<path d="M-50,-50 Q10,-10 50,50" stroke="${col}" stroke-width="${w+10}" fill="none" stroke-linecap="round" opacity="${lv||ui.slashRude?.45:0}"/><path d="M-50,-50 Q10,-10 50,50" stroke="#fff" stroke-width="${w}" fill="none" stroke-linecap="round" opacity=".9"/><path d="M-50,-50 Q10,-10 50,50" stroke="${col}" stroke-width="4" fill="none" stroke-linecap="round"/>${lv>=3?`<path d="M50,-50 Q-10,-10 -50,50" stroke="#fff" stroke-width="${w-2}" fill="none" stroke-linecap="round" opacity=".85"/><path d="M50,-50 Q-10,-10 -50,50" stroke="${col}" stroke-width="4" fill="none" stroke-linecap="round"/>`:''}`;
   g.style.transform = tr(EN_X, y); fx.appendChild(g);
   anim(g, [{opacity:1, transform:tr(EN_X,y)+' scale(.4)'},{opacity:1, transform:tr(EN_X,y)+' scale(1.1)',offset:.4},{opacity:0, transform:tr(EN_X,y)+' scale(1.2)'}], { duration:300 }).then(()=>g.remove());
 }
@@ -1543,10 +1877,11 @@ async function enemyCharge(){
   sfx.power();
   await anim(inner, [{filter:'brightness(1)'},{filter:'brightness(1.6) drop-shadow(0 0 8px #ff4a2a)'},{filter:'brightness(1)'},{filter:'brightness(1.6) drop-shadow(0 0 8px #ff4a2a)'},{filter:'brightness(1)'}], { duration:800 });
 }
-function heroHurt(dmg, big){
+function heroHurt(dmg, big, toxic){
   const g = $('#heroG'), a = $('#heroA');
+  if(toxic){ auraBurst(0, true); }
   anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X-30,FLOOR_Y)},{transform:tr(HERO_X-10,FLOOR_Y)},{transform:tr(HERO_X,FLOOR_Y)}], { duration:380, easing:'ease-out' });
-  anim(a, [{filter:'none'},{filter:'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)'},{filter:'none'}], { duration:320 });
+  anim(a, [{filter:'none'},{filter: toxic ? 'sepia(1) saturate(8) hue-rotate(50deg) brightness(1.1)' : 'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)'},{filter:'none'}], { duration:toxic?600:320 });
   floatText(`-${dmg}`, HERO_X-10, FLOOR_Y-175, '#ff6a5a', big?46:36, true);
   hitSpark(HERO_X+10, FLOOR_Y-80);
   const st = $('#stage'); const f = document.createElement('div'); f.className='flash-red'; st.appendChild(f); setTimeout(()=>f.remove(),500);
@@ -1666,14 +2001,19 @@ document.addEventListener('click', e=>{
   ctxA();
   switch(a){
     case 'tab': ui.screen = v; render(); $('#scr') && ($('#scr').scrollTop=0); break;
-    case 'startGame': { const n = ($('#nameIn').value||'').trim(); if(!n){ toast('ใส่ชื่อฮีโร่ก่อนนะ'); $('#nameIn').focus(); return; } save.name = n; persist(); goto('map'); if(!save.cleared) setTimeout(()=>startStage(0,1), 150); break; }
+    case 'startGame': { const n = ($('#nameIn').value||'').trim(); if(!n){ toast('ใส่ชื่อฮีโร่ก่อนนะ'); $('#nameIn').focus(); return; } save.name = n; persist(); goto('map'); break; }
     case 'stage': startStage(+el.dataset.ch, +el.dataset.n); break;
     case 'shopTab': ui.shopTab = v; render(); break;
     case 'heroTab': ui.heroTab = v; render(); break;
     case 'buyW': { const w = W(v); if(save.gold<w.price) return; save.gold-=w.price; save.weapons.push(v); save.eq.weapon=v; sfx.buy(); persist(); render(); toast(`ได้ ${esc(w.th)} แล้ว! ใส่ให้เรียบร้อย`); break; }
     case 'equipW': save.eq.weapon = v; persist(); sfx.tap(3); render(); break;
-    case 'buyS': { const s = SH(v); if(save.gold<s.price) return; save.gold-=s.price; save.shields.push(v); save.eq.shield=v; sfx.buy(); persist(); render(); toast(`ได้ ${esc(s.th)} แล้ว!`); break; }
-    case 'equipS': save.eq.shield = v; persist(); sfx.tap(3); render(); break;
+    case 'buyA': { const s = AR(v); if(save.gold<s.price) return; save.gold-=s.price; save.armors.push(v); save.eq.armor=v; sfx.buy(); persist(); render(); toast(`ได้ ${esc(s.th)} แล้ว!`); break; }
+    case 'equipA': save.eq.armor = v; persist(); sfx.tap(3); render(); break;
+    case 'buyC': { const c = CH(v); if(save.gold<c.price) return; save.gold-=c.price; save.chars.push(v); save.eq.char=v; sfx.win(); persist(); render(); toast(`ปลดล็อก ${esc(c.name)} แล้ว! ⚔`); break; }
+    case 'equipC': save.eq.char = v; persist(); sfx.tap(3); render(); break;
+    case 'buyX': { const x = ACC(v); if(save.gold<x.price) return; save.gold-=x.price; save.accs.push(v); const k = save.acc.indexOf(null); if(k>=0) save.acc[k]=v; sfx.buy(); persist(); render(); toast(`ได้ ${esc(x.th)} แล้ว!`); break; }
+    case 'equipX': { let k = save.acc.indexOf(null); if(k<0){ k = 1; toast(`ถอด ${esc(ACC(save.acc[1]).th)} ออกแทน`); } save.acc[k]=v; persist(); sfx.tap(3); render(); break; }
+    case 'unequipX': { const k = save.acc.indexOf(v); if(k>=0) save.acc[k]=null; persist(); render(); break; }
     case 'buyP': { const p = POTIONS[v]; if(save.gold<p.price) return; save.gold-=p.price; save.potions[v]=(save.potions[v]||0)+1; sfx.buy(); persist(); render(); break; }
     case 'buyHp': { if(save.hpLv>=10 || save.gold<hpPrice()) return; save.gold-=hpPrice(); save.hpLv++; sfx.heal(); persist(); render(); break; }
     case 'say': speak(v); break;

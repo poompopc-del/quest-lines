@@ -1,6 +1,6 @@
 {
   "name": "quest-lines-app",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "description": "Quest Lines — Word Battle (static single-file PWA, no backend)",
