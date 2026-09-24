@@ -12,7 +12,7 @@
 <title>Quest Lines — Word Battle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Itim&family=Kalam:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Mitr:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --ol:#1d1512; --bg:#191512; --bg2:#211c18; --bg3:#2b2420; --line:#3e352e; --line2:#584b41;
@@ -20,9 +20,9 @@
   --blue:#3f86de; --blue2:#2a63b0; --blue-l:#7fb4f2;
   --red:#d9452f; --red2:#a8321f; --gold:#f2b42c; --gold2:#c98a12; --steel:#b9c3cd; --steel2:#8a96a3;
   --green:#5fb84a; --green2:#3f8a30; --purple:#9b6ad8; --tan:#d9a86a;
-  --mark:'Permanent Marker','Kalam','Comic Sans MS',cursive;
-  --hand:'Kalam','Itim','Comic Sans MS',system-ui,sans-serif;
-  --thai:'Itim','Mitr','Noto Sans Thai','Leelawadee UI',system-ui,sans-serif;
+  --mark:'Lilita One','Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif;
+  --hand:'Lilita One','Arial Rounded MT Bold','Trebuchet MS',system-ui,sans-serif;
+  --thai:'Mitr','Noto Sans Thai','Leelawadee UI',system-ui,sans-serif;
   --display:var(--hand);
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
   --brush-blue:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cpath d='M4 9 C30 3 70 6 110 4 C150 2 175 5 196 7 L193 13 L199 18 L194 24 L197 31 C160 36 120 33 80 36 C50 38 24 35 3 33 L7 27 L1 21 L6 15 Z' fill='%233f86de'/%3E%3Cpath d='M14 12 C60 9 120 10 186 11' stroke='%237fb4f2' stroke-width='2' fill='none' opacity='.55'/%3E%3Cpath d='M10 29 C60 31 130 30 188 27' stroke='%232a63b0' stroke-width='3' fill='none' opacity='.6'/%3E%3C/svg%3E");
@@ -30,7 +30,7 @@
   --brush-gold:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cpath d='M4 9 C30 3 70 6 110 4 C150 2 175 5 196 7 L193 13 L199 18 L194 24 L197 31 C160 36 120 33 80 36 C50 38 24 35 3 33 L7 27 L1 21 L6 15 Z' fill='%23f2b42c'/%3E%3Cpath d='M10 29 C60 31 130 30 188 27' stroke='%23c98a12' stroke-width='3' fill='none' opacity='.6'/%3E%3C/svg%3E");
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .8 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-synthesis:none}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--thai);overflow:hidden}
 body{background:var(--grain),radial-gradient(ellipse 90% 60% at 50% 20%,#2a231e 0%,var(--bg) 70%)}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;touch-action:manipulation}
@@ -45,7 +45,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .brush{display:inline-block;background:var(--brush-blue) center/100% 100% no-repeat;color:#fff;font:700 15px/1 var(--hand);padding:7px 16px 8px;text-shadow:0 1px 0 rgba(0,0,0,.25)}
 .brush.red{background-image:var(--brush-red)}
 .brush.gold{background-image:var(--brush-gold);color:#2a1a06;text-shadow:none}
-.brush.th{font-family:var(--thai);font-weight:400}
+.brush.th{font-family:var(--thai);font-weight:500}
 .mark{font-family:var(--mark);font-weight:400;color:var(--chalk);letter-spacing:.3px}
 .quote{font-family:var(--thai);color:#d9d2c6;line-height:1.55}
 .quote::before{content:'“ ';color:var(--ink-dim)}.quote::after{content:' ”';color:var(--ink-dim)}
@@ -53,7 +53,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 
 /* chunky hand-drawn buttons */
 .cbtn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px 12px;
-  border-radius:16px 20px 15px 19px/19px 15px 20px 16px;font-family:var(--thai);font-size:17px;color:#fff;background:var(--blue);border:2.5px solid var(--ol);
+  border-radius:16px 20px 15px 19px/19px 15px 20px 16px;font-family:var(--thai);font-weight:600;font-size:17px;color:#fff;background:var(--blue);border:2.5px solid var(--ol);
   box-shadow:inset 0 -4px 0 var(--blue2),inset 0 2px 0 rgba(255,255,255,.28),0 4px 0 var(--ol);transition:transform .08s}
 .cbtn:active:not(:disabled){transform:translateY(3px);box-shadow:inset 0 -2px 0 var(--blue2),0 1px 0 var(--ol)}
 .cbtn.gold{background:var(--gold);color:#2a1a06;box-shadow:inset 0 -4px 0 var(--gold2),inset 0 2px 0 rgba(255,255,255,.45),0 4px 0 var(--ol)}
@@ -88,8 +88,8 @@ h2.title{font-family:var(--mark);font-weight:400;font-size:30px;margin:8px 0 12p
 /* title */
 .title-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 18px 28px;text-align:center;overflow-y:auto}
 .logo-wrap{position:relative;display:inline-block;margin:6px 0 2px}
-.logo{font-family:var(--mark);font-weight:400;font-size:clamp(50px,13vw,92px);line-height:.86;color:var(--chalk);margin:0;transform:rotate(-3deg);
-  text-shadow:0 3px 0 rgba(0,0,0,.45)}
+.logo{font-family:var(--mark);font-weight:400;font-size:clamp(50px,13vw,88px);line-height:.95;color:var(--chalk);margin:0;transform:rotate(-3deg);
+  -webkit-text-stroke:3px var(--ol);paint-order:stroke fill;text-shadow:0 5px 0 var(--ol),0 10px 16px rgba(0,0,0,.5)}
 .logo small{display:block;font-size:.62em;margin-top:.08em}
 .logo-crown{position:absolute;right:-6px;top:-24px;width:48px;height:34px}
 .title-screen .brush{font-size:clamp(18px,4.4vw,24px);padding:9px 26px 10px;margin:14px 0 12px;transform:rotate(-1deg)}
@@ -129,7 +129,7 @@ h2.title{font-family:var(--mark);font-weight:400;font-size:30px;margin:8px 0 12p
 
 /* shop */
 .seg{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
-.seg button{flex:1 1 0;min-width:64px;padding:9px 4px 10px;border-radius:12px 14px 11px 13px;background:var(--bg2);border:2px solid var(--line);font-size:14.5px;color:var(--ink-dim)}
+.seg button{font-weight:600;flex:1 1 0;min-width:64px;padding:9px 4px 10px;border-radius:12px 14px 11px 13px;background:var(--bg2);border:2px solid var(--line);font-size:14.5px;color:var(--ink-dim)}
 .seg button.on{background:var(--brush-blue) center/108% 118% no-repeat;border-color:transparent;color:#fff}
 .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .item{display:flex;gap:12px;padding:12px;align-items:center}
