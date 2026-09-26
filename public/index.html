@@ -12,7 +12,7 @@
 <title>Quest Lines — Word Battle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Mitr:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Pixelify+Sans:wght@400;500;600;700&family=Mitr:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --ol:#1d1512; --bg:#191512; --bg2:#211c18; --bg3:#2b2420; --line:#3e352e; --line2:#584b41;
@@ -409,6 +409,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 .inf-title small{display:block;font:clamp(13px,2.4vw,16px) var(--thai);color:#fff;-webkit-text-stroke:0;text-shadow:0 2px 4px #000;margin-top:4px}
 .flash-white{position:absolute;inset:0;background:#fffbe0;opacity:.6;z-index:2;pointer-events:none;animation:fadeOut .35s forwards}
 #heroA.enchanted .wpn{filter:drop-shadow(0 0 6px var(--ec)) drop-shadow(0 0 12px var(--ec))}
+#heroA.enchanted .hero-img image{filter:drop-shadow(0 0 6px var(--ec)) drop-shadow(0 0 12px var(--ec))}
 .enchant .ench-glow{animation:glow .5s ease-in-out infinite}
 .enchant .ench-p{animation:enchP 1s ease-in-out infinite}
 @keyframes enchP{0%{transform:translateY(6px);opacity:.2}50%{opacity:1}100%{transform:translateY(-14px);opacity:0}}
@@ -1002,6 +1003,21 @@ body.lowfx .rimf{filter:none}
 .tw-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%}
 .tw-row .cbtn{padding:8px 16px 9px;font-size:15.5px}
 
+
+html.pixel{--mark:'Pixelify Sans','Mitr','Trebuchet MS',system-ui,sans-serif;--hand:'Pixelify Sans','Mitr','Trebuchet MS',system-ui,sans-serif}
+html.pixel :is(.panel,.cbtn,.tile,.tiles,.chip,.pill,.text-in,.toast,.ach,.acc-slot,.equip-box,.estats,.trait,.wordcard,.bigbtn,.bar,.bar i,.prog-b,.prog-b i,.mastery-bar,.tog,.seg,.seg button,.tray-msg,.boss-phase,.modal,.modal-box,.sheet,.item,.pic){border-radius:0 !important}
+html.pixel .tog::after,html.pixel .tog::before{border-radius:0 !important}
+html.pixel :is(.cbtn,.tile,.bigbtn,.chip,.seg button){box-shadow:0 4px 0 #050814 !important;image-rendering:pixelated}
+html.pixel .tile:active,html.pixel .tile.sel{box-shadow:0 1px 0 #050814 !important}
+/* ---------------- pixel art mode (v12) ---------------- */
+html.pixel .px-img{image-rendering:pixelated;image-rendering:crisp-edges}
+html.pixel .px-on{visibility:hidden}
+html.pixel .px-on > .px-img, html.pixel .px-on .px-mon{visibility:visible}
+html.pixel #sceneSvg .px-on :is(.drift,.fall,.sparkle,.twin,.tstar,.lava-glow,.w-flame,.w-glow,.shim,.clouds,.aurora,.embers){visibility:visible;shape-rendering:crispEdges}
+html.pixel .title-bg .px-on :is(.drift,.twin,.tstar,.shim,.clouds,.embers){visibility:visible;shape-rendering:crispEdges}
+html.pixel .px-hero{animation:none !important}
+html.pixel .px-mon{animation:mbob 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+html.pixel .enemy.walk .px-mon{animation:walkBob .25s ease-in-out infinite alternate}
 </style>
 </head>
 <body>
@@ -1593,7 +1609,87 @@ const ARMOR_OV = {
     pad:(f)=>padSVG('#bfefff','#5ad0ff',f) },
 };
 
-function charSVG(eq){ return (CHAR_ART[(eq||{}).char] || heroSVG)(eq); }
+/* ==================== รูปตัวละครจากไฟล์ภาพ (แทนภาพวาดด้วยโค้ด) ====================
+   ใส่ไฟล์ภาพ (PNG พื้นหลังโปร่งใส) ไว้ในโฟลเดอร์ public/heroes/ แล้วเพิ่มบรรทัดด้านล่าง
+   ตัวไหนไม่ได้ใส่ไว้ เกมจะใช้ภาพวาดด้วยโค้ดแบบเดิม
+     src   : ที่อยู่ไฟล์ภาพ
+     h     : ความสูงตัวละครในเกม (ค่าเดิมประมาณ 150–175)
+     flip  : true ถ้าภาพของคุณหันหน้าไปทางซ้าย (ในเกมตัวละครต้องหันขวา)
+     dx,dy : เลื่อนภาพซ้าย/ขวา ขึ้น/ลง ถ้าเท้าไม่ตรงพื้น
+     face  : (ไม่บังคับ) ตำแหน่งครอปหน้าสำหรับไอคอน HP ในรูป 'x y กว้าง สูง'
+   ตัวอย่าง:
+     pip: { src:'heroes/pip.png', h:160 },
+     boomtos: { src:'heroes/boomtos.png', h:185, flip:true },
+*/
+const HERO_IMG = {
+};
+const HERO_IMG_VER = 1; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+function heroImgSVG(cfg){
+  const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
+  const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
+  return `<g class="hero-body hero-img">
+    <ellipse class="shadow" cx="3" cy="1" rx="30" ry="6.5" fill="rgba(0,0,0,.35)"/>
+    <g class="h-bob"><g${cfg.flip?' transform="scale(-1,1)"':''}><image href="${src}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMax meet"/></g></g>
+  </g>`;
+}
+/* ---------- ตัวละครแบบสไปรต์ชีต (หลายท่า) ----------
+   ชีต 1 ไฟล์ แต่ละแถว = 1 ท่า ทุกช่องขนาดเท่ากัน (cw x ch) เท้าอยู่ขอบล่าง ตรงกับ ax
+   anims: ท่า: [แถว, จำนวนรูป, วินาที]                                         */
+const HERO_SPRITE = {
+  pip: { sheet:'heroes/samurai.png', cols:8, rows:6, cw:200, ch:140, ax:100, scale:1.7, face:'-18 -170 42 42',
+    anims:{ idle:[0,4,.8], attack:[1,4,.56], hurt:[2,2,.38], dead:[3,2,.7], cheer:[4,4,1.05], walk:[5,8,.8] } },
+};
+(function sprCSS(){
+  let css = '';
+  for(const [k,c] of Object.entries(HERO_SPRITE)){
+    const A = c.anims, kf = (n,[row,cnt],loop)=>`@keyframes spr-${k}-${n}{from{transform:translate(0px,${-row*c.ch}px)}to{transform:translate(${-(loop?cnt:cnt-1)*c.cw}px,${-row*c.ch}px)}}`;
+    const loopA = (n)=>`spr-${k}-${n} ${A[n][2]}s steps(${A[n][1]}) infinite`;
+    const once  = (n)=>`spr-${k}-${n} ${A[n][2]}s steps(${A[n][1]},jump-none) forwards`;
+    css += kf('idle',A.idle,1)+kf('walk',A.walk,1)+kf('attack',A.attack,0)+kf('hurt',A.hurt,0)+kf('dead',A.dead,0)+kf('cheer',A.cheer,0)
+      + `.spr-${k} .spr-strip{animation:${loopA('idle')}}`
+      + `.actor.walk .spr-${k} .spr-strip{animation:${loopA('walk')}}`
+      + `.actor.cheer .spr-${k} .spr-strip{animation:${once('cheer')}}`
+      + `.actor.hurt .spr-${k} .spr-strip{animation:${once('hurt')}}`
+      + `.actor.atk .spr-${k} .spr-strip{animation:${once('attack')}}`
+      + `.actor.dead .spr-${k} .spr-strip{animation:${once('dead')}}`;
+  }
+  css += `.spr svg{filter:none !important;overflow:hidden !important}
+    .spr image{image-rendering:pixelated;image-rendering:crisp-edges}
+    .actor.cheer .spr .spr-bob{animation:cheer .5s ease-out 2}
+    #heroA.enchanted .spr image{filter:drop-shadow(0 0 4px var(--ec)) drop-shadow(0 0 10px var(--ec))}`;
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  // preload so the first frame never flashes
+  Object.values(HERO_SPRITE).forEach(c=>{ const i = new Image(); i.src = c.sheet + "?v=" + HERO_IMG_VER; });
+})();
+function heroSpriteSVG(k){
+  const c = HERO_SPRITE[k], s = c.scale, w = c.cw*s, h = c.ch*s;
+  return `<g class="hero-body spr spr-${k}">
+    <ellipse class="shadow" cx="3" cy="1" rx="30" ry="6.5" fill="rgba(0,0,0,.4)"/>
+    <g class="spr-bob"><svg x="${-c.ax*s}" y="${-h}" width="${w}" height="${h}" style="width:${w}px;height:${h}px;overflow:hidden" viewBox="0 0 ${c.cw} ${c.ch}" overflow="hidden">
+      <g class="spr-strip"><image href="${c.sheet}?v=${HERO_IMG_VER}" width="${c.cw*c.cols}" height="${c.ch*c.rows}"/></g></svg></g>
+  </g>`;
+}
+// เล่นท่าครั้งเดียว (โจมตี / โดนตี) บนตัวละครในฉากต่อสู้
+function heroPose(cls, ms){
+  const a = document.getElementById('heroA'); if(!a) return;
+  a.classList.remove(cls); void a.getBBox(); a.classList.add(cls);
+  clearTimeout(a['_t'+cls]); a['_t'+cls] = setTimeout(()=>a.classList.remove(cls), ms);
+}
+function charSVG(eq){
+  const k = (eq||{}).char || 'pip', img = HERO_IMG[k];
+  if(HERO_SPRITE[k]) return heroSpriteSVG(k);
+  if(img && img.src) return heroImgSVG(img);
+  const art = (CHAR_ART[k] || heroSVG)(eq);
+  return `<g class="pxm pxh" data-k="hero|${k}|${(eq||{}).weapon||''}|${(eq||{}).armor||''}">${art}</g>`;
+}
+// ครอปหน้าสำหรับไอคอน HP ของตัวที่ใช้ภาพ
+function heroImgFace(k){
+  if(HERO_SPRITE[k]) return HERO_SPRITE[k].face;
+  const c = HERO_IMG[k]; if(!c || !c.src) return null;
+  if(c.face) return c.face;
+  const h = c.h || 160, s = h*.42;
+  return `${(-s/2 + (c.dx||0)).toFixed(1)} ${(-h + (c.dy||0)).toFixed(1)} ${s.toFixed(1)} ${s.toFixed(1)}`;
+}
 
 /* ------------------------ Necromancer (boss) ------------------------ */
 MONSTER_ART.necro = (p)=>`<ellipse cx="0" cy="2" rx="40" ry="8" fill="rgba(0,0,0,.3)"/>
@@ -1928,7 +2024,7 @@ const CHAR_FACE = { pip:'-40 -164 90 90', bastion:'-40 -180 96 96', mira:'-40 -1
 function heroStandalone(eq, cls){
   return `<svg class="hero-svg ${cls||''}" viewBox="-88 -206 196 222" aria-hidden="true"><g class="actor idle">${charSVG(eq)}</g></svg>`;
 }
-function heroFaceSvg(eq){ return `<svg viewBox="${CHAR_FACE[(eq||{}).char]||CHAR_FACE.pip}" aria-hidden="true"><g class="actor idle">${charSVG(eq)}</g></svg>`; }
+function heroFaceSvg(eq){ const k=(eq||{}).char||'pip'; return `<svg viewBox="${heroImgFace(k)||CHAR_FACE[k]||CHAR_FACE.pip}" aria-hidden="true"><g class="actor idle">${charSVG(eq)}</g></svg>`; }
 function weaponIcon(id){ return `<svg viewBox="-56 -124 112 156" class="wicon" aria-hidden="true"><g transform="rotate(35 0 -40)">${(WEAPON_ART[id]||WEAPON_ART.wood)()}</g></svg>`; }
 function shieldIcon(id){ return `<svg viewBox="-30 -32 60 64" class="wicon" aria-hidden="true">${id==='none'?'':(SHIELD_ART[id]||SHIELD_ART.none)()}</svg>`; }
 // rocky ledge with grass tufts (as on the character sheet)
@@ -3708,7 +3804,7 @@ const ACCESSORIES = [
   { id:'phoenix',  name:'Phoenix Feather',th:'ขนนกฟีนิกซ์', price:900, desc:'เมื่อ HP หมด ฟื้นคืนชีพ 40% (1 ครั้ง/ด่าน)' },
 ];
 const CHARACTERS = [
-  { id:'pip',     name:'Pip',         th:'พิป อัศวินน้อย', price:0,    role:'สมดุล', skill:'นักเรียนขยัน', desc:'คำใบ้ +1 ครั้งต่อด่าน และคำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
+  { id:'pip',     name:'Pip',         th:'พิป ซามูไรพเนจร', price:0,    role:'สมดุล', skill:'นักเรียนขยัน', desc:'คำใบ้ +1 ครั้งต่อด่าน และคำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
   { id:'mira',    name:'Mira',        th:'มิร่า แม่มดฝึกหัด', price:400,  role:'เวทธาตุ', skill:'ทอเวทมนตร์', desc:'คำธาตุ (fire, ice, storm…) แรง x1.5 และผลของธาตุอยู่นานขึ้น +1 เทิร์น แต่ HP -10%', hpMul:.9, dmgTaken:1 },
   { id:'rook',    name:'Rook',        th:'รุก จอมโจรเงา', price:600,  role:'คริติคอล', skill:'ตาเหยี่ยว', desc:'25% ติดคริติคอล ดาเมจ x2 และได้ทองเพิ่ม +20%', hpMul:.95, dmgTaken:1 },
   { id:'bastion', name:'Sir Bastion', th:'เซอร์บาสเตียน อัศวินเหล็ก', price:800, role:'แทงค์', skill:'ป้อมเหล็ก', desc:'HP +20% และรับดาเมจลดลง 10%', hpMul:1.2, dmgTaken:.9 },
@@ -4217,6 +4313,7 @@ function renderSettings(){
     ${tg('tts','เสียงอ่านคำศัพท์','อ่านคำภาษาอังกฤษด้วยเสียงของเครื่อง')}
     ${tg('autoSpeak','อ่านทุกคำที่โจมตี','อ่านออกเสียงคำที่สะกดทุกครั้ง')}
     ${tg('awake','หน้าจอไม่ดับระหว่างเล่น','ให้จอโทรศัพท์/คอมเปิดค้างไว้ตลอดที่เปิดเกม')}
+    <div class="panel set-row"><div class="lab">ภาพแนวพิกเซล<small>ฉากและมอนสเตอร์เป็นภาพพิกเซลให้เข้ากับตัวละคร</small></div><button class="tog ${PIXEL.on?'on':''}" data-act="pixelTog" aria-label="ภาพแนวพิกเซล"></button></div>
     ${tg('rim','แสงจันทร์ขอบตัวละคร','เอฟเฟกต์แสงเรืองรอบตัวละคร — ปิดได้ถ้าเครื่องกระตุก')}
     ${tg('webTr','แปลคำด้วยอินเทอร์เน็ต','คำที่ไม่มีในพจนานุกรมในเครื่อง จะแปลออนไลน์แล้วจำไว้ (ฟรี)')}
     <div class="panel set-row"><div class="lab">วิธีเล่น</div><button class="cbtn small blue" data-act="howto">ดูวิธีเล่น</button></div>
@@ -4828,6 +4925,7 @@ function anim(el, frames, opts){ return el ? el.animate(frames, opts).finished.c
 const tr = (x,y,s)=>`translate(${x}px,${y}px)${s&&s!==1?` scale(${s})`:''}`;
 async function heroAttack(lv, rude){
   const g = $('#heroG'), arm = document.querySelector('#heroA .armF');
+  heroPose('atk', 600);
   sfx.swing(); ui.slashLv = lv||0; ui.slashRude = !!rude; if(rude) ui.slashEl = null;
   const p1 = anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X+70,FLOOR_Y-6),offset:.45},{transform:tr(HERO_X+84,FLOOR_Y),offset:.6},{transform:tr(HERO_X,FLOOR_Y)}], { duration:560, easing:'ease-in-out' });
   const p2 = anim(arm, [{transform:'rotate(0deg)'},{transform:'rotate(-55deg)',offset:.35},{transform:'rotate(110deg)',offset:.6},{transform:'rotate(90deg)',offset:.75},{transform:'rotate(0deg)'}], { duration:560, easing:'ease-in-out' });
@@ -4905,6 +5003,7 @@ async function enemyCharge(){
 function heroHurt(dmg, big, toxic){
   const g = $('#heroG'), a = $('#heroA');
   if(toxic){ auraBurst(0, true); }
+  heroPose('hurt', 420);
   anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X-30,FLOOR_Y)},{transform:tr(HERO_X-10,FLOOR_Y)},{transform:tr(HERO_X,FLOOR_Y)}], { duration:380, easing:'ease-out' });
   anim(a, [{filter:'none'},{filter: toxic ? 'sepia(1) saturate(8) hue-rotate(50deg) brightness(1.1)' : 'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)'},{filter:'none'}], { duration:toxic?600:320 });
   floatText(`-${dmg}`, HERO_X-10, FLOOR_Y-175, '#ff6a5a', big?46:36, true);
@@ -5111,6 +5210,7 @@ document.addEventListener('click', e=>{
     case 'buyP': { const p = POTIONS[v]; if(save.gold<p.price) return; save.gold-=p.price; save.potions[v]=(save.potions[v]||0)+1; sfx.buy(); persist(); render(); break; }
     case 'buyHp': { if(save.hpLv>=10 || save.gold<hpPrice()) return; save.gold-=hpPrice(); save.hpLv++; sfx.heal(); persist(); render(); break; }
     case 'say': speak(v); break;
+    case 'pixelTog': PIXEL.set(!PIXEL.on); location.reload(); break;
     case 'tog': save.settings[v] = !save.settings[v]; if(v==='music') setMusic(save.settings.music); if(v==='awake'){ save.settings.awake ? keepAwake() : releaseAwake(); } persist(); render(); break;
     case 'howto': modal(howtoHtml(), { dismiss:true }); break;
     case 'closeModal': closeModal(); break;
@@ -5592,5 +5692,141 @@ render();
 setMusic(save.settings.music);
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
 setTimeout(loadDict, 50);
+
+/* ======================================================================
+   PIXEL ART MODE (v12) — ฉาก มอนสเตอร์ และหน้าแรก ถูกแปลงเป็นภาพพิกเซล
+   ให้เข้ากับตัวละครสไปรต์ ภาพวาดเวกเตอร์เดิมถูกวาดลงแคนวาสความละเอียดต่ำ
+   (1 พิกเซล = 2 หน่วยฉาก) แล้วขยายแบบไม่เบลอ ส่วนที่ขยับได้ (ละออง ดาว
+   ประกายไฟ) ยังเป็นเวกเตอร์แต่ขอบเหลี่ยม · ปิดได้ในตั้งค่า (PIXEL.on)
+   ====================================================================== */
+const PIXEL = (()=>{
+  const NS = 'http://www.w3.org/2000/svg';
+  const SCENE_PX = 2.6;
+  const LIVE = '.drift,.fall,.sparkle,.twin,.tstar,.lava-glow,.w-flame,.w-glow,.shim,.clouds,.aurora,.embers,.ped-rune,.ped-glow';
+  const cache = new Map();
+  let on = true;
+  try{ on = localStorage.getItem('ql_pixel') !== '0'; }catch(e){}
+  if(on) document.documentElement.classList.add('pixel');
+
+  function allDefs(extra){
+    let s = '';
+    document.querySelectorAll('svg[width="0"] > defs').forEach(d=>{ s += d.innerHTML; });
+    return s + (extra||'');
+  }
+  function toURL(markup, bb, px, defs){
+    const w = Math.max(1, Math.round(bb.width/px)), h = Math.max(1, Math.round(bb.height/px));
+    const svg = `<svg xmlns="${NS}" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${bb.x} ${bb.y} ${bb.width} ${bb.height}" width="${w}" height="${h}" preserveAspectRatio="none"><defs>${defs}</defs>${markup}</svg>`;
+    return new Promise((res)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        try{
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          const x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h);
+          // posterise a little so gradients band like hand-made pixel art
+          const id = x.getImageData(0,0,w,h), d = id.data;
+          for(let i=0;i<d.length;i+=4){ d[i]=d[i]&0xF8; d[i+1]=d[i+1]&0xF8; d[i+2]=d[i+2]&0xF8; d[i+3] = d[i+3]<24 ? 0 : d[i+3]>232 ? 255 : d[i+3]&0xE0; }
+          x.putImageData(id,0,0);
+          if(c.toBlob) c.toBlob(b=>res(b ? URL.createObjectURL(b) : c.toDataURL()), 'image/png');
+          else res(c.toDataURL());
+        }catch(e){ res(null); }
+      };
+      img.onerror = ()=>res(null);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    });
+  }
+  const pad = (bb,p)=>({ x:Math.floor(bb.x-p), y:Math.floor(bb.y-p), width:Math.ceil(bb.width+p*2), height:Math.ceil(bb.height+p*2) });
+  function imageEl(url, bb){
+    const im = document.createElementNS(NS,'image');
+    im.setAttribute('href', url); im.setAttribute('x', bb.x); im.setAttribute('y', bb.y);
+    im.setAttribute('width', bb.width); im.setAttribute('height', bb.height);
+    im.setAttribute('preserveAspectRatio','none'); im.setAttribute('class','px-img');
+    return im;
+  }
+  // a static layer → one pixel image; animated bits stay live (vector, crisp edges)
+  async function layer(g, px, defs){
+    if(!g || g.classList.contains('pxd')) return;
+    g.classList.add('pxd');
+    let bb; try{ bb = g.getBBox(); }catch(e){ return; }
+    if(!bb.width || !bb.height) return;
+    bb = pad(bb, 2);
+    const clone = g.cloneNode(true);
+    clone.querySelectorAll(LIVE).forEach(n=>n.remove());
+    clone.querySelectorAll('image.px-img').forEach(n=>n.remove());
+    const url = await toURL(clone.innerHTML, bb, px, defs);
+    if(!url || !g.isConnected) return;
+    const im = imageEl(url, bb);
+    g.insertBefore(im, g.firstChild);
+    g.classList.add('px-on');
+  }
+  async function scene(svg){
+    if(svg.classList.contains('pxd')) return;
+    svg.classList.add('pxd');
+    const own = svg.querySelector(':scope > defs');
+    const defs = allDefs(own ? own.innerHTML : '');
+    for(const id of ['lySky','lyBack','lyFar','lyNear','lyFloor','lyFore']) await layer(svg.querySelector('#'+id), SCENE_PX, defs);
+  }
+  async function title(svg){
+    if(svg.classList.contains('pxd')) return;
+    svg.classList.add('pxd');
+    const own = svg.querySelector(':scope > defs');
+    // wrap the vista so it behaves like one layer
+    const g = document.createElementNS(NS,'g'); g.setAttribute('class','px-wrap');
+    [...svg.childNodes].forEach(n=>{ if(n!==own) g.appendChild(n); });
+    svg.appendChild(g);
+    await layer(g, SCENE_PX, allDefs(own ? own.innerHTML : ''));
+  }
+  async function monster(g){
+    if(g.classList.contains('pxd')) return;
+    g.classList.add('pxd');
+    const root = g.ownerSVGElement; if(!root) return;
+    let bb; try{ bb = g.getBBox(); }catch(e){ return; }
+    if(!bb.width || !bb.height) return;
+    let px;
+    const hero = g.classList.contains('pxh');
+    if(root.id === 'sceneSvg' || hero){ const a = g.getCTM(), r = root.getCTM(); px = (hero ? 2 : SCENE_PX) * ((r && r.a) || 1) / ((a && a.a) || 1); }
+    else px = Math.max(bb.width, bb.height) / 64;
+    px = Math.max(.5, Math.round(px*20)/20);
+    bb = pad(bb, 4);
+    const key = (g.getAttribute('data-k')||'') + '|' + px.toFixed(2) + '|' + [bb.x,bb.y,bb.width,bb.height].join(',');
+    let url = cache.get(key);
+    if(!url){
+      const clone = g.cloneNode(true);
+      clone.querySelectorAll('image.px-img').forEach(n=>n.remove());
+      const rim = document.body.classList.contains('lowfx') ? '' : ' filter="url(#moonrim)"';
+      url = await toURL(`<g${rim}>${clone.innerHTML}</g>`, bb, px, allDefs());
+      if(!url) return;
+      cache.set(key, url);
+    }
+    if(!g.isConnected) return;
+    const w = document.createElementNS(NS,'g'); w.setAttribute('class', hero ? 'px-mon px-hero' : 'px-mon');
+    w.appendChild(imageEl(url, bb));
+    const host = hero ? (g.querySelector('.h-bob') || g) : g;
+    if(hero){ const hb = host.getCTM && host.getCTM(), gg = g.getCTM(); if(hb && gg && host!==g){ const m = hb.inverse().multiply(gg); w.setAttribute('transform', `matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})`); } }
+    host.appendChild(w);
+    g.classList.add('px-on');
+  }
+  let queued = false;
+  function sweep(){
+    queued = false;
+    if(!on) return;
+    document.querySelectorAll('#sceneSvg:not(.pxd)').forEach(scene);
+    document.querySelectorAll('svg.title-bg:not(.pxd)').forEach(title);
+    document.querySelectorAll('.pxm:not(.pxd)').forEach(monster);
+  }
+  const kick = ()=>{ if(!queued){ queued = true; requestAnimationFrame(()=>requestAnimationFrame(sweep)); } };
+  new MutationObserver(kick).observe(document.body, { childList:true, subtree:true });
+  kick();
+  function set(v){
+    on = !!v; try{ localStorage.setItem('ql_pixel', on?'1':'0'); }catch(e){}
+    document.documentElement.classList.toggle('pixel', on);
+  }
+  return { get on(){ return on; }, set, sweep };
+})();
+
+/* monsters render inside a .pxm wrapper that the pixeliser picks up */
+{
+  const _mon12 = monsterSVG;
+  monsterSVG = function(m){ return `<g class="pxm" data-k="${m.art}|${m.boss?1:0}|${m.pal?Object.values(m.pal).join(''):''}">${_mon12(m)}</g>`; };
+}
 </script>
 </body></html>
