@@ -64,5 +64,5 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 
 ## X — โฟลเดอร์ `heroes/x/`
 - ท่า: idle · walk · hurt · dead · atk1 บัสเตอร์ · atk2 วิ่งยิง · atk3 สไลด์ยิง · charge ชาร์จ · fin HADOUKEN
-- `pellet.png` `shot1.png` `shot2.png` `shot3.png` = กระสุนบัสเตอร์ตามระดับชาร์จ
+- `shotB.png` `shotBB.png` `shotP.png` = กระสุนบัสเตอร์ (2 เฟรม) ตามระดับชาร์จ ฟ้า → ฟ้าใหญ่ → ม่วง · `spark.png` = ประกายตอนชาร์จ
 - **เครดิตภาพ: Megaman X sprites by GregarLink10** (ผู้วาดขอให้ใส่เครดิตเมื่อนำไปใช้)

@@ -1239,8 +1239,11 @@ html.v16 .title-screen .logo{font-style:italic;font-weight:900;letter-spacing:-1
 .xcharge:disabled{filter:grayscale(.85) brightness(.5)}
 .xcharge:active:not(:disabled){transform:translateY(2px)}
 html.v16 .atk.xrelease{background:linear-gradient(180deg,#fff,var(--xc) 45%,color-mix(in srgb,var(--xc) 55%,#000)) !important;color:#06101e}
-#heroA.xcharged .spr image{animation:xpulse .45s ease-in-out infinite alternate}
-@keyframes xpulse{from{filter:drop-shadow(0 0 3px var(--xc)) drop-shadow(0 0 8px var(--xc))}to{filter:drop-shadow(0 0 6px var(--xc)) drop-shadow(0 0 16px var(--xc)) brightness(1.2)}}
+#heroA .xspark{pointer-events:none}
+.xspark-strip{animation:xspark .52s steps(4) infinite}
+@keyframes xspark{from{transform:translateX(0)}to{transform:translateX(-128px)}}
+.xshot-strip{animation:xshotf .12s steps(2) infinite}
+@keyframes xshotf{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 @media (max-width:900px), (max-aspect-ratio:4/3){ .xsplit{flex:1 1 auto} .xsplit .atk{min-height:40px !important} .xcharge{min-height:40px} }
 </style>
 
@@ -1848,7 +1851,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 11; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 12; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1930,11 +1933,11 @@ const HERO_SPRITE = {
       walk:  { n:10, cw:62, ax:36, dur:.8,  loop:true },
       hurt:  { n:4,  cw:40, ax:18, dur:.7 },
       dead:  { n:4,  cw:63, ax:35, dur:1 },
-      atk1:  { n:4,  cw:44, ax:18, dur:.55, th:'บัสเตอร์' },
-      atk2:  { n:5,  cw:72, ax:36, dur:.7,  th:'วิ่งยิง' },
-      atk3:  { n:5,  cw:62, ax:13, dur:.7,  th:'สไลด์ยิง' },
+      atk1:  { n:4,  cw:44, ax:18, dur:.8,  th:'บัสเตอร์' },
+      atk2:  { n:5,  cw:72, ax:36, dur:.9,  th:'วิ่งยิง' },
+      atk3:  { n:5,  cw:62, ax:13, dur:.9,  th:'สไลด์ยิง' },
       charge:{ n:4,  cw:37, ax:18, dur:.8,  th:'⚡ ชาร์จ' },
-      fin:   { n:8,  cw:55, ax:21, dur:1.1, th:'HADOUKEN' } },
+      fin:   { n:8,  cw:55, ax:21, dur:1.2, th:'HADOUKEN' } },
     attacks:['atk1','atk2','atk3'], extra:['charge'], finisher:'fin', finMin:99,
     finNote:'กด <b>⚡ ชาร์จ</b> เพื่อเก็บดาเมจ แล้วกด <b>ยิง</b> · ชาร์จ x3 ขึ้นไปจะปล่อยเป็น <b>HADOUKEN</b>' },
 };
@@ -6520,10 +6523,13 @@ const xColor = n=>XH.cols[Math.min(XH.cols.length-1, Math.max(0,n-1))];
     ui.xLvlShot = n;
     ui.xPose = n>=XH.hadoken ? 'fin' : null;
     if(n>=XH.hadoken) floatText('HADOUKEN!', HERO_X+30, FLOOR_Y-215, xColor(n), 32, true);
+    const pose = ui.xPose || atkPoseOf(), D = sprMs(pose, 700), hitAt = Math.round(D*.62);
+    const launch = Math.round(D*(pose==='fin' ? .38 : .28));
+    setTimeout(()=>xShotFly(n, Math.max(140, hitAt - launch)), launch);
     try{ await _ha(lv, rude); } finally { ui.xPose = null; }
   };
   const _sl = slash;
-  slash = function(){ if(!isX()) return _sl(); xShot(ui.xLvlShot||0); };
+  slash = function(){ if(!isX()) return _sl(); xImpact(ui.xLvlShot||0); };
   const _uh = updateHud;
   updateHud = function(){ _uh(); xButtons(); };
   const _rt = renderTray;
@@ -6549,7 +6555,20 @@ async function xCharge(){
 function xAura(){
   const a = $('#heroA'), b = ui.bat; if(!a) return;
   const n = b && isX() ? (b.xLvl||0) : 0;
-  a.classList.toggle('xcharged', n>0); if(n>0) a.style.setProperty('--xc', xColor(n)); else a.style.removeProperty('--xc');
+  a.classList.toggle('xcharged', n>0);
+  let g = a.querySelector('.xspark');
+  if(!n){ if(g) g.remove(); return; }
+  const want = Math.min(8, 2 + n*2);
+  if(g && +g.dataset.n===want) return;
+  if(g) g.remove();
+  g = svgEl('g', { class:'xspark' }); g.dataset.n = want;
+  let h = '';
+  for(let k=0;k<want;k++){
+    const ang = k/want*Math.PI*2 + (k%2)*.4, r = 34 + (k%3)*14, x = Math.cos(ang)*r*1.1, y = -78 + Math.sin(ang)*r*1.25, s = 1.3 + (k%2)*.5;
+    h += `<svg x="${(x-16*s).toFixed(1)}" y="${(y-16*s).toFixed(1)}" width="${32*s}" height="${32*s}" viewBox="0 0 32 32" overflow="hidden" style="overflow:hidden">
+      <g class="xspark-strip" style="animation-delay:${(-k*.13).toFixed(2)}s"><image href="heroes/x/spark.png?v=${HERO_IMG_VER}" width="128" height="32" style="image-rendering:pixelated"/></g></svg>`;
+  }
+  g.innerHTML = h; a.appendChild(g);
 }
 function xButtons(){
   const bAtk = $('#bAtk'), b = ui.bat;
@@ -6580,21 +6599,33 @@ function xChargeFx(col){
   anim(ring, [{transform:tr(HERO_X+10,FLOOR_Y-80)+' scale(2.2)',opacity:0},{transform:tr(HERO_X+10,FLOOR_Y-80)+' scale(.5)',opacity:.9}], { duration:600, easing:'ease-in' }).then(()=>ring.remove());
   [0,1,2].forEach(i=>tone(300+i*180, .12, 'sawtooth', .04, i*.1));
 }
-function xShot(n){
-  const e = curEnemy(); if(!e) return;
-  const fx = $('#fx'), sx = HERO_X+110, sy = FLOOR_Y-100, ty = FLOOR_Y - e.h*e.sc*.5;
-  const big = n>=XH.hadoken, img = n>=5 ? 'shot3' : n>=1 ? (big ? 'shot2' : 'shot1') : 'pellet';
-  const sc = n>=1 ? Math.min(3.2, 1.1 + n*.35) : .8, w = 58*sc, h = 34*sc;
-  const g = svgEl('g', {});
-  g.innerHTML = `<image href="heroes/x/${img}.png?v=${HERO_IMG_VER}" x="${-w*.7}" y="${-h/2}" width="${w}" height="${h}" style="image-rendering:pixelated"/>`;
-  fx.appendChild(g); tone(n ? 520 : 880, .08, 'square', .06); if(n) tone(180, .25, 'sawtooth', .05, .03);
-  anim(g, [{transform:tr(sx,sy)},{transform:tr(EN_X-20,ty)}], { duration: n ? 260 : 180, easing:'linear', fill:'forwards' }).then(()=>{
-    g.remove();
-    const col = n ? xColor(n) : '#fff6a0';
-    const f = svgEl('circle', { r: 26 + n*10, fill:col, opacity:.8 }); fx.appendChild(f);
-    anim(f, [{transform:tr(EN_X,ty)+' scale(.3)',opacity:.9},{transform:tr(EN_X,ty)+' scale(1.6)',opacity:0}], { duration:380 }).then(()=>f.remove());
-    if(big) shake(true);
-  });
+/* buster shots from the sheet: blue → big blue → purple, 2-frame flicker */
+function xShotLook(n){
+  if(n>=3) return { img:'shotP',  w:48, h:31, sc:Math.min(2.8, 1.5 + (n-3)*.25) };
+  if(n===2) return { img:'shotBB', w:59, h:37, sc:1.3 };
+  if(n===1) return { img:'shotB',  w:60, h:33, sc:1.05 };
+  return { img:'shotB', w:60, h:33, sc:.6 };
+}
+function xShotFly(n, ms){
+  const e = curEnemy(), fx = $('#fx'); if(!e || !fx) return;
+  const L = xShotLook(n), w = L.w*L.sc, h = L.h*L.sc;
+  const sx = HERO_X + 95, sy = FLOOR_Y - 98, ty = FLOOR_Y - e.h*e.sc*.5;
+  const g = svgEl('g', { class:'xshot' });
+  g.innerHTML = `<svg x="${-w*.85}" y="${-h/2}" width="${w}" height="${h}" viewBox="0 0 ${L.w} ${L.h}" overflow="hidden" style="overflow:hidden">
+    <g class="xshot-strip"><image href="heroes/x/${L.img}.png?v=${HERO_IMG_VER}" width="${L.w*2}" height="${L.h}" style="image-rendering:pixelated"/></g></svg>`;
+  fx.appendChild(g);
+  tone(n ? 520 : 900, .08, 'square', .06); if(n) tone(170, .28, 'sawtooth', .05, .02);
+  anim(g, [{transform:tr(sx,sy)+' scale(.6)'},{transform:tr((sx+EN_X)/2,(sy+ty)/2)+' scale(1)',offset:.3},{transform:tr(EN_X-10,ty)}], { duration:ms, easing:'linear', fill:'forwards' }).then(()=>g.remove());
+}
+function xImpact(n){
+  const e = curEnemy(), fx = $('#fx'); if(!e || !fx) return;
+  const ty = FLOOR_Y - e.h*e.sc*.5, col = n>=3 ? '#c78aff' : '#7fe0ff';
+  const f = svgEl('circle', { r: 22 + n*9, fill:col, opacity:.85 }); fx.appendChild(f);
+  anim(f, [{transform:tr(EN_X,ty)+' scale(.3)',opacity:.95},{transform:tr(EN_X,ty)+' scale(1.7)',opacity:0}], { duration:380 }).then(()=>f.remove());
+  for(let k=0;k<8+n*2;k++){ const c = svgEl('circle', { r:rint(2,4), fill:k%2?'#fff':col }); fx.appendChild(c);
+    const a = Math.random()*Math.PI*2, d = rint(30,70+n*12);
+    anim(c, [{transform:tr(EN_X,ty),opacity:1},{transform:tr(EN_X+Math.cos(a)*d, ty+Math.sin(a)*d),opacity:0}], { duration:420, easing:'ease-out' }).then(()=>c.remove()); }
+  if(n>=XH.hadoken) shake(true);
 }
 /* ======================================================================
    v16 — roster = sprite heroes only (Plink, Puff, Boomtos, ELON, Mao)
