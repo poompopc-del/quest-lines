@@ -1623,7 +1623,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 2; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 3; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1636,8 +1636,8 @@ function heroImgSVG(cfg){
    ชีต 1 ไฟล์ แต่ละแถว = 1 ท่า ทุกช่องขนาดเท่ากัน (cw x ch) เท้าอยู่ขอบล่าง ตรงกับ ax
    anims: ท่า: [แถว, จำนวนรูป, วินาที]                                         */
 const HERO_SPRITE = {
-  pip: { sheet:'heroes/samurai.png', cols:15, rows:7, cw:190, ch:165, ax:80, scale:1.6, face:'-21 -139 42 42',
-    anims:{ idle:[0,9,1.1], attack:[1,10,.6], hurt:[2,6,.55], dead:[3,4,.7], cheer:[4,12,1.05], walk:[5,15,1], rest:[6,6,1.2] } },
+  pip: { sheet:'heroes/samurai.png', cols:30, rows:7, cw:190, ch:165, ax:80, scale:1.6, face:'-21 -139 42 42',
+    anims:{ idle:[0,30,3], attack:[1,10,1], hurt:[2,10,.9], dead:[3,5,1], cheer:[4,21,2.1], walk:[5,14,1.1], rest:[6,6,1.2] } },
 };
 (function sprCSS(){
   let css = '';
@@ -1656,7 +1656,6 @@ const HERO_SPRITE = {
   }
   css += `.spr svg{filter:none !important;overflow:hidden !important}
     .spr image{image-rendering:pixelated;image-rendering:crisp-edges}
-    .actor.cheer .spr .spr-bob{animation:cheer .5s ease-out 2}
     #heroA.enchanted .spr image{filter:drop-shadow(0 0 4px var(--ec)) drop-shadow(0 0 10px var(--ec))}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   // preload so the first frame never flashes
@@ -1669,6 +1668,11 @@ function heroSpriteSVG(k){
     <g class="spr-bob"><svg x="${-c.ax*s}" y="${-h}" width="${w}" height="${h}" style="width:${w}px;height:${h}px;overflow:hidden" viewBox="0 0 ${c.cw} ${c.ch}" overflow="hidden">
       <g class="spr-strip"><image href="${c.sheet}?v=${HERO_IMG_VER}" width="${c.cw*c.cols}" height="${c.ch*c.rows}"/></g></svg></g>
   </g>`;
+}
+// ระยะเวลาท่าของตัวละครสไปรต์ (มิลลิวินาที) ถ้าไม่ใช่สไปรต์ใช้ค่า fallback
+function sprMs(name, fallback){
+  const c = HERO_SPRITE[(save && save.eq && save.eq.char) || ''];
+  return c && c.anims[name] ? Math.round(c.anims[name][2]*1000) : fallback;
 }
 // เล่นท่าครั้งเดียว (โจมตี / โดนตี) บนตัวละครในฉากต่อสู้
 function heroPose(cls, ms){
@@ -4879,7 +4883,7 @@ async function enemyDies(){
   await sleep(750);
   heroCheer();
   if(heal) floatText(`+${heal}`, HERO_X-20, FLOOR_Y-160, '#6ef08a', 24);
-  await sleep(600);
+  await sleep(Math.max(600, sprMs('cheer', 0) - 200));
   if(e.mini && !b.over) await wordPuzzle(e);
   b.idx++;
   if(b.idx >= b.stage.enemies.length){ await stageClear(); return; }
@@ -4911,7 +4915,7 @@ async function stageClear(){
   save.stars[st.s] = Math.max(save.stars[st.s]||0, stars);
   persist();
   heroCheer(); sfx.win(); banner('VICTORY!', `ด่าน ${st.ch+1}-${st.n}`);
-  await sleep(1300);
+  await sleep(Math.max(1300, sprMs('cheer', 0)));
   const hasNext = st.s+1 < CHAPTERS.length*STAGES_PER;
   const chDone = st.n===STAGES_PER && first;
   modal(`<h3>ผ่านด่าน!</h3><div class="stars">${[1,2,3].map(i=>i<=stars?ICON.star:ICON.starOff).join('')}</div>
@@ -4926,11 +4930,13 @@ function anim(el, frames, opts){ return el ? el.animate(frames, opts).finished.c
 const tr = (x,y,s)=>`translate(${x}px,${y}px)${s&&s!==1?` scale(${s})`:''}`;
 async function heroAttack(lv, rude){
   const g = $('#heroG'), arm = document.querySelector('#heroA .armF');
-  heroPose('atk', 600);
-  sfx.swing(); ui.slashLv = lv||0; ui.slashRude = !!rude; if(rude) ui.slashEl = null;
-  const p1 = anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X+70,FLOOR_Y-6),offset:.45},{transform:tr(HERO_X+84,FLOOR_Y),offset:.6},{transform:tr(HERO_X,FLOOR_Y)}], { duration:560, easing:'ease-in-out' });
+  const D = sprMs('attack', 560), hitAt = D===560 ? 330 : Math.round(D*.62);
+  heroPose('atk', D+60);
+  if(D===560) sfx.swing(); ui.slashLv = lv||0; ui.slashRude = !!rude; if(rude) ui.slashEl = null;
+  if(D!==560) setTimeout(()=>sfx.swing(), Math.round(D*.5));
+  const p1 = anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X+70,FLOOR_Y-6),offset:.45},{transform:tr(HERO_X+84,FLOOR_Y),offset:.7},{transform:tr(HERO_X,FLOOR_Y)}], { duration:D, easing:'ease-in-out' });
   const p2 = anim(arm, [{transform:'rotate(0deg)'},{transform:'rotate(-55deg)',offset:.35},{transform:'rotate(110deg)',offset:.6},{transform:'rotate(90deg)',offset:.75},{transform:'rotate(0deg)'}], { duration:560, easing:'ease-in-out' });
-  await sleep(330);
+  await sleep(hitAt);
   slash();
   await Promise.all([p1,p2]).catch(()=>{});
 }
@@ -5004,7 +5010,7 @@ async function enemyCharge(){
 function heroHurt(dmg, big, toxic){
   const g = $('#heroG'), a = $('#heroA');
   if(toxic){ auraBurst(0, true); }
-  heroPose('hurt', 600);
+  heroPose('hurt', sprMs('hurt', 420)+60);
   anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X-30,FLOOR_Y)},{transform:tr(HERO_X-10,FLOOR_Y)},{transform:tr(HERO_X,FLOOR_Y)}], { duration:380, easing:'ease-out' });
   anim(a, [{filter:'none'},{filter: toxic ? 'sepia(1) saturate(8) hue-rotate(50deg) brightness(1.1)' : 'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)'},{filter:'none'}], { duration:toxic?600:320 });
   floatText(`-${dmg}`, HERO_X-10, FLOOR_Y-175, '#ff6a5a', big?46:36, true);
@@ -5014,7 +5020,7 @@ function heroHurt(dmg, big, toxic){
   const mouth = document.querySelector('#heroA .mouth'); if(mouth){ mouth.setAttribute('d', mouth.dataset.h); setTimeout(()=>mouth.setAttribute('d', mouth.dataset.d),900); }
 }
 function heroFlash(color){ anim($('#heroA'), [{filter:'none'},{filter:`drop-shadow(0 0 14px ${color}) brightness(1.3)`},{filter:'none'}], { duration:700 }); }
-function heroCheer(){ const a=$('#heroA'); a.classList.remove('cheer'); void a.getBBox(); a.classList.add('cheer'); setTimeout(()=>a.classList.remove('cheer'),1100); }
+function heroCheer(){ const a=$('#heroA'); a.classList.remove('cheer'); void a.getBBox(); a.classList.add('cheer'); setTimeout(()=>a.classList.remove('cheer'), sprMs('cheer', 1000)+100); }
 function shake(big){ const s=$('#stage'); if(!s) return; s.classList.remove('shake','shake-big'); void s.offsetWidth; s.classList.add(big?'shake-big':'shake'); }
 function floatText(txt, x, y, color, size, bounce){
   const fx = $('#fx'); if(!fx) return;
