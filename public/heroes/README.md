@@ -63,6 +63,6 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - `fan.png` = พัดที่ขว้าง · `portrait.png` = รูปหน้าใช้ในไอคอน HP
 
 ## X — โฟลเดอร์ `heroes/x/`
-- ท่า: idle · walk · hurt · dead · atk1 บัสเตอร์ · atk2 วิ่งยิง · atk3 สไลด์ยิง · charge ชาร์จ · fin HADOUKEN
-- `shotB1/2.png` `shotBB1/2.png` `shotP1/2.png` = กระสุนบัสเตอร์ 2 เฟรม ตามระดับชาร์จ ฟ้า → ฟ้าใหญ่ → ม่วง (ม่วงใหญ่ขึ้นทุกครั้งที่ชาร์จ) · `spark.png` = ประกายตอนชาร์จ
-- **เครดิตภาพ: Megaman X sprites by GregarLink10** (ผู้วาดขอให้ใส่เครดิตเมื่อนำไปใช้)
+- ภาพจากชีต Mega Man X / X2 / X3 (ripped by Random Talking Bush · The Spriters Resource)
+- ท่า: intro เทเลพอร์ตลงมา · idle · walk · hurt (โดนไฟช็อต) · dead (คุกเข่า) · atk1 บัสเตอร์ · atk2 วิ่งยิง · atk3 กระโดดยิง · charge · shot ชาร์จช็อต · fin ชาร์จเต็มพลัง
+- กระสุน: `lemon0-2.png` (ไม่ชาร์จ) · `plasma.png` (ชาร์จ x1–x2) · `crescent.png` (x3 ขึ้นไป ใหญ่ขึ้นทุกครั้งที่ชาร์จ) · `spark.png` ประกายตอนชาร์จ · `mug.png` รูปหน้าไอคอน HP
