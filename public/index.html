@@ -1220,14 +1220,28 @@ html.v16 .title-screen .logo{font-style:italic;font-weight:900;letter-spacing:-1
   filter:drop-shadow(4px 4px 0 #3a0610) drop-shadow(0 0 26px rgba(255,59,78,.45))}
 .lineup{display:flex;justify-content:center;align-items:flex-end;gap:0;margin:8px auto 4px;max-width:560px;width:100%;position:relative}
 .lineup::after{content:'';position:absolute;left:4%;right:4%;bottom:6px;height:22px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,59,78,.55),transparent);filter:blur(3px)}
-.lineup .hero-svg{position:relative;z-index:1;width:22%;height:auto;margin:0 -2.5%}
-.lineup .hero-svg:nth-child(3){width:27%;z-index:2}
+.lineup .hero-svg{position:relative;z-index:1;width:19%;height:auto;margin:0 -2.5%}
+.lineup .hero-svg:nth-child(3){width:24%;z-index:2}
 .lineup .hero-svg:nth-child(2),.lineup .hero-svg:nth-child(4){z-index:1;filter:brightness(.85)}
-.lineup .hero-svg:nth-child(1),.lineup .hero-svg:nth-child(5){filter:brightness(.6)}
+.lineup .hero-svg:nth-child(1),.lineup .hero-svg:nth-child(5),.lineup .hero-svg:nth-child(6){filter:brightness(.6)}
 .vs-strip{display:inline-flex;gap:10px;align-items:center;font:italic 800 13px var(--hand);letter-spacing:3px;color:var(--k-gold);margin:4px 0 10px}
 .vs-strip::before,.vs-strip::after{content:'';width:40px;height:2px;background:linear-gradient(90deg,transparent,var(--k-red))}
 .vs-strip::after{transform:scaleX(-1)}
 .meadow image{image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* X — split attack button (charge / fire) + charge aura */
+.xsplit{display:flex;flex-direction:column;gap:6px;flex:2;min-width:0}
+.xsplit .atk{flex:1;min-height:44px !important}
+.xcharge{--xc:#6fe8ff;flex:1;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:0;border-radius:6px;color:#06101e;cursor:pointer;
+  font:italic 800 16px/1.05 var(--hand);background:linear-gradient(180deg,#fff,var(--xc) 55%,color-mix(in srgb,var(--xc) 60%,#000));
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.5),inset 0 -5px 0 rgba(0,0,0,.25),0 0 0 2px #07060d,0 0 14px color-mix(in srgb,var(--xc) 55%,transparent)}
+.xcharge small{font:600 10.5px var(--hand);font-style:normal;opacity:.8}
+.xcharge:disabled{filter:grayscale(.85) brightness(.5)}
+.xcharge:active:not(:disabled){transform:translateY(2px)}
+html.v16 .atk.xrelease{background:linear-gradient(180deg,#fff,var(--xc) 45%,color-mix(in srgb,var(--xc) 55%,#000)) !important;color:#06101e}
+#heroA.xcharged .spr image{animation:xpulse .45s ease-in-out infinite alternate}
+@keyframes xpulse{from{filter:drop-shadow(0 0 3px var(--xc)) drop-shadow(0 0 8px var(--xc))}to{filter:drop-shadow(0 0 6px var(--xc)) drop-shadow(0 0 16px var(--xc)) brightness(1.2)}}
+@media (max-width:900px), (max-aspect-ratio:4/3){ .xsplit{flex:1 1 auto} .xsplit .atk{min-height:40px !important} .xcharge{min-height:40px} }
 </style>
 
 </head>
@@ -1834,7 +1848,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 10; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 11; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1910,6 +1924,19 @@ const HERO_SPRITE = {
       fin: { n:8, cw:106, ax:48, dur:1.5, th:'ระบำมังกรเพลิง' } },
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:7,
     finNote:'สะกดคำ <b>7 ตัวอักษรขึ้นไป</b> จะใช้<b>ระบำมังกรเพลิง</b> อัตโนมัติ' },
+  x: { dir:'heroes/x/', ch:51, scale:3.2, face:'-30 -168 58 58',
+    anims:{
+      idle:  { n:4,  cw:38, ax:18, dur:.9,  loop:true },
+      walk:  { n:10, cw:62, ax:36, dur:.8,  loop:true },
+      hurt:  { n:4,  cw:40, ax:18, dur:.7 },
+      dead:  { n:4,  cw:63, ax:35, dur:1 },
+      atk1:  { n:4,  cw:44, ax:18, dur:.55, th:'บัสเตอร์' },
+      atk2:  { n:5,  cw:72, ax:36, dur:.7,  th:'วิ่งยิง' },
+      atk3:  { n:5,  cw:62, ax:13, dur:.7,  th:'สไลด์ยิง' },
+      charge:{ n:4,  cw:37, ax:18, dur:.8,  th:'⚡ ชาร์จ' },
+      fin:   { n:8,  cw:55, ax:21, dur:1.1, th:'HADOUKEN' } },
+    attacks:['atk1','atk2','atk3'], extra:['charge'], finisher:'fin', finMin:99,
+    finNote:'กด <b>⚡ ชาร์จ</b> เพื่อเก็บดาเมจ แล้วกด <b>ยิง</b> · ชาร์จ x3 ขึ้นไปจะปล่อยเป็น <b>HADOUKEN</b>' },
 };
 const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
@@ -6443,6 +6470,133 @@ function maoFlames(){
 }
 
 /* ======================================================================
+   X — นักรบบัสเตอร์
+   · ปุ่มโจมตีแบ่งครึ่ง: ⚡ ชาร์จ / ยิง
+     ชาร์จ = ใช้คำที่ต่อได้ "เก็บดาเมจ" ไว้ ไม่โจมตี (ใช้เทิร์น ศัตรูยังโจมตีกลับ)
+     ชาร์จได้เรื่อยๆ ไม่จำกัด · ยิง = (ดาเมจที่เก็บ + คำนี้) x จำนวนครั้งที่ชาร์จ  (x1, x2, x3, x4 …)
+   · ระหว่างถือชาร์จ พลังห่อหุ้มตัว รับดาเมจ -15%
+   · ปล่อยชาร์จตั้งแต่ x3 ขึ้นไป = ท่า HADOUKEN (ลูกพลังยักษ์)
+   · ชาร์จที่เก็บไว้หายเมื่อเริ่มด่านใหม่
+   ภาพสไปรต์: Megaman X sprites by GregarLink10 (ผู้วาดขอให้ใส่เครดิต)
+   ====================================================================== */
+const XH = { id:'x', guard:.85, hadoken:3, cols:['#6fe8ff','#7dff9a','#ffe14a','#ff7ae0'] };
+CHARACTERS.push({ id:'x', name:'X', th:'เอ็กซ์ นักรบบัสเตอร์', price:3200, role:'ชาร์จ · บัสเตอร์', skill:'X-Buster ชาร์จ',
+  desc:'ปุ่มโจมตีแบ่งครึ่งเป็น ⚡ชาร์จ กับ ยิง · ชาร์จ = เก็บดาเมจของคำไว้ ไม่โจมตี (ศัตรูยังตีกลับ) · ยิง = ดาเมจที่เก็บ + คำนี้ x จำนวนครั้งที่ชาร์จ (x1 x2 x3 x4 …) · ระหว่างถือชาร์จรับดาเมจ -15% · ชาร์จ x3 ขึ้นไปปล่อยเป็น HADOUKEN',
+  hpMul:1, get dmgTaken(){ const b = ui.bat; return b && b.xLvl>0 ? XH.guard : 1; } });
+CHAR_TIP.x = 95;
+const isX = ()=>save.eq && save.eq.char===XH.id;
+const xColor = n=>XH.cols[Math.min(XH.cols.length-1, Math.max(0,n-1))];
+{
+  const _ev = evalWord;
+  evalWord = function(){
+    const r = _ev(), b = ui.bat;
+    if(!isX() || !b || r.state!=='ok' || r.rude) return r;
+    if(b.xCharging){ r.xStore = r.dmg; r.dmg = 0; r.el = null; r.crit = false; r.notes = [`⚡ ชาร์จ +${r.xStore} → x${(b.xLvl||0)+1}`]; return r; }
+    const n = b.xLvl||0;
+    if(n>0){ const base = r.dmg; r.dmg = Math.max(1, Math.round((base + b.xBank) * n));
+      r.notes.unshift(`⚡ ปล่อยชาร์จ (${b.xBank} + ${base}) x${n}`); }
+    return r;
+  };
+  // release: after a normal attack lands the stored charge is spent
+  const _da = doAttack;
+  doAttack = async function(){
+    const b = ui.bat;
+    if(!isX() || !b || b.xCharging) return _da();
+    const had = (b.xLvl||0)>0, w0 = b.words;
+    await _da();
+    if(had && ui.bat===b && b.words>w0){ b.xBank = 0; b.xLvl = 0; xAura(); updateHud(); }
+  };
+  const _pose = atkPoseOf;
+  atkPoseOf = function(k){ if(ui.xPose && isX() && (!k || k===XH.id)) return ui.xPose; return _pose(k); };
+  const _ha = heroAttack;
+  heroAttack = async function(lv, rude){
+    const b = ui.bat;
+    if(!isX() || !b) return _ha(lv, rude);
+    if(b.xCharging){   // no attack: power up in place
+      heroPose('pose-charge', sprMs('charge', 800)+80);
+      xChargeFx(xColor((b.xLvl||0)+1)); await sleep(820); return;
+    }
+    const n = b.xLvl||0;
+    ui.xLvlShot = n;
+    ui.xPose = n>=XH.hadoken ? 'fin' : null;
+    if(n>=XH.hadoken) floatText('HADOUKEN!', HERO_X+30, FLOOR_Y-215, xColor(n), 32, true);
+    try{ await _ha(lv, rude); } finally { ui.xPose = null; }
+  };
+  const _sl = slash;
+  slash = function(){ if(!isX()) return _sl(); xShot(ui.xLvlShot||0); };
+  const _uh = updateHud;
+  updateHud = function(){ _uh(); xButtons(); };
+  const _rt = renderTray;
+  renderTray = function(){ _rt(); xButtons(); };
+}
+async function xCharge(){
+  const b = ui.bat; if(!isX() || !b || b.busy) return;
+  b.xCharging = true; const r = evalWord(); b.xCharging = false;   // raw word damage, before any release multiplier
+  if(r.state!=='ok' || r.rude){ if(r.rude) toast('คำหยาบชาร์จไม่ได้'); return; }
+  const store = r.xStore||0, w0 = b.words;
+  const eh = enemyHurt, hit = sfx.hit;
+  // the 0-damage "hit" of a charge must not flash the enemy: swallow exactly one hurt + hit sound
+  b.xCharging = true; enemyHurt = function(){ enemyHurt = eh; }; sfx.hit = function(){ sfx.hit = hit; };
+  try{
+    const p = doAttack();
+    b.xLvl = (b.xLvl||0) + 1; b.xBank = (b.xBank||0) + store;   // counted up-front so the HUD shows it right away
+    xAura(); updateHud();
+    floatText(`⚡ CHARGE x${b.xLvl}`, HERO_X, FLOOR_Y-200, xColor(b.xLvl), 26, true);
+    await p;
+    if(ui.bat===b && b.words===w0){ b.xLvl--; b.xBank -= store; xAura(); updateHud(); }   // attack did not go through
+  } finally { enemyHurt = eh; sfx.hit = hit; b.xCharging = false; }
+}
+function xAura(){
+  const a = $('#heroA'), b = ui.bat; if(!a) return;
+  const n = b && isX() ? (b.xLvl||0) : 0;
+  a.classList.toggle('xcharged', n>0); if(n>0) a.style.setProperty('--xc', xColor(n)); else a.style.removeProperty('--xc');
+}
+function xButtons(){
+  const bAtk = $('#bAtk'), b = ui.bat;
+  let wrap = $('#xSplit');
+  if(!bAtk || !b || !isX()){ if(wrap && bAtk){ wrap.parentNode.insertBefore(bAtk, wrap); wrap.remove(); } const bd = $('#xBadge'); if(bd) bd.remove(); return; }
+  if(!wrap){
+    wrap = document.createElement('div'); wrap.id = 'xSplit'; wrap.className = 'xsplit';
+    bAtk.parentNode.insertBefore(wrap, bAtk);
+    const ch = document.createElement('button'); ch.id = 'bCharge'; ch.className = 'xcharge'; ch.type = 'button';
+    ch.addEventListener('click', xCharge);
+    wrap.appendChild(ch); wrap.appendChild(bAtk);
+  }
+  const ch = $('#bCharge'), n = b.xLvl||0, r = evalWord();
+  ch.disabled = b.busy || r.state!=='ok' || !!r.rude;
+  ch.style.setProperty('--xc', xColor(n+1));
+  ch.innerHTML = `<span class="xb">⚡ ชาร์จ</span><small>${n ? `เก็บ ${b.xBank} · x${n} → x${n+1}` : 'เก็บดาเมจ x1'}</small>`;
+  bAtk.classList.toggle('xrelease', n>0); bAtk.style.setProperty('--xc', xColor(n));
+  const me = document.querySelector('.hud .me');
+  if(me){ let bd = $('#xBadge'); if(!n){ if(bd) bd.remove(); } else { if(!bd){ bd = document.createElement('span'); bd.id='xBadge'; bd.className='rage-badge'; me.appendChild(bd); } bd.textContent = `⚡x${n}`; bd.style.background = xColor(n); bd.style.color = '#0a0a18'; } }
+  xAura();
+}
+function xChargeFx(col){
+  const fx = $('#fx'); if(!fx) return;
+  for(let k=0;k<14;k++){ const c = svgEl('circle', { r:rint(2,4), fill:col }); fx.appendChild(c);
+    const a = Math.random()*Math.PI*2, d = rint(50,90), cx = HERO_X+10, cy = FLOOR_Y-80;
+    anim(c, [{transform:tr(cx+Math.cos(a)*d, cy+Math.sin(a)*d),opacity:0},{transform:tr(cx,cy),opacity:1}], { duration:520, delay:k*25, easing:'ease-in' }).then(()=>c.remove()); }
+  const ring = svgEl('circle', { r:30, fill:'none', stroke:col, 'stroke-width':4 }); fx.appendChild(ring);
+  anim(ring, [{transform:tr(HERO_X+10,FLOOR_Y-80)+' scale(2.2)',opacity:0},{transform:tr(HERO_X+10,FLOOR_Y-80)+' scale(.5)',opacity:.9}], { duration:600, easing:'ease-in' }).then(()=>ring.remove());
+  [0,1,2].forEach(i=>tone(300+i*180, .12, 'sawtooth', .04, i*.1));
+}
+function xShot(n){
+  const e = curEnemy(); if(!e) return;
+  const fx = $('#fx'), sx = HERO_X+110, sy = FLOOR_Y-100, ty = FLOOR_Y - e.h*e.sc*.5;
+  const big = n>=XH.hadoken, img = n>=5 ? 'shot3' : n>=1 ? (big ? 'shot2' : 'shot1') : 'pellet';
+  const sc = n>=1 ? Math.min(3.2, 1.1 + n*.35) : .8, w = 58*sc, h = 34*sc;
+  const g = svgEl('g', {});
+  g.innerHTML = `<image href="heroes/x/${img}.png?v=${HERO_IMG_VER}" x="${-w*.7}" y="${-h/2}" width="${w}" height="${h}" style="image-rendering:pixelated"/>`;
+  fx.appendChild(g); tone(n ? 520 : 880, .08, 'square', .06); if(n) tone(180, .25, 'sawtooth', .05, .03);
+  anim(g, [{transform:tr(sx,sy)},{transform:tr(EN_X-20,ty)}], { duration: n ? 260 : 180, easing:'linear', fill:'forwards' }).then(()=>{
+    g.remove();
+    const col = n ? xColor(n) : '#fff6a0';
+    const f = svgEl('circle', { r: 26 + n*10, fill:col, opacity:.8 }); fx.appendChild(f);
+    anim(f, [{transform:tr(EN_X,ty)+' scale(.3)',opacity:.9},{transform:tr(EN_X,ty)+' scale(1.6)',opacity:0}], { duration:380 }).then(()=>f.remove());
+    if(big) shake(true);
+  });
+}
+/* ======================================================================
    v16 — roster = sprite heroes only (Plink, Puff, Boomtos, ELON, Mao)
    Old saves that bought a removed hero get the gold back; equipped → Plink.
    ====================================================================== */
@@ -6466,6 +6620,7 @@ const FIGHTER = {
   pip:    { c:'#46d17a', atk:3, def:3, spd:3, diff:1 },
   puff:   { c:'#ff7ac0', atk:2, def:4, spd:3, diff:1 },
   mao:    { c:'#ff4d62', atk:4, def:2, spd:5, diff:2 },
+  x:      { c:'#2f9bff', atk:5, def:3, spd:3, diff:3 },
   elon:   { c:'#3ec8ff', atk:4, def:3, spd:4, diff:3 },
   boomtos:{ c:'#ff6a1a', atk:5, def:2, spd:2, diff:3 },
 };
@@ -6498,7 +6653,7 @@ function fighterSelect(){
         <div class="fs-cta">${cta}</div>
       </div>
     </div>
-    <div class="fs-roster" role="list">${roster}</div>
+    <div class="fs-roster" role="list" style="grid-template-columns:repeat(${CHARACTERS.length},minmax(0,1fr))">${roster}</div>
   </div>`;
 }
 renderHero = (_rh=>function(){
@@ -6528,14 +6683,14 @@ renderShop = (_rs=>function(){
 
 /* title: fighter line-up */
 renderTitle = function(){
-  const order = ['mao','elon','pip','boomtos','puff'].filter(id=>CHARACTERS.some(c=>c.id===id));
+  const order = ['mao','elon','x','pip','boomtos','puff'].filter(id=>CHARACTERS.some(c=>c.id===id));
   const line = order.map(id=>heroStandalone(Object.assign({}, save.eq, { char:id }))).join('');
   return `<div class="title-screen t9">${TITLE_BG9()}
     <div class="title-content">
     <div class="logo-wrap">${EMBLEM9}<h1 class="logo">Quest<small>Lines</small></h1></div>
     <div class="tagline9">${ORN9}<span>Word Battle</span>${ORN9}</div>
     <div class="lineup" aria-hidden="true">${line}</div>
-    <div class="vs-strip">5 FIGHTERS · 1 WORD</div>
+    <div class="vs-strip">${CHARACTERS.length} FIGHTERS · 1 WORD</div>
     <input class="text-in" id="nameIn" maxlength="14" placeholder="ตั้งชื่อผู้เล่นของคุณ" autocomplete="off" value="${esc(save.name)}" aria-label="ชื่อผู้เล่น">
     <button class="cbtn gold big-cta" data-act="startGame">${ICON.sword} เริ่มการต่อสู้</button>
     <p class="sub" style="margin-top:12px">สะกดคำภาษาอังกฤษจากตัวอักษรเพื่อโจมตี · ยิ่งคำยาว ยิ่งแรง</p></div>

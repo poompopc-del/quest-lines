@@ -61,3 +61,8 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - ภาพต้นฉบับหันซ้าย ตัดแล้วกลับด้านให้หันขวา
 - ท่า: idle · walk · hurt · dead · atk1 พัดฟาดเพลิง · atk2 เตะกระเรียน · atk3 ตีลังกากระรอกบิน · fin ระบำมังกรเพลิง (คำ 7 ตัวขึ้นไป)
 - `fan.png` = พัดที่ขว้าง · `portrait.png` = รูปหน้าใช้ในไอคอน HP
+
+## X — โฟลเดอร์ `heroes/x/`
+- ท่า: idle · walk · hurt · dead · atk1 บัสเตอร์ · atk2 วิ่งยิง · atk3 สไลด์ยิง · charge ชาร์จ · fin HADOUKEN
+- `pellet.png` `shot1.png` `shot2.png` `shot3.png` = กระสุนบัสเตอร์ตามระดับชาร์จ
+- **เครดิตภาพ: Megaman X sprites by GregarLink10** (ผู้วาดขอให้ใส่เครดิตเมื่อนำไปใช้)
