@@ -426,6 +426,27 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 .actor .halo{animation:halo 2s ease-in-out infinite}
 @keyframes halo{50%{transform:translateY(-4px)}}
 
+
+/* ------------------------------ v7 gameplay additions ------------------------------ */
+.combo-hud{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:3px;font:700 15px var(--hand);color:#ffe27a;text-shadow:0 2px 0 #24170f}
+.combo-hud .meter{width:76px;height:9px;border:2px solid #3e2a1d;border-radius:999px;background:#120f0c;overflow:hidden}
+.combo-hud .meter i{display:block;height:100%;background:linear-gradient(90deg,#f2b42c,#ff5b45);transition:width .2s}
+.ultbtn{background:linear-gradient(#9b6ad8,#6f45a8)!important;min-width:58px;position:relative}
+.ultbtn.ready{animation:ultPulse .8s infinite;box-shadow:0 0 18px rgba(199,125,255,.7)}
+.ultbtn .ultn{position:absolute;right:-4px;top:-5px;border-radius:10px;padding:1px 5px;background:#f2b42c;color:#21160d;font:700 11px var(--hand);border:2px solid #21160d}
+@keyframes ultPulse{50%{transform:translateY(-2px) scale(1.04);filter:brightness(1.2)}}
+.enemy.golden{filter:drop-shadow(0 0 10px #ffd84a) saturate(1.35)}
+.enemy.golden .elite-ring{stroke:#ffe14a!important;stroke-width:6!important}
+.golden-tag{font:700 14px var(--hand);fill:#fff1a0;paint-order:stroke;stroke:#4a2c0a;stroke-width:4}
+.boss-phase{position:absolute;left:50%;top:54px;transform:translateX(-50%);z-index:8;padding:6px 13px;border-radius:999px;background:#6a2a20;border:2px solid #ff8060;color:#fff;font:700 15px var(--hand);box-shadow:0 3px 0 #1d1512}
+.mastery-bar{height:7px;background:#16120f;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-top:4px}
+.mastery-bar i{display:block;height:100%;background:#f2b42c}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.ach{padding:11px;border:2px solid var(--line);border-radius:13px;background:#17130f}
+.ach.on{border-color:#f2b42c;background:#2b2116;box-shadow:inset 0 0 0 1px #76501a}
+.ach b{display:block;font:700 18px var(--hand);color:var(--chalk)}
+.ach small{color:var(--ink-dim);font-family:var(--thai)}
+
 /* modals & toasts */
 .overlay{position:fixed;inset:0;background:rgba(10,8,6,.74);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;animation:fadeIn .2s}
 @keyframes fadeIn{from{opacity:0}}
@@ -1689,8 +1710,10 @@ function makeEnemy(key, s, rng, boss, mini){
   const hp = Math.round((18 + s*2.1) * v * (boss?2.3:mini?1.7:1));
   const atk = Math.round((4 + s*.6) * (boss?1.15:mini?1.1:1));
   const gold = Math.round((4 + s*1) * (boss?5:mini?3:1));
-  return { key, name:T.name, th:T.th, art:T.art, pal:T.pal, sc:T.sc, h:T.h, boss:!!boss, mini:!!mini, traits:T.traits.slice(), caster:!!T.caster,
-    weak: WEAK_LETTERS[Math.floor(rng()*WEAK_LETTERS.length)], hp, maxHp:hp, atk, gold, charge:0, burn:0, burnDmg:0, stun:false };
+  const golden = !boss && !mini && rng() < .055;
+  const ghp = golden ? Math.round(hp*.85) : hp;
+  return { key, name:golden?'Golden '+T.name:T.name, th:golden?'โกลเดน '+T.th:T.th, art:T.art, pal:T.pal, sc:T.sc, h:T.h, boss:!!boss, mini:!!mini, golden, traits:T.traits.slice(), caster:!!T.caster,
+    weak: WEAK_LETTERS[Math.floor(rng()*WEAK_LETTERS.length)], hp:ghp, maxHp:ghp, atk:golden?Math.round(atk*1.15):atk, gold:golden?gold*4:gold, charge:0, burn:0, burnDmg:0, stun:false, phase:1, phase2:false };
 }
 
 /* ------------------------------ save ------------------------------ */
@@ -1698,8 +1721,8 @@ const SAVE_KEY = 'questlines_wordbattle_v1';
 function defaultSave(){
   return { v:2, name:'', gold:0, hpLv:0, weapons:['wood'], armors:['none'], accs:[], acc:[null,null,null,null], chars:['pip'], eq:{ weapon:'wood', armor:'none', char:'pip' },
     potions:{ heal:2, power:1 }, up:{}, cleared:0, stars:{}, best:{},
-    stats:{ words:0, longest:'', bestDmg:0, bestWord:'', kills:0, bosses:0, damage:0 },
-    book:{}, tutorial:false, settings:{ sfx:70, music:false, tts:true, autoSpeak:true, awake:true, webTr:true } };
+    stats:{ words:0, longest:'', bestDmg:0, bestWord:'', kills:0, bosses:0, damage:0, bestCombo:0, golden:0, ultimates:0, crit:0 },
+    mastery:{}, achievements:{}, book:{}, tutorial:false, settings:{ sfx:70, music:false, tts:true, autoSpeak:true, awake:true, webTr:true } };
 }
 function migrate(d){
   if(d.shields && !d.armors) d.armors = d.shields;
@@ -1708,6 +1731,9 @@ function migrate(d){
   if(!Array.isArray(d.acc)) d.acc=[null,null];
   while(d.acc.length<4) d.acc.push(null);
   if(!d.up || typeof d.up!=='object') d.up = {};
+  if(!d.mastery || typeof d.mastery!=='object') d.mastery = {};
+  if(!d.achievements || typeof d.achievements!=='object') d.achievements = {};
+  d.stats = Object.assign({words:0,longest:'',bestDmg:0,bestWord:'',kills:0,bosses:0,damage:0,bestCombo:0,golden:0,ultimates:0,crit:0}, d.stats||{});
   return d;
 }
 function loadSave(){
@@ -1716,6 +1742,39 @@ function loadSave(){
 }
 let save = loadSave();
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+
+const ACH = {
+  word10:{th:'นักสะกดมือใหม่',d:'สะกดคำสำเร็จ 10 คำ',need:s=>s.words>=10},
+  word100:{th:'Word Master',d:'สะกดคำสำเร็จ 100 คำ',need:s=>s.words>=100},
+  combo5:{th:'Combo x5',d:'ทำคอมโบถึง 5',need:s=>s.bestCombo>=5},
+  crit10:{th:'Critical Hunter',d:'ทำ Critical 10 ครั้ง',need:s=>s.crit>=10},
+  golden:{th:'Golden Hunter',d:'ปราบ Golden Monster 1 ตัว',need:s=>s.golden>=1},
+  boss3:{th:'Boss Breaker',d:'ปราบบอส 3 ตัว',need:s=>s.bosses>=3},
+  ult5:{th:'Ultimate!',d:'ใช้ Ultimate 5 ครั้ง',need:s=>s.ultimates>=5},
+  words7:{th:'คำยาวโหด',d:'สร้างคำยาว 7 ตัวขึ้นไป',need:s=>s.longest && s.longest.length>=7}
+};
+function unlockAch(id){
+  if(!ACH[id] || save.achievements[id]) return;
+  save.achievements[id]=Date.now(); persist();
+  toast(`🏆 Achievement: ${ACH[id].th}`);
+  sfx.win();
+}
+function checkAchievements(){
+  const st=save.stats; st.crit=st.crit||0;
+  Object.keys(ACH).forEach(id=>{ if(ACH[id].need(st)) unlockAch(id); });
+}
+function masteryInfo(w){
+  const d=save.mastery[w]||{n:0};
+  const lv=Math.min(5,Math.floor(d.n/5)+1);
+  return {n:d.n||0,lv,prog:(d.n||0)%5};
+}
+function addMastery(w){
+  if(!w || RUDE.has(w)) return;
+  const d=save.mastery[w]||{n:0};
+  d.n=(d.n||0)+1; save.mastery[w]=d;
+  return masteryInfo(w);
+}
+
 /* per-character upgrades: attack, defence, HP and extra item slots */
 const UPS = {
   atk:{ th:'พลังโจมตี', en:'ATK', max:10, icon:'sword', cost:lv=>Math.round(90*Math.pow(1.5,lv)), fx:lv=>`ดาเมจ +${lv*8}%` },
@@ -2006,11 +2065,16 @@ function renderHero(){
       <div class="panel stat-box"><small>คำยาวที่สุด</small><b>${esc((st.longest||'—').toUpperCase())}</b></div>
       <div class="panel stat-box"><small>ดาเมจสูงสุด</small><b>${st.bestDmg}${st.bestWord?` <span class="sub">(${esc(st.bestWord.toUpperCase())})</span>`:''}</b></div>
       <div class="panel stat-box"><small>บอสที่ล้ม</small><b>${st.bosses}</b></div>
-      <div class="panel stat-box"><small>ดาวทั้งหมด</small><b>${Object.values(save.stars).reduce((a,b)=>a+b,0)} / ${CHAPTERS.length*STAGES_PER*3}</b></div></div>`;
+      <div class="panel stat-box"><small>คอมโบสูงสุด</small><b>${st.bestCombo||0} 🔥</b></div>
+      <div class="panel stat-box"><small>Golden Monster</small><b>${st.golden||0} ★</b></div>
+      <div class="panel stat-box"><small>Ultimate</small><b>${st.ultimates||0} ⚡</b></div>
+      <div class="panel stat-box"><small>ดาวทั้งหมด</small><b>${Object.values(save.stars).reduce((a,b)=>a+b,0)} / ${CHAPTERS.length*STAGES_PER*3}</b></div></div>
+      <h3 class="title" style="font-size:25px;margin-top:16px">🏆 Achievements</h3>
+      <div class="ach-grid">${Object.entries(ACH).map(([id,a])=>`<div class="ach ${save.achievements[id]?'on':''}"><b>${save.achievements[id]?'🏆':'🔒'} ${esc(a.th)}</b><small>${esc(a.d)}</small></div>`).join('')}</div>`;
   } else {
     const words = Object.entries(save.book).sort((a,b)=>b[1].t-a[1].t);
     h += `<p class="sub">คำที่คุณสะกดได้พร้อมคำแปล (${words.length} คำ) แตะ 🔊 เพื่อฟังเสียง</p><div class="panel" style="padding:4px 12px">`;
-    h += words.length ? words.map(([w,d])=>`<div class="book-row"><b>${esc(w)}</b><span>${esc(d.th)}${d.bank?' ⭐':''}</span><span class="sub" style="flex:0">x${d.n}</span><button data-act="say" data-v="${esc(w)}" aria-label="ฟังเสียง ${esc(w)}">🔊</button></div>`).join('')
+    h += words.length ? words.map(([w,d])=>{ const m=masteryInfo(w); return `<div class="book-row"><b>${esc(w)}</b><span>${esc(d.th)}${d.bank?' ⭐':''}<div class="mastery-bar"><i style="width:${m.lv>=5?100:m.prog/5*100}%"></i></div></span><span class="sub" style="flex:0">Lv.${m.lv} · x${d.n}</span><button data-act="say" data-v="${esc(w)}" aria-label="ฟังเสียง ${esc(w)}">🔊</button></div>`; }).join('')
       : `<p class="sub" style="text-align:center;padding:18px 0">ยังไม่มีคำ ออกไปสู้แล้วสะกดคำแรกเลย</p>`;
     h += `</div><p class="sub">⭐ = คำศัพท์เป้าหมาย ทำดาเมจเพิ่ม 50%</p>`;
   }
@@ -2044,6 +2108,10 @@ function howtoHtml(){
     <li>ทุกคำที่โจมตีสำเร็จจะขึ้น<b>คำแปลภาษาไทย</b> และบันทึกลงสมุดคำศัพท์ · คำศัพท์เป้าหมาย ⭐ ได้ดาเมจเพิ่ม 50%</li>
     <li>ทุกด่านมี<b>มินิบอส</b> ชนะแล้วจะได้เล่น<b>ปริศนาคำศัพท์</b> เติมตัวอักษรที่หายไปให้ถูก รับรางวัลเพิ่ม (บทยิ่งสูง รางวัลยิ่งมาก)</li>
     <li>คำยาว 4 ตัวขึ้นไปจะมี<b>ออร่า</b> ยิ่งยาวยิ่งเท่และยิ่งแรง</li>
+    <li><b>คอมโบ</b> ทำจากการโจมตีต่อเนื่อง ทุก 5 คอมโบจะชาร์จ ⚡ Ultimate</li>
+    <li>คำยาว 8 ตัวขึ้นไปหรือมีตัวอักษรหายากหลายตัวจะเป็น <b>CRITICAL WORD</b></li>
+    <li>มี <b>★ GOLDEN MONSTER</b> ให้ทองมากกว่า และบอสจะเข้าสู่ <b>PHASE 2</b> เมื่อ HP เหลือครึ่งหนึ่ง</li>
+    <li>คำที่ใช้ซ้ำจะสะสม <b>Word Mastery</b> สูงสุด Lv.5 และเพิ่มดาเมจ</li>
     <li><b>คำธาตุ</b> เช่น FIRE, ICE, STORM, WATER, POISON, WIND, ROCK, LIGHT, DARK จะมอบพลังให้อาวุธ: ติดไฟ แช่แข็ง ฟ้าผ่าซ้ำ ฮีล ดูดเลือด ฯลฯ</li>
     <li>คำหยาบใช้ได้ 🤬 ดาเมจ x2 แต่<b>สะท้อนเข้าตัวเอง 30% ของ HP</b> — so rude!</li>
     <li>ร้านค้ามีตัวละคร อาวุธ ชุดเกราะ และไอเทมเสริม · อัปเกรด ATK / DEF / HP และช่องไอเทมของแต่ละตัวได้ที่หน้าฮีโร่</li>
@@ -2077,7 +2145,7 @@ function balanceTiles(tiles, freshOnly){
 function startStage(ch, n){
   loadDict();
   const st = buildStage(ch, n);
-  ui.bat = { stage:st, idx:0, hp:maxHp(), max:maxHp(), score:0, kills:0, goldGain:0, busy:true, sel:[], tiles:[], hints:3+(hasAcc('lens')?1:0)+(save.eq.char==='pip'?1:0), combo:0, evade:0, stoneSkin:0, power:false,
+  ui.bat = { stage:st, idx:0, hp:maxHp(), max:maxHp(), score:0, kills:0, goldGain:0, busy:true, sel:[], tiles:[], hints:3+(hasAcc('lens')?1:0)+(save.eq.char==='pip'?1:0), combo:0, ult:0, evade:0, stoneSkin:0, power:false,
     recent:[], last:null, dist:0, words:0, bestWord:'', bestDmg:0, over:false, paused:false, phoenix:hasAcc('phoenix') };
   const b = ui.bat;
   for(let i=0;i<15;i++) b.tiles.push(newTile(st.s));
@@ -2100,7 +2168,7 @@ function buildBattleDom(){
     <div class="stage" id="stage">${sceneSVG(st.theme, hashStr('scene'+st.s), st.n)}
       <div class="hud">
         <div class="me"><div class="face">${heroFaceSvg(save.eq)}</div><div class="bar"><i id="hpBar"></i><span id="hpTxt"></span></div></div>
-        <div class="score" id="score">0</div>
+        <div><div class="score" id="score">0</div><div class="combo-hud">🔥 COMBO <b id="comboTxt">0</b><span class="meter"><i id="comboBar"></i></span></div></div>
         <div class="right"><span class="pill">${ICON.skull}<b id="kills">0/${st.enemies.length}</b></span><span class="pill">${ICON.coin}<b id="goldH">${save.gold}</b></span><button class="pause" data-act="pause" aria-label="หยุดเกม">II</button></div>
       </div>
       <div class="tray-msg" id="trayMsg"></div>
@@ -2118,7 +2186,7 @@ function buildBattleDom(){
       <div class="tiles" id="tiles"></div>
       <div class="attack">
         <button class="atk" data-act="attack" id="bAtk" disabled>${ICON.sword}<span class="dmg" id="atkDmg"></span></button>
-        <div class="minirow"><button data-act="hint" id="bHint" aria-label="คำใบ้">💡<span id="nHint"></span></button><button data-act="clearSel" aria-label="ล้างคำ">⌫</button></div>
+        <div class="minirow"><button data-act="hint" id="bHint" aria-label="คำใบ้">💡<span id="nHint"></span></button><button class="ultbtn" data-act="ultimate" id="bUlt" aria-label="Ultimate">⚡<span class="ultn" id="ultN">0/5</span></button><button data-act="clearSel" aria-label="ล้างคำ">⌫</button></div>
       </div>
       <div class="panel right" id="enemyPanel"></div>
     </div></div>`;
@@ -2148,7 +2216,7 @@ function enemyMarkup(e, queued){
   const col = e.boss ? '#d9452f' : e.mini ? '#f2b42c' : '#d9452f';
   const bar = queued ? '' : `<g class="ehp" transform="translate(-40,${-e.h*e.sc-26})"><rect width="80" height="12" rx="6" fill="#12100d" stroke="${OL}" stroke-width="3"/><rect class="ehpfill" x="2" y="2" width="76" height="8" rx="4" fill="${col}"/>${e.mini?`<path d="M-14,8 L-16,-4 L-9,2 L-4,-8 L1,2 L8,-4 L6,8 Z" fill="#f2b42c" stroke="${OL}" stroke-width="2.2" stroke-linejoin="round"/>`:''}</g>`;
   const ring = (e.mini||e.boss) && !queued ? `<ellipse class="elite-ring" cx="0" cy="2" rx="${46*e.sc}" ry="${10*e.sc}" fill="none" stroke="${e.boss?'#ff6a4a':'#f2b42c'}" stroke-width="4" opacity=".8"/>` : '';
-  return `<g class="enemy ${queued?'queued':''}">${ring}<g transform="scale(${e.sc})">${monsterSVG(e)}</g>${bar}</g>`;
+  return `<g class="enemy ${queued?'queued':''} ${e.golden?'golden':''}">${ring}<g transform="scale(${e.sc})">${monsterSVG(e)}</g>${bar}${e.golden&&!queued?`<text class="golden-tag" x="-35" y="${-e.h*e.sc-34}">★ GOLDEN ★</text>`:''}${e.boss&&!queued&&e.phase2?`<text class="golden-tag" x="-28" y="${-e.h*e.sc-50}" fill="#ff8060">PHASE 2</text>`:''} </g>`;
 }
 function placeEnemies(offstage){
   const b = ui.bat, e = curEnemy(), q = b.stage.enemies[b.idx+1];
@@ -2168,6 +2236,11 @@ function updateHud(){
   $('#hpBar').style.width = Math.max(0,b.hp/b.max*100)+'%';
   $('#hpTxt').textContent = `${Math.max(0,Math.ceil(b.hp))}/${b.max}`;
   $('#score').textContent = b.score;
+  if($('#comboTxt')) $('#comboTxt').textContent=b.combo;
+  if($('#comboBar')) $('#comboBar').style.width=Math.min(100,b.combo/5*100)+'%';
+  if($('#ultN')) $('#ultN').textContent=`${b.ult}/5`;
+  if($('#bUlt')) $('#bUlt').classList.toggle('ready',b.ult>=5);
+  if($('#bUlt')) $('#bUlt').disabled=b.busy || b.ult<5;
   $('#kills').textContent = `${b.kills}/${b.stage.enemies.length}`;
   $('#goldH').textContent = save.gold;
   $('#nHeal').textContent = save.potions.heal||0; $('#nPow').textContent = save.potions.power||0;
@@ -2219,9 +2292,15 @@ function evalWord(){
     if(e.traits.includes('armor3') && len<=3){ mult *= .5; notes.push('เกราะ ครึ่งเดียว'); }
     if(e.traits.includes('armor4') && len<=4){ mult *= .5; notes.push('โปร่งแสง ครึ่งเดียว'); }
   }
+  const md = masteryInfo(w);
+  if(!rude && md.lv>1){ mult *= 1 + (md.lv-1)*.04; notes.push(`Mastery Lv.${md.lv}`); }
+  if(b.combo>0){ const cm=1+Math.min(5,b.combo)*.08; mult*=cm; notes.push(`Combo x${cm.toFixed(2)}`); }
+  const rareCount = [...w].filter(c=>['j','k','q','v','x','z'].includes(c)).length;
+  const crit = !rude && (len>=8 || rareCount>=2);
+  if(crit){ mult*=1.75; notes.push('CRITICAL WORD!'); }
   const dmg = Math.max(1, Math.round(p * mult * wp.atk/5 * atkMul()));
   const selfDmg = rude ? Math.round(ui.bat.max*.3) : 0;
-  return { w, state:'ok', dmg, bank, meaning:m, notes, rude, selfDmg, el };
+  return { w, state:'ok', dmg, bank, meaning:m, notes, rude, selfDmg, el, crit, mastery:md };
 }
 function renderTray(){
   const b = ui.bat, r = evalWord(), tray = $('#tray');
@@ -2235,7 +2314,7 @@ function renderTray(){
   if(!r.rude) b.rudeWarned = false;
   const msg = $('#trayMsg');
   msg.className = 'tray-msg' + (r.rude ? ' toxic' : r.el ? ` elem el-${r.el}` : lv>=3 ? ' epic' : '');
-  msg.textContent = r.state==='bad' ? 'ไม่พบคำนี้' : r.state==='short' ? 'อย่างน้อย 3 ตัวอักษร' : r.state==='ok' ? (r.rude ? `🤬 คำหยาบ! ดาเมจ x2 แต่เจ็บตัวเอง -${r.selfDmg} HP` : r.notes.length? r.notes.join(' · ') : (r.meaning?r.meaning.thai:(lv>=3?'สุดยอด!':''))) : '';
+  msg.textContent = r.state==='bad' ? 'ไม่พบคำนี้' : r.state==='short' ? 'อย่างน้อย 3 ตัวอักษร' : r.state==='ok' ? (r.rude ? `🤬 คำหยาบ! ดาเมจ x2 แต่เจ็บตัวเอง -${r.selfDmg} HP` : r.crit ? `💥 CRITICAL WORD! ${r.notes.join(' · ')}` : r.notes.length? r.notes.join(' · ') : (r.meaning?r.meaning.thai:(lv>=3?'สุดยอด!':''))) : '';
   const btn = $('#bAtk');
   btn.disabled = r.state!=='ok' || b.busy;
   btn.classList.toggle('ready', r.state==='ok' && !b.busy);
@@ -2333,6 +2412,12 @@ async function doAttack(){
   if(r.rude) speakRude(); else if(save.settings.autoSpeak) speak(r.w);
   // record
   b.words++; save.stats.words++; save.stats.damage += r.dmg;
+  if(r.crit){ save.stats.crit=(save.stats.crit||0)+1; floatText('💥 CRITICAL WORD!', EN_X, FLOOR_Y-e.h*e.sc-82, '#ffdf4a', 28, true); }
+  if(!r.rude) addMastery(r.w);
+  b.combo++;
+  b.ult=Math.min(5,b.ult+1);
+  save.stats.bestCombo=Math.max(save.stats.bestCombo,b.combo);
+  checkAchievements();
   if(!r.rude){
     if(r.w.length > (save.stats.longest||'').length) save.stats.longest = r.w;
     if(r.dmg > save.stats.bestDmg){ save.stats.bestDmg = r.dmg; save.stats.bestWord = r.w; }
@@ -2360,6 +2445,11 @@ async function doAttack(){
   await heroAttack(lv, r.rude);
   e.hp -= dmg; b.score += dmg;
   if(crit){ floatText('CRITICAL!', EN_X, FLOOR_Y-e.h*e.sc-70, '#ff5a5a', 30, true); }
+  if(e.boss && !e.phase2 && e.hp>0 && e.hp<=e.maxHp*.5){
+    e.phase2=true; e.phase=2; e.atk=Math.round(e.atk*1.35); e.hp=Math.min(e.maxHp,e.hp+Math.round(e.maxHp*.08));
+    const ph=document.createElement('div'); ph.className='boss-phase'; ph.textContent='🔥 BOSS PHASE 2!'; $('#stage').appendChild(ph); setTimeout(()=>ph.remove(),1800);
+    banner('PHASE 2!', e.th); sfx.boss(); shake(true);
+  }
   if(r.el) elemImpact(r.el);
   if(wp.perk==='burn'){ e.burn = 2; e.burnDmg = Math.max(1, Math.round(r.dmg*.3)); }
   const stunned = wp.perk==='stun' && Math.random()<.25;
@@ -2368,8 +2458,8 @@ async function doAttack(){
   enemyHurt(dmg, dmg>=Math.max(30,e.maxHp*.35) || lv>=4 || r.rude || crit);
   if(r.el) await applyElement(r.el, dmg, e);
   // Kiko: every third word strikes twice
-  if(charIs('kiko')){ b.combo += r.w.length>=6 ? 2 : 1;
-    if(b.combo>=3 && e.hp>0){ b.combo -= 3; await sleep(260); floatText('DOUBLE!', HERO_X+40, FLOOR_Y-200, '#ffb04a', 28, true); await heroAttack(lv, false); const d2 = Math.max(1, Math.round(dmg*.7)); e.hp -= d2; b.score += d2; sfx.hit(true); enemyHurt(d2, false); } }
+  if(charIs('kiko')){ b.kikoChain=(b.kikoChain||0)+(r.w.length>=6?2:1);
+    if(b.kikoChain>=3 && e.hp>0){ b.kikoChain-=3; await sleep(260); floatText('DOUBLE!', HERO_X+40, FLOOR_Y-200, '#ffb04a', 28, true); await heroAttack(lv, false); const d2 = Math.max(1, Math.round(dmg*.7)); e.hp -= d2; b.score += d2; sfx.hit(true); enemyHurt(d2, false); } }
   if(charIs('luma')){ const h = Math.round(b.max*.04); b.hp = Math.min(b.max, b.hp+h); floatText(`+${h}`, HERO_X-45, FLOOR_Y-120, '#fff6a0', 20); }
   if(charIs('pip') && r.bank){ save.gold += 3; b.goldGain += 3; }
   if(r.bank) floatText('⭐ WORD!', EN_X-10, FLOOR_Y-e.h*e.sc-60, '#ffe14a', 26);
@@ -2402,6 +2492,18 @@ async function checkHeroDeath(){
   }
   await heroDies(); return true;
 }
+
+async function useUltimate(){
+  const b=ui.bat,e=curEnemy(); if(!b||b.busy||b.ult<5||!e) return;
+  b.busy=true; b.ult=0; b.combo=0; save.stats.ultimates=(save.stats.ultimates||0)+1; checkAchievements();
+  const dmg=Math.max(20,Math.round((32+b.stage.s*2+b.words*.5)*atkMul()));
+  floatText('⚡ ULTIMATE!',HERO_X,FLOOR_Y-210,'#e4b6ff',36,true);
+  auraBurst(5,false,'#c77dff'); await heroAttack(5,false);
+  e.hp-=dmg; b.score+=dmg; sfx.hit(true); enemyHurt(dmg,true);
+  if(e.hp<=0){ await enemyDies(); return; }
+  updateEnemyHp(); updateHud(); renderEnemyPanel(); await sleep(400); await enemyTurn();
+}
+
 async function doShuffle(){
   const b = ui.bat; if(b.busy) return;
   b.busy = true; clearSelSilent(); sfx.shuffle();
@@ -2445,7 +2547,7 @@ async function enemyTurn(){
     anim($('#heroG'), [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X-50,FLOOR_Y-30)},{transform:tr(HERO_X,FLOOR_Y)}], { duration:420, easing:'ease-out' });
     await sleep(500); endTurn(); return; }
   if(b.stoneSkin>0){ b.stoneSkin--; dmg = Math.max(1, Math.round(dmg*.3)); floatText('🪨 ผิวหิน', HERO_X-10, FLOOR_Y-205, '#e8c890', 22); }
-  b.hp -= dmg; sfx.hurt(); heroHurt(dmg, heavy);
+  b.hp -= dmg; b.combo=0; b.ult=Math.max(0,b.ult-1); sfx.hurt(); heroHurt(dmg, heavy);
   if(hasAcc('thorn')){ const rf = Math.max(1, Math.round(dmg*.3)); e.hp -= rf; b.score += rf; setTimeout(()=>floatText(`🌵${rf}`, EN_X-10, FLOOR_Y-e.h*e.sc-10, '#b8ff8a', 24), 250); updateEnemyHp(); }
   if(e.traits.includes('vamp')){ const h=Math.round(dmg*.5); e.hp=Math.min(e.maxHp,e.hp+h); floatText(`+${h}`, EN_X+30, FLOOR_Y-e.h*e.sc-10, '#6ef08a', 22); updateEnemyHp(); }
   if(e.traits.includes('stone')){
@@ -2532,7 +2634,7 @@ function updateEnemyStatus(){
 
 async function enemyDies(){
   const b = ui.bat, e = curEnemy();
-  b.kills++; save.stats.kills++; if(e.boss) save.stats.bosses++;
+  b.kills++; save.stats.kills++; if(e.boss) save.stats.bosses++; if(e.golden){ save.stats.golden=(save.stats.golden||0)+1; floatText('★ GOLDEN!',EN_X,FLOOR_Y-e.h*e.sc-75,'#ffe14a',30,true); checkAchievements(); }
   const g = $('#enemyG');
   sfx.poof();
   poof(EN_X, FLOOR_Y - e.h*e.sc*.5, e.boss?1.6:1);
@@ -2893,6 +2995,7 @@ document.addEventListener('click', e=>{
     case 'resetDo': localStorage.removeItem(SAVE_KEY); save = defaultSave(); closeModal(); goto('title'); break;
     // battle
     case 'tile': tapTile(+el.dataset.i); break;
+    case 'ultimate': useUltimate(); break;
     case 'untray': untray(+el.dataset.k); break;
     case 'clearSel': clearSel(); break;
     case 'attack': doAttack(); break;
