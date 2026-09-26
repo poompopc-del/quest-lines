@@ -1623,7 +1623,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 1; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 2; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1636,8 +1636,8 @@ function heroImgSVG(cfg){
    ชีต 1 ไฟล์ แต่ละแถว = 1 ท่า ทุกช่องขนาดเท่ากัน (cw x ch) เท้าอยู่ขอบล่าง ตรงกับ ax
    anims: ท่า: [แถว, จำนวนรูป, วินาที]                                         */
 const HERO_SPRITE = {
-  pip: { sheet:'heroes/samurai.png', cols:8, rows:6, cw:200, ch:140, ax:100, scale:1.7, face:'-18 -170 42 42',
-    anims:{ idle:[0,4,.8], attack:[1,4,.56], hurt:[2,2,.38], dead:[3,2,.7], cheer:[4,4,1.05], walk:[5,8,.8] } },
+  pip: { sheet:'heroes/samurai.png', cols:15, rows:7, cw:190, ch:165, ax:80, scale:1.6, face:'-21 -139 42 42',
+    anims:{ idle:[0,9,1.1], attack:[1,10,.6], hurt:[2,6,.55], dead:[3,4,.7], cheer:[4,12,1.05], walk:[5,15,1], rest:[6,6,1.2] } },
 };
 (function sprCSS(){
   let css = '';
@@ -1647,6 +1647,7 @@ const HERO_SPRITE = {
     const once  = (n)=>`spr-${k}-${n} ${A[n][2]}s steps(${A[n][1]},jump-none) forwards`;
     css += kf('idle',A.idle,1)+kf('walk',A.walk,1)+kf('attack',A.attack,0)+kf('hurt',A.hurt,0)+kf('dead',A.dead,0)+kf('cheer',A.cheer,0)
       + `.spr-${k} .spr-strip{animation:${loopA('idle')}}`
+      + (A.rest ? kf('rest',A.rest,1) + `.actor:not([id="heroA"]) .spr-${k} .spr-strip{animation:${loopA('rest')}}` : '')
       + `.actor.walk .spr-${k} .spr-strip{animation:${loopA('walk')}}`
       + `.actor.cheer .spr-${k} .spr-strip{animation:${once('cheer')}}`
       + `.actor.hurt .spr-${k} .spr-strip{animation:${once('hurt')}}`
@@ -5003,7 +5004,7 @@ async function enemyCharge(){
 function heroHurt(dmg, big, toxic){
   const g = $('#heroG'), a = $('#heroA');
   if(toxic){ auraBurst(0, true); }
-  heroPose('hurt', 420);
+  heroPose('hurt', 600);
   anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X-30,FLOOR_Y)},{transform:tr(HERO_X-10,FLOOR_Y)},{transform:tr(HERO_X,FLOOR_Y)}], { duration:380, easing:'ease-out' });
   anim(a, [{filter:'none'},{filter: toxic ? 'sepia(1) saturate(8) hue-rotate(50deg) brightness(1.1)' : 'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)'},{filter:'none'}], { duration:toxic?600:320 });
   floatText(`-${dmg}`, HERO_X-10, FLOOR_Y-175, '#ff6a5a', big?46:36, true);

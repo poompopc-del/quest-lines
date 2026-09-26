@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quest-lines-v12';
+const CACHE_NAME = 'quest-lines-v12b';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
