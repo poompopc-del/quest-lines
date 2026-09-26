@@ -1851,7 +1851,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 15; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 16; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -6586,9 +6586,8 @@ function xAura(){
   if(g){ g._parts.forEach(p=>p._stop()); g.remove(); }
   g = svgEl('g', { class:'xaura' }); g.dataset.k = key;
   // charge particles swirling around X + the buster orb (blue → white at full charge)
-  const aura = xSprite('aura', 0, -78, 2.4, { loop:true, ms:75 });
-  const orb = xSprite('orb', 86, -102, 2.2, { loop:true, ms:70, from: n>=3 ? 5 : 0, count:5 });
-  g.appendChild(aura); g.appendChild(orb); g._parts = [aura, orb];
+  const aura = xSprite('aura', 0, -78, n>=3 ? 2.9 : 2.4, { loop:true, ms: n>=3 ? 55 : 75 });
+  g.appendChild(aura); g._parts = [aura];
   a.appendChild(g);
 }
 function xButtons(){
@@ -6613,14 +6612,14 @@ function xButtons(){
 }
 function xChargeFx(){
   const fx = $('#fx'); if(!fx) return;
-  const g = xSprite('orb', HERO_X + 86, FLOOR_Y - 102, 3, { ms:60, onEnd:g=>g.remove() });
+  const g = xSprite('aura', HERO_X, FLOOR_Y - 78, 3, { ms:60, onEnd:g=>g.remove() });
   fx.appendChild(g);
   [0,1,2].forEach(i=>tone(300+i*180, .12, 'sawtooth', .04, i*.1));
 }
 /* ---- X effects: every image comes from the sprite sheet (heroes/x/*.png strips) ---- */
 const XFX = {   // strip name → frame size / count
   muzzle:{w:17,h:24,n:5}, lemon:{w:21,h:8,n:4}, ring:{w:36,h:32,n:4}, pink:{w:77,h:47,n:4}, xfire:{w:80,h:74,n:4},
-  lvl4:{w:196,h:136,n:4}, burstB:{w:57,h:88,n:4}, burstP:{w:59,h:103,n:4}, aura:{w:71,h:74,n:7}, orb:{w:23,h:22,n:10}, bubble:{w:32,h:31,n:7} };
+  lvl4:{w:196,h:136,n:4}, burstB:{w:57,h:88,n:4}, burstP:{w:59,h:103,n:4}, aura:{w:71,h:74,n:7}, bubble:{w:32,h:31,n:7} };
 // an animated strip: nested <svg> whose viewBox steps through the frames (works on every browser)
 function xSprite(name, cx, cy, sc, opts={}){
   const F = XFX[name], w = F.w*sc, h = F.h*sc, first = opts.from||0, count = opts.count||F.n, ms = opts.ms||70;
@@ -6647,7 +6646,7 @@ function xMuzzle(n){
 }
 function xShotFly(n, ms){
   const e = curEnemy(), fx = $('#fx'); if(!e || !fx) return Promise.resolve();
-  const L = xShotLook(n), M = X_MUZZLE(), ty = FLOOR_Y - e.h*e.sc*.5, ex = EN_X - 20;
+  const L = xShotLook(n), M = X_MUZZLE(), ty = M.y, ex = EN_X - 20;   // flies dead straight from the buster
   const g = xSprite(L.img, 0, 0, L.sc, { ax:.75, loop:true, ms: n>=4 ? 80 : 60 });
   fx.appendChild(g);
   tone(n ? 520 : 900, .08, 'square', .06); if(n) tone(170, .28, 'sawtooth', .05, .02); if(n>=4) tone(90, .5, 'sawtooth', .07, .05);
@@ -6663,7 +6662,7 @@ function xShotFly(n, ms){
 }
 function xImpact(n){
   const e = curEnemy(), fx = $('#fx'); if(!e || !fx) return;
-  const ty = FLOOR_Y - e.h*e.sc*.5;
+  const ty = X_MUZZLE().y;
   const g = xSprite(n>=2 ? 'burstP' : 'burstB', EN_X, ty, 1.2 + Math.min(n,6)*.25, { ax:.4, ms:70, onEnd:g=>g.remove() });
   fx.appendChild(g);
   if(n>=3) shake(true);

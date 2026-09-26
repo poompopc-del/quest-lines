@@ -65,4 +65,4 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 ## X — โฟลเดอร์ `heroes/x/`
 - ภาพจากชีตรวมสไปรต์ Mega Man X (compilation: Capcom · DarkSamus993 · Random Talking Bush · The Spriters Resource และผู้ร่วมทำตามรายชื่อในชีต)
 - ท่า: intro เทเลพอร์ต · idle · walk · hurt · dead · atk1 บัสเตอร์ · atk2 วิ่งยิง · atk3 แดชยิง · charge · shot ชาร์จช็อต · fin ชาร์จเต็มพลัง
-- เอฟเฟกต์ (แถบหลายเฟรม): `muzzle` แสงปากกระบอก · `lemon` ไม่ชาร์จ · `ring` x1 · `pink` x2 · `xfire` x3 · `lvl4` x4+ (ใหญ่ขึ้นเรื่อยๆ) · `burstB/burstP` ระเบิดตอนโดน · `aura` ประกายชาร์จรอบตัว · `orb` ลูกพลังที่บัสเตอร์ · `bubble` วงแหวนตอนแพ้ · `mug.png` ไอคอน HP
+- เอฟเฟกต์ (แถบหลายเฟรม): `muzzle` แสงปากกระบอก · `lemon` ไม่ชาร์จ · `ring` x1 · `pink` x2 · `xfire` x3 · `lvl4` x4+ (ใหญ่ขึ้นเรื่อยๆ) · `burstB/burstP` ระเบิดตอนโดน · `aura` ประกายชาร์จรอบตัว · `bubble` วงแหวนตอนแพ้ · `mug.png` ไอคอน HP
