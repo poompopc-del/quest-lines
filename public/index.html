@@ -1653,6 +1653,17 @@ const HERO_SPRITE = {
       atk3:{ n:9,  cw:150, ax:65, dur:1.1, th:'กระโดดฟัน' },
       fin: { n:8,  cw:120, ax:70, dur:1.3, th:'ท่าไม้ตาย' } },
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5 },
+  puff: { dir:'heroes/puff/', ch:45, scale:5.5, face:'-50 -104 92 92',
+    anims:{
+      idle:{ n:9,  cw:26, ax:14, dur:1.5, loop:true },
+      walk:{ n:8,  cw:31, ax:19, dur:.7,  loop:true },
+      hurt:{ n:5,  cw:29, ax:14, dur:.8 },
+      dead:{ n:9,  cw:35, ax:19, dur:1.6 },
+      atk1:{ n:17, cw:27, ax:12, dur:1,   th:'ตบรัว' },
+      atk2:{ n:9,  cw:27, ax:15, dur:.9,  th:'กระโดดทับ' },
+      atk3:{ n:16, cw:29, ax:15, dur:1.1, th:'กลิ้งพุ่งชน' },
+      fin: { n:14, cw:44, ax:16, dur:1.5, th:'ดาวตกพิฆาต' } },
+    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5 },
 };
 const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
@@ -3845,6 +3856,7 @@ const CHARACTERS = [
   { id:'luma',    name:'Luma',        th:'ลูมา นักบวชแสง', price:1000, role:'ฮีลเลอร์', skill:'พรแห่งแสง', desc:'ทุกคำที่โจมตีฟื้น HP 4% · คำธาตุแสง (light, holy…) ฮีลเป็น 2 เท่า · ดาเมจ -10%', hpMul:1.05, dmgTaken:1 },
   { id:'bruna',   name:'Bruna',       th:'บรูน่า นักรบคลั่ง', price:1400, role:'เบอร์เซิร์ก', skill:'โทสะ', desc:'ยิ่งเลือดน้อยยิ่งแรง (สูงสุด x2 ตอนเลือดใกล้หมด) แต่เกราะกันได้แค่ครึ่งเดียว', hpMul:1.1, dmgTaken:1 },
   { id:'kiko',    name:'Kiko',        th:'คิโกะ นักธนูจิ้งจอก', price:2200, role:'คอมโบ', skill:'ฟันสองจังหวะ', desc:'ทุกคำที่ 3 โจมตี 2 ครั้ง (ครั้งที่สองแรง 70%) และคำ 6 ตัวขึ้นไปนับคอมโบเพิ่ม', hpMul:1, dmgTaken:1 },
+  { id:'puff',    name:'Puff',        th:'พัฟ ก้อนชมพูจอมสูบ', price:1800, role:'ก๊อปพลัง', skill:'สูบแล้วก๊อป', desc:'กำจัดศัตรูได้ 1 ตัว = สูบกลืน ฟื้น HP 8% และก๊อปพลัง ดาเมจ +15% (ซ้อนได้ 5 ชั้นต่อด่าน)', hpMul:1, dmgTaken:1 },
 ];
 /* ---------------- elemental words → weapon enchant ---------------- */
 const ELEMENTS = {
@@ -5875,6 +5887,37 @@ const PIXEL = (()=>{
 {
   const _mon12 = monsterSVG;
   monsterSVG = function(m){ return `<g class="pxm" data-k="${m.art}|${m.boss?1:0}|${m.pal?Object.values(m.pal).join(''):''}">${_mon12(m)}</g>`; };
+}
+
+/* ======================================================================
+   PUFF — สูบแล้วก๊อป
+   · กำจัดศัตรู 1 ตัว → ฟื้น HP 8% และได้พลังก๊อป 1 ชั้น (ดาเมจ +15% ต่อชั้น สูงสุด 5 ชั้น)
+   · พลังก๊อปรีเซ็ตทุกด่าน (เก็บไว้ใน ui.bat ที่สร้างใหม่ทุกด่าน)
+   ====================================================================== */
+const PUFF = { id:'puff', per:.15, cap:5, heal:.08 };
+CHAR_TIP.puff = 70;
+CHAR_FACE.puff = '-50 -104 92 92';
+{
+  const _evalPuff = evalWord;
+  evalWord = function(){
+    const r = _evalPuff(), b = ui.bat;
+    if(!charIs(PUFF.id) || r.state!=='ok' || !b || !b.copy) return r;
+    const f = 1 + b.copy*PUFF.per;
+    r.notes.unshift(`⭐ ก๊อปพลัง x${f.toFixed(2)}`);
+    r.dmg = Math.max(1, Math.round(r.dmg * f));
+    return r;
+  };
+  const _diesPuff = enemyDies;
+  enemyDies = async function(){
+    const b = ui.bat;
+    if(charIs(PUFF.id) && b && !b.over){
+      const h = Math.round(b.max*PUFF.heal); b.hp = Math.min(b.max, b.hp+h);
+      floatText(`😋 สูบ! +${h}`, HERO_X-30, FLOOR_Y-150, '#ff9ad0', 24, true);
+      if((b.copy||0) < PUFF.cap){ b.copy = (b.copy||0)+1; floatText(`⭐ ก๊อปพลัง ${b.copy}/${PUFF.cap}`, HERO_X, FLOOR_Y-185, '#ffe14a', 22); }
+      updateHud();
+    }
+    return _diesPuff();
+  };
 }
 </script>
 </body></html>
