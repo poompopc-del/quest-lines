@@ -68,8 +68,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .panel.gold-edge{border-color:#8a6a2c;box-shadow:inset 0 0 0 1px rgba(242,180,44,.18),0 3px 0 rgba(0,0,0,.35)}
 
 /* ------------------------------ scroll screens ------------------------------ */
-.screen{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
-.wrap{max-width:780px;margin:0 auto;padding:16px 16px 110px}
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative}
+.wrap{max-width:780px;margin:0 auto;padding:16px 16px 28px}
+.scroll-fade{position:absolute;left:0;right:0;bottom:0;height:38px;pointer-events:none;background:linear-gradient(to bottom,rgba(25,21,18,0),var(--bg) 88%);opacity:0;transition:opacity .18s;z-index:2}
+.scroll-fade.show{opacity:1}
 .topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(20,17,14,.9);border-bottom:2.5px solid var(--line)}
 .topbar .name{font-family:var(--mark);font-size:21px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--chalk)}
 .pill{display:inline-flex;align-items:center;gap:6px;background:#12100d;border:2px solid var(--line);border-radius:999px;padding:3px 12px 3px 6px;font:700 17px var(--hand)}
@@ -126,6 +128,31 @@ h2.title{font-family:var(--mark);font-weight:400;font-size:30px;margin:8px 0 12p
 .node.lock{opacity:.4}
 .node .ico{font-size:22px}
 @keyframes pulse{50%{transform:scale(1.06)}}
+@media (max-width:900px), (max-aspect-ratio:4/3){
+  .topbar{padding:8px 14px}
+  .hero-card{padding:8px 12px;gap:6px}
+  .hero-card .hero-svg{width:92px;height:98px}
+  .hero-card .st b{font-size:20px}
+  .hero-card .bar{height:14px}
+  .bar span{font-size:12px}
+  .chapter{margin:12px 0}
+  .chapter .ch-head{padding:10px 12px 7px}
+  .chapter .ch-head .brush{font-size:17px;padding:6px 14px 7px}
+  .chapter .ch-foes{height:38px}
+  .chapter .ch-foes svg{width:36px;height:38px}
+  .nodes{gap:8px;padding:8px 12px 12px}
+  .node{font-size:19px}
+  .tower-card{margin:12px 0;padding:9px 12px}
+  h2.title{font-size:24px;margin:4px 0 8px}
+  .sec-h{margin:14px 0 8px}
+}
+@media (max-height:640px) and (max-aspect-ratio:4/3){
+  .hero-card{padding:6px 10px}
+  .hero-card .hero-svg{width:72px;height:78px}
+  .hero-card .st b{font-size:18px}
+  .hero-card .sub{font-size:12.5px}
+  .chapter{margin:9px 0}
+}
 
 /* shop */
 .seg{display:flex;gap:6px;margin:0 0 14px;flex-wrap:wrap}
@@ -307,23 +334,23 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 
 /* portrait / small */
 @media (max-width:900px), (max-aspect-ratio:4/3){
-  .stage{flex:1 1 auto;min-height:220px}
+  .stage{flex:1 1 auto;min-height:260px}
   .battle{overflow-y:auto}
-  .dock{grid-template-columns:1fr auto;grid-template-areas:"right right" "tiles tiles" "tools attack" "left left";padding:6px 8px 10px;gap:8px}
-  .tiles{--tile:min(17.4vw,88px,8.6vh);justify-self:center;padding:6px;gap:5px}
+  .dock{grid-template-columns:1fr auto;grid-template-areas:"right right" "tiles tiles" "tools attack" "left left";padding:5px 7px 7px;gap:6px}
+  .tiles{--tile:min(16vw,78px,7.4vh);justify-self:center;padding:5px;gap:4px}
   .dock .tools{flex-direction:row}
-  .dock .tools .bigbtn{min-height:62px;min-width:62px}
+  .dock .tools .bigbtn{min-height:50px;min-width:50px}
   .potrow{flex:2}
   .dock .attack{flex-direction:row;min-width:130px}
-  .atk{min-height:62px;flex-direction:row;gap:8px;padding:0 12px}
-  .atk .ico{font-size:34px}
-  .minirow{flex-direction:column;flex:0 0 48px}
+  .atk{min-height:50px;flex-direction:row;gap:6px;padding:0 10px}
+  .atk .ico{font-size:28px}
+  .minirow{flex-direction:column;flex:0 0 42px}
   .minirow button{height:auto;flex:1}
-  .dock .right{flex-direction:row;align-items:center;flex-wrap:wrap;padding:6px 10px;gap:6px 10px}
-  .dock .right .en-name{font-size:17px;text-align:left}
-  .estats{display:flex;gap:12px;padding:3px 8px;font-size:14px}.estats .ico{font-size:16px}.estats .full{display:none}
-  .trait{flex:1 1 100%;padding:4px 8px;font-size:12.5px}
-  .dock .left{padding:8px 10px}
+  .dock .right{flex-direction:row;align-items:center;flex-wrap:wrap;padding:4px 8px;gap:4px 8px}
+  .dock .right .en-name{font-size:16px;text-align:left}
+  .estats{display:flex;gap:10px;padding:2px 6px;font-size:13px}.estats .ico{font-size:15px}.estats .full{display:none}
+  .trait{flex:1 1 100%;padding:3px 7px;font-size:12px}
+  .dock .left{padding:6px 8px}
   .dock .left .recent{display:none}
   .lastword{border:0;padding:0;margin:0}
   .hud .face{width:46px;height:46px}.hud .bar{height:22px}.hud .bar span{font-size:12px;padding-left:8px}.hud .score{font-size:24px;padding-top:4px}.hud .pill{font-size:15px}.hud .pause{width:38px;height:38px}
@@ -1272,25 +1299,25 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 @media (orientation:landscape) and (max-height:540px){
   .battle{flex-direction:row;overflow:hidden}
   .stage{flex:1 1 auto;min-height:0;min-width:0;border-bottom:0;border-right:3px solid #0a0806}
-  .dock{flex:0 0 auto;width:min(52vw,calc(5 * var(--tile) + 70px));--tile:min(14.5vh,9vw,64px);overflow-y:auto;overflow-x:hidden;align-content:start;
-    grid-template-columns:1fr auto;grid-template-areas:"right right" "tiles tiles" "tools attack";padding:6px 6px calc(6px + var(--safe-b));gap:6px}
+  .dock{flex:0 0 auto;width:min(50vw,calc(5 * var(--tile) + 78px));--tile:min(15.5vh,9.5vw,72px);overflow-y:auto;overflow-x:hidden;align-content:start;
+    grid-template-columns:1fr auto;grid-template-areas:"right right" "tiles tiles" "tools attack";padding:7px 7px calc(7px + var(--safe-b));gap:7px}
   .dock .left{display:none}
-  .tiles{--tile:inherit;gap:4px;padding:5px;justify-self:center}
-  .dock .right{padding:4px 8px;gap:4px 8px}
-  .dock .right .en-name{font-size:14px}
-  .dock .right .trait{display:none}
-  .estats{font-size:12.5px;padding:2px 6px}
-  .dock .tools .bigbtn{min-height:44px;min-width:44px;font-size:12px}
+  .tiles{--tile:inherit;gap:5px;padding:6px;justify-self:center}
+  .dock .right{padding:5px 9px;gap:5px 9px}
+  .dock .right .en-name{font-size:16px}
+  .dock .right .trait{display:block;font-size:11.5px;padding:3px 7px;flex:1 1 100%}
+  .estats{font-size:13.5px;padding:2px 7px}
+  .dock .tools .bigbtn{min-height:50px;min-width:50px;font-size:13px}
   .dock .attack{min-width:0}
-  .atk{min-height:44px !important;padding:0 8px}.atk .ico{font-size:24px}
-  .minirow{flex:0 0 40px}
-  .xsplit .atk,.xcharge{min-height:44px !important}
-  .elon-sk{flex:0 0 50px}
-  .hud{top:4px;left:6px;right:6px;gap:4px}
-  .hud .face{width:36px;height:36px}.hud .bar{height:18px}.hud .bar span{font-size:11px}
-  .hud .score{font-size:18px;padding-top:0}.combo-hud{transform:scale(.8);transform-origin:50% 0}
-  .hud .pill{font-size:12px;padding:1px 6px}.hud .pause{width:30px;height:30px}
-  .tray .t{width:26px;height:30px;font-size:19px;line-height:26px}
+  .atk{min-height:52px !important;padding:0 10px}.atk .ico{font-size:28px}
+  .minirow{flex:0 0 44px}
+  .xsplit .atk,.xcharge{min-height:52px !important}
+  .elon-sk{flex:0 0 54px}
+  .hud{top:5px;left:8px;right:8px;gap:5px}
+  .hud .face{width:42px;height:42px}.hud .bar{height:21px}.hud .bar span{font-size:12px}
+  .hud .score{font-size:20px;padding-top:0}.combo-hud{transform:scale(.88);transform-origin:50% 0}
+  .hud .pill{font-size:13px;padding:1px 7px}.hud .pause{width:34px;height:34px}
+  .tray .t{width:30px;height:34px;font-size:21px;line-height:30px}
   /* menus */
   .topbar{padding:4px 12px}
   .tabbar{padding:2px 6px calc(2px + var(--safe-b))}
@@ -4567,8 +4594,15 @@ function render(){
   if(ui.screen==='title'){ app.innerHTML = renderTitle(); return; }
   const body = { map:renderMap, shop:renderShop, hero:renderHero, settings:renderSettings }[ui.screen]();
   app.innerHTML = `<div class="topbar"><span class="name">${esc(save.name)}</span><span class="pill">${ICON.heart}${maxHp()}</span><span class="pill">${ICON.coin}<b id="goldTop">${save.gold}</b></span></div>
-    <div class="screen" id="scr"><div class="wrap">${body}</div></div>
+    <div class="screen" id="scr"><div class="wrap">${body}</div><div class="scroll-fade" id="scrFade"></div></div>
     <nav class="tabbar">${[['map','แผนที่',ICON.map],['shop','ร้านค้า',ICON.shopIco],['hero','นักสู้',ICON.helm],['settings','ตั้งค่า',ICON.gear]].map(([k,l,ic])=>`<button class="${ui.screen===k?'on':''}" data-act="tab" data-v="${k}" ${ui.screen===k?'aria-current="page"':''}>${ic}<span>${l}</span></button>`).join('')}</nav>`;
+  initScrollFade();
+}
+function initScrollFade(){
+  const scr = $('#scr'); if(!scr) return;
+  const upd = ()=>{ const f = $('#scrFade'); if(!f) return; f.classList.toggle('show', scr.scrollHeight - scr.scrollTop - scr.clientHeight > 4); };
+  scr.addEventListener('scroll', upd, { passive:true });
+  requestAnimationFrame(upd);
 }
 
 /* ------------------------------ title ------------------------------ */
