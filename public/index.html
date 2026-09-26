@@ -1644,7 +1644,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 9; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 10; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1708,6 +1708,18 @@ const HERO_SPRITE = {
     // ท่าโจมตีเปลี่ยนเองตามคอมโบ (ดู ELON ท้ายไฟล์) — หน้าฮีโร่ใช้ปุ่มเป็นตัวอย่างอย่างเดียว
     attacks:['melee','pistol','xbow','rpg'], extra:['quick','aim'], demoOnly:true, finMin:99,
     finNote:'อาวุธเปลี่ยนตามคอมโบ (นับต่อเนื่องทั้งด่าน): 1–3 มือเปล่า · 4 ปืนพก x1.25 · 5 หน้าไม้ x1.5 · 6+ ปืนใหญ่ x1.8 (แรงขึ้นอีกทุกคอมโบ สูงสุด x2.3)' },
+  mao: { dir:'heroes/mao/', ch:109, scale:2.2, face:'-30 -168 60 60',
+    anims:{
+      idle:{ n:4, cw:59,  ax:29, dur:1.2, loop:true },
+      walk:{ n:4, cw:59,  ax:29, dur:.6,  loop:true },
+      hurt:{ n:3, cw:58,  ax:28, dur:.7 },
+      dead:{ n:3, cw:92,  ax:44, dur:1 },
+      atk1:{ n:5, cw:86,  ax:31, dur:.8,  th:'พัดฟาดเพลิง' },
+      atk2:{ n:5, cw:98,  ax:41, dur:.8,  th:'เตะกระเรียน' },
+      atk3:{ n:6, cw:133, ax:54, dur:1,   th:'ตีลังกากระรอกบิน' },
+      fin: { n:8, cw:106, ax:48, dur:1.5, th:'ระบำมังกรเพลิง' } },
+    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:7,
+    finNote:'สะกดคำ <b>7 ตัวอักษรขึ้นไป</b> จะใช้<b>ระบำมังกรเพลิง</b> อัตโนมัติ' },
 };
 const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
@@ -5987,6 +5999,11 @@ CHARACTERS.push({ id:'elon', name:'ELON S. KEMNANY', th:'อีลอน เอ�
 CHAR_TIP.elon = 100;
 CHAR_FACE.elon = '-30 -176 60 60';
 const isElon = ()=>save.eq && save.eq.char===ELON.id;
+// รูปหน้าในไอคอน HP (ครอปจากรูปพอร์ตเทรต) — vb = 'x y กว้าง สูง' ในพิกัดของรูป
+const HERO_PORTRAIT = {
+  elon:{ src:'heroes/elon/portrait.png', w:449, h:305, vb:'135 4 184 184' },
+  mao: { src:'heroes/mao/portrait.png',  w:64,  h:95,  vb:'3 4 40 40', px:true },
+};
 const elonTier = c=>c<=3 ? 'melee' : c===4 ? 'pistol' : c===5 ? 'xbow' : 'rpg';
 const elonFocus = b=>!!(b && b.focusUntil && Date.now() < b.focusUntil);
 const elonCharge = (b,k,full)=>b[k]===undefined ? full : b[k];
@@ -6081,8 +6098,8 @@ const elonTierMult = c=>{ const t = elonTier(c), m = ELON.tier[t].m; return t===
   /* ---- HP icon uses the portrait ---- */
   const _face = heroFaceSvg;
   heroFaceSvg = function(eq){
-    if((eq||{}).char!==ELON.id) return _face(eq);
-    return `<svg viewBox="135 4 184 184" aria-hidden="true"><image href="heroes/elon/portrait.png?v=${HERO_IMG_VER}" width="449" height="305"/></svg>`;
+    const P = HERO_PORTRAIT[(eq||{}).char]; if(!P) return _face(eq);
+    return `<svg viewBox="${P.vb}" aria-hidden="true"><image href="${P.src}?v=${HERO_IMG_VER}" width="${P.w}" height="${P.h}" style="image-rendering:${P.px?'pixelated':'auto'}"/></svg>`;
   };
 }
 function elonButtons(){
@@ -6173,6 +6190,72 @@ function elonGunFx(pose, shots){
     anim(rk, [{transform:tr(mx,my-6)},{transform:tr(EN_X,ty)}], { duration:260, easing:'ease-in', fill:'forwards' }).then(()=>{
       rk.remove(); poof(EN_X, ty, 1.5); firePillar(EN_X, 1.2); shake(true); tone(55, .4, 'sawtooth', .1); });
   }
+}
+
+/* ======================================================================
+   MAO — นักระบำพัดไฟ
+   · เปลวไฟชิรานุย (ติดตัว): ทุกการโจมตีทำให้ศัตรูติดไฟ 2 เทิร์น (20% ของดาเมจ)
+     คำธาตุไฟแรงขึ้นอีก x1.3 (ติดไฟ 3 เทิร์นตามธาตุ)
+   · พัดบินเพลิง: คำ 5 ตัวอักษรขึ้นไป ขว้างพัดไฟตามไปอีกดอก ดาเมจ +40%
+   · ระบำกระรอกบิน: 20% หลบการโจมตีของศัตรู
+   · ท่าไม้ตาย ระบำมังกรเพลิง: คำ 7 ตัวขึ้นไป ดาเมจ x1.5 และไฟลุก 4 เทิร์น (35%)
+   ====================================================================== */
+const MAO = { id:'mao', burn:.2, burnT:2, fireMul:1.3, fanLen:5, fanMul:1.4, dodge:.2, finLen:7, finMul:1.5 };
+CHARACTERS.push({ id:'mao', name:'Mao', th:'เหมา นักระบำพัดไฟ', price:3000, role:'ไฟ · หลบหลีก', skill:'เปลวไฟชิรานุย',
+  desc:'ทุกการโจมตีทำให้ศัตรูติดไฟ · คำธาตุไฟแรง x1.3 · คำ 5 ตัวขึ้นไปขว้างพัดไฟ +40% · 20% หลบการโจมตี · คำ 7 ตัวขึ้นไป = ระบำมังกรเพลิง x1.5', hpMul:.95, dmgTaken:1 });
+CHAR_TIP.mao = 120;
+const isMao = ()=>save.eq && save.eq.char===MAO.id;
+{
+  const _ev = evalWord;
+  evalWord = function(){
+    const r = _ev();
+    if(!isMao() || r.state!=='ok' || r.rude) return r;
+    const len = r.w.length; let f = 1;
+    if(r.el==='fire'){ f *= MAO.fireMul; r.notes.unshift(`🔥 เปลวไฟชิรานุย x${MAO.fireMul}`); }
+    if(len>=MAO.finLen){ f *= MAO.finMul; r.notes.unshift(`🐉 ระบำมังกรเพลิง x${MAO.finMul}`); }
+    else if(len>=MAO.fanLen){ f *= MAO.fanMul; r.notes.unshift('🌀 พัดบินเพลิง +40%'); }
+    r.dmg = Math.max(1, Math.round(r.dmg*f));
+    return r;
+  };
+  const _da = doAttack;
+  doAttack = async function(){
+    if(!isMao() || !ui.bat) return _da();
+    const r = evalWord(); ui.maoHit = r.state==='ok' ? { dmg:r.dmg, len:r.w.length, fire:r.el==='fire', rude:r.rude } : null;
+    try{ await _da(); } finally { ui.maoHit = null; }
+  };
+  // at the moment the blow lands: fan projectile + set the enemy alight
+  const _sl = slash;
+  slash = function(){
+    _sl();
+    const h = ui.maoHit, e = curEnemy(); if(!isMao() || !h || !e || h.rude) return;
+    const fin = h.len>=MAO.finLen, turns = fin ? 4 : MAO.burnT;
+    e.burn = Math.max(e.burn||0, turns); e.burnDmg = Math.max(e.burnDmg||0, Math.max(1, Math.round(h.dmg*(fin ? .35 : MAO.burn))));
+    if(fin) maoFlames(); else if(h.len>=MAO.fanLen) maoFan();
+    setTimeout(()=>{ if(curEnemy()===e && e.hp>0){ floatText(`🔥 ติดไฟ ${turns} เทิร์น`, EN_X, FLOOR_Y-e.h*e.sc-60, '#ffb04a', 20); updateEnemyStatus(); renderEnemyPanel(); } }, 250);
+  };
+  // flying-squirrel dodge
+  const _et = enemyTurn;
+  enemyTurn = async function(){
+    const b = ui.bat;
+    if(!isMao() || !b || b.evade>0 || Math.random()>=MAO.dodge) return _et();
+    b.evade = 1; b.maoDodge = true;
+    const t = setTimeout(()=>{ if(b.maoDodge) floatText('🌀 ระบำกระรอกบิน!', HERO_X, FLOOR_Y-215, '#ffd0e8', 22, true); }, 350);
+    try{ await _et(); } finally { clearTimeout(t); if(b.maoDodge && b.evade>0) b.evade--; b.maoDodge = false; }
+  };
+}
+function maoFan(){
+  const e = curEnemy(); if(!e) return;
+  const fx = $('#fx'), y = FLOOR_Y - e.h*e.sc*.55;
+  const g = svgEl('g', {});
+  g.innerHTML = `<circle r="22" fill="#ff7a2a" opacity=".35"/><image href="heroes/mao/fan.png?v=${HERO_IMG_VER}" x="-20" y="-11" width="40" height="22" style="image-rendering:pixelated"/>`;
+  fx.appendChild(g); tone(700, .08, 'triangle', .05);
+  anim(g, [{transform:tr(HERO_X+70,FLOOR_Y-110)+' rotate(0deg)'},{transform:tr(EN_X,y)+' rotate(720deg)'}], { duration:320, easing:'ease-in', fill:'forwards' })
+    .then(()=>{ g.remove(); firePillar(EN_X, .8); });
+}
+function maoFlames(){
+  const e = curEnemy(); if(!e) return;
+  [0,140,280].forEach((d,i)=>setTimeout(()=>firePillar(EN_X + (i-1)*30, 1.3 - i*.1), d));
+  shake(true); sfx.elem('fire');
 }
 </script>
 </body></html>

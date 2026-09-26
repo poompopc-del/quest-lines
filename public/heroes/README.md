@@ -56,3 +56,8 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - ภาพต้นฉบับหันซ้าย ตัดแล้วกลับด้านให้หันขวาทุกท่า
 - ท่า: idle · walk · hurt · dead · melee (คอมโบ 1–3) · pistol (4) · xbow (5) · rpg (6+) · quick (Quick Shot) · aim (Agent's Focus)
 - `rocket.png` = กระสุนปืนใหญ่ · `portrait.png` = รูปหน้าใช้ในไอคอน HP
+
+## Mao — โฟลเดอร์ `heroes/mao/`
+- ภาพต้นฉบับหันซ้าย ตัดแล้วกลับด้านให้หันขวา
+- ท่า: idle · walk · hurt · dead · atk1 พัดฟาดเพลิง · atk2 เตะกระเรียน · atk3 ตีลังกากระรอกบิน · fin ระบำมังกรเพลิง (คำ 7 ตัวขึ้นไป)
+- `fan.png` = พัดที่ขว้าง · `portrait.png` = รูปหน้าใช้ในไอคอน HP
