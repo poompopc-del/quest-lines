@@ -1707,7 +1707,7 @@ const HERO_SPRITE = {
       aim:   { n:3, cw:76,  ax:28, dur:.4,  th:'Agent\'s Focus' } },
     // ท่าโจมตีเปลี่ยนเองตามคอมโบ (ดู ELON ท้ายไฟล์) — หน้าฮีโร่ใช้ปุ่มเป็นตัวอย่างอย่างเดียว
     attacks:['melee','pistol','xbow','rpg'], extra:['quick','aim'], demoOnly:true, finMin:99,
-    finNote:'ท่าเปลี่ยนตามคอมโบ (นับต่อเนื่องข้ามศัตรูและด่าน รีเซ็ตเมื่อแพ้): 1–3 มือเปล่า · 4 ปืนพก · 5 หน้าไม้ · 6+ ปืนใหญ่' },
+    finNote:'อาวุธเปลี่ยนตามคอมโบ (นับต่อเนื่องทั้งด่าน): 1–3 มือเปล่า · 4 ปืนพก x1.25 · 5 หน้าไม้ x1.5 · 6+ ปืนใหญ่ x1.8 (แรงขึ้นอีกทุกคอมโบ สูงสุด x2.3)' },
 };
 const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
@@ -5970,25 +5970,29 @@ CHAR_FACE.puff = '-50 -104 92 92';
    1. Combat Training (passive)
       · 3 ตัว = โจมตีปกติ · 4 ตัว = ยิง 2 นัด (x1.6) · 5 ตัวขึ้นไป = ลุ้น Critical 25% (x1.8)
       · 7 ตัวขึ้นไป = +8% ต่อตัวอักษรที่เกิน 6
-      · อาวุธ/ท่าเปลี่ยนตามคอมโบ: 1–3 มือเปล่า · 4 ปืนพก x1.1 · 5 หน้าไม้ x1.2 · 6+ ปืนใหญ่ x1.35
-      · คอมโบอาวุธนับต่อเนื่อง (ui.elonChain) ไม่รีเซ็ตเมื่อโดนตี เจอศัตรูตัวใหม่ หรือขึ้นด่านใหม่ — รีเซ็ตเมื่อแพ้เท่านั้น
+      · อาวุธ/ท่าเปลี่ยนตามคอมโบ: 1–3 มือเปล่า x1 · 4 ปืนพก x1.25 · 5 หน้าไม้ x1.5 · 6+ ปืนใหญ่ x1.8
+        และปืนใหญ่แรงขึ้นอีก +5% ทุกคอมโบหลัง 6 (สูงสุด +50% = x2.3)
+      · คอมโบอาวุธนับต่อเนื่องตลอดด่าน (ข้ามศัตรูทุกตัว ไม่รีเซ็ตเมื่อโดนตี) — เริ่มด่านใหม่หรือแพ้ = นับใหม่
    2. Quick Shot (active · ชาร์จ 3 คำ) — ยิงคำที่ต่อไว้เป็นกระสุนพิเศษ จำนวนนัด = จำนวนตัวอักษร
       (x0.45 ต่อตัวอักษร) ถ้าต่อคำโดยไม่ลบตัวอักษรเลย = Critical x1.5
    3. Agent's Focus (active · ชาร์จ 6 คำ · 8 วินาที) — ไฮไลต์ตัวอักษรที่ต่อเป็นคำได้,
       Critical +25% (คำสั้นก็ติดได้ 15%), คำ 5 ตัวขึ้นไป +30%, จุดเลเซอร์แดงที่ศัตรู
    ====================================================================== */
 const ELON = { id:'elon', qsCost:3, focusCost:6, focusMs:8000,
-  tier:{ melee:{ m:1,    ic:'👊', th:'มือเปล่า' }, pistol:{ m:1.1, ic:'🔫', th:'ปืนพก' },
-         xbow: { m:1.2,  ic:'🏹', th:'หน้าไม้' },  rpg:   { m:1.35, ic:'🚀', th:'ปืนใหญ่' } } };
+  tier:{ melee:{ m:1,    ic:'👊', th:'มือเปล่า' }, pistol:{ m:1.25, ic:'🔫', th:'ปืนพก' },
+         xbow: { m:1.5,  ic:'🏹', th:'หน้าไม้' },  rpg:   { m:1.8,  ic:'🚀', th:'ปืนใหญ่' } },
+  rpgStep:.05, rpgCap:.5 };
 CHARACTERS.push({ id:'elon', name:'ELON S. KEMNANY', th:'อีลอน เอส. เคมนานี สายลับมือปืน', price:2800, role:'มือปืน', skill:'Combat Training',
-  desc:'คำ 4 ตัวยิง 2 นัด · คำ 5 ตัวขึ้นไปลุ้น Critical · คำยาวแรงขึ้นตามตัวอักษร · คอมโบ 4 ใช้ปืนพก 5 หน้าไม้ 6+ ปืนใหญ่ · สกิล 🔥 Quick Shot และ 🥽 Agent\'s Focus', hpMul:1, dmgTaken:1 });
+  desc:'คำ 4 ตัวยิง 2 นัด · คำ 5 ตัวขึ้นไปลุ้น Critical · คำยาวแรงขึ้นตามตัวอักษร · คอมโบต่อเนื่องทั้งด่าน: 4 ปืนพก x1.25 · 5 หน้าไม้ x1.5 · 6+ ปืนใหญ่ x1.8 · สกิล 🔥 Quick Shot และ 🥽 Agent\'s Focus', hpMul:1, dmgTaken:1 });
 CHAR_TIP.elon = 100;
 CHAR_FACE.elon = '-30 -176 60 60';
 const isElon = ()=>save.eq && save.eq.char===ELON.id;
 const elonTier = c=>c<=3 ? 'melee' : c===4 ? 'pistol' : c===5 ? 'xbow' : 'rpg';
 const elonFocus = b=>!!(b && b.focusUntil && Date.now() < b.focusUntil);
 const elonCharge = (b,k,full)=>b[k]===undefined ? full : b[k];
-const elonNext = ()=>(ui.elonChain||0)+1;   // weapon for the attack about to happen
+const elonChainOf = ()=>{ if(ui.elonBat!==ui.bat){ ui.elonBat = ui.bat; ui.elonChain = 0; } return ui.elonChain||0; };
+const elonNext = ()=>elonChainOf()+1;   // weapon for the attack about to happen
+const elonTierMult = c=>{ const t = elonTier(c), m = ELON.tier[t].m; return t==='rpg' ? m + Math.min(ELON.rpgCap, (c-6)*ELON.rpgStep) : m; };
 {
   /* ---- damage ---- */
   const _ev = evalWord;
@@ -5999,7 +6003,7 @@ const elonNext = ()=>(ui.elonChain||0)+1;   // weapon for the attack about to ha
     let f = 1;
     if(len===4){ f *= 1.6; r.notes.unshift('🔫 ยิง 2 นัด x1.6'); }
     if(len>=7){ const x = 1+(len-6)*.08; f *= x; r.notes.unshift(`📏 คำยาว +${Math.round((x-1)*100)}%`); }
-    if(T.m>1){ f *= T.m; r.notes.unshift(`${T.ic} คอมโบ ${next}: ${T.th} x${T.m}`); }
+    const tm = elonTierMult(next); if(tm>1){ f *= tm; r.notes.unshift(`${T.ic} คอมโบ ${next}: ${T.th} x${+tm.toFixed(2)}`); }
     if(elonFocus(b) && len>=5){ f *= 1.3; r.notes.unshift('🥽 Focus +30%'); }
     if(b.elonCrit){ f *= 1.8; r.notes.unshift('🎯 CRITICAL x1.8'); }
     if(b.qsArmed){ const q = Math.max(1.2, len*.45); f *= q; r.notes.unshift(`🔥 Quick Shot ${len} นัด x${q.toFixed(2)}`);
@@ -6021,7 +6025,7 @@ const elonNext = ()=>(ui.elonChain||0)+1;   // weapon for the attack about to ha
     try{ await _da(); } finally { b.elonCrit = false; b.qsArmed = false; b.qsClean = false; }
     if(ui.bat!==b) return;
     if(b.words>w0){
-      ui.elonChain = (ui.elonChain||0)+1;
+      ui.elonChain = elonChainOf()+1;
       b.qsCharge = Math.min(ELON.qsCost, elonCharge(b,'qsCharge',ELON.qsCost)+1);
       b.focusCharge = Math.min(ELON.focusCost, elonCharge(b,'focusCharge',ELON.focusCost)+1);
     }
@@ -6094,7 +6098,7 @@ function elonButtons(){
   }
   const me = document.querySelector('.hud .me');
   if(me){ let bd = $('#elonChain'); if(!bd){ bd = document.createElement('span'); bd.id = 'elonChain'; bd.className = 'rage-badge'; me.appendChild(bd); }
-    const T = ELON.tier[elonTier(elonNext())]; bd.textContent = `${T.ic}${ui.elonChain||0}`; bd.title = `คอมโบอาวุธ (นับต่อเนื่อง) · ถัดไป: ${T.th}`; }
+    const n = elonNext(), T = ELON.tier[elonTier(n)]; bd.textContent = `${T.ic}${n-1}`; bd.title = `คอมโบอาวุธ (นับต่อเนื่องทั้งด่าน) · ถัดไป: ${T.th} x${+elonTierMult(n).toFixed(2)}`; }
   const b = ui.bat, qc = elonCharge(b,'qsCharge',ELON.qsCost), fc = elonCharge(b,'focusCharge',ELON.focusCost), on = elonFocus(b);
   const qs = $('#bQS'), fo = $('#bFocus');
   qs.disabled = b.busy || qc<ELON.qsCost; qs.classList.toggle('ready', qc>=ELON.qsCost);
