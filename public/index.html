@@ -6595,6 +6595,43 @@ function meadowScene(seed, depth){
   <g id="fx"></g>
   </svg>`;
 }
+/* ======================================================================
+   ฉากหลังภาพพิกเซล (public/scenes/bg/) ใช้กับบทที่ 1, 3, 4, 5 และหอคอย
+   บทที่ 2 ใช้ฉาก Star Meadow ของตัวเอง
+     crypt (หนู สไลม์ ค้างคาว โครงกระดูก)  → ถ้ำใต้ดิน
+     ice   (ผี ปีศาจน้ำแข็ง ตุ๊กตาหิมะ)      → ภูเขาหิมะ · ด่าน 7–8 กลางคืน
+     lava  (ปีศาจไฟ ซาลาแมนเดอร์)          → กำแพงปราสาท + แสงเพลิง · ด่าน 7–8 ปราสาทมืด
+     necro (ซอมบี้ วิญญาณ มัมมี่)           → บ้านผีสิง · ด่าน 7–8 กำแพงผีสิงยามดึก
+   ภาพฉากหลังอยู่ในกลุ่ม #lyImg (ไม่ถูกแปลงพิกเซลซ้ำ) ส่วนพื้น/ของประกอบยังเป็นของเดิม
+   ====================================================================== */
+const SCENE_BG = {
+  crypt:{ day:'cave',  late:'cave',        top:'#49423f' },
+  ice:  { day:'snow',  late:'snownight',   top:'#156eb5', topLate:'#003a66' },
+  lava: { day:'castle',late:'castlenight', top:'#3d3d3d', topLate:'#13162d', glow:'#ff4a1a' },
+  necro:{ day:'ghost', late:'ghostnight',  top:'#000000', topLate:'#13162d' },
+};
+sceneSVG = (_sc=>function(themeId, seed, depth){
+  const html = _sc(themeId, seed, depth), B = SCENE_BG[themeId];
+  if(!B) return html;
+  try{
+    const late = (depth||0) >= 7, name = late ? B.late : B.day, top = late && B.topLate ? B.topLate : B.top;
+    const doc = new DOMParser().parseFromString(html, 'image/svg+xml'), svg = doc.documentElement;
+    if(svg.querySelector('parsererror')) return html;
+    const NS = 'http://www.w3.org/2000/svg';
+    ['lySky','lyBack'].forEach(id=>{ const g = svg.querySelector('#'+id); if(g) while(g.firstChild) g.removeChild(g.firstChild); });
+    const s = .8, w = 512*s, h = 512*s, y = 336 - h;
+    let inner = `<rect x="-600" y="-500" width="2000" height="${Math.ceil(500+y+2)}" fill="${top}"/>`;
+    for(let x=-420; x<1240; x+=w) inner += `<image href="scenes/bg/${name}.png?v=1" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w}" height="${h}" style="image-rendering:pixelated"/>`;
+    if(B.glow) inner += `<rect x="-600" y="${(y+h*.35).toFixed(1)}" width="2000" height="${(h*.65+20).toFixed(1)}" fill="url(#bgGlow)"/>`;
+    const g = doc.createElementNS(NS, 'g'); g.setAttribute('id', 'lyImg'); g.innerHTML = inner;
+    if(B.glow){ const defs = svg.querySelector('defs') || svg.insertBefore(doc.createElementNS(NS,'defs'), svg.firstChild);
+      defs.insertAdjacentHTML('beforeend', `<linearGradient id="bgGlow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${B.glow}" stop-opacity="0"/><stop offset="1" stop-color="${B.glow}" stop-opacity=".38"/></linearGradient>`); }
+    const sky = svg.querySelector('#lySky'); svg.insertBefore(g, sky || svg.firstChild.nextSibling);
+    // soften the vector far ridge so the painted backdrop reads through
+    const far = svg.querySelector('#lyFar'); if(far) far.setAttribute('opacity', '.8');
+    return new XMLSerializer().serializeToString(svg);
+  }catch(e){ return html; }
+})(sceneSVG);
 sceneSVG = (_sc=>function(themeId, seed, depth){ return themeId==='woods' ? meadowScene(seed, depth) : _sc(themeId, seed, depth); })(sceneSVG);
 { const C = CHAPTERS.find(c=>c.id==='woods'); if(C){ C.name = 'Star Meadow'; C.th = 'ทุ่งดาวเขียวขจี'; C.color = '#3fae4a'; } }
 document.documentElement.classList.add('v16');
