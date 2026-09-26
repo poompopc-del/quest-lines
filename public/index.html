@@ -1024,6 +1024,21 @@ html.pixel .title-bg .px-on :is(.drift,.twin,.tstar,.shim,.clouds,.embers){visib
 html.pixel .px-hero{animation:none !important}
 html.pixel .px-mon{animation:mbob 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
 html.pixel .enemy.walk .px-mon{animation:walkBob .25s ease-in-out infinite alternate}
+
+/* ELON skill buttons + focus mode */
+.elon-sk{display:flex;gap:6px}
+.elon-sk button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-height:44px;border-radius:12px 14px 11px 13px;border:2.5px solid var(--ol);background:#2a1414;color:#fff;font:700 18px var(--hand);box-shadow:inset 0 -4px 0 #140a0a,0 3px 0 var(--ol);line-height:1.05}
+.elon-sk button small{font-size:10.5px;font-weight:600;opacity:.9}
+.elon-sk button i{font-style:normal;font-size:10.5px;color:#ffcf8a}
+.elon-sk button.ready{background:#7a1e14;animation:ready 1s ease-in-out infinite}
+.elon-sk button.on{background:#8a0f0f;outline:2px solid #ff3a3a}
+.elon-sk button:disabled:not(.on){filter:grayscale(.8) brightness(.6)}
+@media (max-width:900px), (max-aspect-ratio:4/3){ .elon-sk{flex-direction:column;flex:0 0 58px} .elon-sk button{min-height:0;flex:1} }
+.stage.elon-focus::after{content:'FOCUS';position:absolute;inset:0;pointer-events:none;z-index:4;background:radial-gradient(ellipse at 60% 55%,transparent 45%,rgba(90,0,0,.55) 100%);
+  color:rgba(255,80,80,.85);font:700 14px var(--hand);letter-spacing:4px;display:flex;justify-content:center;padding-top:8px;box-shadow:inset 0 0 0 3px rgba(255,40,40,.5)}
+.tile.efocus{outline:3px solid #ff3a3a;outline-offset:1px;box-shadow:0 0 14px #ff3a3a}
+.elon-pulse{animation:elonPulse .8s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 50%}
+@keyframes elonPulse{50%{transform:scale(1.8);opacity:.05}}
 </style>
 </head>
 <body>
@@ -1629,7 +1644,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 8; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 9; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1678,6 +1693,21 @@ const HERO_SPRITE = {
       fin: { n:10, cw:152, ax:80, dur:1.3, th:'พายุโซ่นรก' } },
     // ท่าไม้ตายของ Boomtos ใช้เฉพาะตอนสะกด BOOM (เรียกใน boomFinisher) ไม่ใช่ตามความยาวคำ
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:99, finNote:'สะกดคำ <b>BOOM</b> เพื่อใช้<b>ท่าไม้ตาย</b>' },
+  elon: { dir:'heroes/elon/', ch:105, scale:1.7, face:'-30 -176 60 60',
+    anims:{
+      idle:  { n:2, cw:54,  ax:26, dur:1.4, loop:true },
+      walk:  { n:2, cw:54,  ax:26, dur:.6,  loop:true },
+      hurt:  { n:3, cw:94,  ax:43, dur:.7 },
+      dead:  { n:3, cw:99,  ax:43, dur:1.1 },
+      melee: { n:6, cw:96,  ax:42, dur:.8,  th:'มือเปล่า (คอมโบ 1–3)' },
+      pistol:{ n:6, cw:76,  ax:28, dur:.8,  th:'ปืนพก (คอมโบ 4)' },
+      xbow:  { n:6, cw:119, ax:57, dur:.9,  th:'หน้าไม้ (คอมโบ 5)' },
+      rpg:   { n:7, cw:133, ax:63, dur:1.2, th:'ปืนใหญ่ (คอมโบ 6+)' },
+      quick: { n:7, cw:80,  ax:28, dur:.9,  th:'Quick Shot' },
+      aim:   { n:3, cw:76,  ax:28, dur:.4,  th:'Agent\'s Focus' } },
+    // ท่าโจมตีเปลี่ยนเองตามคอมโบ (ดู ELON ท้ายไฟล์) — หน้าฮีโร่ใช้ปุ่มเป็นตัวอย่างอย่างเดียว
+    attacks:['melee','pistol','xbow','rpg'], extra:['quick','aim'], demoOnly:true, finMin:99,
+    finNote:'ท่าเปลี่ยนตามคอมโบ: 1–3 มือเปล่า · 4 ปืนพก · 5 หน้าไม้ · 6+ ปืนใหญ่' },
 };
 const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
@@ -1693,7 +1723,7 @@ const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
     const show = (sel, n)=>`${sel} .spr-${k} .spr-a{display:none}${sel} .spr-${k} .spr-a-${n}{display:inline}`;
     css += `.spr-${k} .spr-a{display:none}.spr-${k} .spr-a-idle{display:inline}`;
     css += show('#heroA.walk','walk') + show('#heroA.hurt','hurt') + show('#heroA.dead','dead');
-    [...c.attacks, c.finisher].filter(Boolean).forEach(n=>{ css += show(`#heroA.pose-${n}`, n) + show(`.spr-demo.pose-${n}`, n); });
+    [...c.attacks, ...(c.extra||[]), c.finisher].filter(Boolean).forEach(n=>{ css += show(`#heroA.pose-${n}`, n) + show(`.spr-demo.pose-${n}`, n); });
   }
   css += `.spr svg{filter:none !important;overflow:hidden !important}
     .spr image{image-rendering:pixelated;image-rendering:crisp-edges}
@@ -4326,9 +4356,9 @@ function atkPicker(){
   const cur = atkPoseOf(k), show = ui.atkDemo && c.anims[ui.atkDemo] ? ui.atkDemo : cur;
   const btn = (n,label,on)=>`<button class="${on?'on':''}" data-act="atkPose" data-v="${n}" aria-pressed="${on}">${label}</button>`;
   return `<div class="panel atk-pick"><h3 style="margin:0 0 8px">⚔️ ท่าโจมตี</h3>
-    <div class="seg">${c.attacks.map(n=>btn(n, esc(c.anims[n].th||n), n===cur && show===cur)).join('')}${c.finisher?btn('demo:'+c.finisher, '🔥 '+esc(c.anims[c.finisher].th), show===c.finisher):''}</div>
+    <div class="seg">${c.demoOnly ? [...c.attacks, ...(c.extra||[])].map(n=>btn('demo:'+n, esc(c.anims[n].th||n), n===show)).join('') : c.attacks.map(n=>btn(n, esc(c.anims[n].th||n), n===cur && show===cur)).join('')}${c.finisher?btn('demo:'+c.finisher, '🔥 '+esc(c.anims[c.finisher].th), show===c.finisher):''}</div>
     <svg class="atk-demo" viewBox="-130 -196 360 208" aria-hidden="true"><g class="spr-demo pose-${show}">${charSVG(save.eq)}</g></svg>
-    <p class="sub" style="margin:4px 0 0">เลือกท่าที่ใช้ตอนโจมตีปกติ · ${c.finNote || `สะกดคำ ${c.finMin} ตัวอักษรขึ้นไปจะใช้<b>ท่าไม้ตาย</b>อัตโนมัติ`}</p></div>`;
+    <p class="sub" style="margin:4px 0 0">${c.demoOnly?'':'เลือกท่าที่ใช้ตอนโจมตีปกติ · '}${c.finNote || `สะกดคำ ${c.finMin} ตัวอักษรขึ้นไปจะใช้<b>ท่าไม้ตาย</b>อัตโนมัติ`}</p></div>`;
 }
 function renderUpgrades(){
   const id = ui.upChar && save.chars.includes(ui.upChar) ? ui.upChar : save.eq.char, c = CH(id), u = UP(id);
@@ -5933,6 +5963,203 @@ CHAR_FACE.puff = '-50 -104 92 92';
     }
     return _diesPuff();
   };
+}
+
+/* ======================================================================
+   ELON S. KEMNANY — สายลับมือปืน
+   1. Combat Training (passive)
+      · 3 ตัว = โจมตีปกติ · 4 ตัว = ยิง 2 นัด (x1.6) · 5 ตัวขึ้นไป = ลุ้น Critical 25% (x1.8)
+      · 7 ตัวขึ้นไป = +8% ต่อตัวอักษรที่เกิน 6
+      · อาวุธ/ท่าเปลี่ยนตามคอมโบ: 1–3 มือเปล่า · 4 ปืนพก x1.1 · 5 หน้าไม้ x1.2 · 6+ ปืนใหญ่ x1.35
+   2. Quick Shot (active · ชาร์จ 3 คำ) — ยิงคำที่ต่อไว้เป็นกระสุนพิเศษ จำนวนนัด = จำนวนตัวอักษร
+      (x0.45 ต่อตัวอักษร) ถ้าต่อคำโดยไม่ลบตัวอักษรเลย = Critical x1.5
+   3. Agent's Focus (active · ชาร์จ 6 คำ · 8 วินาที) — ไฮไลต์ตัวอักษรที่ต่อเป็นคำได้,
+      Critical +25% (คำสั้นก็ติดได้ 15%), คำ 5 ตัวขึ้นไป +30%, จุดเลเซอร์แดงที่ศัตรู
+   ====================================================================== */
+const ELON = { id:'elon', qsCost:3, focusCost:6, focusMs:8000,
+  tier:{ melee:{ m:1,    ic:'👊', th:'มือเปล่า' }, pistol:{ m:1.1, ic:'🔫', th:'ปืนพก' },
+         xbow: { m:1.2,  ic:'🏹', th:'หน้าไม้' },  rpg:   { m:1.35, ic:'🚀', th:'ปืนใหญ่' } } };
+CHARACTERS.push({ id:'elon', name:'ELON S. KEMNANY', th:'อีลอน เอส. เคมนานี สายลับมือปืน', price:2800, role:'มือปืน', skill:'Combat Training',
+  desc:'คำ 4 ตัวยิง 2 นัด · คำ 5 ตัวขึ้นไปลุ้น Critical · คำยาวแรงขึ้นตามตัวอักษร · คอมโบ 4 ใช้ปืนพก 5 หน้าไม้ 6+ ปืนใหญ่ · สกิล 🔥 Quick Shot และ 🥽 Agent\'s Focus', hpMul:1, dmgTaken:1 });
+CHAR_TIP.elon = 100;
+CHAR_FACE.elon = '-30 -176 60 60';
+const isElon = ()=>save.eq && save.eq.char===ELON.id;
+const elonTier = c=>c<=3 ? 'melee' : c===4 ? 'pistol' : c===5 ? 'xbow' : 'rpg';
+const elonFocus = b=>!!(b && b.focusUntil && Date.now() < b.focusUntil);
+const elonCharge = (b,k,full)=>b[k]===undefined ? full : b[k];
+{
+  /* ---- damage ---- */
+  const _ev = evalWord;
+  evalWord = function(){
+    const r = _ev(), b = ui.bat;
+    if(!isElon() || r.state!=='ok' || !b || r.rude) return r;
+    const len = r.w.length, next = (b.combo||0)+1, T = ELON.tier[elonTier(next)];
+    let f = 1;
+    if(len===4){ f *= 1.6; r.notes.unshift('🔫 ยิง 2 นัด x1.6'); }
+    if(len>=7){ const x = 1+(len-6)*.08; f *= x; r.notes.unshift(`📏 คำยาว +${Math.round((x-1)*100)}%`); }
+    if(T.m>1){ f *= T.m; r.notes.unshift(`${T.ic} คอมโบ ${next}: ${T.th} x${T.m}`); }
+    if(elonFocus(b) && len>=5){ f *= 1.3; r.notes.unshift('🥽 Focus +30%'); }
+    if(b.elonCrit){ f *= 1.8; r.notes.unshift('🎯 CRITICAL x1.8'); }
+    if(b.qsArmed){ const q = Math.max(1.2, len*.45); f *= q; r.notes.unshift(`🔥 Quick Shot ${len} นัด x${q.toFixed(2)}`);
+      if(b.qsClean){ f *= 1.5; r.notes.unshift('💥 ต่อคำไม่ผิดเลย: Critical x1.5'); } }
+    r.dmg = Math.max(1, Math.round(r.dmg*f));
+    return r;
+  };
+  /* ---- crit roll + skill charges ---- */
+  const _da = doAttack;
+  doAttack = async function(){
+    const b = ui.bat;
+    if(!isElon() || !b) return _da();
+    const r0 = evalWord();
+    if(b.busy || r0.state!=='ok' || !curEnemy()) return _da();
+    const len = r0.w.length, focus = elonFocus(b);
+    const chance = len>=5 ? .25 + (focus?.25:0) : (focus ? .15 : 0);
+    b.elonCrit = !r0.rude && Math.random() < chance;
+    const w0 = b.words;
+    try{ await _da(); } finally { b.elonCrit = false; b.qsArmed = false; b.qsClean = false; }
+    if(ui.bat!==b) return;
+    if(b.words>w0){
+      b.qsCharge = Math.min(ELON.qsCost, elonCharge(b,'qsCharge',ELON.qsCost)+1);
+      b.focusCharge = Math.min(ELON.focusCost, elonCharge(b,'focusCharge',ELON.focusCost)+1);
+    }
+    b.clean = true;
+    if(elonFocus(b)) heroPose('pose-aim', b.focusUntil - Date.now());
+    elonButtons();
+  };
+  /* ---- "clean" word tracking for Quick Shot critical ---- */
+  const _tap = tapTile;
+  tapTile = function(i){ const b = ui.bat; if(b && !b.busy && !b.sel.length) b.clean = true; return _tap(i); };
+  const _untray = untray;
+  untray = function(k){ const b = ui.bat; if(b && !b.busy) b.clean = false; return _untray(k); };
+  const _clr = clearSel;
+  clearSel = function(){ const b = ui.bat; if(b && !b.busy && b.sel.length) b.clean = false; return _clr(); };
+  /* ---- pose by combo ---- */
+  const _pose = atkPoseOf;
+  atkPoseOf = function(k){ if(ui.elonPose && isElon() && (!k || k===ELON.id)) return ui.elonPose; return _pose(k); };
+  const _ha = heroAttack;
+  heroAttack = async function(lv, rude){
+    if(!isElon()) return _ha(lv, rude);
+    const b = ui.bat;
+    ui.elonPose = b && b.qsArmed ? 'quick' : (lv===5 && b && !b.combo) ? 'rpg' : elonTier(b ? b.combo : 1);
+    ui.elonShots = b && b.qsArmed ? Math.max(3, Math.min(9, ui.atkLen||3)) : (ui.atkLen===4 ? 2 : 1);
+    if(b && b.elonCrit) floatText('🎯 CRITICAL!', EN_X-20, FLOOR_Y-200, '#ff4a4a', 30, true);
+    try{ await _ha(lv, rude); } finally { ui.elonPose = null; }
+  };
+  const _sl = slash;
+  slash = function(){
+    if(!isElon() || !ui.elonPose || ui.elonPose==='melee') return _sl();
+    elonGunFx(ui.elonPose, ui.elonShots||1);
+  };
+  /* ---- tile highlight during Focus ---- */
+  const _rt = renderTiles;
+  renderTiles = function(){
+    _rt();
+    const b = ui.bat; if(!isElon() || !elonFocus(b)) return;
+    const key = b.tiles.map(t=>t.l+(t.stone?'#':'')).join('');
+    if(b.focusKey!==key){ b.focusKey = key; b.focusWord = findBest(); }
+    const w = b.focusWord; if(!w) return;
+    const used = new Set();
+    for(let j=0;j<w.length;j++){
+      let l = w[j]; if(l==='q'){ l='qu'; j++; }
+      const i = b.tiles.findIndex((t,k)=>!used.has(k) && !t.stone && t.l===l); if(i<0) continue; used.add(i);
+      const el = document.querySelector(`#tiles [data-i="${i}"]`); if(el && !b.tiles[i].sel) el.classList.add('efocus');
+    }
+  };
+  /* ---- skill buttons ---- */
+  const _uh = updateHud;
+  updateHud = function(){ _uh(); elonButtons(); };
+  /* ---- HP icon uses the portrait ---- */
+  const _face = heroFaceSvg;
+  heroFaceSvg = function(eq){
+    if((eq||{}).char!==ELON.id) return _face(eq);
+    return `<svg viewBox="135 4 184 184" aria-hidden="true"><image href="heroes/elon/portrait.png?v=${HERO_IMG_VER}" width="449" height="305"/></svg>`;
+  };
+}
+function elonButtons(){
+  const atk = document.querySelector('.dock .attack');
+  let box = $('#elonSk');
+  if(!atk || !isElon() || !ui.bat){ if(box) box.remove(); return; }
+  if(!box){
+    box = document.createElement('div'); box.id = 'elonSk'; box.className = 'elon-sk';
+    box.innerHTML = `<button id="bQS" aria-label="Quick Shot">🔥<small>Quick Shot</small><i></i></button><button id="bFocus" aria-label="Agent's Focus">🥽<small>Focus</small><i></i></button>`;
+    atk.insertBefore(box, atk.firstChild);
+    box.querySelector('#bQS').addEventListener('click', elonQuickShot);
+    box.querySelector('#bFocus').addEventListener('click', elonUseFocus);
+  }
+  const b = ui.bat, qc = elonCharge(b,'qsCharge',ELON.qsCost), fc = elonCharge(b,'focusCharge',ELON.focusCost), on = elonFocus(b);
+  const qs = $('#bQS'), fo = $('#bFocus');
+  qs.disabled = b.busy || qc<ELON.qsCost; qs.classList.toggle('ready', qc>=ELON.qsCost);
+  qs.querySelector('i').textContent = qc>=ELON.qsCost ? 'พร้อม' : `${qc}/${ELON.qsCost}`;
+  fo.disabled = b.busy || on || fc<ELON.focusCost; fo.classList.toggle('ready', fc>=ELON.focusCost && !on); fo.classList.toggle('on', on);
+  fo.querySelector('i').textContent = on ? `${Math.ceil((b.focusUntil-Date.now())/1000)}s` : fc>=ELON.focusCost ? 'พร้อม' : `${fc}/${ELON.focusCost}`;
+}
+async function elonQuickShot(){
+  const b = ui.bat; if(!b || b.busy) return;
+  if(elonCharge(b,'qsCharge',ELON.qsCost) < ELON.qsCost) return;
+  const r = evalWord();
+  if(r.state!=='ok'){ toast('ต่อคำให้ถูกก่อน แล้วค่อยกด Quick Shot'); sfx.bad(); return; }
+  b.qsCharge = 0; b.qsArmed = true; b.qsClean = b.clean!==false;
+  banner('QUICK SHOT!', b.qsClean ? `ต่อคำไม่ผิด · ${r.w.length} นัด Critical` : `กระสุนพิเศษ ${r.w.length} นัด`);
+  [0,1,2].forEach(k=>tone(900-k*200, .06, 'square', .05, k*.05));
+  await doAttack();
+}
+function elonUseFocus(){
+  const b = ui.bat; if(!b || b.busy || elonFocus(b)) return;
+  if(elonCharge(b,'focusCharge',ELON.focusCost) < ELON.focusCost) return;
+  b.focusCharge = 0; b.focusUntil = Date.now() + ELON.focusMs; b.focusKey = null;
+  const st = $('#stage'); st && st.classList.add('elon-focus');
+  banner("AGENT'S FOCUS", 'ตัวอักษรที่ต่อเป็นคำได้จะเรืองแสง · Critical สูงขึ้น 8 วินาที');
+  tone(1200, .12, 'sine', .06); tone(1600, .18, 'sine', .05, .12);
+  heroPose('pose-aim', ELON.focusMs);
+  renderTiles(); elonButtons(); elonRedDot();
+  clearInterval(b.focusTimer);
+  b.focusTimer = setInterval(()=>{
+    if(ui.bat!==b || !elonFocus(b)){
+      clearInterval(b.focusTimer); b.focusUntil = 0;
+      const s2 = $('#stage'); s2 && s2.classList.remove('elon-focus');
+      document.querySelectorAll('.elon-dot').forEach(n=>n.remove());
+      if(ui.bat===b){ renderTiles(); elonButtons(); }
+      return;
+    }
+    elonRedDot(); elonButtons();
+  }, 250);
+}
+function elonRedDot(){
+  const g = $('#enemyG'), e = curEnemy(); if(!g || !e) return;
+  if(g.querySelector('.elon-dot')) return;
+  const y = -e.h*e.sc*.55;
+  const d = svgEl('g', { class:'elon-dot' });
+  d.innerHTML = `<circle cx="0" cy="${y}" r="16" fill="none" stroke="#ff2a2a" stroke-width="2" opacity=".7"/><path d="M-24,${y} h14 M10,${y} h14 M0,${y-24} v14 M0,${y+10} v14" stroke="#ff2a2a" stroke-width="2"/><circle cx="0" cy="${y}" r="4.5" fill="#ff2a2a"/><circle cx="0" cy="${y}" r="10" fill="#ff2a2a" opacity=".25" class="elon-pulse"/>`;
+  g.appendChild(d);
+}
+/* ---- gun effects ---- */
+function elonGunFx(pose, shots){
+  const e = curEnemy(); if(!e) return;
+  const fx = $('#fx'), mx = HERO_X + 130, my = FLOOR_Y - 118, ty = FLOOR_Y - e.h*e.sc*.5;
+  const spark = (x,y,col)=>{ for(let k=0;k<6;k++){ const c = svgEl('circle', { r:rint(2,4), fill:col }); fx.appendChild(c);
+    const a = Math.random()*Math.PI*2, d = rint(12,34);
+    anim(c, [{transform:tr(x,y),opacity:1},{transform:tr(x+Math.cos(a)*d, y+Math.sin(a)*d),opacity:0}], { duration:280, easing:'ease-out' }).then(()=>c.remove()); } };
+  const flash = (x,y,r)=>{ const f = svgEl('circle', { r, fill:'#fff2a0' }); fx.appendChild(f);
+    anim(f, [{transform:tr(x,y)+' scale(1)',opacity:1},{transform:tr(x,y)+' scale(.2)',opacity:0}], { duration:120 }).then(()=>f.remove()); };
+  if(pose==='pistol' || pose==='quick'){
+    for(let i=0;i<shots;i++) setTimeout(()=>{
+      const yy = ty + rint(-16,16), line = svgEl('line', { x1:mx, y1:my, x2:EN_X, y2:yy, stroke: pose==='quick' ? '#ff9a2a' : '#ffe27a', 'stroke-width': pose==='quick' ? 5 : 3, 'stroke-linecap':'round' });
+      fx.appendChild(line); flash(mx, my, 12);
+      anim(line, [{opacity:1},{opacity:0}], { duration:160 }).then(()=>line.remove());
+      spark(EN_X, yy, pose==='quick' ? '#ffb04a' : '#fff');
+      tone(160, .07, 'square', .07); tone(90, .09, 'sawtooth', .05, .02);
+    }, i * (pose==='quick' ? 75 : 110));
+  } else if(pose==='xbow'){
+    const bolt = svgEl('g', {});
+    bolt.innerHTML = `<line x1="-34" y1="0" x2="10" y2="0" stroke="#d8c8a0" stroke-width="4"/><path d="M10,-6 L22,0 L10,6 Z" fill="#cfd8e2" stroke="#2a1a10" stroke-width="1.5"/><path d="M-34,0 l-8,-6 M-34,0 l-8,6" stroke="#ff5a5a" stroke-width="3"/>`;
+    fx.appendChild(bolt); tone(420, .1, 'triangle', .07);
+    anim(bolt, [{transform:tr(mx,my)},{transform:tr(EN_X-10,ty)}], { duration:160, easing:'linear', fill:'forwards' }).then(()=>{ bolt.remove(); spark(EN_X, ty, '#ffe27a'); });
+  } else if(pose==='rpg'){
+    const rk = svgEl('image', { href:`heroes/elon/rocket.png?v=${HERO_IMG_VER}`, x:-40, y:-8, width:80, height:16 });
+    rk.style.imageRendering = 'pixelated'; fx.appendChild(rk); flash(mx, my-6, 20); tone(70, .3, 'sawtooth', .08);
+    anim(rk, [{transform:tr(mx,my-6)},{transform:tr(EN_X,ty)}], { duration:260, easing:'ease-in', fill:'forwards' }).then(()=>{
+      rk.remove(); poof(EN_X, ty, 1.5); firePillar(EN_X, 1.2); shake(true); tone(55, .4, 'sawtooth', .1); });
+  }
 }
 </script>
 </body></html>

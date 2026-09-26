@@ -51,3 +51,8 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 ## Boomtos — โฟลเดอร์ `heroes/boomtos/`
 - ท่าโจมตี (atk1–3) และท่าไม้ตาย (fin) รวมเปลวไฟจากแถวเอฟเฟกต์ของชีตไว้ในรูปแล้ว
 - ท่าไม้ตายเล่นตอนสะกด BOOM เท่านั้น (`finMin:99`)
+
+## ELON S. KEMNANY — โฟลเดอร์ `heroes/elon/`
+- ภาพต้นฉบับหันซ้าย ตัดแล้วกลับด้านให้หันขวาทุกท่า
+- ท่า: idle · walk · hurt · dead · melee (คอมโบ 1–3) · pistol (4) · xbow (5) · rpg (6+) · quick (Quick Shot) · aim (Agent's Focus)
+- `rocket.png` = กระสุนปืนใหญ่ · `portrait.png` = รูปหน้าใช้ในไอคอน HP
