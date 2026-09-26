@@ -1629,7 +1629,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 6; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 7; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1666,6 +1666,18 @@ const HERO_SPRITE = {
       atk3:{ n:16, cw:29, ax:15, dur:1.1, th:'กลิ้งพุ่งชน' },
       fin: { n:14, cw:44, ax:16, dur:1.5, th:'ดาวตกพิฆาต' } },
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5 },
+  boomtos: { dir:'heroes/boomtos/', ch:97, scale:3.5, face:'20 -138 58 58',
+    anims:{
+      idle:{ n:6,  cw:61,  ax:33, dur:.9,  loop:true },
+      walk:{ n:6,  cw:61,  ax:33, dur:.6,  loop:true },
+      hurt:{ n:3,  cw:61,  ax:33, dur:.7 },
+      dead:{ n:2,  cw:71,  ax:32, dur:.9 },
+      atk1:{ n:8,  cw:101, ax:32, dur:.9,  th:'ฟาดดาบเพลิง' },
+      atk2:{ n:6,  cw:59,  ax:30, dur:.7,  th:'หมุนกระโดดฟัน' },
+      atk3:{ n:18, cw:158, ax:46, dur:1.5, th:'โซ่นรกคอมโบ' },
+      fin: { n:10, cw:152, ax:80, dur:1.3, th:'พายุโซ่นรก' } },
+    // ท่าไม้ตายของ Boomtos ใช้เฉพาะตอนสะกด BOOM (เรียกใน boomFinisher) ไม่ใช่ตามความยาวคำ
+    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:99, finNote:'สะกดคำ <b>BOOM</b> เพื่อใช้<b>ท่าไม้ตาย</b>' },
 };
 const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
@@ -4316,7 +4328,7 @@ function atkPicker(){
   return `<div class="panel atk-pick"><h3 style="margin:0 0 8px">⚔️ ท่าโจมตี</h3>
     <div class="seg">${c.attacks.map(n=>btn(n, esc(c.anims[n].th||n), n===cur && show===cur)).join('')}${c.finisher?btn('demo:'+c.finisher, '🔥 '+esc(c.anims[c.finisher].th), show===c.finisher):''}</div>
     <svg class="atk-demo" viewBox="-130 -196 360 208" aria-hidden="true"><g class="spr-demo pose-${show}">${charSVG(save.eq)}</g></svg>
-    <p class="sub" style="margin:4px 0 0">เลือกท่าที่ใช้ตอนโจมตีปกติ · สะกดคำ ${c.finMin} ตัวอักษรขึ้นไปจะใช้<b>ท่าไม้ตาย</b>อัตโนมัติ</p></div>`;
+    <p class="sub" style="margin:4px 0 0">เลือกท่าที่ใช้ตอนโจมตีปกติ · ${c.finNote || `สะกดคำ ${c.finMin} ตัวอักษรขึ้นไปจะใช้<b>ท่าไม้ตาย</b>อัตโนมัติ`}</p></div>`;
 }
 function renderUpgrades(){
   const id = ui.upChar && save.chars.includes(ui.upChar) ? ui.upChar : save.eq.char, c = CH(id), u = UP(id);
@@ -5476,7 +5488,7 @@ const BOOM = { id:'boomtos', word:'boom', cap:32, letters:['b','o','o','m','t','
 const HELLBLADE = { id:'hellblade', name:'Hellforged Blade', th:'ดาบหลอมนรก', atk:20, price:0, perk:'burn', perkTh:'เผาไหม้ศัตรู 2 เทิร์น' };
 CHARACTERS.push({ id:'boomtos', name:'Boomtos', th:'บูมทอส ผู้พิทักษ์ไฟใต้พิภพ', price:3500, role:'ไฟนรก', skill:'โทสะไฟนรก',
   desc:'ใช้ดาบหลอมนรกประจำตัวเท่านั้น · พลังโจมตี x2 ทุกเทิร์น ซ้อนได้ (สูงสุด x32 ต่อด่าน) · HP ต่ำกว่า 10% แรง x10 · สะกด BOOM = ท่าไม้ตายทะลุถึงตัวถัดไป · ชื่อเทพกรีกมีพลังพิเศษ', hpMul:1.1, dmgTaken:1 });
-CHAR_TIP.boomtos = 146;
+CHAR_TIP.boomtos = 90;
 CHAR_FACE.boomtos = '-27 -188 66 66';
 const isBoom = ()=>save.eq && save.eq.char===BOOM.id;
 function curWp(){ return isBoom() ? HELLBLADE : W(save.eq.weapon); }
@@ -5686,6 +5698,7 @@ async function boomFinisher(r){
   await sleep(1100);
   // leap + mega slash
   const g = $('#heroG'), arm = document.querySelector('#heroA .armF');
+  if(sprOf()) heroPose('pose-fin', sprMs('fin', 1300)+100);
   anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X+120,FLOOR_Y-120),offset:.45},{transform:tr(HERO_X+200,FLOOR_Y),offset:.7},{transform:tr(HERO_X,FLOOR_Y)}], { duration:900, easing:'ease-in-out' });
   anim(arm, [{transform:'rotate(0)'},{transform:'rotate(-120deg)',offset:.45},{transform:'rotate(120deg)',offset:.7},{transform:'rotate(0)'}], { duration:900 });
   await sleep(600);
