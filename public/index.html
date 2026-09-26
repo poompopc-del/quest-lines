@@ -1009,6 +1009,10 @@ html.pixel :is(.panel,.cbtn,.tile,.tiles,.chip,.pill,.text-in,.toast,.ach,.acc-s
 html.pixel .tog::after,html.pixel .tog::before{border-radius:0 !important}
 html.pixel :is(.cbtn,.tile,.bigbtn,.chip,.seg button){box-shadow:0 4px 0 #050814 !important;image-rendering:pixelated}
 html.pixel .tile:active,html.pixel .tile.sel{box-shadow:0 1px 0 #050814 !important}
+.atk-pick{margin-top:12px}
+.atk-pick .seg{display:flex;flex-wrap:wrap;gap:6px}
+.atk-pick .seg button{flex:1 1 auto}
+.atk-demo{display:block;width:100%;max-width:420px;height:auto;margin:8px auto 0;background:radial-gradient(ellipse at 50% 90%,rgba(127,227,245,.12),transparent 60%)}
 /* ---------------- pixel art mode (v12) ---------------- */
 html.pixel .px-img{image-rendering:pixelated;image-rendering:crisp-edges}
 html.pixel .px-on{visibility:hidden}
@@ -1623,7 +1627,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 3; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 5; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1632,53 +1636,78 @@ function heroImgSVG(cfg){
     <g class="h-bob"><g${cfg.flip?' transform="scale(-1,1)"':''}><image href="${src}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMax meet"/></g></g>
   </g>`;
 }
-/* ---------- ตัวละครแบบสไปรต์ชีต (หลายท่า) ----------
-   ชีต 1 ไฟล์ แต่ละแถว = 1 ท่า ทุกช่องขนาดเท่ากัน (cw x ch) เท้าอยู่ขอบล่าง ตรงกับ ax
-   anims: ท่า: [แถว, จำนวนรูป, วินาที]                                         */
+/* ---------- ตัวละครแบบสไปรต์ (หลายท่า) ----------
+   แต่ละท่าเป็นไฟล์แถบรูปแยกกัน (โฟลเดอร์ dir) ทุกรูปในแถบกว้าง cw สูง ch เท่ากัน
+   ax = ตำแหน่งเท้า/ลำตัวจากขอบซ้ายของช่อง · n = จำนวนรูป · dur = วินาที
+   attacks = ท่าโจมตีที่เลือกได้ในหน้าฮีโร่ · finisher = ท่าไม้ตาย (คำ 5 ตัวอักษรขึ้นไป)
+   นอกฉากต่อสู้จะแสดงรูปแรกของท่า idle เป็นภาพนิ่ง                                  */
 const HERO_SPRITE = {
-  pip: { sheet:'heroes/samurai.png', cols:30, rows:7, cw:190, ch:165, ax:80, scale:1.6, face:'-21 -139 42 42',
-    anims:{ idle:[0,30,3], attack:[1,10,1], hurt:[2,10,.9], dead:[3,5,1], cheer:[4,21,2.1], walk:[5,14,1.1], rest:[6,6,1.2] } },
+  pip: { dir:'heroes/samurai/', ch:113, scale:1.6, face:'-24 -168 44 44',
+    anims:{
+      idle:{ n:30, cw:98,  ax:52, dur:3,   loop:true },
+      walk:{ n:12, cw:80,  ax:38, dur:1,   loop:true },
+      hurt:{ n:11, cw:97,  ax:50, dur:1 },
+      dead:{ n:9,  cw:147, ax:83, dur:1.4 },
+      atk1:{ n:8,  cw:193, ax:68, dur:1,   th:'ชักดาบฟัน' },
+      atk2:{ n:11, cw:178, ax:63, dur:1.2, th:'ฟันต่อเนื่อง' },
+      atk3:{ n:9,  cw:150, ax:65, dur:1.1, th:'กระโดดฟัน' },
+      fin: { n:8,  cw:120, ax:70, dur:1.3, th:'ท่าไม้ตาย' } },
+    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5 },
 };
+const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
   let css = '';
   for(const [k,c] of Object.entries(HERO_SPRITE)){
-    const A = c.anims, kf = (n,[row,cnt],loop)=>`@keyframes spr-${k}-${n}{from{transform:translate(0px,${-row*c.ch}px)}to{transform:translate(${-(loop?cnt:cnt-1)*c.cw}px,${-row*c.ch}px)}}`;
-    const loopA = (n)=>`spr-${k}-${n} ${A[n][2]}s steps(${A[n][1]}) infinite`;
-    const once  = (n)=>`spr-${k}-${n} ${A[n][2]}s steps(${A[n][1]},jump-none) forwards`;
-    css += kf('idle',A.idle,1)+kf('walk',A.walk,1)+kf('attack',A.attack,0)+kf('hurt',A.hurt,0)+kf('dead',A.dead,0)+kf('cheer',A.cheer,0)
-      + `.spr-${k} .spr-strip{animation:${loopA('idle')}}`
-      + (A.rest ? kf('rest',A.rest,1) + `.actor:not([id="heroA"]) .spr-${k} .spr-strip{animation:${loopA('rest')}}` : '')
-      + `.actor.walk .spr-${k} .spr-strip{animation:${loopA('walk')}}`
-      + `.actor.cheer .spr-${k} .spr-strip{animation:${once('cheer')}}`
-      + `.actor.hurt .spr-${k} .spr-strip{animation:${once('hurt')}}`
-      + `.actor.atk .spr-${k} .spr-strip{animation:${once('attack')}}`
-      + `.actor.dead .spr-${k} .spr-strip{animation:${once('dead')}}`;
+    for(const [n,a] of Object.entries(c.anims)){
+      css += `@keyframes spr-${k}-${n}{from{transform:translateX(0px)}to{transform:translateX(${-(a.loop?a.n:a.n-1)*a.cw}px)}}`;
+      const run = a.loop ? `spr-${k}-${n} ${a.dur}s steps(${a.n}) infinite` : `spr-${k}-${n} ${a.dur}s steps(${a.n},jump-none) forwards`;
+      css += `#heroA .spr-${k} .spr-a-${n} .spr-strip{animation:${run}}`;
+      css += `.spr-demo .spr-${k} .spr-a-${n} .spr-strip{animation:spr-${k}-${n} ${a.dur}s steps(${a.loop?a.n:a.n+',jump-none'}) infinite}`;
+    }
+    // which pose is visible: idle by default, then walk / hurt / dead / attack classes on the actor
+    const show = (sel, n)=>`${sel} .spr-${k} .spr-a{display:none}${sel} .spr-${k} .spr-a-${n}{display:inline}`;
+    css += `.spr-${k} .spr-a{display:none}.spr-${k} .spr-a-idle{display:inline}`;
+    css += show('#heroA.walk','walk') + show('#heroA.hurt','hurt') + show('#heroA.dead','dead');
+    [...c.attacks, c.finisher].filter(Boolean).forEach(n=>{ css += show(`#heroA.pose-${n}`, n) + show(`.spr-demo.pose-${n}`, n); });
   }
   css += `.spr svg{filter:none !important;overflow:hidden !important}
     .spr image{image-rendering:pixelated;image-rendering:crisp-edges}
     #heroA.enchanted .spr image{filter:drop-shadow(0 0 4px var(--ec)) drop-shadow(0 0 10px var(--ec))}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
-  // preload so the first frame never flashes
-  Object.values(HERO_SPRITE).forEach(c=>{ const i = new Image(); i.src = c.sheet + "?v=" + HERO_IMG_VER; });
+  Object.values(HERO_SPRITE).forEach(c=>Object.keys(c.anims).forEach(n=>{ const i = new Image(); i.src = `${c.dir}${n}.png?v=${HERO_IMG_VER}`; }));
 })();
 function heroSpriteSVG(k){
-  const c = HERO_SPRITE[k], s = c.scale, w = c.cw*s, h = c.ch*s;
+  const c = HERO_SPRITE[k], s = c.scale, h = c.ch*s;
+  const layer = (n,a)=>{ const w = a.cw*s;
+    return `<g class="spr-a spr-a-${n}"><svg x="${-a.ax*s}" y="${-h}" width="${w}" height="${h}" style="width:${w}px;height:${h}px;overflow:hidden" viewBox="0 0 ${a.cw} ${c.ch}" overflow="hidden">
+      <g class="spr-strip"><image href="${c.dir}${n}.png?v=${HERO_IMG_VER}" width="${a.cw*a.n}" height="${c.ch}"/></g></svg></g>`; };
   return `<g class="hero-body spr spr-${k}">
     <ellipse class="shadow" cx="3" cy="1" rx="30" ry="6.5" fill="rgba(0,0,0,.4)"/>
-    <g class="spr-bob"><svg x="${-c.ax*s}" y="${-h}" width="${w}" height="${h}" style="width:${w}px;height:${h}px;overflow:hidden" viewBox="0 0 ${c.cw} ${c.ch}" overflow="hidden">
-      <g class="spr-strip"><image href="${c.sheet}?v=${HERO_IMG_VER}" width="${c.cw*c.cols}" height="${c.ch*c.rows}"/></g></svg></g>
+    ${Object.entries(c.anims).map(([n,a])=>layer(n,a)).join('')}
   </g>`;
+}
+// ท่าโจมตีที่ผู้เล่นเลือกไว้ (เก็บใน save.atkPose)
+function sprOf(k){ return HERO_SPRITE[k || (save && save.eq && save.eq.char) || '']; }
+function atkPoseOf(k){
+  k = k || (save && save.eq && save.eq.char); const c = sprOf(k); if(!c) return null;
+  const v = (save.atkPose||{})[k];
+  return c.attacks.includes(v) ? v : c.attacks[0];
 }
 // ระยะเวลาท่าของตัวละครสไปรต์ (มิลลิวินาที) ถ้าไม่ใช่สไปรต์ใช้ค่า fallback
 function sprMs(name, fallback){
-  const c = HERO_SPRITE[(save && save.eq && save.eq.char) || ''];
-  return c && c.anims[name] ? Math.round(c.anims[name][2]*1000) : fallback;
+  const c = sprOf(); return c && c.anims[name] ? Math.round(c.anims[name].dur*1000) : fallback;
 }
 // เล่นท่าครั้งเดียว (โจมตี / โดนตี) บนตัวละครในฉากต่อสู้
 function heroPose(cls, ms){
   const a = document.getElementById('heroA'); if(!a) return;
+  [...a.classList].filter(x=>x.startsWith('pose-') && x!==cls).forEach(x=>a.classList.remove(x));
   a.classList.remove(cls); void a.getBBox(); a.classList.add(cls);
+  sprRestart(cls.replace(/^pose-/,''));
   clearTimeout(a['_t'+cls]); a['_t'+cls] = setTimeout(()=>a.classList.remove(cls), ms);
+}
+// เริ่มท่าใหม่จากรูปแรก (แถบที่ซ่อนอยู่ยังเดินเวลาอยู่ จึงต้องรีเซ็ตทุกครั้งที่แสดง)
+function sprRestart(name){
+  document.querySelectorAll(`#heroA .spr-a-${name} .spr-strip`).forEach(s=>s.getAnimations().forEach(an=>{ an.currentTime = 0; an.play(); }));
 }
 function charSVG(eq){
   const k = (eq||{}).char || 'pip', img = HERO_IMG[k];
@@ -4264,7 +4293,16 @@ function heroSheet(){
     <div><h3>${esc(save.name||c.name)}</h3><span class="brush">${esc(c.name)} · ${esc(c.role)}</span>
       <p class="quote">${esc(c.desc)}</p>
       <div class="equip-box">${weaponIcon(save.eq.weapon)}<div><small>★ อาวุธที่ถือ</small><b>${esc(w.th)} · ATK ${w.atk}</b></div></div>
-      <div class="eq-list"><span>🛡 ${esc(AR(save.eq.armor).th)} (${Math.round(AR(save.eq.armor).block*100)}%)</span>${save.acc.slice(0,accSlots()).map(a=>a?`<span>${ACC_ART[a]} ${esc(ACC(a).th)}</span>`:'').join('')}</div></div></div>`;
+      <div class="eq-list"><span>🛡 ${esc(AR(save.eq.armor).th)} (${Math.round(AR(save.eq.armor).block*100)}%)</span>${save.acc.slice(0,accSlots()).map(a=>a?`<span>${ACC_ART[a]} ${esc(ACC(a).th)}</span>`:'').join('')}</div></div></div>${atkPicker()}`;
+}
+function atkPicker(){
+  const k = save.eq.char, c = sprOf(k); if(!c) return '';
+  const cur = atkPoseOf(k), show = ui.atkDemo && c.anims[ui.atkDemo] ? ui.atkDemo : cur;
+  const btn = (n,label,on)=>`<button class="${on?'on':''}" data-act="atkPose" data-v="${n}" aria-pressed="${on}">${label}</button>`;
+  return `<div class="panel atk-pick"><h3 style="margin:0 0 8px">⚔️ ท่าโจมตี</h3>
+    <div class="seg">${c.attacks.map(n=>btn(n, esc(c.anims[n].th||n), n===cur && show===cur)).join('')}${c.finisher?btn('demo:'+c.finisher, '🔥 '+esc(c.anims[c.finisher].th), show===c.finisher):''}</div>
+    <svg class="atk-demo" viewBox="-130 -196 360 208" aria-hidden="true"><g class="spr-demo pose-${show}">${charSVG(save.eq)}</g></svg>
+    <p class="sub" style="margin:4px 0 0">เลือกท่าที่ใช้ตอนโจมตีปกติ · สะกดคำ ${c.finMin} ตัวอักษรขึ้นไปจะใช้<b>ท่าไม้ตาย</b>อัตโนมัติ</p></div>`;
 }
 function renderUpgrades(){
   const id = ui.upChar && save.chars.includes(ui.upChar) ? ui.upChar : save.eq.char, c = CH(id), u = UP(id);
@@ -4670,8 +4708,8 @@ async function doAttack(){
   if(r.rude) floatText('SO RUDE!', HERO_X, FLOOR_Y-190, '#9dff4a', 34, true);
   let dmg = r.dmg;
   const crit = charIs('rook') && Math.random() < .25; if(crit) dmg *= 2;
-  ui.slashEl = r.el;
-  await heroAttack(lv, r.rude);
+  ui.slashEl = r.el; ui.atkLen = r.rude ? 0 : r.w.length;
+  await heroAttack(lv, r.rude); ui.atkLen = 0;
   e.hp -= dmg; b.score += dmg;
   if(crit){ floatText('CRITICAL!', EN_X, FLOOR_Y-e.h*e.sc-70, '#ff5a5a', 30, true); }
   if(e.boss && !e.phase2 && e.hp>0 && e.hp<=e.maxHp*.5){
@@ -4881,9 +4919,8 @@ async function enemyDies(){
   const heal = Math.round(b.max*.15); b.hp = Math.min(b.max, b.hp+heal);
   updateHud(); persist();
   await sleep(750);
-  heroCheer();
   if(heal) floatText(`+${heal}`, HERO_X-20, FLOOR_Y-160, '#6ef08a', 24);
-  await sleep(Math.max(600, sprMs('cheer', 0) - 200));
+  await sleep(600);
   if(e.mini && !b.over) await wordPuzzle(e);
   b.idx++;
   if(b.idx >= b.stage.enemies.length){ await stageClear(); return; }
@@ -4895,7 +4932,7 @@ async function enemyDies(){
 }
 async function heroDies(){
   const b = ui.bat; b.over = true;
-  $('#heroA').classList.add('dead'); sfx.lose();
+  $('#heroA').classList.add('dead'); sprRestart('dead'); sfx.lose();
   await sleep(900);
   persist();
   modal(`<h3 class="lose">พ่ายแพ้…</h3><p>ด่าน ${b.stage.ch+1}-${b.stage.n} · ล้มมอนสเตอร์ ${b.kills}/${b.stage.enemies.length} ตัว</p>
@@ -4914,8 +4951,8 @@ async function stageClear(){
   if(first && st.n===STAGES_PER){ save.potions.heal=(save.potions.heal||0)+2; save.potions.power=(save.potions.power||0)+1; extra = `<span class="pill">${ICON.potRed}+2</span><span class="pill">${ICON.potStar}+1</span>`; }
   save.stars[st.s] = Math.max(save.stars[st.s]||0, stars);
   persist();
-  heroCheer(); sfx.win(); banner('VICTORY!', `ด่าน ${st.ch+1}-${st.n}`);
-  await sleep(Math.max(1300, sprMs('cheer', 0)));
+  sfx.win(); banner('VICTORY!', `ด่าน ${st.ch+1}-${st.n}`);
+  await sleep(1300);
   const hasNext = st.s+1 < CHAPTERS.length*STAGES_PER;
   const chDone = st.n===STAGES_PER && first;
   modal(`<h3>ผ่านด่าน!</h3><div class="stars">${[1,2,3].map(i=>i<=stars?ICON.star:ICON.starOff).join('')}</div>
@@ -4930,8 +4967,11 @@ function anim(el, frames, opts){ return el ? el.animate(frames, opts).finished.c
 const tr = (x,y,s)=>`translate(${x}px,${y}px)${s&&s!==1?` scale(${s})`:''}`;
 async function heroAttack(lv, rude){
   const g = $('#heroG'), arm = document.querySelector('#heroA .armF');
-  const D = sprMs('attack', 560), hitAt = D===560 ? 330 : Math.round(D*.62);
-  heroPose('atk', D+60);
+  const sc = sprOf(), fin = sc && sc.finisher && (ui.atkLen||0) >= sc.finMin;
+  const pose = sc ? (fin ? sc.finisher : atkPoseOf()) : null;
+  const D = pose ? Math.round(sc.anims[pose].dur*1000) : 560, hitAt = pose ? Math.round(D*.62) : 330;
+  if(pose) heroPose('pose-'+pose, D+80);
+  if(fin) floatText('ท่าไม้ตาย!', HERO_X+20, FLOOR_Y-225, '#ff5a3a', 30, true);
   if(D===560) sfx.swing(); ui.slashLv = lv||0; ui.slashRude = !!rude; if(rude) ui.slashEl = null;
   if(D!==560) setTimeout(()=>sfx.swing(), Math.round(D*.5));
   const p1 = anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X+70,FLOOR_Y-6),offset:.45},{transform:tr(HERO_X+84,FLOOR_Y),offset:.7},{transform:tr(HERO_X,FLOOR_Y)}], { duration:D, easing:'ease-in-out' });
@@ -5020,7 +5060,7 @@ function heroHurt(dmg, big, toxic){
   const mouth = document.querySelector('#heroA .mouth'); if(mouth){ mouth.setAttribute('d', mouth.dataset.h); setTimeout(()=>mouth.setAttribute('d', mouth.dataset.d),900); }
 }
 function heroFlash(color){ anim($('#heroA'), [{filter:'none'},{filter:`drop-shadow(0 0 14px ${color}) brightness(1.3)`},{filter:'none'}], { duration:700 }); }
-function heroCheer(){ const a=$('#heroA'); a.classList.remove('cheer'); void a.getBBox(); a.classList.add('cheer'); setTimeout(()=>a.classList.remove('cheer'), sprMs('cheer', 1000)+100); }
+function heroCheer(){ /* ท่าดีใจถูกนำออกจากเกม */ }
 function shake(big){ const s=$('#stage'); if(!s) return; s.classList.remove('shake','shake-big'); void s.offsetWidth; s.classList.add(big?'shake-big':'shake'); }
 function floatText(txt, x, y, color, size, bounce){
   const fx = $('#fx'); if(!fx) return;
@@ -5218,6 +5258,7 @@ document.addEventListener('click', e=>{
     case 'buyHp': { if(save.hpLv>=10 || save.gold<hpPrice()) return; save.gold-=hpPrice(); save.hpLv++; sfx.heal(); persist(); render(); break; }
     case 'say': speak(v); break;
     case 'pixelTog': PIXEL.set(!PIXEL.on); location.reload(); break;
+    case 'atkPose': if(String(v).startsWith('demo:')){ ui.atkDemo = v.slice(5); } else { save.atkPose = save.atkPose || {}; save.atkPose[save.eq.char] = v; ui.atkDemo = null; persist(); } render(); break;
     case 'tog': save.settings[v] = !save.settings[v]; if(v==='music') setMusic(save.settings.music); if(v==='awake'){ save.settings.awake ? keepAwake() : releaseAwake(); } persist(); render(); break;
     case 'howto': modal(howtoHtml(), { dismiss:true }); break;
     case 'closeModal': closeModal(); break;
@@ -5371,7 +5412,7 @@ heroDies = async function(){
   const b = ui.bat;
   if(!b || !b.stage.tower) return _heroDies();
   b.over = true;
-  $('#heroA').classList.add('dead'); sfx.lose();
+  $('#heroA').classList.add('dead'); sprRestart('dead'); sfx.lose();
   await sleep(900);
   const f = TOWER.floor(b), best = save.tower.best||0, record = b.kills > (b.prevBest||0);
   persist();
