@@ -1239,7 +1239,7 @@ html.v16 .title-screen .logo{font-style:italic;font-weight:900;letter-spacing:-1
 .xcharge:disabled{filter:grayscale(.85) brightness(.5)}
 .xcharge:active:not(:disabled){transform:translateY(2px)}
 html.v16 .atk.xrelease{background:linear-gradient(180deg,#fff,var(--xc) 45%,color-mix(in srgb,var(--xc) 55%,#000)) !important;color:#06101e}
-#heroA .xspark{pointer-events:none}
+#heroA .xaura,#heroA .xspark{pointer-events:none}
 .xspark-strip{animation:xspark .52s steps(4) infinite}
 @keyframes xspark{from{transform:translateX(0)}to{transform:translateX(-128px)}}
 .xshot-strip{animation:xshotf .12s steps(2) infinite}
@@ -1851,7 +1851,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 14; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 15; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1927,21 +1927,21 @@ const HERO_SPRITE = {
       fin: { n:8, cw:106, ax:48, dur:1.5, th:'ระบำมังกรเพลิง' } },
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:7,
     finNote:'สะกดคำ <b>7 ตัวอักษรขึ้นไป</b> จะใช้<b>ระบำมังกรเพลิง</b> อัตโนมัติ' },
-  x: { dir:'heroes/x/', ch:53, scale:4.4, face:'-30 -150 60 60',
+  x: { dir:'heroes/x/', ch:80, scale:3.9, face:'-30 -170 60 60',
     anims:{
-      idle:  { n:4,  cw:32, ax:14, dur:.9,  loop:true },
-      walk:  { n:11, cw:37, ax:19, dur:.75, loop:true },
-      intro: { n:9,  cw:32, ax:14, dur:1.3, th:'เทเลพอร์ต' },
-      hurt:  { n:7,  cw:35, ax:17, dur:.8 },
-      dead:  { n:5,  cw:27, ax:13, dur:1.2 },
-      atk1:  { n:5,  cw:44, ax:21, dur:.75, th:'บัสเตอร์' },
-      atk2:  { n:6,  cw:42, ax:21, dur:.8,  th:'วิ่งยิง' },
-      atk3:  { n:7,  cw:38, ax:17, dur:.9,  th:'กระโดดยิง' },
-      charge:{ n:4,  cw:34, ax:16, dur:.6,  th:'⚡ ชาร์จ' },
-      shot:  { n:5,  cw:51, ax:21, dur:.8,  th:'ชาร์จช็อต' },
-      fin:   { n:11, cw:74, ax:24, dur:1.3, th:'ชาร์จเต็มพลัง' } },
+      idle:  { n:9,  cw:37, ax:18, dur:1.2, loop:true },
+      walk:  { n:14, cw:50, ax:28, dur:.9,  loop:true },
+      intro: { n:8,  cw:62, ax:30, dur:1.4, th:'เทเลพอร์ต' },
+      hurt:  { n:6,  cw:44, ax:21, dur:.8 },
+      dead:  { n:5,  cw:53, ax:29, dur:1 },
+      atk1:  { n:7,  cw:43, ax:19, dur:.7,  th:'บัสเตอร์' },
+      atk2:  { n:8,  cw:60, ax:31, dur:.8,  th:'วิ่งยิง' },
+      atk3:  { n:6,  cw:68, ax:33, dur:.75, th:'แดชยิง' },
+      charge:{ n:4,  cw:43, ax:19, dur:.5,  th:'⚡ ชาร์จ' },
+      shot:  { n:5,  cw:41, ax:18, dur:.7,  th:'ชาร์จช็อต' },
+      fin:   { n:8,  cw:43, ax:19, dur:1,   th:'ชาร์จเต็มพลัง' } },
     attacks:['atk1','atk2','atk3'], extra:['charge','shot','intro'], finisher:'fin', finMin:99,
-    finNote:'กด <b>⚡ ชาร์จ</b> เพื่อเก็บดาเมจ แล้วกด <b>ยิง</b> · ชาร์จ x1–x2 = ลูกพลังสีฟ้า · x3 ขึ้นไป = <b>ชาร์จเต็มพลัง</b> คลื่นเสี้ยวสีเขียวที่ใหญ่ขึ้นเรื่อยๆ' },
+    finNote:'กด <b>⚡ ชาร์จ</b> เพื่อเก็บดาเมจ แล้วกด <b>ยิง</b> · กระสุนเปลี่ยนตามระดับชาร์จ: เลมอน → วงแหวนฟ้า → พลาสมาชมพู → ลูกไฟฟ้า → <b>LV4 Buster</b> ที่ใหญ่ขึ้นเรื่อยๆ' },
 };
 const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
@@ -6482,7 +6482,7 @@ function maoFlames(){
    · ระหว่างถือชาร์จ พลังห่อหุ้มตัว รับดาเมจ -15%
    · ปล่อยชาร์จตั้งแต่ x3 ขึ้นไป = ท่า HADOUKEN (ลูกพลังยักษ์)
    · ชาร์จที่เก็บไว้หายเมื่อเริ่มด่านใหม่
-   ภาพสไปรต์: Mega Man X/X2/X3 sheet ripped by Random Talking Bush (The Spriters Resource)
+   ภาพสไปรต์: Mega Man X compilation sheet (Capcom · DarkSamus993 · Random Talking Bush · The Spriters Resource และผู้ร่วมทำ)
    ====================================================================== */
 const XH = { id:'x', guard:.85, hadoken:3, cols:['#9fe8ff','#4fb8ff','#7dff7a'] };
 CHARACTERS.push({ id:'x', name:'X', th:'เอ็กซ์ นักรบบัสเตอร์', price:3200, role:'ชาร์จ · บัสเตอร์', skill:'X-Buster ชาร์จ',
@@ -6490,6 +6490,13 @@ CHARACTERS.push({ id:'x', name:'X', th:'เอ็กซ์ นักรบบั
   hpMul:1, get dmgTaken(){ const b = ui.bat; return b && b.xLvl>0 ? XH.guard : 1; } });
 CHAR_TIP.x = 95;
 HERO_PORTRAIT.x = { src:'heroes/x/mug.png', w:32, h:32, vb:'0 0 32 32', px:true };
+// defeat: X bursts into the classic ring bubbles from the sheet
+heroDies = (_hd=>async function(){
+  if(isX()){ const fx = $('#fx'); if(fx){ setTimeout(()=>{ for(let k=0;k<8;k++){ const a = k/8*Math.PI*2;
+      const g = xSprite('bubble', HERO_X, FLOOR_Y-80, 1.6, { loop:true, ms:80 }); fx.appendChild(g);
+      anim(g, [{transform:tr(HERO_X,FLOOR_Y-80)},{transform:tr(HERO_X+Math.cos(a)*150, FLOOR_Y-80+Math.sin(a)*120)}], { duration:1100, easing:'ease-out', fill:'forwards' }).then(()=>g._stop()); } }, 700); } }
+  return _hd();
+})(heroDies);
 // X teleports in: beam drops from the sky, then materialises (instead of walking in)
 intro = (_in=>async function(){
   if(!isX()) return _in();
@@ -6530,14 +6537,15 @@ const xColor = n=>XH.cols[Math.min(XH.cols.length-1, Math.max(0,n-1))];
     if(!isX() || !b) return _ha(lv, rude);
     if(b.xCharging){   // no attack: power up in place
       heroPose('pose-charge', sprMs('charge', 800)+80);
-      xChargeFx(xColor((b.xLvl||0)+1)); await sleep(820); return;
+      xChargeFx(); await sleep(820); return;
     }
     const n = b.xLvl||0;
     ui.slashLv = lv||0; ui.slashRude = !!rude;
     const pose = n>=XH.hadoken ? 'fin' : n>0 ? 'shot' : atkPoseOf(), D = sprMs(pose, 800);
-    if(n>=XH.hadoken) floatText('FULL CHARGE!', HERO_X+30, FLOOR_Y-215, '#7dff7a', 30, true);
+    if(n>=4) floatText('LV4 BUSTER!', HERO_X+30, FLOOR_Y-230, '#9fe8ff', 30, true);
     heroPose('pose-'+pose, D + 900);
-    const launch = Math.round(D*(pose==='fin' ? .6 : pose==='shot' ? .25 : .3)), flight = n>=XH.hadoken ? 520 : 400;
+    const launch = Math.round(D*(pose==='fin' ? .3 : pose==='shot' ? .12 : .25)), flight = n>=4 ? 560 : 420;
+    xMuzzle(n);
     await sleep(launch);
     await xShotFly(n, flight);          // X stays put — the shot travels the whole way to the enemy
     xImpact(n);
@@ -6571,19 +6579,17 @@ function xAura(){
   const a = $('#heroA'), b = ui.bat; if(!a) return;
   const n = b && isX() ? (b.xLvl||0) : 0;
   a.classList.toggle('xcharged', n>0);
-  let g = a.querySelector('.xspark');
-  if(!n){ if(g) g.remove(); return; }
-  const want = Math.min(8, 2 + n*2);
-  if(g && +g.dataset.n===want) return;
-  if(g) g.remove();
-  g = svgEl('g', { class:'xspark' }); g.dataset.n = want;
-  let h = '';
-  for(let k=0;k<want;k++){
-    const ang = k/want*Math.PI*2 + (k%2)*.4, r = 34 + (k%3)*14, x = Math.cos(ang)*r*1.1, y = -78 + Math.sin(ang)*r*1.25, s = 1.3 + (k%2)*.5;
-    h += `<svg x="${(x-16*s).toFixed(1)}" y="${(y-16*s).toFixed(1)}" width="${32*s}" height="${32*s}" viewBox="0 0 32 32" overflow="hidden" style="overflow:hidden">
-      <g class="xspark-strip" style="animation-delay:${(-k*.13).toFixed(2)}s"><image href="heroes/x/spark.png?v=${HERO_IMG_VER}" width="128" height="32" style="image-rendering:pixelated"/></g></svg>`;
-  }
-  g.innerHTML = h; a.appendChild(g);
+  let g = a.querySelector('.xaura');
+  const key = n>=3 ? 'hi' : 'lo';
+  if(!n){ if(g){ g._parts.forEach(p=>p._stop()); g.remove(); } return; }
+  if(g && g.dataset.k===key) return;
+  if(g){ g._parts.forEach(p=>p._stop()); g.remove(); }
+  g = svgEl('g', { class:'xaura' }); g.dataset.k = key;
+  // charge particles swirling around X + the buster orb (blue → white at full charge)
+  const aura = xSprite('aura', 0, -78, 2.4, { loop:true, ms:75 });
+  const orb = xSprite('orb', 86, -102, 2.2, { loop:true, ms:70, from: n>=3 ? 5 : 0, count:5 });
+  g.appendChild(aura); g.appendChild(orb); g._parts = [aura, orb];
+  a.appendChild(g);
 }
 function xButtons(){
   const bAtk = $('#bAtk'), b = ui.bat;
@@ -6605,56 +6611,62 @@ function xButtons(){
   if(me){ let bd = $('#xBadge'); if(!n){ if(bd) bd.remove(); } else { if(!bd){ bd = document.createElement('span'); bd.id='xBadge'; bd.className='rage-badge'; me.appendChild(bd); } bd.textContent = `⚡x${n}`; bd.style.background = xColor(n); bd.style.color = '#0a0a18'; } }
   xAura();
 }
-function xChargeFx(col){
+function xChargeFx(){
   const fx = $('#fx'); if(!fx) return;
-  for(let k=0;k<14;k++){ const c = svgEl('circle', { r:rint(2,4), fill:col }); fx.appendChild(c);
-    const a = Math.random()*Math.PI*2, d = rint(50,90), cx = HERO_X+10, cy = FLOOR_Y-80;
-    anim(c, [{transform:tr(cx+Math.cos(a)*d, cy+Math.sin(a)*d),opacity:0},{transform:tr(cx,cy),opacity:1}], { duration:520, delay:k*25, easing:'ease-in' }).then(()=>c.remove()); }
-  const ring = svgEl('circle', { r:30, fill:'none', stroke:col, 'stroke-width':4 }); fx.appendChild(ring);
-  anim(ring, [{transform:tr(HERO_X+10,FLOOR_Y-80)+' scale(2.2)',opacity:0},{transform:tr(HERO_X+10,FLOOR_Y-80)+' scale(.5)',opacity:.9}], { duration:600, easing:'ease-in' }).then(()=>ring.remove());
+  const g = xSprite('orb', HERO_X + 86, FLOOR_Y - 102, 3, { ms:60, onEnd:g=>g.remove() });
+  fx.appendChild(g);
   [0,1,2].forEach(i=>tone(300+i*180, .12, 'sawtooth', .04, i*.1));
 }
-/* buster shots from the sheet: blue → big blue → purple, 2-frame flicker */
-/* buster shots from the sheet: lemon pellet → blue plasma → big blue plasma → green crescent (grows every charge) */
+/* ---- X effects: every image comes from the sprite sheet (heroes/x/*.png strips) ---- */
+const XFX = {   // strip name → frame size / count
+  muzzle:{w:17,h:24,n:5}, lemon:{w:21,h:8,n:4}, ring:{w:36,h:32,n:4}, pink:{w:77,h:47,n:4}, xfire:{w:80,h:74,n:4},
+  lvl4:{w:196,h:136,n:4}, burstB:{w:57,h:88,n:4}, burstP:{w:59,h:103,n:4}, aura:{w:71,h:74,n:7}, orb:{w:23,h:22,n:10}, bubble:{w:32,h:31,n:7} };
+// an animated strip: nested <svg> whose viewBox steps through the frames (works on every browser)
+function xSprite(name, cx, cy, sc, opts={}){
+  const F = XFX[name], w = F.w*sc, h = F.h*sc, first = opts.from||0, count = opts.count||F.n, ms = opts.ms||70;
+  const g = svgEl('g', { class:'xfx' });
+  g.innerHTML = `<svg x="${(-w*(opts.ax??.5)).toFixed(1)}" y="${(-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" viewBox="${first*F.w} 0 ${F.w} ${F.h}" preserveAspectRatio="none" style="overflow:hidden"><image href="heroes/x/${name}.png?v=${HERO_IMG_VER}" width="${F.w*F.n}" height="${F.h}" style="image-rendering:pixelated"/></svg>`;
+  g.setAttribute('transform', `translate(${cx},${cy})`);
+  const sv = g.firstElementChild; let k = 0;
+  g._tick = setInterval(()=>{ k++; if(!opts.loop && k>=count){ clearInterval(g._tick); if(opts.onEnd) opts.onEnd(g); return; } sv.setAttribute('viewBox', `${(first + k%count)*F.w} 0 ${F.w} ${F.h}`); }, ms);
+  g._stop = ()=>{ clearInterval(g._tick); g.remove(); };
+  return g;
+}
 function xShotLook(n){
-  if(n>=3) return { img:'crescent', w:50, h:40, sc:Math.min(7, 1.4 + (n-3)*.45), glow:'#7dff7a' };
-  if(n===2) return { img:'plasma', w:26, h:18, sc:2.6, glow:'#7fe0ff' };
-  if(n===1) return { img:'plasma', w:26, h:18, sc:1.8, glow:'#7fe0ff' };
-  return { img:'lemon1', w:11, h:11, sc:1.6, glow:'#fff6c0' };
+  if(n>=4) return { img:'lvl4',  sc:Math.min(3.4, .75 + (n-4)*.3) };   // LV4 Buster Shot keeps growing
+  if(n===3) return { img:'xfire', sc:1.3 };
+  if(n===2) return { img:'pink',  sc:1.35 };
+  if(n===1) return { img:'ring',  sc:1.7 };
+  return { img:'lemon', sc:2.8 };
+}
+const X_MUZZLE = ()=>({ x:HERO_X + 88, y:FLOOR_Y - 102 });
+function xMuzzle(n){
+  const fx = $('#fx'); if(!fx) return; const M = X_MUZZLE();
+  const g = xSprite('muzzle', M.x, M.y, 1.8 + Math.min(n,4)*.35, { ax:.2, ms:60, onEnd:g=>g.remove() });
+  setTimeout(()=>fx.appendChild(g), 30);
 }
 function xShotFly(n, ms){
   const e = curEnemy(), fx = $('#fx'); if(!e || !fx) return Promise.resolve();
-  const L = xShotLook(n), w = L.w*L.sc, h = L.h*L.sc;
-  const sx = HERO_X + 70, sy = FLOOR_Y - 96, ty = FLOOR_Y - e.h*e.sc*.5, ex = EN_X - 20;
-  const g = svgEl('g', { class:'xshot' });
-  const src = `heroes/x/${L.img}.png?v=${HERO_IMG_VER}`;
-  g.innerHTML = `<ellipse cx="${-w*.2}" cy="0" rx="${w*.7}" ry="${h*.75}" fill="${L.glow}" opacity=".3"/>
-    <image class="f1" href="${src}" x="${-w*.75}" y="${-h/2}" width="${w}" height="${h}" style="image-rendering:pixelated"/>`;
-  g.setAttribute('transform', `translate(${sx},${sy})`);
+  const L = xShotLook(n), M = X_MUZZLE(), ty = FLOOR_Y - e.h*e.sc*.5, ex = EN_X - 20;
+  const g = xSprite(L.img, 0, 0, L.sc, { ax:.75, loop:true, ms: n>=4 ? 80 : 60 });
   fx.appendChild(g);
-  const f1 = g.querySelector('.f1'); let t = 0;
-  const flick = setInterval(()=>{ t^=1; f1.setAttribute('opacity', t ? .8 : 1); }, 60);
-  tone(n ? 520 : 900, .08, 'square', .06); if(n) tone(170, .28, 'sawtooth', .05, .02);
-  // move with rAF + the transform attribute (works everywhere, including iOS Safari)
+  tone(n ? 520 : 900, .08, 'square', .06); if(n) tone(170, .28, 'sawtooth', .05, .02); if(n>=4) tone(90, .5, 'sawtooth', .07, .05);
   return new Promise(res=>{
     const t0 = performance.now();
     const step = now=>{
-      const k = Math.min(1, (now - t0)/ms), x = sx + (ex - sx)*k, y = sy + (ty - sy)*k, s = .7 + .3*Math.min(1, k*3);
-      g.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${s.toFixed(3)})`);
-      if(k<1) requestAnimationFrame(step); else { clearInterval(flick); g.remove(); res(); }
+      const k = Math.min(1, (now - t0)/ms), x = M.x + (ex - M.x)*k, y = M.y + (ty - M.y)*k;
+      g.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+      if(k<1) requestAnimationFrame(step); else { g._stop(); res(); }
     };
     requestAnimationFrame(step);
   });
 }
 function xImpact(n){
   const e = curEnemy(), fx = $('#fx'); if(!e || !fx) return;
-  const ty = FLOOR_Y - e.h*e.sc*.5, col = n>=3 ? '#7dff7a' : n ? '#7fe0ff' : '#fff6c0';
-  const f = svgEl('circle', { r: 22 + n*9, fill:col, opacity:.85 }); fx.appendChild(f);
-  anim(f, [{transform:tr(EN_X,ty)+' scale(.3)',opacity:.95},{transform:tr(EN_X,ty)+' scale(1.7)',opacity:0}], { duration:380 }).then(()=>f.remove());
-  for(let k=0;k<8+n*2;k++){ const c = svgEl('circle', { r:rint(2,4), fill:k%2?'#fff':col }); fx.appendChild(c);
-    const a = Math.random()*Math.PI*2, d = rint(30,70+n*12);
-    anim(c, [{transform:tr(EN_X,ty),opacity:1},{transform:tr(EN_X+Math.cos(a)*d, ty+Math.sin(a)*d),opacity:0}], { duration:420, easing:'ease-out' }).then(()=>c.remove()); }
-  if(n>=XH.hadoken) shake(true);
+  const ty = FLOOR_Y - e.h*e.sc*.5;
+  const g = xSprite(n>=2 ? 'burstP' : 'burstB', EN_X, ty, 1.2 + Math.min(n,6)*.25, { ax:.4, ms:70, onEnd:g=>g.remove() });
+  fx.appendChild(g);
+  if(n>=3) shake(true);
 }
 /* ======================================================================
    v16 — roster = sprite heroes only (Plink, Puff, Boomtos, ELON, Mao)

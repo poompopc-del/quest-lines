@@ -63,6 +63,6 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - `fan.png` = พัดที่ขว้าง · `portrait.png` = รูปหน้าใช้ในไอคอน HP
 
 ## X — โฟลเดอร์ `heroes/x/`
-- ภาพจากชีต Mega Man X / X2 / X3 (ripped by Random Talking Bush · The Spriters Resource)
-- ท่า: intro เทเลพอร์ตลงมา · idle · walk · hurt (โดนไฟช็อต) · dead (คุกเข่า) · atk1 บัสเตอร์ · atk2 วิ่งยิง · atk3 กระโดดยิง · charge · shot ชาร์จช็อต · fin ชาร์จเต็มพลัง
-- กระสุน: `lemon0-2.png` (ไม่ชาร์จ) · `plasma.png` (ชาร์จ x1–x2) · `crescent.png` (x3 ขึ้นไป ใหญ่ขึ้นทุกครั้งที่ชาร์จ) · `spark.png` ประกายตอนชาร์จ · `mug.png` รูปหน้าไอคอน HP
+- ภาพจากชีตรวมสไปรต์ Mega Man X (compilation: Capcom · DarkSamus993 · Random Talking Bush · The Spriters Resource และผู้ร่วมทำตามรายชื่อในชีต)
+- ท่า: intro เทเลพอร์ต · idle · walk · hurt · dead · atk1 บัสเตอร์ · atk2 วิ่งยิง · atk3 แดชยิง · charge · shot ชาร์จช็อต · fin ชาร์จเต็มพลัง
+- เอฟเฟกต์ (แถบหลายเฟรม): `muzzle` แสงปากกระบอก · `lemon` ไม่ชาร์จ · `ring` x1 · `pink` x2 · `xfire` x3 · `lvl4` x4+ (ใหญ่ขึ้นเรื่อยๆ) · `burstB/burstP` ระเบิดตอนโดน · `aura` ประกายชาร์จรอบตัว · `orb` ลูกพลังที่บัสเตอร์ · `bubble` วงแหวนตอนแพ้ · `mug.png` ไอคอน HP
