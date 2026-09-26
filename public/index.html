@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="v16">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1433">
+<meta name="theme-color" content="#08070f">
 <meta name="description" content="Quest Lines — เกมสะกดคำภาษาอังกฤษสู้มอนสเตอร์">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
@@ -1040,6 +1040,195 @@ html.pixel .enemy.walk .px-mon{animation:walkBob .25s ease-in-out infinite alter
 .elon-pulse{animation:elonPulse .8s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 50%}
 @keyframes elonPulse{50%{transform:scale(1.8);opacity:.05}}
 </style>
+
+<style id="v16">
+/* ======================================================================
+   v16 — ARCADE FIGHTER UI
+   Night-arena look to match the sprite fighters: ink-violet glass panels,
+   crimson + gold accents, slanted "fighting game" buttons and tags.
+   Everything here overrides the older theme layers (scoped to html.v16).
+   ====================================================================== */
+html.v16{
+  --ol:#07060d; --bg:#08070f; --bg2:#12101f; --bg3:#1d1932; --line:#2c2748; --line2:#433b6b;
+  --chalk:#ffffff; --ink:#f1eeff; --ink-dim:#aaa4cb; --ink-faint:#6f6993;
+  --blue:#2f9bff; --blue2:#1a5fc0; --blue-l:#8fd0ff;
+  --red:#ff3b4e; --red2:#b0122e; --gold:#ffc83d; --gold2:#d68a12;
+  --moon:#ffe3a3; --moon2:#ff4d62; --filig:rgba(255,255,255,0);
+  --gold-grad:linear-gradient(#fff6d8,#ffc83d 50%,#d68a12);
+  --moon-grad:linear-gradient(180deg,#ffffff 0%,#ffe9b8 48%,#ffb13d 100%);
+  --panel-grad:linear-gradient(165deg,rgba(42,35,78,.94) 0%,rgba(24,20,44,.96) 55%,rgba(15,13,29,.97) 100%);
+  --edge:#2d2750;
+  --k-red:#ff3b4e; --k-red2:#b0122e; --k-gold:#ffc83d; --k-cyan:#3ee0ff; --k-glass:rgba(12,10,24,.78);
+  --slant:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);
+}
+html.v16,html.v16 body{background:#08070f}
+html.v16 body{background:
+  radial-gradient(ellipse 90% 55% at 50% -12%,rgba(255,59,78,.30),transparent 62%),
+  radial-gradient(ellipse 70% 45% at 105% 105%,rgba(62,224,255,.12),transparent 60%),
+  radial-gradient(ellipse 60% 40% at -5% 70%,rgba(140,70,255,.14),transparent 60%),
+  repeating-linear-gradient(115deg,rgba(255,255,255,.022) 0 2px,transparent 2px 18px),
+  #08070f}
+html.v16 ::selection{background:var(--k-red);color:#fff}
+html.v16 button:focus-visible,html.v16 input:focus-visible{outline:2px solid var(--k-gold);outline-offset:3px}
+
+/* ---------- panels ---------- */
+html.v16 .panel{background:var(--panel-grad);border:1px solid var(--edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),inset 3px 0 0 var(--k-red),0 14px 30px rgba(0,0,0,.45)}
+html.v16 .panel.gold-edge{border-color:#4a3a1a;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 3px 0 0 var(--k-gold),0 0 0 1px rgba(255,200,61,.25),0 14px 34px rgba(0,0,0,.5)}
+html.v16 .panel.gold-edge::before,html.v16 .panel.gold-edge::after{display:none}
+
+/* ---------- headings & tags ---------- */
+html.v16 h2.title{font-style:italic;font-weight:800;letter-spacing:.3px;color:#fff;transform:none;display:flex;align-items:center;gap:10px}
+html.v16 h2.title::after{content:'';flex:1;height:3px;background:linear-gradient(90deg,var(--k-red),rgba(255,59,78,0));transform:skewX(-30deg)}
+html.v16 h2.title::before{content:'';width:8px;height:26px;background:var(--k-red);transform:skewX(-18deg);box-shadow:5px 0 0 var(--k-gold)}
+html.v16 .brush,html.v16 .seg button.on,html.v16 .tagline9 span{background:linear-gradient(90deg,var(--k-red),#e0213f 60%,var(--k-red2)) !important;
+  clip-path:var(--slant);color:#fff;font-style:italic;font-weight:700;letter-spacing:.3px;text-shadow:0 1px 0 rgba(0,0,0,.35);transform:none !important;padding-left:18px;padding-right:18px}
+
+/* ---------- buttons ---------- */
+html.v16 .cbtn{clip-path:var(--slant);border:0 !important;border-radius:0 !important;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -4px 0 rgba(0,0,0,.28) !important;
+  font-style:italic;font-weight:700;letter-spacing:.4px;padding-left:22px;padding-right:22px;transition:filter .15s,transform .08s}
+html.v16 .cbtn:hover:not(:disabled){filter:brightness(1.12)}
+html.v16 .cbtn:active:not(:disabled){transform:translateY(2px)}
+html.v16 .cbtn.gold{background:linear-gradient(180deg,#fff2c0 0%,#ffc83d 42%,#e08a10 100%);color:#2a1300;text-shadow:0 1px 0 rgba(255,255,255,.45)}
+html.v16 .cbtn.red{background:linear-gradient(180deg,#ff8391 0%,#ff3b4e 45%,#a80f2b 100%);color:#fff}
+html.v16 .cbtn.blue{background:linear-gradient(180deg,#9fdcff 0%,#2f9bff 45%,#1553b8 100%);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+html.v16 .cbtn.wood{background:linear-gradient(180deg,#3a3360 0%,#241f40 55%,#19152e 100%);color:var(--ink-dim)}
+html.v16 .cbtn:disabled{filter:grayscale(.75) brightness(.55)}
+
+/* ---------- segmented tabs ---------- */
+html.v16 .seg{gap:4px}
+html.v16 .seg button{background:rgba(20,17,38,.9) !important;border:1px solid var(--line) !important;border-radius:0 !important;clip-path:var(--slant);box-shadow:none !important;
+  color:var(--ink-dim);font-weight:600;padding-left:14px;padding-right:14px}
+html.v16 .seg button.on{border-color:transparent !important;color:#fff}
+
+/* ---------- top bar + tab bar ---------- */
+html.v16 .topbar{background:linear-gradient(180deg,rgba(14,12,26,.97),rgba(9,8,18,.97));border-bottom:0;box-shadow:0 1px 0 rgba(255,59,78,.55),0 6px 20px rgba(0,0,0,.5)}
+html.v16 .topbar .name{font-style:italic;font-weight:800;letter-spacing:.6px}
+html.v16 .pill{background:rgba(255,255,255,.04) !important;border:1px solid var(--line2) !important;color:#fff}
+html.v16 .tabbar{background:linear-gradient(180deg,rgba(14,12,26,.98),rgba(6,5,12,.99));border-top:0;box-shadow:0 -1px 0 rgba(255,59,78,.5),0 -10px 24px rgba(0,0,0,.55)}
+html.v16 .tabbar button{color:#8a84ad;position:relative}
+html.v16 .tabbar button.on{color:#fff}
+html.v16 .tabbar button.on::before{content:'';position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--k-red);box-shadow:0 0 12px var(--k-red),0 0 2px #fff;transform:skewX(-30deg)}
+html.v16 .tabbar button.on .ico{filter:drop-shadow(0 0 8px rgba(255,59,78,.8));transform:translateY(-3px) scale(1.1)}
+html.v16 .tabbar button.on span{text-shadow:0 0 10px rgba(255,59,78,.8)}
+html.v16 .tabbar button.on span::after{display:none}
+
+/* ---------- bars ---------- */
+html.v16 .bar{background:linear-gradient(#0a0814,#171329);border:1px solid #000;box-shadow:inset 0 2px 3px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+html.v16 .bar i{background:linear-gradient(180deg,#ffe07a 0%,#ffae2e 30%,#ff3b4e 70%,#b0122e 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.4)}
+
+/* ---------- map ---------- */
+html.v16 .hero-card{background:radial-gradient(ellipse 45% 90% at 14% 60%,rgba(255,59,78,.25),transparent 70%),var(--panel-grad)}
+html.v16 .hero-card .st b{font-style:italic;font-weight:800;font-size:24px}
+html.v16 .chapter .ch-head{border-bottom:1px solid rgba(255,255,255,.06)}
+html.v16 .node{background:radial-gradient(circle at 42% 34%,#3b3366 0%,#211c3d 58%,#120f24 100%);border:1px solid #000;color:#c9c3ea;
+  box-shadow:inset -4px -6px 12px rgba(0,0,0,.45),0 0 0 2px #0a0814,0 0 0 3px #3a3262,0 6px 14px rgba(0,0,0,.5)}
+html.v16 .node.done{background:radial-gradient(circle at 40% 32%,#ffffff 0%,#dff4ff 30%,#7fcaff 72%,#2f6fd0 100%);color:#0a1440;
+  box-shadow:inset -4px -6px 12px rgba(0,20,80,.35),0 0 0 2px #0a0814,0 0 0 3px #7fcaff,0 6px 14px rgba(0,0,0,.5)}
+html.v16 .node.cur{background:radial-gradient(circle at 40% 32%,#fffbe8 0%,#ffe08a 36%,#ffb52e 72%,#d9680a 100%);color:#2a1300;
+  box-shadow:0 0 0 2px #0a0814,0 0 0 4px var(--k-gold),0 0 26px 6px rgba(255,200,61,.45)}
+html.v16 .node.boss{background:radial-gradient(circle at 40% 32%,#ff9aa4 0%,#ff3b4e 48%,#7a0a22 100%);color:#fff;
+  box-shadow:inset -4px -6px 12px rgba(40,0,10,.45),0 0 0 2px #0a0814,0 0 0 3px var(--k-red),0 6px 14px rgba(0,0,0,.5)}
+html.v16 .node.boss.cur{box-shadow:0 0 0 2px #0a0814,0 0 0 4px #ff8a96,0 0 28px 8px rgba(255,59,78,.55)}
+
+/* ---------- shop / items ---------- */
+html.v16 .item .pic{background:radial-gradient(circle at 50% 40%,#2b2550,#120f22);border:1px solid var(--line2) !important}
+html.v16 .item.equipped{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 3px 0 0 var(--k-gold),0 0 0 1px rgba(255,200,61,.5),0 0 22px rgba(255,200,61,.18)}
+html.v16 .up-row .ic{filter:drop-shadow(0 0 6px rgba(255,59,78,.35))}
+html.v16 .pips10 i.on{background:linear-gradient(#ffe07a,#ff3b4e) !important}
+html.v16 .tog.on{background:linear-gradient(90deg,var(--k-red2),var(--k-red)) !important}
+html.v16 .text-in{background:#0c0a18;border:1px solid var(--line2) !important;color:#fff}
+
+/* ---------- battle ---------- */
+html.v16 .hud .face{background:radial-gradient(circle at 50% 38%,#4a2a5a,#150f24);border:2px solid var(--k-gold);box-shadow:0 0 0 2px #07060d,0 0 0 3.5px var(--k-red),0 0 16px rgba(255,59,78,.5)}
+html.v16 .hud .bar{height:20px;clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+html.v16 .hud .score{font-style:italic}
+html.v16 .hud .pause{background:linear-gradient(180deg,#2a2346,#120f22);border:1px solid var(--line2);color:#fff;box-shadow:0 3px 0 #07060d}
+html.v16 .combo-hud{font-style:italic;font-weight:800}
+html.v16 .dock{background:linear-gradient(180deg,#110e20,#08070f);box-shadow:0 -1px 0 rgba(255,59,78,.45)}
+html.v16 .dock .right,html.v16 .dock .left{background:var(--panel-grad)}
+html.v16 .atk{background:linear-gradient(180deg,#ff8391 0%,#ff3b4e 42%,#a80f2b 100%) !important;border:0 !important;border-radius:6px !important;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.35),inset 0 -6px 0 rgba(0,0,0,.3),0 0 0 2px #07060d,0 6px 16px rgba(255,59,78,.35) !important}
+html.v16 .atk:disabled{filter:grayscale(.85) brightness(.5)}
+html.v16 .atk.ready{animation:v16ready 1s ease-in-out infinite}
+@keyframes v16ready{50%{box-shadow:inset 0 3px 0 rgba(255,255,255,.35),inset 0 -6px 0 rgba(0,0,0,.3),0 0 0 2px #07060d,0 0 28px rgba(255,59,78,.75)}}
+html.v16 .bigbtn.shuf{background:linear-gradient(180deg,#7fd6ff,#2f9bff 50%,#1553b8) !important}
+html.v16 .minirow button{background:linear-gradient(180deg,#2a2346,#16122a) !important;border:1px solid var(--line2) !important;color:#fff}
+html.v16 .banner{font-style:italic}
+
+/* ======================================================================
+   FIGHTER SELECT (hero screen)
+   ====================================================================== */
+.fs{display:flex;flex-direction:column}
+.fs-roster{order:1}.fs-show{order:2}
+.fs-head{display:flex;align-items:flex-end;justify-content:space-between;margin:2px 2px 10px}
+.fs-kicker{font:italic 800 clamp(22px,6vw,30px)/1 var(--hand);color:#fff;letter-spacing:.5px;text-shadow:3px 3px 0 var(--k-red2),0 0 24px rgba(255,59,78,.35)}
+.fs-kicker small{display:block;font-size:12px;font-style:normal;font-weight:500;color:var(--ink-dim);letter-spacing:2px;margin-top:6px;text-shadow:none}
+.fs-count{font:italic 700 14px var(--hand);color:var(--k-gold);background:rgba(255,200,61,.1);border:1px solid rgba(255,200,61,.35);padding:4px 12px;clip-path:var(--slant)}
+.fs-show{--fc:var(--k-red);position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:6px;min-height:300px;padding:0 !important;
+  background:radial-gradient(ellipse 60% 70% at 26% 62%,color-mix(in srgb,var(--fc) 38%,transparent),transparent 70%),
+             linear-gradient(115deg,transparent 0 44%,color-mix(in srgb,var(--fc) 16%,transparent) 44% 45%,transparent 45%),var(--panel-grad) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 4px 0 0 var(--fc),0 0 0 1px color-mix(in srgb,var(--fc) 45%,transparent),0 18px 40px rgba(0,0,0,.5) !important}
+.fs-bgname{position:absolute;left:-6px;bottom:-14px;font:italic 900 clamp(64px,19vw,120px)/.8 var(--hand);color:transparent;-webkit-text-stroke:1.5px color-mix(in srgb,var(--fc) 40%,transparent);
+  letter-spacing:-2px;white-space:nowrap;pointer-events:none;opacity:.55;text-transform:uppercase}
+.fs-stage{position:relative;display:flex;align-items:flex-end;justify-content:center;padding:10px 0 8px}
+.fs-stage::after{content:'';position:absolute;left:12%;right:12%;bottom:10px;height:18px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--fc) 70%,#fff),transparent);opacity:.55;filter:blur(2px)}
+.fs-stage .hero-svg{position:relative;z-index:1;width:100%;max-width:240px;height:auto;filter:drop-shadow(0 0 18px color-mix(in srgb,var(--fc) 50%,transparent))}
+.fs-info{position:relative;z-index:1;padding:16px 16px 16px 4px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.fs-role{align-self:flex-start;font:italic 700 12.5px var(--hand);letter-spacing:.5px;color:#fff;background:var(--fc);padding:3px 14px;clip-path:var(--slant)}
+.fs-name{margin:0;font:italic 900 clamp(24px,6.4vw,36px)/1 var(--hand);color:#fff;letter-spacing:.2px;text-transform:uppercase;text-shadow:3px 3px 0 rgba(0,0,0,.5);word-break:break-word}
+.fs-th{color:var(--ink-dim);font-size:13.5px;margin-top:-4px}
+.fs-stats{display:grid;gap:5px;margin:2px 0}
+.fs-stat{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:8px;font-size:12px;color:var(--ink-dim)}
+.fs-stat .seg5{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
+.fs-stat .seg5 i{height:8px;background:rgba(255,255,255,.08);transform:skewX(-25deg)}
+.fs-stat .seg5 i.on{background:linear-gradient(90deg,var(--k-gold),var(--fc));box-shadow:0 0 6px color-mix(in srgb,var(--fc) 60%,transparent)}
+.fs-skills{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.fs-skills li{font-size:12.5px;line-height:1.35;color:#e6e1ff;padding:4px 8px 4px 10px;background:rgba(0,0,0,.28);border-left:2px solid var(--fc)}
+.fs-cta{margin-top:auto;padding-top:6px}
+.fs-cta .cbtn{width:100%;font-size:17px;padding-top:11px;padding-bottom:12px}
+.fs-owned{display:flex;align-items:center;justify-content:center;gap:8px;font:italic 700 15px var(--hand);color:var(--k-gold);padding:10px;border:1px solid rgba(255,200,61,.4);background:rgba(255,200,61,.08);clip-path:var(--slant)}
+.fs-roster{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 0 12px}
+.fs-card{--fc:var(--k-red);position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 7px;background:linear-gradient(180deg,#1f1a38,#110e20);
+  border:1px solid var(--line2);color:#fff;cursor:pointer;clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);transition:transform .12s,border-color .12s}
+.fs-card:hover{transform:translateY(-2px)}
+.fs-card .fc-face{width:100%;aspect-ratio:1;max-width:72px;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--fc) 45%,#1a1530),#0c0a18 75%);border:1px solid rgba(255,255,255,.08);overflow:hidden;display:flex}
+.fs-card .fc-face svg{width:100%;height:100%;display:block}
+.fs-card b{font:italic 800 12px/1.1 var(--hand);text-transform:uppercase;letter-spacing:.2px;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fs-card small{font-size:11px;color:var(--ink-dim);display:flex;align-items:center;gap:3px}
+.fs-card small .ico{width:13px;height:13px}
+.fs-card.locked .fc-face svg{filter:grayscale(1) brightness(.28) contrast(1.2)}
+.fs-card.locked .fc-face::after{content:'🔒';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.85}
+.fs-card .fc-face{position:relative}
+.fs-card.on{border-color:var(--fc);background:linear-gradient(180deg,color-mix(in srgb,var(--fc) 35%,#1f1a38),#110e20);box-shadow:inset 0 0 0 1px var(--fc),0 0 18px color-mix(in srgb,var(--fc) 40%,transparent)}
+.fs-card.on::before{content:'P1';position:absolute;top:3px;left:4px;font:italic 900 10px var(--hand);color:#fff;background:var(--k-red);padding:0 5px;clip-path:var(--slant);z-index:2}
+.fs-card.eq::after{content:'✓';position:absolute;top:3px;right:5px;font:900 12px var(--hand);color:var(--k-gold);text-shadow:0 0 6px rgba(255,200,61,.8)}
+@media (max-width:520px){
+  .fs-show{grid-template-columns:1fr;min-height:0}
+  .fs-stage{padding-top:14px;height:210px}
+  .fs-stage .hero-svg{max-width:200px;height:100%}
+  .fs-info{padding:0 14px 16px}
+  .fs-roster{gap:5px}
+  .fs-card{padding:6px 2px}
+  .fs-card b{font-size:10.5px}
+}
+
+/* ======================================================================
+   TITLE — fighter line-up
+   ====================================================================== */
+html.v16 .title-screen .logo{font-style:italic;font-weight:900;letter-spacing:-1px;transform:none;background:linear-gradient(#ffffff 0%,#ffe9b8 40%,#ffb13d 70%,#ff3b4e 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(4px 4px 0 #3a0610) drop-shadow(0 0 26px rgba(255,59,78,.45))}
+.lineup{display:flex;justify-content:center;align-items:flex-end;gap:0;margin:8px auto 4px;max-width:560px;width:100%;position:relative}
+.lineup::after{content:'';position:absolute;left:4%;right:4%;bottom:6px;height:22px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,59,78,.55),transparent);filter:blur(3px)}
+.lineup .hero-svg{position:relative;z-index:1;width:22%;height:auto;margin:0 -2.5%}
+.lineup .hero-svg:nth-child(3){width:27%;z-index:2}
+.lineup .hero-svg:nth-child(2),.lineup .hero-svg:nth-child(4){z-index:1;filter:brightness(.85)}
+.lineup .hero-svg:nth-child(1),.lineup .hero-svg:nth-child(5){filter:brightness(.6)}
+.vs-strip{display:inline-flex;gap:10px;align-items:center;font:italic 800 13px var(--hand);letter-spacing:3px;color:var(--k-gold);margin:4px 0 10px}
+.vs-strip::before,.vs-strip::after{content:'';width:40px;height:2px;background:linear-gradient(90deg,transparent,var(--k-red))}
+.vs-strip::after{transform:scaleX(-1)}
+</style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -3906,12 +4095,6 @@ const ACCESSORIES = [
 ];
 const CHARACTERS = [
   { id:'pip',     name:'Plink',       th:'พลิงค์ นักดาบหมวกเขียว', price:0,    role:'สมดุล', skill:'นักเรียนขยัน', desc:'คำใบ้ +1 ครั้งต่อด่าน และคำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
-  { id:'mira',    name:'Mira',        th:'มิร่า แม่มดฝึกหัด', price:400,  role:'เวทธาตุ', skill:'ทอเวทมนตร์', desc:'คำธาตุ (fire, ice, storm…) แรง x1.5 และผลของธาตุอยู่นานขึ้น +1 เทิร์น แต่ HP -10%', hpMul:.9, dmgTaken:1 },
-  { id:'rook',    name:'Rook',        th:'รุก จอมโจรเงา', price:600,  role:'คริติคอล', skill:'ตาเหยี่ยว', desc:'25% ติดคริติคอล ดาเมจ x2 และได้ทองเพิ่ม +20%', hpMul:.95, dmgTaken:1 },
-  { id:'bastion', name:'Sir Bastion', th:'เซอร์บาสเตียน อัศวินเหล็ก', price:800, role:'แทงค์', skill:'ป้อมเหล็ก', desc:'HP +20% และรับดาเมจลดลง 10%', hpMul:1.2, dmgTaken:.9 },
-  { id:'luma',    name:'Luma',        th:'ลูมา นักบวชแสง', price:1000, role:'ฮีลเลอร์', skill:'พรแห่งแสง', desc:'ทุกคำที่โจมตีฟื้น HP 4% · คำธาตุแสง (light, holy…) ฮีลเป็น 2 เท่า · ดาเมจ -10%', hpMul:1.05, dmgTaken:1 },
-  { id:'bruna',   name:'Bruna',       th:'บรูน่า นักรบคลั่ง', price:1400, role:'เบอร์เซิร์ก', skill:'โทสะ', desc:'ยิ่งเลือดน้อยยิ่งแรง (สูงสุด x2 ตอนเลือดใกล้หมด) แต่เกราะกันได้แค่ครึ่งเดียว', hpMul:1.1, dmgTaken:1 },
-  { id:'kiko',    name:'Kiko',        th:'คิโกะ นักธนูจิ้งจอก', price:2200, role:'คอมโบ', skill:'ฟันสองจังหวะ', desc:'ทุกคำที่ 3 โจมตี 2 ครั้ง (ครั้งที่สองแรง 70%) และคำ 6 ตัวขึ้นไปนับคอมโบเพิ่ม', hpMul:1, dmgTaken:1 },
   { id:'puff',    name:'Puff',        th:'พัฟ ก้อนชมพูจอมสูบ', price:1800, role:'ก๊อปพลัง', skill:'สูบแล้วก๊อป', desc:'กำจัดศัตรูได้ 1 ตัว = สูบกลืน ฟื้น HP 8% และก๊อปพลัง ดาเมจ +15% (ซ้อนได้ 5 ชั้นต่อด่าน)', hpMul:1, dmgTaken:1 },
 ];
 /* ---------------- elemental words → weapon enchant ---------------- */
@@ -4267,7 +4450,7 @@ function render(){
   const body = { map:renderMap, shop:renderShop, hero:renderHero, settings:renderSettings }[ui.screen]();
   app.innerHTML = `<div class="topbar"><span class="name">${esc(save.name)}</span><span class="pill">${ICON.heart}${maxHp()}</span><span class="pill">${ICON.coin}<b id="goldTop">${save.gold}</b></span></div>
     <div class="screen" id="scr"><div class="wrap">${body}</div></div>
-    <nav class="tabbar">${[['map','แผนที่',ICON.map],['shop','ร้านค้า',ICON.shopIco],['hero','ฮีโร่',ICON.helm],['settings','ตั้งค่า',ICON.gear]].map(([k,l,ic])=>`<button class="${ui.screen===k?'on':''}" data-act="tab" data-v="${k}" ${ui.screen===k?'aria-current="page"':''}>${ic}<span>${l}</span></button>`).join('')}</nav>`;
+    <nav class="tabbar">${[['map','แผนที่',ICON.map],['shop','ร้านค้า',ICON.shopIco],['hero','นักสู้',ICON.helm],['settings','ตั้งค่า',ICON.gear]].map(([k,l,ic])=>`<button class="${ui.screen===k?'on':''}" data-act="tab" data-v="${k}" ${ui.screen===k?'aria-current="page"':''}>${ic}<span>${l}</span></button>`).join('')}</nav>`;
 }
 
 /* ------------------------------ title ------------------------------ */
@@ -6257,5 +6440,108 @@ function maoFlames(){
   [0,140,280].forEach((d,i)=>setTimeout(()=>firePillar(EN_X + (i-1)*30, 1.3 - i*.1), d));
   shake(true); sfx.elem('fire');
 }
+
+/* ======================================================================
+   v16 — roster = sprite heroes only (Plink, Puff, Boomtos, ELON, Mao)
+   Old saves that bought a removed hero get the gold back; equipped → Plink.
+   ====================================================================== */
+{
+  const REMOVED = {"mira": 400, "rook": 600, "bastion": 800, "luma": 1000, "bruna": 1400, "kiko": 2200};
+  const valid = new Set(CHARACTERS.map(c=>c.id));
+  let refund = 0;
+  save.chars = (save.chars||['pip']).filter(id=>{ if(valid.has(id)) return true; refund += REMOVED[id]||0; return false; });
+  if(!save.chars.includes('pip')) save.chars.unshift('pip');
+  if(!valid.has(save.eq.char)) save.eq.char = 'pip';
+  if(refund){ save.gold += refund; persist(); setTimeout(()=>toast(`ตัวละครเก่าถูกถอดออก · คืนทอง ${refund}`), 800); }
+  else persist();
+  if(ui.screen!=='battle') render();
+}
+
+/* ======================================================================
+   v16 — FIGHTER SELECT hero screen, fighter line-up title, shop without
+   the character tab (fighters are unlocked from the hero screen now).
+   ====================================================================== */
+const FIGHTER = {
+  pip:    { c:'#46d17a', atk:3, def:3, spd:3, diff:1 },
+  puff:   { c:'#ff7ac0', atk:2, def:4, spd:3, diff:1 },
+  mao:    { c:'#ff4d62', atk:4, def:2, spd:5, diff:2 },
+  elon:   { c:'#3ec8ff', atk:4, def:3, spd:4, diff:3 },
+  boomtos:{ c:'#ff6a1a', atk:5, def:2, spd:2, diff:3 },
+};
+const fighterOf = id=>FIGHTER[id] || { c:'#ff3b4e', atk:3, def:3, spd:3, diff:2 };
+const DIFF_TH = ['', 'ง่าย', 'ปานกลาง', 'ยาก'];
+function fighterSelect(){
+  const pick = ui.pickChar && CHARACTERS.some(c=>c.id===ui.pickChar) ? ui.pickChar : save.eq.char;
+  const c = CH(pick), F = fighterOf(pick), own = save.chars.includes(pick), eq = save.eq.char===pick;
+  const seg = (lab, n)=>`<div class="fs-stat"><span>${lab}</span><div class="seg5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div></div>`;
+  const skills = String(c.desc||'').split(/\s*·\s*/).filter(Boolean).slice(0,5);
+  const cta = eq ? `<div class="fs-owned">✓ นักสู้ที่ใช้อยู่</div>`
+    : own ? `<button class="cbtn gold" data-act="equipC" data-v="${c.id}">⚔ เลือกนักสู้คนนี้</button>`
+    : `<button class="cbtn red" data-act="buyC" data-v="${c.id}" ${save.gold<c.price?'disabled':''}>${ICON.coin} ปลดล็อก ${c.price}</button>`;
+  const roster = CHARACTERS.map(x=>{
+    const o = save.chars.includes(x.id), f = fighterOf(x.id);
+    return `<button class="fs-card ${x.id===pick?'on':''} ${o?'':'locked'} ${save.eq.char===x.id?'eq':''}" style="--fc:${f.c}" data-act="pickChar" data-v="${x.id}" aria-pressed="${x.id===pick}">
+      <span class="fc-face">${heroFaceSvg(Object.assign({}, save.eq, { char:x.id }))}</span><b>${esc(x.name)}</b>
+      <small>${o ? (save.eq.char===x.id ? 'ใช้อยู่' : 'มีแล้ว') : `${ICON.coin}${x.price}`}</small></button>`;
+  }).join('');
+  return `<div class="fs">
+    <div class="fs-head"><div class="fs-kicker">SELECT FIGHTER<small>เลือกนักสู้ของคุณ</small></div><span class="fs-count">${save.chars.length}/${CHARACTERS.length}</span></div>
+    <div class="panel fs-show" style="--fc:${F.c}">
+      <div class="fs-bgname" aria-hidden="true">${esc(c.name)}</div>
+      <div class="fs-stage">${heroStandalone(Object.assign({}, save.eq, { char:pick }))}</div>
+      <div class="fs-info">
+        <span class="fs-role">${esc(c.role)} · ${esc(c.skill)}</span>
+        <h2 class="fs-name">${esc(c.name)}</h2><div class="fs-th">${esc(c.th)}</div>
+        <div class="fs-stats">${seg('พลังโจมตี', F.atk)}${seg('ความทนทาน', F.def)}${seg('ความเร็ว', F.spd)}<div class="fs-stat"><span>ความยาก</span><b style="color:${F.c};font-style:italic">${DIFF_TH[F.diff]}</b></div></div>
+        <ul class="fs-skills">${skills.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>
+        <div class="fs-cta">${cta}</div>
+      </div>
+    </div>
+    <div class="fs-roster" role="list">${roster}</div>
+  </div>`;
+}
+renderHero = (_rh=>function(){
+  // the old "sheet" (big hero card) is replaced by the fighter select; the rest of the page stays
+  const _sheet = heroSheet;
+  heroSheet = function(){
+    const pick = ui.pickChar || save.eq.char;
+    return fighterSelect() + (pick===save.eq.char ? atkPicker() : '');
+  };
+  try{ return _rh(); } finally { heroSheet = _sheet; }
+})(renderHero);
+document.addEventListener('click', ev=>{
+  const el = ev.target.closest('[data-act="pickChar"]'); if(!el) return;
+  ui.pickChar = el.dataset.v; sfx.tap && sfx.tap(2); render();
+  const s = $('#scr'); if(s) s.scrollTop = 0;
+});
+// equipping / buying from the fighter select keeps that fighter in focus
+document.addEventListener('click', ev=>{
+  const el = ev.target.closest('[data-act="equipC"],[data-act="buyC"]'); if(el) ui.pickChar = el.dataset.v;
+}, true);
+
+/* shop: the character tab moved to the hero screen */
+renderShop = (_rs=>function(){
+  if(!ui.shopTab || ui.shopTab==='char') ui.shopTab = 'weapon';
+  return _rs().replace(/<button class="[^"]*" data-act="shopTab" data-v="char">[^<]*<\/button>/, '');
+})(renderShop);
+
+/* title: fighter line-up */
+renderTitle = function(){
+  const order = ['mao','elon','pip','boomtos','puff'].filter(id=>CHARACTERS.some(c=>c.id===id));
+  const line = order.map(id=>heroStandalone(Object.assign({}, save.eq, { char:id }))).join('');
+  return `<div class="title-screen t9">${TITLE_BG9()}
+    <div class="title-content">
+    <div class="logo-wrap">${EMBLEM9}<h1 class="logo">Quest<small>Lines</small></h1></div>
+    <div class="tagline9">${ORN9}<span>Word Battle</span>${ORN9}</div>
+    <div class="lineup" aria-hidden="true">${line}</div>
+    <div class="vs-strip">5 FIGHTERS · 1 WORD</div>
+    <input class="text-in" id="nameIn" maxlength="14" placeholder="ตั้งชื่อผู้เล่นของคุณ" autocomplete="off" value="${esc(save.name)}" aria-label="ชื่อผู้เล่น">
+    <button class="cbtn gold big-cta" data-act="startGame">${ICON.sword} เริ่มการต่อสู้</button>
+    <p class="sub" style="margin-top:12px">สะกดคำภาษาอังกฤษจากตัวอักษรเพื่อโจมตี · ยิ่งคำยาว ยิ่งแรง</p></div>
+  </div>`;
+};
+document.documentElement.classList.add('v16');
+{ const m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', '#08070f'); }
+if(ui.screen!=='battle') render();
 </script>
 </body></html>
