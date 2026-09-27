@@ -1332,11 +1332,11 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=29">
-<link rel="stylesheet" href="css/endgame.css?v=29">
-<link rel="stylesheet" href="css/battle.css?v=29">
-<link rel="stylesheet" href="css/ui26.css?v=29">
-<link rel="stylesheet" href="css/boss.css?v=29">
+<link rel="stylesheet" href="css/ql2.css?v=30">
+<link rel="stylesheet" href="css/endgame.css?v=30">
+<link rel="stylesheet" href="css/battle.css?v=30">
+<link rel="stylesheet" href="css/ui26.css?v=30">
+<link rel="stylesheet" href="css/boss.css?v=30">
 </head>
 <body>
 <div id="app"></div>
@@ -1942,7 +1942,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 16; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 17; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1972,8 +1972,8 @@ const HERO_SPRITE = {
   // f* = the "mouthful" set used while an enemy / letters are held in his mouth (see js/ql2/kirby.js)
   puff: { dir:'heroes/kirby/', ch:34, scale:5, face:'-58 -128 116 116',
     anims:{
-      idle:  { n:4, cw:26, ax:13, dur:1.8, loop:true },
-      walk:  { n:5, cw:26, ax:13, dur:.6,  loop:true },
+      idle:  { n:10, cw:26, ax:13, dur:2.4, loop:true },
+      walk:  { n:7,  cw:28, ax:14, dur:.7,  loop:true },
       hurt:  { n:4, cw:26, ax:13, dur:.6 },
       dead:  { n:4, cw:36, ax:18, dur:1.0 },
       atk1:  { n:5, cw:32, ax:16, dur:.6,  th:'สไลดิ้งเตะ' },
@@ -1985,7 +1985,7 @@ const HERO_SPRITE = {
       fwalk: { n:6, cw:35, ax:17, dur:.7,  loop:true },
       fhurt: { n:4, cw:34, ax:17, dur:.6 } },
     attacks:['atk1','atk2','atk3'], extra:['inhale','fspit'], finMin:99,
-    finNote:'สะกดคำ <b>6 ตัวอักษรขึ้นไป</b> เพื่อ<b>ดูด</b> · ตอนอมอยู่ คำสั้นกว่า 6 ตัวจะ<b>พ่นดาว</b>' },
+    finNote:'สะกดคำ <b>5 ตัวอักษรขึ้นไป</b> เพื่อ<b>ดูด</b> · ตอนอมอยู่ คำสั้นกว่า 5 ตัวจะ<b>พ่นดาว</b>' },
   boomtos: { dir:'heroes/boomtos/', ch:97, scale:3.5, face:'20 -138 58 58',
     anims:{
       idle:{ n:2,  cw:61,  ax:33, dur:1.4, loop:true },
@@ -4258,7 +4258,7 @@ const ACCESSORIES = [
 ];
 const CHARACTERS = [
   { id:'pip',     name:'Plink',       th:'พลิงค์ นักดาบหมวกเขียว', price:0,    role:'สมดุล', skill:'นักเรียนขยัน', desc:'คำใบ้ +1 ครั้งต่อด่าน และคำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
-  { id:'puff',    name:'Kirby',       th:'เคอร์บี้ ก้อนชมพูจอมดูด', price:1800, role:'จอมดูด', skill:'ดูดแล้วพ่น', desc:'คำ 6 ตัวอักษรขึ้นไป = ดูดศัตรูเข้าปากแล้วอมไว้ · อมอยู่แล้วสะกดคำสั้นกว่า 6 = พ่นดาวใส่ตัวถัดไป · ยิ่งดูดหลายครั้งยิ่งแรง · บอส/มินิบอสดูดไม่ได้ จะดูดตัวอักษรทั้งกระดานแทน', hpMul:1, dmgTaken:1 },
+  { id:'puff',    name:'Kirby',       th:'เคอร์บี้ ก้อนชมพูจอมดูด', price:1800, role:'จอมดูด', skill:'ดูดแล้วพ่น', desc:'คำ 5 ตัวอักษรขึ้นไป = ดูดศัตรูเข้าปากแล้วอมไว้ · อมอยู่แล้วสะกดคำสั้นกว่า 5 = พ่นดาวใส่ตัวถัดไป · ยิ่งดูดหลายครั้งยิ่งแรง · บอส/มินิบอสดูดไม่ได้ จะดูดตัวอักษรทั้งกระดานแทน', hpMul:1, dmgTaken:1 },
 ];
 /* ---------------- elemental words → weapon enchant ---------------- */
 const ELEMENTS = {
@@ -7026,24 +7026,24 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=29"></script>
-<script src="js/ql2/quests.js?v=29"></script>
-<script src="js/ql2/shell.js?v=29"></script>
-<script src="js/ql2/settings.js?v=29"></script>
-<script src="js/ql2/hub.js?v=29"></script>
-<script src="js/ql2/world.js?v=29"></script>
-<script src="js/ql2/questboard.js?v=29"></script>
-<script src="js/ql2/heroes.js?v=29"></script>
-<script src="js/ql2/inventory.js?v=29"></script>
-<script src="js/ql2/codex.js?v=29"></script>
-<script src="js/ql2/profile.js?v=29"></script>
-<script src="js/ql2/endgame-core.js?v=29"></script>
-<script src="js/ql2/endgame-modes.js?v=29"></script>
-<script src="js/ql2/endgame-ui.js?v=29"></script>
-<script src="js/ql2/armory.js?v=29"></script>
-<script src="js/ql2/more.js?v=29"></script>
-<script src="js/ql2/wordfx.js?v=29"></script>
-<script src="js/ql2/boss-encounter.js?v=29"></script>
-<script src="js/ql2/kirby.js?v=29"></script>
-<script src="js/ql2/boot.js?v=29"></script>
+<script src="js/ql2/core.js?v=30"></script>
+<script src="js/ql2/quests.js?v=30"></script>
+<script src="js/ql2/shell.js?v=30"></script>
+<script src="js/ql2/settings.js?v=30"></script>
+<script src="js/ql2/hub.js?v=30"></script>
+<script src="js/ql2/world.js?v=30"></script>
+<script src="js/ql2/questboard.js?v=30"></script>
+<script src="js/ql2/heroes.js?v=30"></script>
+<script src="js/ql2/inventory.js?v=30"></script>
+<script src="js/ql2/codex.js?v=30"></script>
+<script src="js/ql2/profile.js?v=30"></script>
+<script src="js/ql2/endgame-core.js?v=30"></script>
+<script src="js/ql2/endgame-modes.js?v=30"></script>
+<script src="js/ql2/endgame-ui.js?v=30"></script>
+<script src="js/ql2/armory.js?v=30"></script>
+<script src="js/ql2/more.js?v=30"></script>
+<script src="js/ql2/wordfx.js?v=30"></script>
+<script src="js/ql2/boss-encounter.js?v=30"></script>
+<script src="js/ql2/kirby.js?v=30"></script>
+<script src="js/ql2/boot.js?v=30"></script>
 </body></html>

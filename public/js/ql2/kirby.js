@@ -1,21 +1,21 @@
 /* ==========================================================================
    QUEST LINES v29 — KIRBY (replaces Puff; the fighter id stays 'puff')
    --------------------------------------------------------------------------
-   · a word of 6+ letters = INHALE instead of attacking
+   · a word of 5+ letters = INHALE instead of attacking
        – normal enemy → sucked in and held in his mouth (counts as a kill)
        – boss / mini boss can't be swallowed → he sucks in the letters
          instead (the whole board is refreshed)
        – either way the whole letter board is inhaled (new tiles) and his
          mouthful power goes up one level (max 5)
-   · while his mouth is full, a word shorter than 6 = STAR SPIT at the
+   · while his mouth is full, a word shorter than 5 = STAR SPIT at the
      current enemy: damage × (1.5 + 0.5 per extra level) + a share of every
-     enemy he is holding. Another 6+ word inhales again (power stacks).
+     enemy he is holding. Another 5+ word inhales again (power stacks).
    · two animation sets: normal (idle/walk/hurt + slide · roll · flip
      attacks) and mouthful (fidle/fwalk/fhurt + spit), switched by the
      'kfull' class on the actor. Sprites: heroes/kirby/*.png
    Everything is a wrapper — the battle engine is untouched.
    ========================================================================== */
-const KIRBY = { id:'puff', min:6, cap:5, base:1.5, per:.5, store:.4 };
+const KIRBY = { id:'puff', min:5, cap:5, base:1.5, per:.5, store:.4 };
 const isKirby = ()=>typeof charIs==='function' && charIs(KIRBY.id);
 const kMult = n=>KIRBY.base + KIRBY.per*Math.max(0, n-1);
 
