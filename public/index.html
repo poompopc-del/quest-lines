@@ -1942,7 +1942,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 18; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 19; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -2016,18 +2016,18 @@ const HERO_SPRITE = {
   // Mia (id stays 'mao' so old saves keep the fighter) — frames cut from mai.png, downscaled ×0.6 and drawn smooth
   mao: { dir:'heroes/mia/', ch:182, scale:1.05, face:'-24 -138 48 48',
     anims:{
-      idle: { n:11, cw:95,  ax:53,  dur:1.6, loop:true },
-      walk: { n:11, cw:118, ax:62,  dur:.9,  loop:true },
-      hurt: { n:4,  cw:112, ax:67,  dur:.6 },
-      dead: { n:5,  cw:173, ax:92,  dur:1.0 },
-      atk1: { n:5,  cw:122, ax:58,  dur:.6,  th:'พัดเสย' },
-      atk2: { n:5,  cw:181, ax:107, dur:.7,  th:'เตะพัดคู่' },
-      atk3: { n:7,  cw:157, ax:92,  dur:.7,  th:'ศอกพุ่ง' },
-      kasen:{ n:5,  cw:151, ax:90,  dur:.7,  th:'คาโชเซ็น (ขว้างพัด)' },
-      roll: { n:11, cw:164, ax:92,  dur:1.0, th:'ชิโนบิบาจิ (ม้วนตัวพุ่ง)' },
-      fin:  { n:12, cw:147, ax:76,  dur:1.5, th:'มุซาซาบิโนะไม' },
-      flip: { n:6,  cw:134, ax:77,  dur:.7,  th:'ตีลังกาหลบ' },
-      taunt:{ n:6,  cw:150, ax:88,  dur:1.0, th:'โพสท่ายั่ว' } },
+      idle: { n:11, cw:95, ax:41,  dur:1.6, loop:true },
+      walk: { n:11, cw:118, ax:55,  dur:.9,  loop:true },
+      hurt: { n:4,  cw:112, ax:43,  dur:.6 },
+      dead: { n:5,  cw:173, ax:79,  dur:1.0 },
+      atk1: { n:5,  cw:122, ax:62,  dur:.6,  th:'พัดเสย' },
+      atk2: { n:5,  cw:181, ax:73, dur:.7,  th:'เตะพัดคู่' },
+      atk3: { n:7,  cw:157, ax:64,  dur:.7,  th:'ศอกพุ่ง' },
+      kasen:{ n:5,  cw:151, ax:60,  dur:.7,  th:'คาโชเซ็น (ขว้างพัด)' },
+      roll: { n:11, cw:164, ax:71,  dur:1.0, th:'ชิโนบิบาจิ (ม้วนตัวพุ่ง)' },
+      fin:  { n:12, cw:137, ax:76,  dur:1.5, th:'มุซาซาบิโนะไม' },
+      flip: { n:6,  cw:134, ax:56,  dur:.7,  th:'ตีลังกาหลบ' },
+      taunt:{ n:6,  cw:150, ax:60,  dur:1.0, th:'โพสท่ายั่ว' } },
     attacks:['atk1','atk2','atk3'], extra:['kasen','roll','flip','taunt'], finisher:'fin', finMin:99,
     finNote:'คำ <b>4–5 ตัว</b> ขว้างพัด · <b>6 ตัว</b> ม้วนตัวพุ่งชน · <b>7 ตัวขึ้นไป</b> ท่าไม้ตาย<b>มุซาซาบิโนะไม</b>' },
   x: { dir:'heroes/x/', ch:80, scale:2.5, face:'-20 -110 40 40',                  // v32: was 3.9
