@@ -7,17 +7,20 @@
          instead (the whole board is refreshed)
        – either way the whole letter board is inhaled (new tiles) and his
          mouthful power goes up one level (max 5)
+   · every letter he inhales flies into his mouth and adds +0.25 to his
+     spit power (v34): STAR SPIT = damage × (1 + 0.25 × letters held, up to
+     40 letters) + a share of every enemy he is holding.
    · while his mouth is full, a word shorter than 5 = STAR SPIT at the
-     current enemy: damage × (1.5 + 0.5 per extra level) + a share of every
-     enemy he is holding. Another 5+ word inhales again (power stacks).
+     current enemy. Another 5+ word inhales again (letters keep adding up).
    · two animation sets: normal (idle/walk/hurt + slide · roll · flip
      attacks) and mouthful (fidle/fwalk/fhurt + spit), switched by the
      'kfull' class on the actor. Sprites: heroes/kirby/*.png
    Everything is a wrapper — the battle engine is untouched.
    ========================================================================== */
-const KIRBY = { id:'puff', min:5, cap:5, base:1.5, per:.5, store:.4 };
+const KIRBY = { id:'puff', min:5, cap:5, perLetter:.25, maxLetters:40, store:.4 };
 const isKirby = ()=>typeof charIs==='function' && charIs(KIRBY.id);
-const kMult = n=>KIRBY.base + KIRBY.per*Math.max(0, n-1);
+// spit power: +0.25 for every letter in his mouth
+const kMult = letters=>1 + KIRBY.perLetter*Math.min(KIRBY.maxLetters, letters||0);
 
 /* ------------------------------ mouthful look ------------------------------ */
 (function(){
@@ -40,13 +43,13 @@ sprActiveName = (f=>function(actor, c){
 })(sprActiveName);
 function kSync(){
   const b = ui.bat, a = $('#heroA'); if(!a) return;
-  const full = !!(b && isKirby() && b.kStack > 0);
+  const full = !!(b && isKirby() && (b.kStack > 0 || b.kLetters > 0));
   a.classList.toggle('kfull', full);
   const me = document.querySelector('.hud .me'); if(!me) return;
   let el = $('#kBadge');
   if(!full){ if(el) el.remove(); return; }
   if(!el){ el = document.createElement('span'); el.id = 'kBadge'; el.className = 'k-badge'; me.appendChild(el); }
-  el.textContent = `😋 อมอยู่ ⭐x${kMult(b.kStack).toFixed(1)}`;
+  el.textContent = `😋${b.kLetters||0} ⭐x${kMult(b.kLetters).toFixed(2)}`; el.title = `อม ${b.kLetters||0} ตัวอักษร`;
 }
 buildBattleDom = (f=>function(){ const r = f.apply(this, arguments); try{ kSync(); }catch(e){} return r; })(buildBattleDom);
 updateHud = (f=>function(){ const r = f.apply(this, arguments); try{ if(isKirby()) kSync(); }catch(e){} return r; })(updateHud);
@@ -56,14 +59,14 @@ evalWord = (f=>function(){
   const r = f.apply(this, arguments), b = ui.bat;
   if(!b || !isKirby() || r.state!=='ok' || r.rude) return r;
   const e = curEnemy(); if(!e) return r;
-  const stack = b.kStack || 0;
+  const stack = b.kStack || 0, gain = b.tiles.length - b.sel.length, after = Math.min(KIRBY.maxLetters, (b.kLetters||0) + gain);
   if(r.w.length >= KIRBY.min){
-    if(!e.boss && !e.mini){ r.kMode = 'eat'; r.dmg = Math.max(r.dmg, Math.ceil(e.hp)); r.notes.unshift(`🌀 ดูด! กลืน ${e.name} เข้าปาก → พลัง ${Math.min(KIRBY.cap, stack+1)}`); }
-    else { r.kMode = 'suck'; r.dmg = 0; r.notes.unshift(`🌀 ${e.boss?'บอส':'มินิบอส'}ดูดไม่ได้ → ดูดตัวอักษรทั้งกระดาน → พลัง ${Math.min(KIRBY.cap, stack+1)}`); }
-  } else if(stack > 0){
-    const m = kMult(stack), bonus = b.kStore || 0;
+    if(!e.boss && !e.mini){ r.kMode = 'eat'; r.dmg = Math.max(r.dmg, Math.ceil(e.hp)); r.notes.unshift(`🌀 ดูด! กลืน ${e.name} + ตัวอักษร ${gain} ตัว → ⭐x${kMult(after).toFixed(2)}`); }
+    else { r.kMode = 'suck'; r.dmg = 0; r.notes.unshift(`🌀 ${e.boss?'บอส':'มินิบอส'}ดูดไม่ได้ → ดูดตัวอักษร ${gain} ตัว → ⭐x${kMult(after).toFixed(2)}`); }
+  } else if(stack > 0 || b.kLetters > 0){
+    const m = kMult(b.kLetters), bonus = b.kStore || 0;
     r.kMode = 'spit'; r.dmg = Math.max(1, Math.round(r.dmg*m + bonus));
-    r.notes.unshift(`⭐ พ่นดาว x${m.toFixed(1)}${bonus?` +${bonus}`:''}`);
+    r.notes.unshift(`⭐ พ่นดาว x${m.toFixed(2)} (${b.kLetters||0} ตัวอักษร)${bonus?` +${bonus}`:''}`);
   }
   return r;
 })(evalWord);
@@ -96,19 +99,30 @@ function kSuction(ms){
     anim(p, [{ strokeDashoffset:0, opacity:0 },{ strokeDashoffset:-86*2, opacity:.9, offset:.2 },{ strokeDashoffset:-86*6, opacity:.9, offset:.8 },{ strokeDashoffset:-86*7, opacity:0 }], { duration:ms, delay:i*40, easing:'linear' }).then(()=>p.remove());
   }
 }
-// every letter still on the board flies into his mouth, then a fresh board drops in
+// the mouth point on screen (scene units → page pixels through the battle svg)
+function kMouthScreen(){
+  const m = mouthXY(), svg = $('#sceneSvg') || document.querySelector('#stage svg');
+  try{ const pt = svg.createSVGPoint(); pt.x = m.x; pt.y = m.y; const p = pt.matrixTransform(svg.getScreenCTM()); return { x:p.x, y:p.y }; }
+  catch(e){ const r = $('#heroA').getBoundingClientRect(); return { x:r.left + r.width*.72, y:r.top + r.height*.55 }; }
+}
+// every letter left on the board flies one by one into his mouth; each one is +0.25 spit power
 function kSuckLetters(){
-  const b = ui.bat, hero = $('#heroA'); if(!b || !hero) return;
-  const hr = hero.getBoundingClientRect(), tx = hr.left + hr.width*.72, ty = hr.top + hr.height*.55;
-  document.querySelectorAll('#tiles .tile').forEach((t,i)=>{
-    const r = t.getBoundingClientRect(), d = document.createElement('div');
+  const b = ui.bat; if(!b) return 0;
+  const M = kMouthScreen(); let n = 0;
+  document.querySelectorAll('#tiles .tile').forEach((t)=>{
+    const idx = +t.dataset.i; if(b.sel.includes(idx)) return;          // the spelled word is the attack itself
+    const r = t.getBoundingClientRect(), d = document.createElement('div'), k = n++;
     d.className = 'k-letter'; d.textContent = t.firstChild ? String(t.firstChild.textContent||'').trim().slice(0,2) : '';
     d.style.left = r.left + r.width/2 - 14 + 'px'; d.style.top = r.top + r.height/2 - 14 + 'px';
     document.body.appendChild(d);
-    const dx = tx - (r.left + r.width/2), dy = ty - (r.top + r.height/2);
-    d.animate([{ transform:'translate(0,0) scale(1) rotate(0)', opacity:1 },{ transform:`translate(${dx*.5}px,${dy*.5 - 40}px) scale(.8) rotate(${i%2?90:-90}deg)`, opacity:1, offset:.5 },{ transform:`translate(${dx}px,${dy}px) scale(.1) rotate(${i%2?220:-220}deg)`, opacity:.2 }], { duration:620, delay:i*28, easing:'ease-in', fill:'forwards' }).finished.catch(()=>{}).then(()=>d.remove());
+    const dx = M.x - (r.left + r.width/2), dy = M.y - (r.top + r.height/2);
+    d.animate([{ transform:'translate(0,0) scale(1) rotate(0)', opacity:1 },{ transform:`translate(${dx*.45}px,${dy*.55 - 60}px) scale(.9) rotate(${k%2?120:-120}deg)`, opacity:1, offset:.55 },{ transform:`translate(${dx}px,${dy}px) scale(.12) rotate(${k%2?300:-300}deg)`, opacity:.3 }], { duration:560, delay:k*45, easing:'ease-in', fill:'forwards' })
+      .finished.catch(()=>{}).then(()=>{ d.remove(); if(ui.bat!==b) return;
+        b.kLetters = Math.min(KIRBY.maxLetters, (b.kLetters||0) + 1); kSync();
+        try{ tone(500 + k*35, .04, 'triangle', .03); }catch(err){} });
     t.style.visibility = 'hidden';
   });
+  return n;
 }
 function kRefillBoard(){
   const b = ui.bat; if(!b) return;
@@ -139,7 +153,7 @@ heroAttack = (f=>async function(lv, rude){
     try{ sfx.power && sfx.power(); slide(200, 900, 1.1, 'sawtooth', .05); }catch(err){}
     kSuction(1100);
     await sleep(260);
-    kSuckLetters();
+    const got = kSuckLetters();
     const eg = $('#enemyG');
     if(act==='eat' && eg){
       // the enemy is pulled off its feet and shrinks into his mouth
@@ -150,12 +164,12 @@ heroAttack = (f=>async function(lv, rude){
       anim(eg, [{ transform:tr(EN_X,FLOOR_Y) },{ transform:tr(EN_X-26,FLOOR_Y) },{ transform:tr(EN_X-14,FLOOR_Y) },{ transform:tr(EN_X-28,FLOOR_Y) },{ transform:tr(EN_X,FLOOR_Y) }], { duration:900 });
       setTimeout(()=>floatText(`${e && e.boss ? 'บอส' : 'มินิบอส'}ดูดไม่ขึ้น! ดูดตัวอักษรแทน`, EN_X-20, FLOOR_Y-(e ? e.h*e.sc : 120)-40, '#ffd0f0', 20), 250);
     }
-    await sleep(820);
+    await sleep(Math.max(820, got*45 + 600));                           // wait for the last letter to land
     // the mouth is full now → mouthful set of animations
     b.kStack = Math.min(KIRBY.cap, (b.kStack||0) + 1);
     if(act==='eat' && e) b.kStore = (b.kStore||0) + Math.round(e.maxHp*KIRBY.store);
     kSync(); kRefillBoard();
-    floatText(`😋 อม! ⭐x${kMult(b.kStack).toFixed(1)}`, HERO_X, FLOOR_Y-200, '#ff8ad0', 26, true);
+    floatText(`😋 +${got} ตัวอักษร ⭐x${kMult(b.kLetters).toFixed(2)}`, HERO_X, FLOOR_Y-200, '#ff8ad0', 24, true);
     sfx.coin && sfx.coin(.2);
     await sleep(260);
     return;
@@ -164,9 +178,9 @@ heroAttack = (f=>async function(lv, rude){
     heroPose('pose-fspit', 800);
     await sleep(240);
     try{ sfx.swing && sfx.swing(); }catch(err){}
-    const n = b.kStack;
+    const n = Math.min(5, Math.ceil((b.kLetters||0)/8));                 // star size follows the letters held
     const hit = kStar(n);
-    setTimeout(()=>{ b.kStack = 0; b.kStore = 0; kSync(); }, 380);   // mouth empties as the star leaves
+    setTimeout(()=>{ b.kStack = 0; b.kStore = 0; b.kLetters = 0; kSync(); }, 380);   // mouth empties as the star leaves
     await hit;
     floatText('⭐ STAR SPIT!', EN_X-10, FLOOR_Y-(e ? e.h*e.sc : 120)-70, '#ffe14a', 28, true);
     return;
