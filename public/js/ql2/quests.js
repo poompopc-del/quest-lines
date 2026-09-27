@@ -35,11 +35,11 @@ function defQ(q){ q.objs = q.objs||[]; QUESTS.push(q); QX[q.id] = q; return q; }
 // MAIN STORY — one per location, then the tower
 const MAIN = [
   { id:'m1', loc:0, en:'WHISPERS OF THE CRYPT', title:'เสียงกระซิบใต้สุสาน',
-    desc:'มีเสียงเหรียญทองกระทบกันดังมาจากสุสานที่ถูกลืม ออกไปสำรวจ ปราบผู้เฝ้าหีบสมบัติ และหยุดราชาสไลม์ผู้กักตุนทองคำ',
-    objs:[O.kills(0,5), O.clear(0,4), O.kill('mimic',1,'ปราบมินิบอส Greedy Mimic'), O.kill('kingslime',1,'ปราบบอส King Slime')],
+    desc:'มีเสียงเหรียญทองกระทบกันดังมาจากสุสานที่ถูกลืม ออกไปสำรวจ ปราบผู้เฝ้าหีบสมบัติ และหยุดราชินีสไลม์อเวจีผู้กักตุนทองคำ',
+    objs:[O.kills(0,5), O.clear(0,4), O.kill('mimic',1,'ปราบมินิบอส Greedy Mimic'), O.kill('kingslime',1,'ปราบบอส Abyss Slime')],
     reward:{ gold:250, xp:150, potions:{ heal:2 } } },
   { id:'m2', loc:1, en:'THE LOST KINGDOM', title:'อาณาจักรที่สาบสูญ',
-    desc:'แผนที่ในหีบของราชาสไลม์ชี้ไปยังทุ่งดาว ที่ซึ่งประตูโบราณของอาณาจักรที่สาบสูญถูกผู้พิทักษ์ต้นไม้เฒ่าปิดตายไว้',
+    desc:'แผนที่ในหีบของราชินีสไลม์อเวจีชี้ไปยังทุ่งดาว ที่ซึ่งประตูโบราณของอาณาจักรที่สาบสูญถูกผู้พิทักษ์ต้นไม้เฒ่าปิดตายไว้',
     objs:[O.kills(1,3), O.open(1), O.kill('treant',1,'ปราบผู้พิทักษ์ Old Rootbeard'), O.kill('ogre',1,'เปิดประตูโบราณ — ปราบ Forest Ogre')],
     reward:{ gold:500, xp:220, mats:{ fireGem:1 } } },
   { id:'m3', loc:2, en:'THE FROZEN HEART', title:'หัวใจน้ำแข็ง',
