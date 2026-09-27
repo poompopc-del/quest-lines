@@ -11,8 +11,8 @@
        original death / reward / stageClear run
      · attack patterns reuse the engine's traits (stone · heavy · weak ·
        vamp · caster) — each phase just swaps the list
-     · slime waves are ordinary enemies (key 'slime' → quests / codex count
-       them) drawn from the sprite strips in /enemies
+     · Chapter 1's monsters are re-skinned as slimes (same keys / stats /
+       traits) and the waves are made of them, so quests / codex still count
    The boss art is an extra SVG layer (#bossG) behind the actors: a large,
    cropped upper body rising out of an abyss pool — scaled uniformly, never
    stretched. The fighting slot (#enemyG) holds an invisible placeholder
@@ -21,13 +21,32 @@
    To add another boss later: add an entry to BOSS_DEFS (+ its art folder).
    ========================================================================== */
 
-/* ------------------------------ minions (sprite strips) ------------------------------ */
-const MINIONS = {
-  green: { name:'Green Slime',  th:'สไลม์เขียว',      img:'enemies/slime_green.png', fw:69, fh:50, frames:3, col:'#7ed957' },
-  blue:  { name:'Bubble Slime', th:'สไลม์ฟองน้ำ',     img:'enemies/slime_blue.png',  fw:74, fh:50, frames:3, col:'#6fb6ff' },
-  devil: { name:'Abyss Slime',  th:'สไลม์อเวจี',      img:'enemies/slime_devil.png', fw:74, fh:50, frames:3, col:'#8a6aff' },
-  red:   { name:'Blood Slime',  th:'สไลม์โลหิต',      img:'enemies/slime_red.png',   fw:69, fh:50, frames:3, col:'#ff5a4a' },
+/* ------------------------------ Chapter 1 = the slime chapter (sprite strips) ------------------------------ */
+// every Chapter-1 monster keeps its key, stats and traits (so saves, quests, codex and kill counts stay valid) —
+// only its look and name change to one of the slimes. 3-frame idle strips live in /enemies.
+const SPRITES = {
+  green: { img:'enemies/slime_green.png',  fw:69, fh:50, frames:3, col:'#7ed957' },
+  blue:  { img:'enemies/slime_blue.png',   fw:74, fh:50, frames:3, col:'#6fb6ff' },
+  yellow:{ img:'enemies/slime_yellow.png', fw:74, fh:50, frames:3, col:'#ffd24a' },
+  devil: { img:'enemies/slime_devil.png',  fw:74, fh:50, frames:3, col:'#8a6aff' },
+  orange:{ img:'enemies/slime_orange.png', fw:74, fh:50, frames:3, col:'#ff9a3a' },
+  red:   { img:'enemies/slime_red.png',    fw:69, fh:50, frames:3, col:'#ff5a4a' },
+  coke:  { img:'enemies/slime_coke.png',   fw:74, fh:50, frames:3, col:'#b87a4a' },
+  golden:{ img:'enemies/slime_golden.png', fw:69, fh:50, frames:3, col:'#ffcf4a' },
 };
+const SLIME_SKINS = {
+  slime:     { sp:'green',  name:'Green Slime',   th:'สไลม์เขียว' },
+  rat:       { sp:'yellow', name:'Street Slime',  th:'สไลม์ข้างทาง' },
+  skel:      { sp:'blue',   name:'Bubble Slime',  th:'สไลม์ฟองน้ำ' },
+  bat:       { sp:'red',    name:'Blood Slime',   th:'สไลม์โลหิต' },
+  candle:    { sp:'devil',  name:'Shadow Slime',  th:'สไลม์เงา' },
+  coinspider:{ sp:'coke',   name:'Choco Slime',   th:'สไลม์ช็อกโกแลต' },
+  mimic:     { sp:'orange', name:'Pumpkin Slime', th:'สไลม์ฟักทองยักษ์', scale:2.6 },      // Chapter-1 mini boss
+};
+const SPRITE_SCALE = 1.75;
+Object.entries(SLIME_SKINS).forEach(([k,S])=>{ const M = MON[k]; if(!M) return; const sc = S.scale || SPRITE_SCALE;
+  Object.assign(M, { name:S.name, th:S.th, sprite:S.sp, spScale:sc, sc:1, h:Math.round(SPRITES[S.sp].fh*sc), pal:{ a:SPRITES[S.sp].col, b:SPRITES[S.sp].col, c:SPRITES[S.sp].col } }); });
+const spriteOf = e=>{ const M = e && MON[e.key]; return M && M.sprite ? SPRITES[e.golden ? 'golden' : M.sprite] : null; };
 
 /* ------------------------------ boss configuration ------------------------------ */
 // hp / atk are fractions of the stage's classic boss (so the fight scales with the stage like before);
@@ -40,15 +59,15 @@ const BOSS_DEFS = {
           face:{ x:150, y:160, w:102, h:88 },                        // where the face patch sits on the body
           icon:'icon.png', defeat:'face1.png',
           height:380, x:EN_X+20, floor:FLOOR_Y+36 },               // on-screen size (scene units) and anchor
-    minion:{ hp:.5, atk:.55, gold:.6, scale:1.75 },
+    minion:{ hp:.5, atk:.55, gold:.6 },                          // wave slimes are weaker than the stage's own
     phases:[
-      { face:'face5.png', hp:.30, atk:.90, traits:[],               wave:['green'],
+      { face:'face5.png', hp:.30, atk:.90, traits:[],               wave:['slime'],
         pattern:'Slime Slap', patternTh:'ตบสไลม์ — เรียนรู้จังหวะ' },
-      { face:'face3.png', hp:.34, atk:1.00, traits:['stone'],        wave:['green','blue'],
+      { face:'face3.png', hp:.34, atk:1.00, traits:['stone'],        wave:['slime','skel'],
         pattern:'Sticky Spit', patternTh:'ถ่มเมือก — ตัวอักษรกลายเป็นหิน' },
-      { face:'face2.png', hp:.36, atk:1.10, traits:['heavy','weak'], wave:['devil','blue'], support:3,
+      { face:'face2.png', hp:.36, atk:1.10, traits:['heavy','weak'], wave:['candle','skel'], support:3,
         pattern:'Abyss Crash', patternTh:'ชาร์จแล้วทุบหนัก · มีจุดอ่อนตัวอักษร · ยิงสนับสนุนสไลม์' },
-      { face:'face4.png', hp:.42, atk:1.15, traits:['vamp'], caster:true, wave:['red'], support:2, summon:{ every:3, max:2, kind:'red' },
+      { face:'face4.png', hp:.42, atk:1.15, traits:['vamp'], caster:true, wave:['bat'], support:2, summon:{ every:3, max:2, kind:'bat' },
         pattern:'Abyss Orb', patternTh:'ยิงลูกเมือกระยะไกล · ดูดเลือด · เรียกสไลม์เป็นช่วงๆ' },
     ],
   },
@@ -61,12 +80,11 @@ try{ Object.assign(MON.kingslime, { name:BOSS_DEFS.abyss.name, th:BOSS_DEFS.abys
 
 /* ------------------------------ encounter setup ------------------------------ */
 const BX = { pending:null };
-function bxMinion(kind, s, rng, def){
-  const K = MINIONS[kind] || MINIONS.green, M = def.minion;
-  const e = makeEnemy('slime', s, rng || Math.random, false, false);
+function bxMinion(key, s, rng, def){
+  const M = def.minion, e = makeEnemy(MON[key] ? key : 'slime', s, rng || Math.random, false, false);
   const hp = Math.max(6, Math.round(e.maxHp*M.hp));
-  return Object.assign(e, { name:K.name, th:K.th, hp, maxHp:hp, atk:Math.max(1, Math.round(e.atk*M.atk)), gold:Math.max(1, Math.round(e.gold*M.gold)),
-    golden:false, traits:[], minion:kind, h:K.fh, sc:M.scale, pal:{ a:K.col, b:K.col, c:K.col } });
+  return Object.assign(e, { hp, maxHp:hp, atk:Math.max(1, Math.round(e.atk*M.atk)), gold:Math.max(1, Math.round(e.gold*M.gold)),
+    golden:false, name:MON[e.key].name, th:MON[e.key].th, minion:e.key });
 }
 function bxApplyPhase(e, i){
   const B = e.bx, P = B.def.phases[i];
@@ -102,20 +120,24 @@ startStage = (f=>function(ch, n){
 const bxBoss = ()=>{ const b = ui.bat; return b && b.stage && b.stage.enemies.find(e=>e.bx) || null; };
 
 /* ------------------------------ drawing ------------------------------ */
-function bxMinionSVG(e, queued){
-  const K = MINIONS[e.minion] || MINIONS.green, s = e.sc, w = K.fw*s, h = K.fh*s;
+function spriteSVG(e, queued){
+  const K = spriteOf(e), sc = MON[e.key].spScale || SPRITE_SCALE, w = K.fw*sc, h = K.fh*sc;
   const vals = Array.from({ length:K.frames }, (_,i)=>-i*K.fw).concat(K.frames>2 ? [-K.fw] : []).join(';');
-  const bar = queued ? '' : `<g class="ehp" transform="translate(-40,${-h-26})"><rect width="80" height="12" rx="6" fill="#12100d" stroke="${OL}" stroke-width="3"/><rect class="ehpfill" x="2" y="2" width="76" height="8" rx="4" fill="${K.col}"/></g>`;
-  return `<g class="enemy bx-minion ${queued?'queued':''}"><ellipse cx="0" cy="2" rx="${w*.38}" ry="7" fill="#000" opacity=".28"/>
-    <svg x="${-w/2}" y="${-h+4}" width="${w}" height="${h}" viewBox="0 0 ${K.fw} ${K.fh}" overflow="hidden"><image href="${K.img}" width="${K.fw*K.frames}" height="${K.fh}">${save.settings.anim===false?'':`<animate attributeName="x" values="${vals}" dur="${(.3*(K.frames+1)).toFixed(2)}s" calcMode="discrete" repeatCount="indefinite"/>`}</image></svg>${bar}</g>`;
+  const col = e.boss ? '#d9452f' : e.mini ? '#f2b42c' : K.col;
+  const crown = e.mini ? `<path d="M-14,8 L-16,-4 L-9,2 L-4,-8 L1,2 L8,-4 L6,8 Z" fill="#f2b42c" stroke="${OL}" stroke-width="2.2" stroke-linejoin="round"/>` : '';
+  const bar = queued ? '' : `<g class="ehp" transform="translate(-40,${-h-26})"><rect width="80" height="12" rx="6" fill="#12100d" stroke="${OL}" stroke-width="3"/><rect class="ehpfill" x="2" y="2" width="76" height="8" rx="4" fill="${col}"/>${crown}</g>`;
+  const ring = e.mini && !queued ? `<ellipse class="elite-ring" cx="0" cy="2" rx="${w*.46}" ry="${10*sc/1.75}" fill="none" stroke="#f2b42c" stroke-width="4" opacity=".8"/>` : '';
+  return `<g class="enemy spr-enemy ${e.minion?'bx-minion':''} ${queued?'queued':''} ${e.golden?'golden':''}">${ring}<ellipse cx="0" cy="2" rx="${w*.38}" ry="7" fill="#000" opacity=".28"/>
+    <svg x="${-w/2}" y="${-h+4}" width="${w}" height="${h}" viewBox="0 0 ${K.fw} ${K.fh}" overflow="hidden"><image href="${K.img}" width="${K.fw*K.frames}" height="${K.fh}">${save.settings.anim===false?'':`<animate attributeName="x" values="${vals}" dur="${(.3*(K.frames+1)).toFixed(2)}s" calcMode="discrete" repeatCount="indefinite"/>`}</image></svg>${bar}${e.golden&&!queued?`<text class="golden-tag" x="-35" y="${-h-34}">★ GOLDEN ★</text>`:''}</g>`;
 }
 enemyMarkup = (f=>function(e, queued){
   if(e && e.key==='kingslime'){ e.bxBoss = true; setTimeout(bxEnsureLayer, 0); return `<g class="enemy bx-ph"></g>`; }
-  if(e && e.minion) return bxMinionSVG(e, queued);
+  if(spriteOf(e)) return spriteSVG(e, queued);
   return f.apply(this, arguments);
 })(enemyMarkup);
 monsterIcon = (f=>function(key){
   if(key==='kingslime'){ const A = BOSS_DEFS.abyss.art; return `<svg viewBox="0 0 128 128" class="bx-icon" aria-hidden="true"><image href="${A.dir}${A.icon}" width="128" height="128"/></svg>`; }
+  const K = spriteOf({ key }); if(K) return `<svg viewBox="0 -4 ${K.fw} ${K.fh+6}" class="spr-icon" aria-hidden="true"><image href="${K.img}" width="${K.fw*K.frames}" height="${K.fh}"/></svg>`;
   return f.apply(this, arguments);
 })(monsterIcon);
 

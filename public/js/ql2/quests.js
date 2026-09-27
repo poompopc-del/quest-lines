@@ -35,11 +35,11 @@ function defQ(q){ q.objs = q.objs||[]; QUESTS.push(q); QX[q.id] = q; return q; }
 // MAIN STORY — one per location, then the tower
 const MAIN = [
   { id:'m1', loc:0, en:'WHISPERS OF THE CRYPT', title:'เสียงกระซิบใต้สุสาน',
-    desc:'มีเสียงเหรียญทองกระทบกันดังมาจากสุสานที่ถูกลืม ออกไปสำรวจ ปราบผู้เฝ้าหีบสมบัติ และหยุดราชินีสไลม์อเวจีผู้กักตุนทองคำ',
-    objs:[O.kills(0,5), O.clear(0,4), O.kill('mimic',1,'ปราบมินิบอส Greedy Mimic'), O.kill('kingslime',1,'ปราบบอส Abyss Slime')],
+    desc:'มีเสียงเหรียญทองกระทบกันดังมาจากสุสานที่ถูกลืม ออกไปสำรวจ ปราบสไลม์ฟักทองยักษ์ และหยุดราชินีสไลม์อเวจีผู้กักตุนทองคำ',
+    objs:[O.kills(0,5), O.clear(0,4), O.kill('mimic',1,'ปราบมินิบอส Pumpkin Slime'), O.kill('kingslime',1,'ปราบบอส Abyss Slime')],
     reward:{ gold:250, xp:150, potions:{ heal:2 } } },
   { id:'m2', loc:1, en:'THE LOST KINGDOM', title:'อาณาจักรที่สาบสูญ',
-    desc:'แผนที่ในหีบของราชินีสไลม์อเวจีชี้ไปยังทุ่งดาว ที่ซึ่งประตูโบราณของอาณาจักรที่สาบสูญถูกผู้พิทักษ์ต้นไม้เฒ่าปิดตายไว้',
+    desc:'แผนที่ในบ่อเมือกของราชินีสไลม์อเวจีชี้ไปยังทุ่งดาว ที่ซึ่งประตูโบราณของอาณาจักรที่สาบสูญถูกผู้พิทักษ์ต้นไม้เฒ่าปิดตายไว้',
     objs:[O.kills(1,3), O.open(1), O.kill('treant',1,'ปราบผู้พิทักษ์ Old Rootbeard'), O.kill('ogre',1,'เปิดประตูโบราณ — ปราบ Forest Ogre')],
     reward:{ gold:500, xp:220, mats:{ fireGem:1 } } },
   { id:'m3', loc:2, en:'THE FROZEN HEART', title:'หัวใจน้ำแข็ง',
@@ -65,8 +65,8 @@ MAIN.forEach((q,i)=>defQ(Object.assign(q, { type:'main', order:i,
 
 // SIDE QUESTS — one-off jobs posted at each location
 [
-  { id:'s_bat',    loc:0, title:'ค้างคาวรังควาน',   desc:'ค้างคาวเขี้ยวแย่งเหรียญไปจากผู้มาเยือนสุสาน ช่วยไล่พวกมันออกไปที', objs:[O.kill('bat',4,'ปราบ Fang Bat 4 ตัว')], reward:{ gold:120, xp:60, mats:{ bone:4 } } },
-  { id:'s_candle', loc:0, title:'เทียนที่ไม่ยอมดับ',  desc:'เทียนหลอนจุดไฟเผาแผนที่ของนักสำรวจ ดับมันให้หมด', objs:[O.kill('candle',3,'ปราบ Wax Wick 3 ตัว')], reward:{ gold:120, xp:60, potions:{ heal:1 } } },
+  { id:'s_bat',    loc:0, title:'สไลม์โลหิตรังควาน',   desc:'สไลม์โลหิตดูดพลังผู้มาเยือนสุสาน ช่วยไล่พวกมันออกไปที', objs:[O.kill('bat',4,'ปราบ Blood Slime 4 ตัว')], reward:{ gold:120, xp:60, mats:{ bone:4 } } },
+  { id:'s_candle', loc:0, title:'เงาที่ไม่ยอมจาง',  desc:'สไลม์เงาคืบคลานออกมาจากบ่อเมือกใต้สุสาน จัดการมันให้หมด', objs:[O.kill('candle',3,'ปราบ Shadow Slime 3 ตัว')], reward:{ gold:120, xp:60, potions:{ heal:1 } } },
   { id:'s_wolf',   loc:1, title:'หมาป่าในทุ่งดาว',   desc:'หมาป่าตะไคร่ล่าคนเลี้ยงแกะในทุ่งดาว', objs:[O.kill('wolf',4,'ปราบ Moss Wolf 4 ตัว')], reward:{ gold:180, xp:80, mats:{ starmoss:5 } } },
   { id:'s_plant',  loc:1, title:'ดอกไม้กินคน',       desc:'ดอกไม้ยักษ์งอกขวางทางเดิน ตัดทิ้งเสียก่อนมันจะออกดอกอีก', objs:[O.kill('plant',3,'ปราบ Snapvine 3 ตัว')], reward:{ gold:180, xp:80, potions:{ power:1 } } },
   { id:'s_snow',   loc:2, title:'มนุษย์หิมะอาละวาด', desc:'มนุษย์หิมะทุบกระท่อมนักปีนเขา ช่วยพวกเขาที', objs:[O.kill('snowman',3,'ปราบ Frosty Brute 3 ตัว')], reward:{ gold:240, xp:100, mats:{ frost:5 } } },
