@@ -1332,11 +1332,11 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=28">
-<link rel="stylesheet" href="css/endgame.css?v=28">
-<link rel="stylesheet" href="css/battle.css?v=28">
-<link rel="stylesheet" href="css/ui26.css?v=28">
-<link rel="stylesheet" href="css/boss.css?v=28">
+<link rel="stylesheet" href="css/ql2.css?v=29">
+<link rel="stylesheet" href="css/endgame.css?v=29">
+<link rel="stylesheet" href="css/battle.css?v=29">
+<link rel="stylesheet" href="css/ui26.css?v=29">
+<link rel="stylesheet" href="css/boss.css?v=29">
 </head>
 <body>
 <div id="app"></div>
@@ -1968,17 +1968,24 @@ const HERO_SPRITE = {
       atk3:{ n:5,  cw:57,  ax:35, dur:.7,  th:'ฟันเสย' },
       fin: { n:10, cw:118, ax:45, dur:1.4, th:'คลื่นดาบเพลิง' } },
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5 },
-  puff: { dir:'heroes/puff/', ch:45, scale:5.5, face:'-50 -104 92 92',
+  // Kirby (id stays 'puff' so old saves keep the fighter) — pixel strips from Kirby Super Star Ultra.
+  // f* = the "mouthful" set used while an enemy / letters are held in his mouth (see js/ql2/kirby.js)
+  puff: { dir:'heroes/kirby/', ch:34, scale:5, face:'-58 -128 116 116',
     anims:{
-      idle:{ n:9,  cw:26, ax:14, dur:1.5, loop:true },
-      walk:{ n:8,  cw:31, ax:19, dur:.7,  loop:true },
-      hurt:{ n:5,  cw:29, ax:14, dur:.8 },
-      dead:{ n:9,  cw:35, ax:19, dur:1.6 },
-      atk1:{ n:17, cw:27, ax:12, dur:1,   th:'ตบรัว' },
-      atk2:{ n:9,  cw:27, ax:15, dur:.9,  th:'กระโดดทับ' },
-      atk3:{ n:16, cw:29, ax:15, dur:1.1, th:'กลิ้งพุ่งชน' },
-      fin: { n:14, cw:44, ax:16, dur:1.5, th:'ดาวตกพิฆาต' } },
-    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5 },
+      idle:  { n:4, cw:26, ax:13, dur:1.8, loop:true },
+      walk:  { n:5, cw:26, ax:13, dur:.6,  loop:true },
+      hurt:  { n:4, cw:26, ax:13, dur:.6 },
+      dead:  { n:4, cw:36, ax:18, dur:1.0 },
+      atk1:  { n:5, cw:32, ax:16, dur:.6,  th:'สไลดิ้งเตะ' },
+      atk2:  { n:8, cw:30, ax:15, dur:.8,  th:'กลิ้งพุ่งชน' },
+      atk3:  { n:7, cw:34, ax:17, dur:.8,  th:'ตีลังกาทับ' },
+      inhale:{ n:8, cw:31, ax:15, dur:1.3, th:'ดูด!' },
+      fspit: { n:6, cw:33, ax:16, dur:.7,  th:'พ่นดาว' },
+      fidle: { n:4, cw:33, ax:16, dur:1.4, loop:true },
+      fwalk: { n:6, cw:35, ax:17, dur:.7,  loop:true },
+      fhurt: { n:4, cw:34, ax:17, dur:.6 } },
+    attacks:['atk1','atk2','atk3'], extra:['inhale','fspit'], finMin:99,
+    finNote:'สะกดคำ <b>6 ตัวอักษรขึ้นไป</b> เพื่อ<b>ดูด</b> · ตอนอมอยู่ คำสั้นกว่า 6 ตัวจะ<b>พ่นดาว</b>' },
   boomtos: { dir:'heroes/boomtos/', ch:97, scale:3.5, face:'20 -138 58 58',
     anims:{
       idle:{ n:2,  cw:61,  ax:33, dur:1.4, loop:true },
@@ -4251,7 +4258,7 @@ const ACCESSORIES = [
 ];
 const CHARACTERS = [
   { id:'pip',     name:'Plink',       th:'พลิงค์ นักดาบหมวกเขียว', price:0,    role:'สมดุล', skill:'นักเรียนขยัน', desc:'คำใบ้ +1 ครั้งต่อด่าน และคำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
-  { id:'puff',    name:'Puff',        th:'พัฟ ก้อนชมพูจอมสูบ', price:1800, role:'ก๊อปพลัง', skill:'สูบแล้วก๊อป', desc:'กำจัดศัตรูได้ 1 ตัว = สูบกลืน ฟื้น HP 8% และก๊อปพลัง ดาเมจ +15% (ซ้อนได้ 5 ชั้นต่อด่าน)', hpMul:1, dmgTaken:1 },
+  { id:'puff',    name:'Kirby',       th:'เคอร์บี้ ก้อนชมพูจอมดูด', price:1800, role:'จอมดูด', skill:'ดูดแล้วพ่น', desc:'คำ 6 ตัวอักษรขึ้นไป = ดูดศัตรูเข้าปากแล้วอมไว้ · อมอยู่แล้วสะกดคำสั้นกว่า 6 = พ่นดาวใส่ตัวถัดไป · ยิ่งดูดหลายครั้งยิ่งแรง · บอส/มินิบอสดูดไม่ได้ จะดูดตัวอักษรทั้งกระดานแทน', hpMul:1, dmgTaken:1 },
 ];
 /* ---------------- elemental words → weapon enchant ---------------- */
 const ELEMENTS = {
@@ -6294,35 +6301,12 @@ const PIXEL = (()=>{
 }
 
 /* ======================================================================
-   PUFF — สูบแล้วก๊อป
-   · กำจัดศัตรู 1 ตัว → ฟื้น HP 8% และได้พลังก๊อป 1 ชั้น (ดาเมจ +15% ต่อชั้น สูงสุด 5 ชั้น)
-   · พลังก๊อปรีเซ็ตทุกด่าน (เก็บไว้ใน ui.bat ที่สร้างใหม่ทุกด่าน)
+   PUFF → KIRBY (v29): the old "สูบแล้วก๊อป" abilities were replaced — the new
+   inhale / mouthful / star-spit kit lives in js/ql2/kirby.js
    ====================================================================== */
-const PUFF = { id:'puff', per:.15, cap:5, heal:.08 };
+const PUFF = { id:'puff' };
 CHAR_TIP.puff = 70;
-CHAR_FACE.puff = '-50 -104 92 92';
-{
-  const _evalPuff = evalWord;
-  evalWord = function(){
-    const r = _evalPuff(), b = ui.bat;
-    if(!charIs(PUFF.id) || r.state!=='ok' || !b || !b.copy) return r;
-    const f = 1 + b.copy*PUFF.per;
-    r.notes.unshift(`⭐ ก๊อปพลัง x${f.toFixed(2)}`);
-    r.dmg = Math.max(1, Math.round(r.dmg * f));
-    return r;
-  };
-  const _diesPuff = enemyDies;
-  enemyDies = async function(){
-    const b = ui.bat;
-    if(charIs(PUFF.id) && b && !b.over){
-      const h = Math.round(b.max*PUFF.heal); b.hp = Math.min(b.max, b.hp+h);
-      floatText(`😋 สูบ! +${h}`, HERO_X-30, FLOOR_Y-150, '#ff9ad0', 24, true);
-      if((b.copy||0) < PUFF.cap){ b.copy = (b.copy||0)+1; floatText(`⭐ ก๊อปพลัง ${b.copy}/${PUFF.cap}`, HERO_X, FLOOR_Y-185, '#ffe14a', 22); }
-      updateHud();
-    }
-    return _diesPuff();
-  };
-}
+CHAR_FACE.puff = '-58 -128 116 116';
 
 /* ======================================================================
    ELON S. KEMNANY — สายลับมือปืน
@@ -7042,23 +7026,24 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=28"></script>
-<script src="js/ql2/quests.js?v=28"></script>
-<script src="js/ql2/shell.js?v=28"></script>
-<script src="js/ql2/settings.js?v=28"></script>
-<script src="js/ql2/hub.js?v=28"></script>
-<script src="js/ql2/world.js?v=28"></script>
-<script src="js/ql2/questboard.js?v=28"></script>
-<script src="js/ql2/heroes.js?v=28"></script>
-<script src="js/ql2/inventory.js?v=28"></script>
-<script src="js/ql2/codex.js?v=28"></script>
-<script src="js/ql2/profile.js?v=28"></script>
-<script src="js/ql2/endgame-core.js?v=28"></script>
-<script src="js/ql2/endgame-modes.js?v=28"></script>
-<script src="js/ql2/endgame-ui.js?v=28"></script>
-<script src="js/ql2/armory.js?v=28"></script>
-<script src="js/ql2/more.js?v=28"></script>
-<script src="js/ql2/wordfx.js?v=28"></script>
-<script src="js/ql2/boss-encounter.js?v=28"></script>
-<script src="js/ql2/boot.js?v=28"></script>
+<script src="js/ql2/core.js?v=29"></script>
+<script src="js/ql2/quests.js?v=29"></script>
+<script src="js/ql2/shell.js?v=29"></script>
+<script src="js/ql2/settings.js?v=29"></script>
+<script src="js/ql2/hub.js?v=29"></script>
+<script src="js/ql2/world.js?v=29"></script>
+<script src="js/ql2/questboard.js?v=29"></script>
+<script src="js/ql2/heroes.js?v=29"></script>
+<script src="js/ql2/inventory.js?v=29"></script>
+<script src="js/ql2/codex.js?v=29"></script>
+<script src="js/ql2/profile.js?v=29"></script>
+<script src="js/ql2/endgame-core.js?v=29"></script>
+<script src="js/ql2/endgame-modes.js?v=29"></script>
+<script src="js/ql2/endgame-ui.js?v=29"></script>
+<script src="js/ql2/armory.js?v=29"></script>
+<script src="js/ql2/more.js?v=29"></script>
+<script src="js/ql2/wordfx.js?v=29"></script>
+<script src="js/ql2/boss-encounter.js?v=29"></script>
+<script src="js/ql2/kirby.js?v=29"></script>
+<script src="js/ql2/boot.js?v=29"></script>
 </body></html>
