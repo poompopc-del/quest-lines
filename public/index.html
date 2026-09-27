@@ -2030,7 +2030,7 @@ const HERO_SPRITE = {
       shot:  { n:5,  cw:41, ax:18, dur:.7,  th:'ชาร์จช็อต' },
       fin:   { n:8,  cw:43, ax:19, dur:1,   th:'ชาร์จเต็มพลัง' } },
     attacks:['atk1','atk2','atk3'], extra:['charge','shot','intro'], finisher:'fin', finMin:99,
-    finNote:'กด <b>⚡ ชาร์จ</b> เพื่อเก็บดาเมจ แล้วกด <b>ยิง</b> · กระสุนเปลี่ยนตามระดับชาร์จ: เลมอน → วงแหวนฟ้า → พลาสมาชมพู → ลูกไฟฟ้า → <b>LV4 Buster</b> ที่ใหญ่ขึ้นเรื่อยๆ' },
+    finNote:'กด <b>⚡ ชาร์จ</b> เพื่อเก็บดาเมจ แล้วกด <b>ยิง</b> · กระสุนเปลี่ยนตามระดับชาร์จ: เลมอน → วงแหวนฟ้า → พลาสมาชมพู → ลูกไฟฟ้า → <b>LV4 Buster</b> ที่ใหญ่ขึ้นเรื่อยๆ · ชาร์จ x4 ขึ้นไปยิงทะลุถึงศัตรูตัวถัดไปด้วย' },
 };
 const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
 (function sprCSS(){
@@ -6615,7 +6615,7 @@ function maoFlames(){
    ====================================================================== */
 const XH = { id:'x', guard:.85, hadoken:3, cols:['#9fe8ff','#4fb8ff','#7dff7a'] };
 CHARACTERS.push({ id:'x', name:'X', th:'เอ็กซ์ นักรบบัสเตอร์', price:3200, role:'ชาร์จ · บัสเตอร์', skill:'X-Buster ชาร์จ',
-  desc:'ปุ่มโจมตีแบ่งครึ่งเป็น ⚡ชาร์จ กับ ยิง · ชาร์จ = เก็บดาเมจของคำไว้ ไม่โจมตี (ศัตรูยังตีกลับ) · ยิง = ดาเมจที่เก็บ + คำนี้ x จำนวนครั้งที่ชาร์จ (x1 x2 x3 x4 …) · ระหว่างถือชาร์จรับดาเมจ -15% · ชาร์จ x3 ขึ้นไปปล่อยชาร์จเต็มพลัง (คลื่นเสี้ยวสีเขียว)',
+  desc:'ปุ่มโจมตีแบ่งครึ่งเป็น ⚡ชาร์จ กับ ยิง · ชาร์จ = เก็บดาเมจของคำไว้ ไม่โจมตี (ศัตรูยังตีกลับ) · ยิง = ดาเมจที่เก็บ + คำนี้ x จำนวนครั้งที่ชาร์จ (x1 x2 x3 x4 …) · ระหว่างถือชาร์จรับดาเมจ -15% · ชาร์จ x3 ขึ้นไปปล่อยชาร์จเต็มพลัง (คลื่นเสี้ยวสีเขียว) · ชาร์จ x4 ขึ้นไปยิงทะลุถึงศัตรูตัวถัดไปด้วย (x4=ทะลุ 1 ตัว, x5=ทะลุ 2 ตัว, …)',
   hpMul:1, get dmgTaken(){ const b = ui.bat; return b && b.xLvl>0 ? XH.guard : 1; } });
 CHAR_TIP.x = 95;
 HERO_PORTRAIT.x = { src:'heroes/x/mug.png', w:32, h:32, vb:'0 0 32 32', px:true };
@@ -6795,6 +6795,42 @@ function xImpact(n){
   const g = xSprite(n>=2 ? 'burstP' : 'burstB', EN_X, ty, 1.2 + Math.min(n,6)*.25, { ax:.4, ms:70, onEnd:g=>g.remove() });
   fx.appendChild(g);
   if(n>=3) shake(true);
+}
+/* ======================================================================
+   X — charge pierce (x4+ punches through into the enemies queued after
+   this one): x4 → next 1 enemy, x5 → next 2, x6 → next 3 … (n-3 enemies).
+   Each pierced enemy takes the same released damage as the main target.
+   Reuses the same "carry into the next enemy via walkToNext" plumbing
+   Boomtos's BOOM finisher already uses, generalised into a queue so it
+   can reach more than one enemy ahead.
+   ====================================================================== */
+{
+  const _xDa = doAttack;
+  doAttack = async function(){
+    const b = ui.bat;
+    if(!isX() || !b || b.xCharging) return _xDa();
+    const n = b.xLvl||0, had = n>0, w0 = b.words;
+    let pierceDmg = 0, pierceCount = 0;
+    if(n>=4){ const r = evalWord(); pierceDmg = r.dmg; pierceCount = n-3; }
+    await _xDa();
+    if(had && ui.bat===b && b.words>w0){
+      b.xBank = 0; b.xLvl = 0; xAura(); updateHud();
+      if(pierceCount>0) b.xPierceQ = (b.xPierceQ||[]).concat(Array(pierceCount).fill(pierceDmg));
+    }
+  };
+  const _xWalk = walkToNext;
+  walkToNext = async function(){
+    await _xWalk();
+    const b = ui.bat, n = curEnemy();
+    if(b && n && b.xPierceQ && b.xPierceQ.length){
+      const d = b.xPierceQ.shift();
+      xImpact(4); sfx.hit(true); shake(true);
+      n.hp -= d; b.score += d; enemyHurt(d, true);
+      floatText(`⚡ ทะลุ ${d}`, EN_X, FLOOR_Y-n.h*n.sc-80, xColor(4), 26, true);
+      if(n.hp<=0){ n.hp = 0; b.pendingKill = true; }
+      updateEnemyHp(); renderEnemyPanel(); await sleep(450);
+    }
+  };
 }
 /* ======================================================================
    v16 — roster = sprite heroes only (Plink, Puff, Boomtos, ELON, Mao)
