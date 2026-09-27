@@ -12,11 +12,12 @@ const LORE = [
           'ยักษ์ป่าเฝ้าประตูโบราณมาหลายร้อยปี เมื่อมันล้มลง ประตูสู่อาณาจักรที่สาบสูญก็เปิดออกเป็นครั้งแรก',
           'ไททันน้ำแข็งละลายกลายเป็นธารน้ำใส เสียงของมันยังก้องอยู่ในถ้ำ — "คำที่อบอุ่นที่สุดคือคำที่พูดออกมา"',
           'มังกรเพลิงหลับลงกลางกองไฟ คลังอาวุธของกองทัพเงาถูกปิดตาย แต่แผนที่ในนั้นชี้ไปยังบ้านร้างใต้แสงจันทร์สีเขียว',
-          'จอมเวทมรณะพ่ายแพ้ต่อคำที่เขาสะกดไม่ได้ ถ้อยคำที่ถูกขโมยไปกลับคืนสู่โลก… แต่หอคอยของเขายังคงยืนอยู่' ][i] })),
+          'ไทแรนต์ล้มลงกลางห้องทดลอง ถ้อยคำที่ถูกขโมยไปกลับคืนสู่โลก… แต่ใครกันที่สร้างมันขึ้นมา? หอคอยยังคงยืนอยู่' ][i] })),
   { id:'tower', t:'หอคอยราตรีนิรันดร์', en:'Endless Tower', req:()=>(save.tower.runs||0)>0, reqTxt:'เข้าหอคอยไร้สิ้นสุด 1 ครั้ง', txt:'ไม่มีใครรู้ว่าหอคอยสูงแค่ไหน ทุกๆ สิบชั้น ทิวทัศน์นอกหน้าต่างจะเปลี่ยนไปเป็นดินแดนที่เคยผ่านมาแล้ว' },
   { id:'gods', t:'นามแห่งทวยเทพ', en:'Names of the Gods', req:()=>save.chars.includes('boomtos'), reqTxt:'ปลดล็อก Boomtos', txt:'Boomtos รู้จักชื่อจริงของเทพกรีก เมื่อเขาสะกดชื่อเหล่านั้น เทพก็ตอบรับด้วยพลังของตัวเอง — ZEUS, POSEIDON, HADES, ATHENA …' },
 ];
-const cxMonsters = ()=>Object.keys(MON).filter(k=>!MON[k].boss && !MON[k].mini);
+// only monsters that still appear in a chapter (Chapter 5 now uses 3 kinds) count toward the codex
+const cxMonsters = ()=>[...new Set(CHAPTERS.flatMap(C=>C.pool))].filter(k=>MON[k] && !MON[k].boss && !MON[k].mini);
 const cxBosses = ()=>CHAPTERS.flatMap(C=>[C.mini, C.boss]);
 const monLoc = k=>{ const i = CHAPTERS.findIndex(C=>C.pool.includes(k) || C.mini===k || C.boss===k); return i<0 ? null : i; };
 
