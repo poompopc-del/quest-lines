@@ -1332,11 +1332,11 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=32">
-<link rel="stylesheet" href="css/endgame.css?v=32">
-<link rel="stylesheet" href="css/battle.css?v=32">
-<link rel="stylesheet" href="css/ui26.css?v=32">
-<link rel="stylesheet" href="css/boss.css?v=32">
+<link rel="stylesheet" href="css/ql2.css?v=33">
+<link rel="stylesheet" href="css/endgame.css?v=33">
+<link rel="stylesheet" href="css/battle.css?v=33">
+<link rel="stylesheet" href="css/ui26.css?v=33">
+<link rel="stylesheet" href="css/boss.css?v=33">
 </head>
 <body>
 <div id="app"></div>
@@ -1942,7 +1942,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 19; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 20; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -2016,18 +2016,18 @@ const HERO_SPRITE = {
   // Mia (id stays 'mao' so old saves keep the fighter) — frames cut from mai.png, downscaled ×0.6 and drawn smooth
   mao: { dir:'heroes/mia/', ch:182, scale:1.05, face:'-24 -138 48 48',
     anims:{
-      idle: { n:11, cw:95, ax:41,  dur:1.6, loop:true },
-      walk: { n:11, cw:118, ax:55,  dur:.9,  loop:true },
-      hurt: { n:4,  cw:112, ax:43,  dur:.6 },
-      dead: { n:5,  cw:173, ax:79,  dur:1.0 },
-      atk1: { n:5,  cw:122, ax:62,  dur:.6,  th:'พัดเสย' },
-      atk2: { n:5,  cw:181, ax:73, dur:.7,  th:'เตะพัดคู่' },
-      atk3: { n:7,  cw:157, ax:64,  dur:.7,  th:'ศอกพุ่ง' },
-      kasen:{ n:5,  cw:151, ax:60,  dur:.7,  th:'คาโชเซ็น (ขว้างพัด)' },
-      roll: { n:11, cw:164, ax:71,  dur:1.0, th:'ชิโนบิบาจิ (ม้วนตัวพุ่ง)' },
-      fin:  { n:12, cw:137, ax:76,  dur:1.5, th:'มุซาซาบิโนะไม' },
-      flip: { n:6,  cw:134, ax:56,  dur:.7,  th:'ตีลังกาหลบ' },
-      taunt:{ n:6,  cw:150, ax:60,  dur:1.0, th:'โพสท่ายั่ว' } },
+      idle: { n:11, cw:95, ax:41,  dur:2.2, loop:true },
+      walk: { n:11, cw:118, ax:55,  dur:1.2,  loop:true },
+      hurt: { n:4,  cw:112, ax:43,  dur:0.8 },
+      dead: { n:5,  cw:173, ax:79,  dur:1.4 },
+      atk1: { n:5,  cw:122, ax:62,  dur:0.85,  th:'พัดเสย' },
+      atk2: { n:5,  cw:181, ax:73, dur:1.0,  th:'เตะพัดคู่' },
+      atk3: { n:7,  cw:157, ax:64,  dur:1.0,  th:'ศอกพุ่ง' },
+      kasen:{ n:5,  cw:151, ax:60,  dur:1.0,  th:'คาโชเซ็น (ขว้างพัด)' },
+      roll: { n:11, cw:164, ax:71,  dur:1.4, th:'ชิโนบิบาจิ (ม้วนตัวพุ่ง)' },
+      fin:  { n:12, cw:137, ax:76,  dur:2.1, th:'มุซาซาบิโนะไม' },
+      flip: { n:6,  cw:134, ax:56,  dur:1.0,  th:'ตีลังกาหลบ' },
+      taunt:{ n:6,  cw:150, ax:60,  dur:1.4, th:'โพสท่ายั่ว' } },
     attacks:['atk1','atk2','atk3'], extra:['kasen','roll','flip','taunt'], finisher:'fin', finMin:99,
     finNote:'คำ <b>4–5 ตัว</b> ขว้างพัด · <b>6 ตัว</b> ม้วนตัวพุ่งชน · <b>7 ตัวขึ้นไป</b> ท่าไม้ตาย<b>มุซาซาบิโนะไม</b>' },
   x: { dir:'heroes/x/', ch:80, scale:2.5, face:'-20 -110 40 40',                  // v32: was 3.9
@@ -6647,26 +6647,36 @@ const miaMove = len=>len>=MAO.finLen ? 'fin' : len>=MAO.rollLen ? 'roll' : len>=
     return _ed.apply(this, arguments);
   };
 }
-// spinning fan projectile (heroes/mia/fanfx.png, cut from the sheet)
+// v33: Mia's projectiles are spinning fire shurikens + a fire burst on impact
+// (heroes/mia/fireshuriken.png 11×34px cells · fireburst.png 9×39px cells — from the fire-moves sheet)
+const MIA_FX = { shuriken:{ src:'heroes/mia/fireshuriken.png', c:34, n:11 }, burst:{ src:'heroes/mia/fireburst.png', c:39, n:9 } };
+function miaFxSprite(kind, x, y, scale, opts){
+  opts = opts || {}; const F = MIA_FX[kind], S = F.c*scale;
+  const g = svgEl('g', {}), inner = svgEl('svg', { x:-S/2, y:-S/2, width:S, height:S, viewBox:`0 0 ${F.c} ${F.c}`, overflow:'hidden' });
+  const img = svgEl('image', { href:`${F.src}?v=${HERO_IMG_VER}`, x:0, y:0, width:F.c*F.n, height:F.c });
+  img.style.imageRendering = 'pixelated'; inner.appendChild(img); g.appendChild(inner); g.style.transform = tr(x, y);
+  $('#fx').appendChild(g);
+  let f = 0; const iv = setInterval(()=>{ f++; if(f>=F.n){ if(opts.loop) f = 0; else { clearInterval(iv); g.remove(); return; } } img.setAttribute('x', -f*F.c); }, opts.ms||60);
+  g._stop = ()=>{ clearInterval(iv); g.remove(); };
+  return g;
+}
+function miaBurst(x, y, scale){ miaFxSprite('burst', x, y, scale||2.4, { ms:70 }); }
 function miaFanThrow(){
   const e = curEnemy(); if(!e) return Promise.resolve();
-  const fx = $('#fx'), y = FLOOR_Y - e.h*e.sc*.55;
-  const g = svgEl('g', {});
-  g.innerHTML = `<circle r="30" fill="#ff7a2a" opacity=".28"/><image href="heroes/mia/fanfx.png?v=${HERO_IMG_VER}" x="-29" y="-19" width="58" height="38"/>`;
-  fx.appendChild(g); tone(760, .08, 'triangle', .05);
-  return anim(g, [{transform:tr(HERO_X+70,FLOOR_Y-120)+' rotate(0deg)'},{transform:tr((HERO_X+EN_X)/2+20,y-40)+' rotate(540deg)',offset:.5},{transform:tr(EN_X,y)+' rotate(1080deg)'}], { duration:360, easing:'ease-in', fill:'forwards' })
-    .then(()=>{ g.remove(); firePillar(EN_X, .75); miaSparks(EN_X, y, '#ff7a9a'); });
+  const y = FLOOR_Y - e.h*e.sc*.55, g = miaFxSprite('shuriken', HERO_X+70, FLOOR_Y-120, 2.2, { loop:true, ms:45 });
+  tone(760, .08, 'triangle', .05);
+  return anim(g, [{transform:tr(HERO_X+70,FLOOR_Y-120)},{transform:tr((HERO_X+EN_X)/2+20,y-40),offset:.5},{transform:tr(EN_X,y)}], { duration:460, easing:'ease-in', fill:'forwards' })
+    .then(()=>{ g._stop(); miaBurst(EN_X, y, 2.6); firePillar(EN_X, .75); miaSparks(EN_X, y, '#ff7a3a'); });
 }
 function miaFanRain(){
   const e = curEnemy(); if(!e) return;
-  const fx = $('#fx');
   for(let k=0;k<7;k++){
-    const g = svgEl('g', {});
-    g.innerHTML = `<image href="heroes/mia/fanfx.png?v=${HERO_IMG_VER}" x="-17" y="-11" width="34" height="22"/>`;
-    fx.appendChild(g);
     const x0 = EN_X - 120 + k*34, y0 = FLOOR_Y - 330 - (k%3)*25, x1 = EN_X - 40 + rint(-40,60), y1 = FLOOR_Y - rint(20,90);
-    anim(g, [{transform:tr(x0,y0)+' rotate(0deg)',opacity:0},{transform:tr(x0+10,y0+30)+' rotate(120deg)',opacity:1,offset:.2},{transform:tr(x1,y1)+' rotate(720deg)',opacity:1}],
-      { duration:520, delay:k*70, easing:'ease-in', fill:'forwards' }).then(()=>{ g.remove(); hitSpark(x1, y1); });
+    setTimeout(()=>{
+      const g = miaFxSprite('shuriken', x0, y0, 1.5, { loop:true, ms:45 });
+      anim(g, [{transform:tr(x0,y0),opacity:0},{transform:tr(x0+10,y0+30),opacity:1,offset:.2},{transform:tr(x1,y1),opacity:1}], { duration:620, easing:'ease-in', fill:'forwards' })
+        .then(()=>{ g._stop(); miaBurst(x1, y1, 1.6); });
+    }, k*90);
   }
 }
 function miaSparks(x, y, col){
@@ -7112,24 +7122,24 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=32"></script>
-<script src="js/ql2/quests.js?v=32"></script>
-<script src="js/ql2/shell.js?v=32"></script>
-<script src="js/ql2/settings.js?v=32"></script>
-<script src="js/ql2/hub.js?v=32"></script>
-<script src="js/ql2/world.js?v=32"></script>
-<script src="js/ql2/questboard.js?v=32"></script>
-<script src="js/ql2/heroes.js?v=32"></script>
-<script src="js/ql2/inventory.js?v=32"></script>
-<script src="js/ql2/codex.js?v=32"></script>
-<script src="js/ql2/profile.js?v=32"></script>
-<script src="js/ql2/endgame-core.js?v=32"></script>
-<script src="js/ql2/endgame-modes.js?v=32"></script>
-<script src="js/ql2/endgame-ui.js?v=32"></script>
-<script src="js/ql2/armory.js?v=32"></script>
-<script src="js/ql2/more.js?v=32"></script>
-<script src="js/ql2/wordfx.js?v=32"></script>
-<script src="js/ql2/boss-encounter.js?v=32"></script>
-<script src="js/ql2/kirby.js?v=32"></script>
-<script src="js/ql2/boot.js?v=32"></script>
+<script src="js/ql2/core.js?v=33"></script>
+<script src="js/ql2/quests.js?v=33"></script>
+<script src="js/ql2/shell.js?v=33"></script>
+<script src="js/ql2/settings.js?v=33"></script>
+<script src="js/ql2/hub.js?v=33"></script>
+<script src="js/ql2/world.js?v=33"></script>
+<script src="js/ql2/questboard.js?v=33"></script>
+<script src="js/ql2/heroes.js?v=33"></script>
+<script src="js/ql2/inventory.js?v=33"></script>
+<script src="js/ql2/codex.js?v=33"></script>
+<script src="js/ql2/profile.js?v=33"></script>
+<script src="js/ql2/endgame-core.js?v=33"></script>
+<script src="js/ql2/endgame-modes.js?v=33"></script>
+<script src="js/ql2/endgame-ui.js?v=33"></script>
+<script src="js/ql2/armory.js?v=33"></script>
+<script src="js/ql2/more.js?v=33"></script>
+<script src="js/ql2/wordfx.js?v=33"></script>
+<script src="js/ql2/boss-encounter.js?v=33"></script>
+<script src="js/ql2/kirby.js?v=33"></script>
+<script src="js/ql2/boot.js?v=33"></script>
 </body></html>
