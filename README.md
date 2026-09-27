@@ -16,6 +16,23 @@
 - คำหยาบใช้ได้ 🤬 ดาเมจ x2 แต่สะท้อนเข้าตัวเอง 30% ของ HP — so rude!
 - คีย์บอร์ด: พิมพ์ตัวอักษร · Backspace ลบ · Enter โจมตี · Space สลับ · Esc หยุด
 
+## 🏆 ใหม่ใน v22 — ENDGAME & MASTERY UPDATE
+เมื่อจบเนื้อเรื่อง (ผ่าน 40 ด่าน) เกมไม่จบ แต่เข้าสู่ **MASTER THE GAME** ที่ฐาน → อาคาร/ปุ่ม **Challenge Hall**
+
+- **🌙 Nightmare:** ด่านเดิม กติกาใหม่ — ศัตรู HP +60% แรง +35% คลั่ง (Enrage) ทุกเทิร์น · คำต้องยาว 4 ตัว · จำกัดเวลา 30/25 วิ · ยาและ Ultimate ใช้ได้ 1 ครั้ง/ด่าน · บอสมี PHASE 3 · บท 3+ ศัตรูเร็วขึ้น · ปลดล็อกทีละด่าน/ทีละบท · รางวัล 🌙 Nightmare Coins
+- **♾️ Endless Challenge:** หอคอยเดิม + Modifier สุ่มทุก 10 ชั้นหลังชั้น 10 (ยิ่งสูงยิ่งหลายกติกา) · ชั้น 25/75 บอส · 50 Elite Boss · 100 Nightmare Boss · รางวัลเฉพาะสถิติใหม่ (Void Aura ที่ชั้น 100)
+- **⚡ Speedrun:** เล่น 8 ด่านของบทต่อเนื่อง จับเวลา · สถิติ Time/Words/Mistakes/Combo/Accuracy · Par 6:00
+- **✨ Perfect Run:** Perfect / Perfect+ / Perfect++ (ห้ามใช้ยา ห้ามสลับ · ดาเมจที่รับ · Ultimate · เวลา)
+- **🧩 Challenge Creator:** เลือกด่าน + Modifier 11 แบบ (Tough, Brutal, Fast, Time Limit, No Ultimate, No Healing, Elemental Chaos, Hard Words, No Repeat, Enrage, Combo Break) → ดาวความยาก + ตัวคูณรางวัล
+- **Challenge Score + Rank S–D** ทุกโหมด · **Personal Best** (Best Time, Best Combo, Highest Damage, Fewest Mistakes, Fastest Boss Kill, Highest Floor)
+- **📖 Word Mastery Endgame:** Word Completion (Total/Discovered/Mastered/Progress) · ระดับคำ Unknown → Discovered → Familiar → Skilled → Mastered → Perfected
+- **👑 Master Rank:** Novice → Adventurer → Warrior → Elite → Master → Grandmaster → Legend → Mythic คำนวณจากทุกด้าน (ฟาร์มไม่ได้) พร้อมรางวัลเกียรติยศ
+- **🏆 Trophy Room 8 หมวด** (Combat · Words · Boss · Speedrun · Nightmare · Endless · Mastery · Exploration) · ฉายาใหม่ 14 แบบ
+- **📅 Daily Challenge / Weekly Trial** · **💠 Prestige Shop** (ออร่า รอยโจมตี ฉากชัยชนะ ตรา กรอบรูป — ไม่เพิ่มพลัง)
+- **☠️ True Final Boss "Lexivore":** ปลดล็อกเมื่อครบ 6 เงื่อนไข · 6 Phase: Harder Words → Element Shift → Time Pressure → Silence → Blind
+- ไฟล์ใหม่: `js/ql2/endgame-core.js` (กติกา/การจับเวลา/คะแนน/เซฟ `save.eg`) · `endgame-modes.js` (ทุกโหมด + Rank + ถ้วยรางวัล) · `endgame-ui.js` (Challenge Hall) · `css/endgame.css`
+- มือถือ: แถบล่างลงสุดขอบจอเมื่อติดตั้งเป็นแอป (iOS) · แถบบนแบบ HUD เกมกลืนกับแถบสถานะ
+
 ## 🌙 ใหม่ใน 2.0 (v21) — World & Progression Overhaul
 เปลี่ยนโครงสร้างเกมจาก "หลายแท็บ" เป็น RPG ที่มี **ฐาน → โลก → ภารกิจ → การพัฒนา** เป็นแกนกลาง
 โดยคงธีมมืดใต้แสงจันทร์ ม่วง/แดง/ทอง ภาพพิกเซล ตัวละคร ฟอนต์ Kanit และ **ระบบต่อสู้เดิมทั้งหมด**

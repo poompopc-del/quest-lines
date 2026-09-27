@@ -1283,6 +1283,8 @@ html,body{overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjus
 button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .battle,.tiles,.dock{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 @supports (height:100dvh){ #app{height:100dvh;bottom:auto} }
+/* installed app (Add to Home Screen): iOS reports 100dvh without the status bar → fill the whole screen instead */
+@media (display-mode:standalone),(display-mode:fullscreen){ #app{height:auto;bottom:0} }
 /* small portrait phones (iPhone SE / mini, small Android) */
 @media (max-width:400px) and (orientation:portrait){
   .dock{padding:5px 6px 8px;gap:6px}
@@ -1330,7 +1332,8 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=21">
+<link rel="stylesheet" href="css/ql2.css?v=22">
+<link rel="stylesheet" href="css/endgame.css?v=22">
 </head>
 <body>
 <div id="app"></div>
@@ -6990,16 +6993,19 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=21"></script>
-<script src="js/ql2/quests.js?v=21"></script>
-<script src="js/ql2/shell.js?v=21"></script>
-<script src="js/ql2/settings.js?v=21"></script>
-<script src="js/ql2/hub.js?v=21"></script>
-<script src="js/ql2/world.js?v=21"></script>
-<script src="js/ql2/questboard.js?v=21"></script>
-<script src="js/ql2/heroes.js?v=21"></script>
-<script src="js/ql2/inventory.js?v=21"></script>
-<script src="js/ql2/codex.js?v=21"></script>
-<script src="js/ql2/profile.js?v=21"></script>
-<script src="js/ql2/boot.js?v=21"></script>
+<script src="js/ql2/core.js?v=22"></script>
+<script src="js/ql2/quests.js?v=22"></script>
+<script src="js/ql2/shell.js?v=22"></script>
+<script src="js/ql2/settings.js?v=22"></script>
+<script src="js/ql2/hub.js?v=22"></script>
+<script src="js/ql2/world.js?v=22"></script>
+<script src="js/ql2/questboard.js?v=22"></script>
+<script src="js/ql2/heroes.js?v=22"></script>
+<script src="js/ql2/inventory.js?v=22"></script>
+<script src="js/ql2/codex.js?v=22"></script>
+<script src="js/ql2/profile.js?v=22"></script>
+<script src="js/ql2/endgame-core.js?v=22"></script>
+<script src="js/ql2/endgame-modes.js?v=22"></script>
+<script src="js/ql2/endgame-ui.js?v=22"></script>
+<script src="js/ql2/boot.js?v=22"></script>
 </body></html>

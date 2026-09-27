@@ -665,3 +665,61 @@ kbd{display:inline-block;min-width:22px;padding:1px 6px;border-radius:5px;backgr
 .wm-node{transform:translate(-50%,-31px)}
 .hs-stage{height:clamp(220px,36vh,310px)}
 .hs-hero{width:clamp(200px,60vw,290px)}
+
+/* ======================================================================
+   v22 — game-style HUD top bar (blends into the status bar) + full-bleed bottom nav
+   ====================================================================== */
+html,body{background-color:#08070f}
+#app:has(> .q2-top){padding-top:0}
+.q2-top.hud{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;align-items:center;gap:6px;
+  padding:calc(var(--safe-t) + 6px) 8px 10px;min-height:0;box-shadow:none;
+  background:linear-gradient(180deg,#0a0818 0%,rgba(10,8,24,.94) calc(var(--safe-t) + 34px),rgba(10,8,24,.55) 82%,rgba(10,8,24,0) 100%)}
+.q2-top.hud::after{content:'';position:absolute;left:18%;right:18%;bottom:3px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,59,78,.55),rgba(255,200,61,.6),rgba(255,59,78,.55),transparent);pointer-events:none}
+.hud-ib{position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex:none;color:#fff;
+  background:linear-gradient(180deg,#2c2552,#141129);clip-path:polygon(22% 0,78% 0,100% 50%,78% 100%,22% 100%,0 50%);filter:drop-shadow(0 3px 0 #07060d)}
+.hud-ib::before{content:'';position:absolute;inset:2px;clip-path:inherit;background:linear-gradient(180deg,rgba(255,255,255,.14),transparent 55%);pointer-events:none}
+.hud-ib .ico{font-size:24px;position:relative}
+.hud-ib .q2-badge{top:-3px;right:-3px}
+.hud-ib:has(.q2-badge){clip-path:none;background:none;filter:none}
+.hud-ib:has(.q2-badge)::before{inset:0;clip-path:polygon(22% 0,78% 0,100% 50%,78% 100%,22% 100%,0 50%);background:linear-gradient(180deg,#2c2552,#141129);box-shadow:none}
+.hud-ib:active{transform:translateY(2px)}
+.hud-plate{position:relative;min-width:0;height:36px;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:0 14px;color:#fff;text-align:left}
+.hud-plate::before{content:'';position:absolute;inset:0;z-index:-1;border:1px solid rgba(143,208,255,.55);
+  background:linear-gradient(180deg,rgba(47,155,255,.55),rgba(21,40,110,.85));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 14px rgba(47,155,255,.25)}
+.hud-plate.l::before{transform:skewX(-16deg);border-radius:3px}
+.hud-plate.r{flex-direction:row;align-items:center;justify-content:flex-end;gap:5px;padding:0 12px 0 16px}
+.hud-plate.r::before{transform:skewX(16deg);border-radius:3px;border-color:rgba(255,220,120,.7);background:linear-gradient(180deg,#ffe58a,#e8a21a 55%,#a8620a);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 0 14px rgba(255,200,61,.3)}
+.hud-plate.l b{font:italic 900 14.5px/1.05 var(--hand);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 0 #07060d}
+.hud-plate.l small{font-size:10px;line-height:1.1;color:#ffe3a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud-plate.l .q2-xp{max-width:none;height:3px;margin-top:2px;background:rgba(0,0,0,.45)}
+.hud-plate.r b{font:italic 900 17px var(--hand);color:#2a1300;text-shadow:0 1px 0 rgba(255,255,255,.5);white-space:nowrap}
+.hud-coin .ico{font-size:20px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}
+.hud-ava{position:relative;display:flex;flex-direction:column;align-items:center;margin:-2px 0 -12px;z-index:2}
+.hud-hex{position:relative;display:block;width:56px;height:62px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  background:linear-gradient(160deg,#c77dff,#5a3aa8 45%,#2a1a60);box-shadow:none;animation:none}
+.hud-hex.fr-crimson{background:linear-gradient(160deg,#ff8391,#b0122e)}.hud-hex.fr-gold{background:linear-gradient(160deg,#fff2c0,#ffc83d 45%,#a8620a)}
+.hud-hex.fr-moon{background:linear-gradient(160deg,#ffffff,#9fdcff 50%,#3a6ab0)}.hud-hex.fr-void{background:linear-gradient(160deg,#c77dff,#2a0a50)}
+.hud-hex.fr-basic{background:linear-gradient(160deg,#9ff0ff,#3a6ab0 50%,#1a2a5a)}
+.hud-hex::after{display:none}
+.hud-hexin{position:absolute;inset:3px;clip-path:inherit;background:radial-gradient(circle at 50% 38%,#4a2a5a,#150f24);overflow:hidden;display:block}
+.hud-hexin svg{width:100%;height:100%}
+.hud-lv{margin-top:-9px;padding:1px 9px;font:italic 900 11.5px/15px var(--hand);color:#eafff0;background:linear-gradient(180deg,#4ad07a,#157a3a);
+  clip-path:polygon(12% 0,88% 0,100% 50%,88% 100%,12% 100%,0 50%);text-shadow:0 1px 0 #07060d;white-space:nowrap}
+/* bottom nav reaches the very bottom of the screen */
+.q2-nav{padding-bottom:max(6px, var(--safe-b)) !important}
+@media (max-width:380px){ .hud-plate.l small{display:none} .hud-plate{padding:0 10px} .hud-plate.r b{font-size:15px} .hud-hex{width:50px;height:56px} .q2-top.hud{gap:4px;padding-left:6px;padding-right:6px} .hud-ib{width:36px;height:36px} }
+@media (orientation:landscape) and (max-height:540px){
+  .q2-top.hud{padding-top:calc(var(--safe-t) + 3px);padding-bottom:6px;grid-template-columns:auto minmax(0,220px) auto minmax(0,160px) auto;justify-content:space-between}
+  .hud-hex{width:44px;height:48px}.hud-ava{margin-bottom:-6px}.hud-plate{height:30px}
+}
+@media (min-width:700px){ .q2-top.hud{grid-template-columns:auto minmax(0,260px) auto minmax(0,200px) auto;justify-content:space-between;padding-left:16px;padding-right:16px} }
+.hud-ib .q2-badge{top:-4px;right:0}
+/* on the Hub the HUD floats over the moonlit scene, like a game home screen */
+#app:has(> .scr-hub){position:fixed}
+#app:has(> .scr-hub) > .q2-top.hud{position:absolute;left:0;right:0;top:0;background:linear-gradient(180deg,rgba(10,8,24,.92) 0%,rgba(10,8,24,.6) calc(var(--safe-t) + 40px),rgba(10,8,24,0) 100%)}
+#app:has(> .scr-hub) > .q2-top.hud::after{display:none}
+.scr-hub .hub-scene{height:calc(clamp(250px,42vh,400px) + var(--safe-t) + 56px)}
+.scr-hub .hub-loc{top:calc(var(--safe-t) + 70px)}
+@media (max-height:680px) and (orientation:portrait){ .scr-hub .hub-scene{height:calc(clamp(210px,36vh,300px) + var(--safe-t) + 56px)} }
+@media (orientation:landscape) and (max-height:540px){ .scr-hub .hub-scene{height:auto} .scr-hub .hub-panel{padding-top:calc(var(--safe-t) + 58px)} .scr-hub .hub-loc{top:calc(var(--safe-t) + 54px)} }
+@media (min-width:900px) and (min-height:541px){ .scr-hub .hub{padding-top:calc(var(--safe-t) + 70px)} .scr-hub .hub-scene{height:auto} .scr-hub .hub-loc{top:10px} }

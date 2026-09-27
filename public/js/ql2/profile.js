@@ -21,6 +21,7 @@ function renderProfile(){
     <span class="pf-ava ${fr.css}">${heroFaceSvg(save.eq)}</span>
     <div class="pf-id"><span class="q2-kicker">PLAYER</span><h2>${esc(save.name||'Hero')}</h2><span class="pf-title">🎖 ${esc((TITLES[V.titles.eq]||TITLES.rookie).th)}</span></div>
     <div class="pf-lv"><small>ADVENTURE</small><b>Lv ${A.lv}</b></div>
+    <button class="eg-mr mini pf-mr" data-act="egView" data-v="rank" style="--rc:${mrInfo().R.c}"><span class="eg-mr-gem"></span><b>${mrInfo().R.k}</b></button>
     <div class="pf-xp"><div class="q2-xpbar"><i style="--w:${A.pct}%"></i></div><small>${A.lv>=ADV.cap?'MAX LEVEL':`${fmt(A.into)} / ${fmt(A.need)} EXP · ถัดไป: ${rewardPreview(ADV.reward(A.lv+1))}`}</small></div>
   </div>`;
   let body = '';
@@ -48,11 +49,13 @@ function renderProfile(){
       <p class="sub">ได้ EXP จากการสะกดคำ ปราบมอนสเตอร์ ผ่านด่าน ไขปริศนา และทำภารกิจ · ทุกเลเวลได้ทอง บางเลเวลได้ไอเทม อาวุธ ฉายา กรอบรูป และเอฟเฟกต์ฐาน</p>
       <div class="pf-roads">${rows}</div>`;
   } else if(t==='trophy'){
-    const all = Object.keys(ACH).map(trophyOf);
+    const cat = ui.trCat || 'all';
+    const all0 = Object.keys(ACH).map(trophyOf), all = cat==='all' ? all0 : all0.filter(x=>TCAT_OF[x.id]===cat);
     const byR = [4,3,2,1].map(r=>({ r, on:all.filter(x=>x.r===r && x.on).length, n:all.filter(x=>x.r===r).length }));
     const titles = all.filter(x=>x.title);
     const sorted = all.slice().sort((a,b)=>(b.on-a.on) || (b.r-a.r) || (b.cur/b.need - a.cur/a.need));
     body = `<div class="panel tr-hall"><div class="tr-count"><b>${trOn}</b><small>/ ${all.length}</small><span>ถ้วยรางวัล</span></div><div class="tr-rars">${byR.map(x=>`<span class="rr r${x.r}"><i></i>${RAR[x.r].th} ${x.on}/${x.n}</span>`).join('')}</div></div>
+      <div class="tr-cats">${[['all','ทั้งหมด'], ...Object.entries(TCAT)].map(([k,l])=>{ const n = k==='all' ? all0 : all0.filter(x=>TCAT_OF[x.id]===k); return `<button class="${cat===k?'on':''}" data-act="trCat" data-v="${k}">${l}<small>${n.filter(x=>x.on).length}/${n.length}</small></button>`; }).join('')}</div>
       <div class="tr-grid">${sorted.map(x=>`<div class="tr ${x.on?'on':'off'} r${x.r} ${x.secret&&!x.on?'secret':''}"><span class="tr-ped"><span class="tr-ic">${x.secret&&!x.on?'❔':x.ic}</span></span><b>${esc(x.secret&&!x.on?'???':x.th)}</b><small>${esc(x.d)}</small>
         ${x.on?`<em class="tr-rar">${RAR[x.r].th}${x.title?` · 🎖 ${esc(TITLES[x.title].th)}`:''}</em>`:`<span class="tr-prog"><i style="width:${Math.round(x.cur/x.need*100)}%"></i></span><em>${fmt(x.cur)}/${fmt(x.need)}</em>`}</div>`).join('')}</div>
       <h3 class="q2-sec">ฉายาพิเศษจากถ้วยรางวัล <small>Special Titles</small></h3>
@@ -62,7 +65,8 @@ function renderProfile(){
     body = `<h3 class="q2-sec">ฉายา <small>Titles · ${V.titles.own.length}/${Object.keys(TITLES).length}</small></h3><div class="pf-opts">${opt('t', TITLES, V.titles.own, V.titles.eq, 'eqTitle')}</div>
       <h3 class="q2-sec">กรอบรูป <small>Avatar Frames</small></h3><div class="pf-opts">${opt('f', FRAMES, V.frames.own, V.frames.eq, 'eqFrame', k=>`<span class="pf-ava sm ${FRAMES[k].css}">${heroFaceSvg(save.eq)}</span>`)}</div>
       <h3 class="q2-sec">เอฟเฟกต์ที่ฐาน <small>Hub Effects</small></h3><div class="pf-opts">${opt('x', HUBFX, V.fx.own, V.fx.eq, 'eqFx')}</div>
-      <p class="sub">ปลดล็อกเพิ่มได้จาก Adventure Level ภารกิจ และถ้วยรางวัล</p>`;
+      ${['aura','trail','victory','badge'].map(k=>{ const E = EGS(); return `<h3 class="q2-sec">${{aura:'ออร่าตัวละคร',trail:'รอยโจมตี',victory:'ฉากชัยชนะ',badge:'ตราโปรไฟล์'}[k]} <small>${{aura:'Aura',trail:'Attack Trail',victory:'Victory',badge:'Badge'}[k]} · ${E.cos.own[k].length}/${Object.keys(COS[k]).length}</small></h3><div class="pf-opts">${Object.entries(COS[k]).map(([id,o])=>{ const have = E.cos.own[k].includes(id), on = E.cos.eq[k]===id; return `<button class="pf-opt ${have?'':'lock'} ${on?'on':''}" data-act="eqCos" data-k="${k}" data-v="${id}" ${have?'':'disabled'}>${k==='aura'&&o.c?`<span class="eg-swatch" style="--a:${o.c[0]};--b:${o.c[1]}"></span>`:k==='trail'&&o.c?`<span class="eg-trail" style="--a:${o.c}"></span>`:k==='badge'&&o.ic?`<span class="eg-bdg big">${o.ic}</span>`:''}<b>${esc(o.th)}</b><small>${on?'ใช้อยู่':have?'แตะเพื่อใช้':'ยังไม่ปลดล็อก'}</small></button>`; }).join('')}</div>`; }).join('')}
+      <p class="sub">ปลดล็อกเพิ่มได้จาก Adventure Level ภารกิจ ถ้วยรางวัล Master Rank และ Prestige Shop ใน Challenge Hall</p>`;
   }
   return card + `<div class="q2-anchor"></div><div class="seg q2-tabs">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="pfTab" data-v="${k}">${l}${k==='road'&&un?`<em class="q2-badge">${un}</em>`:''}</button>`).join('')}</div><div class="pf-body">${body}</div>`;
 }

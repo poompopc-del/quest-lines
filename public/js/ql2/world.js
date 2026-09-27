@@ -95,7 +95,7 @@ function renderChapter(){
     <p class="lc-blurb">${esc(L.blurb)}</p>
     <div class="lc-stats"><div><b>${cl}/${STAGES_PER}</b><small>ด่านที่ผ่าน</small></div><div><b>★ ${stars}/${STAGES_PER*3}</b><small>ดาว</small></div><div><b>${fmt(V.chKills[ci]||0)}</b><small>ปราบแล้ว</small></div></div>
     <div class="q2-meter big"><i style="width:${cl/STAGES_PER*100}%"></i></div>
-    ${open?play:''}
+    ${open?play:''}${typeof nmChapterOpen==='function' && nmChapterOpen(ci) ? `<button class="cbtn red block lc-play eg-nmbtn" data-act="egView" data-v="nightmare">🌙 NIGHTMARE · ${[...Array(STAGES_PER)].filter((_,k)=>nmCleared(ci,k+1)).length}/${STAGES_PER}</button>` : ''}
     <h3 class="q2-sec">เส้นทางด่าน <small>Stages</small></h3>
     <div class="panel lc-path"><div class="nodes">${nodes}</div><p class="sub">ทุกด่านมี <b>มินิบอส</b> เฝ้าท้ายด่าน · ด่านที่ 8 คือ <b>บอสใหญ่</b></p></div>
     <h3 class="q2-sec">ผู้พิทักษ์ <small>Mini Boss · Boss</small></h3>

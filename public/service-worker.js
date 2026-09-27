@@ -1,7 +1,7 @@
-const CACHE_NAME = 'quest-lines-v21';
-const V = '?v=21';
-const MODULES = ['core','quests','shell','settings','hub','world','questboard','heroes','inventory','codex','profile','boot'];
-const APP_SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './css/ql2.css' + V,
+const CACHE_NAME = 'quest-lines-v22';
+const V = '?v=22';
+const MODULES = ['core','quests','shell','settings','hub','world','questboard','heroes','inventory','codex','profile','endgame-core','endgame-modes','endgame-ui','boot'];
+const APP_SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './css/ql2.css' + V, './css/endgame.css' + V,
   ...MODULES.map((m) => `./js/ql2/${m}.js${V}`)];
 
 self.addEventListener('install', (e) => {

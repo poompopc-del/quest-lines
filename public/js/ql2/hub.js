@@ -67,6 +67,8 @@ function hubFx(){
 function hubSuggestions(){
   const out = [], id = save.eq.char, u = UP(id);
   const adv = advUnclaimed();
+  if(typeof mrUnclaimed==='function' && mrUnclaimed()) out.push({ ic:IC2.trophy, t:`รับรางวัล Master Rank (${mrInfo().R.k})`, a:'egView', v:'rank', hot:true });
+  if(typeof storyDone==='function' && storyDone() && !EGS().seenHall) out.push({ ic:IC2.trophy, t:'Challenge Hall เปิดแล้ว! — MASTER THE GAME', a:'egView', v:'hall', hot:true });
   if(adv) out.push({ ic:IC2.star, t:`รับรางวัล Adventure Level (${adv})`, a:'go', v:'profile', hot:true });
   const qc = claimableCount();
   if(qc) out.push({ ic:IC2.scroll, t:`รับรางวัลภารกิจ ${qc} รายการ`, a:'go', v:'quests', hot:true });
@@ -103,7 +105,7 @@ function renderHub(){
     </div>`;
   }
   const cta = N.done
-    ? `<button class="cbtn gold hub-play" data-act="goTower">${IC2.tower}<span><b>หอคอยไร้สิ้นสุด</b><small>ผ่านครบทุกบทแล้ว · สถิติ ${save.tower.best||0} ชั้น</small></span></button>`
+    ? `<button class="cbtn gold hub-play" data-act="egView" data-v="hall">${IC2.trophy}<span><b>Master the Game</b><small>Challenge Hall · ${mrInfo().R.k} · Nightmare · Endless · Speedrun</small></span></button>`
     : `<button class="cbtn gold hub-play" data-act="playNext">${IC2.play}<span><b>${save.cleared?'ผจญภัยต่อ':'เริ่มผจญภัย'}</b><small>ด่าน ${N.ch+1}-${N.n} · ${esc(L.name)}${N.n===STAGES_PER?' · BOSS':''}</small></span></button>`;
   const dInf = D.slots.map(s=>({ s, i:dailyInfo(s) })).filter(x=>x.i);
   const dDone = dInf.filter(x=>x.s.claimed || x.i.done).length;
@@ -117,7 +119,7 @@ function renderHub(){
     ['inventory', IC2.bag, 'คลังสมบัติ', 'Inventory', 'ร้านค้า · วัตถุดิบ'],
     ['codex', IC2.book, 'หอสมุด', 'Codex', `${Object.keys(save.book||{}).length} คำ · ${cx}/${cxAll} มอน`],
     ['profile', IC2.trophy, 'หอเกียรติยศ', 'Profile', `${tro}/${Object.keys(ACH).length} ถ้วย`],
-    ['tower', IC2.tower, 'หอคอยไร้สิ้นสุด', 'Tower', `สถิติ ${save.tower.best||0} ชั้น`],
+    ['endgame', IC2.trophy, 'Challenge Hall', 'Endgame', storyDone() ? `${mrInfo().R.k} · ${fmt(mrInfo().pts)} MP` : `🔒 จบเรื่อง ${save.cleared}/${total}`],
   ];
   const bd = navBadges();
   return `<div class="hub">
@@ -127,14 +129,14 @@ function renderHub(){
       <button class="hub-spot s-quest" data-act="go" data-v="quests" aria-label="กระดานภารกิจ">${IC2.scroll}<span>กระดานภารกิจ</span>${claimableCount()?`<em class="q2-badge">${claimableCount()}</em>`:''}</button>
       <button class="hub-spot s-gate" data-act="go" data-v="world" aria-label="แผนที่โลก">${IC2.gate}<span>ประตูสู่โลก</span></button>
       <button class="hub-hero" data-act="go" data-v="heroes" aria-label="ไปที่วิหารนักสู้">${rockLedge()}${heroStandalone(save.eq)}</button>
-      <div class="hub-tag"><b>${esc(c.name)}</b><span>Lv ${hi.lv} · ${hi.R.th}</span></div>
+      <div class="hub-tag"><b>${esc(c.name)}</b><span>Lv ${hi.lv} · ${hi.R.th}</span></div><div class="hub-title">“${esc((TITLES[V.titles.eq]||TITLES.rookie).th)}”</div>
     </section>
     <section class="hub-panel">
       ${qc}
       ${cta}
       ${daily}
       ${sug.length?`<div class="hub-sug"><h4>พัฒนาตัวละคร · ทำอะไรต่อดี?</h4>${sug.map(s=>`<button class="hs-item ${s.hot?'hot':''}" data-act="${s.a}" ${s.v?`data-v="${s.v}"`:''}>${s.ic}<span>${esc(s.t)}</span>${IC2.next}</button>`).join('')}</div>`:''}
-      <div class="hub-bld">${bld.map(([k,ic,th,en,st])=>`<button class="hb-b b-${k}" data-act="${k==='tower'?'goTower':'go'}" ${k==='tower'?'':`data-v="${k}"`}>${ic}<b>${th}</b><small>${en} · ${esc(st)}</small>${bd[k]?`<em class="q2-badge${bd[k]==='!'?' dot':''}">${bd[k]==='!'?'':bd[k]}</em>`:''}</button>`).join('')}</div>
+      <div class="hub-bld">${bld.map(([k,ic,th,en,st])=>`<button class="hb-b b-${k}" data-act="${k==='endgame'?'egView':'go'}" data-v="${k==='endgame'?'hall':k}">${ic}<b>${th}</b><small>${en} · ${esc(st)}</small>${bd[k]?`<em class="q2-badge${bd[k]==='!'?' dot':''}">${bd[k]==='!'?'':bd[k]}</em>`:''}</button>`).join('')}</div>
     </section>
   </div>`;
 }

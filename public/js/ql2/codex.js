@@ -43,11 +43,13 @@ function renderCodex(){
     else if(sort==='mastery') words.sort((a,b)=>(save.mastery[b[0]]?save.mastery[b[0]].n:0)-(save.mastery[a[0]]?save.mastery[a[0]].n:0));
     else words.sort((a,b)=>a[0].localeCompare(b[0]));
     const lv5 = Object.keys(save.mastery||{}).filter(w=>masteryInfo(w).lv>=5).length, bank = words.filter(x=>x[1].bank).length;
-    body = `<div class="cx-sum"><div><b>${fmt(words.length)}</b><small>คำที่รู้จัก</small></div><div><b>${bank}</b><small>คำเป้าหมาย ⭐</small></div><div><b>${lv5}</b><small>Mastery Lv.5</small></div></div>
+    const WC = wordCompletion();
+    body = `<button class="panel cx-comp" data-act="egView" data-v="mastery"><span class="q2-kicker">WORD COMPLETION</span><span class="cx-cg"><span>Total<b>${fmt(WC.total)}</b></span><span>Discovered<b>${fmt(WC.disc)}</b></span><span>Mastered<b>${fmt(WC.mast)}</b></span><span>Progress<b>${WC.pct}%</b></span></span><span class="q2-meter"><i style="width:${WC.pct}%"></i></span></button>
+      <div class="cx-sum"><div><b>${fmt(words.length)}</b><small>คำที่รู้จัก</small></div><div><b>${bank}</b><small>คำเป้าหมาย ⭐</small></div><div><b>${lv5}</b><small>Mastery Lv.5</small></div></div>
       <div class="cx-tools"><input class="text-in cx-q" id="cxQ" placeholder="🔍 ค้นหาคำ หรือคำแปล" autocomplete="off" aria-label="ค้นหาคำศัพท์">
       <div class="seg cx-sort">${[['recent','ล่าสุด'],['mastery','ใช้บ่อย'],['az','A–Z']].map(([k,l])=>`<button class="${sort===k?'on':''}" data-act="cxSort" data-v="${k}">${l}</button>`).join('')}</div></div>
       <div class="cx-words">${words.length ? words.map(([w,d])=>{ const m = masteryInfo(w), md = save.mastery[w]||{}, el = md.el;
-        return `<button class="cx-w" data-act="cxWord" data-v="${esc(w)}" data-s="${esc((w+' '+(d.th||'')).toLowerCase())}"><b>${esc(w.toUpperCase())}${d.bank?' <i class="st">⭐</i>':''}${el?` <i>${ELEM_ICON[el]}</i>`:''}</b><span>${esc(d.th||'')}</span><span class="cx-lv"><em>Lv.${m.lv}</em><span class="mastery-bar"><i style="width:${m.lv>=5?100:m.prog/5*100}%"></i></span></span></button>`; }).join('')
+        return `<button class="cx-w" data-act="cxWord" data-v="${esc(w)}" data-s="${esc((w+' '+(d.th||'')).toLowerCase())}"><b>${esc(w.toUpperCase())}${d.bank?' <i class="st">⭐</i>':''}${el?` <i>${ELEM_ICON[el]}</i>`:''}</b><span>${esc(d.th||'')}</span><span class="cx-lv"><em style="color:${WTIERS[wordTier(w)].c}">${WTIERS[wordTier(w)].k}</em><span class="mastery-bar"><i style="width:${m.lv>=5?100:m.prog/5*100}%"></i></span></span></button>`; }).join('')
         : `<p class="sub cx-empty">ยังไม่มีคำ ออกไปผจญภัยแล้วสะกดคำแรกเลย!</p>`}</div>`;
   } else if(t==='mon'){
     body = CHAPTERS.map((Ch,ci)=>`<h3 class="q2-sec">${esc(LOCS[ci].name)} <small>${Ch.pool.filter(k=>V.seen.mon[k]).length}/${Ch.pool.length}</small></h3>
@@ -86,9 +88,11 @@ Object.assign(ACTS2, {
     const d = (save.book||{})[v] || {}, m = masteryInfo(v), md = save.mastery[v]||{}, el = md.el || (()=>{ try{ const e = elementOf(v); return e && ELEMENTS[e] && ELEMENTS[e].god ? ELEMENTS[e].base : e; }catch(e){ return null; } })();
     const pct = m.lv>=5 ? 100 : Math.round(m.prog/5*100);
     modal(`<div class="cx-card"><span class="q2-kicker">WORD MASTERY</span><h3 class="cx-cw">${esc(v.toUpperCase())}</h3><p class="cx-th">${esc(d.th||'')}${d.bank?' ⭐':''}</p>
+      <div class="cx-tierline">${WTIERS.slice(1).map((t,i)=>`<span class="${wordTier(v)>=i+1?'on':''}" style="--wt:${t.c}">${t.k}</span>`).join('<i>›</i>')}</div>
       <div class="cx-mlv"><b>Level ${m.lv}</b><span>${m.lv>=5?'MAX':`อีก ${5-m.prog} ครั้งถึง Lv.${m.lv+1}`}</span></div>
       <div class="cx-blocks">${Array.from({length:10},(_,i)=>`<i class="${i<Math.round(pct/10)?'on':''}"></i>`).join('')}</div>
-      <div class="cx-kv"><span>Uses</span><b>${md.n||d.n||0}</b><span>Best Combo</span><b>x${md.bc||0}</b><span>Element</span><b>${el && ELEMENTS[el] ? `${ELEM_ICON[el]} ${ELEMENTS[el].name}` : '—'}</b><span>ดาเมจโบนัส</span><b>+${(m.lv-1)*4}%</b></div>
+      <div class="cx-kv"><span>Uses</span><b>${md.n||d.n||0}</b><span>Best Combo</span><b>x${md.bc||0}</b><span>Element</span><b>${el && ELEMENTS[el] ? `${ELEM_ICON[el]} ${ELEMENTS[el].name}` : '—'}</b><span>ดาเมจโบนัส</span><b>+${(m.lv-1)*4}%</b><span>ใช้กับบอส</span><b>${md.boss?'✔':'—'}</b><span>ใช้ใน Challenge</span><b>${md.ch?'✔':'—'}</b></div>
+      <p class="sub cx-perf">Perfected: ใช้ 20 ครั้ง ${(md.n||0)>=20?'✔':''} · คอมโบ 5+ ${(md.bc||0)>=5?'✔':''} · ใช้กับบอส ${md.boss?'✔':''} · ใช้ใน Challenge/Nightmare ${md.ch?'✔':''}</p>
       <div class="btns"><button class="cbtn blue block" data-act="say" data-v="${esc(v)}">🔊 ฟังเสียง</button><button class="cbtn wood block" data-act="closeModal">ปิด</button></div></div>`, { dismiss:true });
   },
   cxMon: v=>{

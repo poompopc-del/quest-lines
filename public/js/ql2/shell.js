@@ -59,14 +59,17 @@ function navBadges(){
 
 function topbar(){
   const V = V2(), A = advInfo(V.adv.xp), q = claimableCount(), fr = FRAMES[V.frames.eq] || FRAMES.basic;
-  return `<header class="q2-top">
-    <button class="q2-me" data-act="go" data-v="profile" aria-label="โปรไฟล์">
-      <span class="q2-ava ${fr.css}">${heroFaceSvg(save.eq)}<b class="q2-lv">${A.lv}</b></span>
-      <span class="q2-id"><b>${esc(save.name||'Hero')}</b><small>${esc((TITLES[V.titles.eq]||TITLES.rookie).th)}</small><i class="q2-xp"><i style="width:${A.pct}%"></i></i></span>
+  const badge = (typeof egBadge==='function') ? egBadge() : '';
+  return `<header class="q2-top hud">
+    <button class="hud-ib" data-act="settings" aria-label="ตั้งค่า">${ICON.gear}</button>
+    <button class="hud-plate l" data-act="go" data-v="profile" aria-label="โปรไฟล์">
+      <b>${badge}${esc(save.name||'Hero')}</b><small>${esc((TITLES[V.titles.eq]||TITLES.rookie).th)}</small><i class="q2-xp"><i style="width:${A.pct}%"></i></i>
     </button>
-    <span class="pill q2-gold">${ICON.coin}<b id="goldTop">${fmt(save.gold)}</b></span>
-    <button class="q2-ib" data-act="go" data-v="quests" aria-label="ภารกิจ">${IC2.scroll}${q?`<em class="q2-badge">${q}</em>`:''}</button>
-    <button class="q2-ib" data-act="settings" aria-label="ตั้งค่า">${ICON.gear}</button>
+    <button class="hud-ava" data-act="go" data-v="heroes" aria-label="ฮีโร่">
+      <span class="hud-hex ${fr.css}"><span class="hud-hexin">${heroFaceSvg(save.eq)}</span></span><b class="hud-lv">Lv ${A.lv}</b>
+    </button>
+    <span class="hud-plate r"><span class="hud-coin">${ICON.coin}</span><b id="goldTop">${fmt(save.gold)}</b></span>
+    <button class="hud-ib" data-act="go" data-v="quests" aria-label="ภารกิจ">${IC2.scroll}${q?`<em class="q2-badge">${q}</em>`:''}</button>
   </header>`;
 }
 function navbar(){
