@@ -1,8 +1,11 @@
-const CACHE_NAME = 'quest-lines-v20';
-const APP_SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE_NAME = 'quest-lines-v21';
+const V = '?v=21';
+const MODULES = ['core','quests','shell','settings','hub','world','questboard','heroes','inventory','codex','profile','boot'];
+const APP_SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './css/ql2.css' + V,
+  ...MODULES.map((m) => `./js/ql2/${m}.js${V}`)];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)));
+  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)).catch(() => {}));
   self.skipWaiting();
 });
 self.addEventListener('activate', (e) => {
@@ -10,17 +13,19 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Network-first for pages (so updates land right away), cache-first for everything else.
-// /api/* is never cached. Google Fonts are cached so the pixel look survives offline.
+// Network-first for pages, scripts and styles (so updates land right away, cache = offline copy).
+// Cache-first for everything else (sprites, scenes, fonts). /api/* is never cached.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || req.url.includes('/api/')) return;
   // translation lookups are cached by the game itself; let them go straight to the network
   if (/translate\.googleapis\.com|mymemory\.translated\.net/.test(req.url)) return;
-  const isPage = req.mode === 'navigate' || req.url.endsWith('.html') || req.url.endsWith('/');
+  const url = new URL(req.url);
+  const path = url.pathname;
+  const fresh = req.mode === 'navigate' || path.endsWith('.html') || path.endsWith('/') || path.endsWith('.js') || path.endsWith('.css');
   const save = (res) => { if (res && (res.ok || res.type === 'opaque')) { const c = res.clone(); caches.open(CACHE_NAME).then((cache) => cache.put(req, c)); } return res; };
-  if (isPage) {
-    e.respondWith(fetch(req).then(save).catch(() => caches.match(req).then((r) => r || caches.match('./index.html'))));
+  if (fresh) {
+    e.respondWith(fetch(req).then(save).catch(() => caches.match(req).then((r) => r || caches.match(req, { ignoreSearch: true })).then((r) => r || (req.mode === 'navigate' ? caches.match('./index.html') : undefined))));
   } else {
     e.respondWith(caches.match(req).then((cached) => cached || fetch(req).then(save)));
   }
