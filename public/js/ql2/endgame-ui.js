@@ -29,7 +29,7 @@ const cosKindTh = { aura:'ออร่าตัวละคร', trail:'รอ�
 
 function egHeader(view){
   const I = mrInfo(), E = EGS();
-  return `<div class="eg-top">${view!=='hall'?`<button class="q2-back" data-act="egView" data-v="hall" aria-label="กลับ">${IC2.back}</button>`:`<button class="q2-back" data-act="go" data-v="hub" aria-label="กลับฐาน">${IC2.back}</button>`}
+  return `<div class="eg-top">${view!=='hall'?`<button class="q2-back" data-act="egView" data-v="hall" aria-label="กลับ">${IC2.back}</button>`:`<button class="q2-back" data-act="go" data-v="more" aria-label="กลับเมนู">${IC2.back}</button>`}
     <div class="eg-cur"><span class="eg-nc">🌙 <b>${fmt(E.nc)}</b></span><span class="eg-cc">🏅 <b>${fmt(E.cc)}</b></span></div>
     <button class="eg-mr mini" data-act="egView" data-v="rank" style="--rc:${I.R.c}"><span class="eg-mr-gem"></span><b>${I.R.k}</b></button></div>`;
 }
@@ -182,7 +182,7 @@ function renderEndgame(){
   if(!storyDone() && ['nightmare','speed','perfect','creator','daily'].includes(v)){ ui.egView = 'hall'; return egHeader('hall') + renderHall(); }
   return egHeader(v) + `<div class="eg-body eg-v-${v}">${body()}</div>`;
 }
-SCREENS.endgame = { nav:'hub', render:renderEndgame, key:()=>ui.egView||'hall' };
+SCREENS.endgame = { nav:'more', render:renderEndgame, key:()=>ui.egView||'hall' };
 
 /* ------------------------------ actions ------------------------------ */
 const endRun = ()=>{ ui.run = null; };

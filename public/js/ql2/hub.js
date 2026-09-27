@@ -1,7 +1,9 @@
 /* ==========================================================================
-   QUEST LINES 2.0 — HERO HUB (Moonlit Haven)
-   Answers at a glance: where am I · what quest am I on · what to do next ·
-   where can I get stronger. Every system is a "place" in the base.
+   QUEST LINES — HOME (Moonlit Haven)
+   v26: answers only three questions — where am I · what should I do next ·
+   where do I tap to play. NEXT OBJECTIVE (tracked quest → PLAY NOW goes to
+   a stage that advances it) · QUICK PLAY (continue the story, shown only
+   when it goes somewhere else). Every other system lives under ☰ More.
    ========================================================================== */
 
 // the base at night: big moon, sea, a keep on the cliff, a campfire — same moonlit palette as the title
@@ -86,57 +88,111 @@ function hubSuggestions(){
   return out.slice(0,3);
 }
 
+/* ------------------------------ v26: what to do next ------------------------------ */
+// a rough preview of what a stage pays (gold from its monsters + clear bonus, EXP from clear + kills)
+function stageRewardEst(ch, n){
+  let gold = 0, xp = 20 + ch*5 + (stageIndex(ch,n)===save.cleared ? 25 : 0);
+  try{
+    const st = buildStage(ch, n), gm = goldMul();
+    st.enemies.forEach(e=>{ gold += Math.round(e.gold*gm); xp += e.boss ? 60 : e.mini ? 20 : 6; });
+    gold += Math.round((15 + st.s*4)*gm);
+  }catch(e){}
+  return { gold, xp };
+}
+// the guardian at the end of a stage (mini boss, or the chapter boss on stage 8)
+function stageGuardian(ch, n){ const C = CHAPTERS[ch]; return n===STAGES_PER ? C.boss : C.mini; }
+// best stage to work on a chapter's goals: the story frontier if it is here, else the busiest cleared stage
+function stageFor(ch, mon){
+  if(!chapterOpen(ch)) return null;
+  const N = nextStage();
+  if(!N.done && N.ch===ch) return { ch, n:N.n };
+  const C = CHAPTERS[ch];
+  if(mon && mon===C.boss) return { ch, n:STAGES_PER };
+  return { ch, n:STAGES_PER-1 };
+}
+// where PLAY NOW should take the player for a quest
+function questTarget(q){
+  if(!q) return null;
+  const o = qObjs(q).find(x=>!x.done), g = (o && o.go) || {};
+  if(g.tower || q.loc==='tower') return { tower:true };
+  if(g.ch!==undefined && g.n!==undefined && stageIndex(g.ch, g.n)<=save.cleared) return { ch:g.ch, n:g.n };
+  if(g.mon){ const li = monLoc(g.mon); if(li!==null){ const t = stageFor(li, g.mon); if(t) return t; } }
+  if(g.ch!==undefined){ const t = stageFor(g.ch); if(t) return t; }
+  if(typeof q.loc==='number'){ const t = stageFor(q.loc); if(t) return t; }
+  return null;   // anything else (words, elements, combos…) counts in any battle → the story
+}
+const sameStage = (a,b)=>a && b && !a.tower && !b.tower && a.ch===b.ch && a.n===b.n;
+
 function renderHub(){
-  const V = V2(), N = nextStage(), L = LOCS[N.ch], q = trackedQuest(), D = dailyEnsure();
+  const V = V2(), N = nextStage(), L = LOCS[N.ch], q = trackedQuest();
   const hi = heroInfo(save.eq.char), c = CH(save.eq.char), F = (typeof fighterOf==='function' ? fighterOf(save.eq.char) : { c:'#ff3b4e' });
-  const total = CHAPTERS.length*STAGES_PER;
-  // current quest card
-  let qc = '';
+  const story = N.done ? null : { ch:N.ch, n:N.n };
+
+  /* ---- NEXT OBJECTIVE: the tracked quest (normally the main quest), else the story ---- */
+  let obj = '', target = null;
   if(q){
-    const objs = qObjs(q), st = qStatus(q), next = objs.find(o=>!o.done) || objs[objs.length-1], nDone = objs.filter(o=>o.done).length;
-    const kind = { main:'MAIN QUEST · ภารกิจหลัก', side:'SIDE QUEST · ภารกิจเสริม', chain:`QUEST CHAIN · ขั้น ${(q.step||0)+1}/${q.of||1}` }[q.type];
-    qc = `<div class="panel hub-quest ${st==='ready'?'ready':''}" data-act="go" data-v="quests" role="button" tabindex="0">
-      <div class="hq-k">${IC2.scroll}<span>${kind}</span><em>${nDone}/${objs.length}</em></div>
-      <h3 class="hq-t">${esc(q.en||q.title)}${q.en?`<small>${esc(q.title)}</small>`:''}</h3>
-      <div class="hq-loc">${IC2.pin}${esc(locLabel(q.loc))}</div>
-      ${st==='ready' ? `<div class="hq-ready">✔ ทำครบทุกเป้าหมายแล้ว!</div><button class="cbtn gold block" data-act="qClaim" data-v="${q.id}">${IC2.star} รับรางวัล</button>`
-        : `<div class="hq-obj"><span class="hq-box"></span><span>${esc(next.txt)}</span><b>${fmt(next.cur)}/${fmt(next.need)}</b></div><div class="q2-meter"><i style="width:${Math.round(next.cur/next.need*100)}%"></i></div>`}
-      <div class="hq-rw"><small>รางวัล</small>${rewardPreview(q.reward)}</div>
-    </div>`;
+    const objs = qObjs(q), st = qStatus(q), nxt = objs.find(o=>!o.done) || objs[objs.length-1];
+    target = questTarget(q) || story || (N.done ? { tower:true } : null);
+    const kind = { main:'MAIN QUEST', side:'SIDE QUEST', chain:`QUEST CHAIN ${(q.step||0)+1}/${q.of||1}` }[q.type] || 'QUEST';
+    const go = nxt && nxt.go && nxt.go.mon ? nxt.go.mon : target && !target.tower ? stageGuardian(target.ch, target.n) : null;
+    const where = target && target.tower ? 'Endless Tower · หอคอยไร้สิ้นสุด'
+      : target ? `บทที่ ${target.ch+1} · ด่าน ${target.ch+1}-${target.n} · ${esc(LOCS[target.ch].name)}` : esc(locLabel(q.loc));
+    const pct = Math.round(nxt.cur/nxt.need*100);
+    const btn = st==='ready'
+      ? `<button class="cbtn gold block no-play" data-act="qClaim" data-v="${q.id}">${IC2.star} รับรางวัล</button>`
+      : target && target.tower ? `<button class="cbtn gold block no-play" data-act="goTower">${IC2.play} PLAY NOW</button>`
+      : target ? `<button class="cbtn gold block no-play" data-act="stage" data-ch="${target.ch}" data-n="${target.n}">${IC2.play} PLAY NOW</button>`
+      : `<button class="cbtn gold block no-play" data-act="playNext">${IC2.play} PLAY NOW</button>`;
+    obj = `<section class="panel no-card ${st==='ready'?'ready':''}">
+      <div class="no-k"><span class="q2-kicker">NEXT OBJECTIVE</span><button class="no-type" data-act="go" data-v="quests">${kind} · ${objs.filter(o=>o.done).length}/${objs.length}${IC2.next}</button></div>
+      <div class="no-main">${go?`<span class="no-art">${monsterIcon(go)}</span>`:`<span class="no-art ic">${IC2.scroll}</span>`}
+        <div class="no-t"><h3>${esc(st==='ready' ? 'ภารกิจสำเร็จ!' : nxt.txt)}</h3><small>${esc(q.en||q.title)}${q.en?` · ${esc(q.title)}`:''}</small></div></div>
+      ${st==='ready' ? '' : `<div class="no-prog"><div class="q2-meter"><i style="width:${pct}%"></i></div><b>${fmt(nxt.cur)}/${fmt(nxt.need)}</b></div>`}
+      <div class="no-meta"><span class="no-where">${IC2.pin}${where}</span><span class="no-rw">${rewardPreview(q.reward)}</span></div>
+      ${btn}
+    </section>`;
+  } else if(!N.done){
+    target = story;
+    const R = stageRewardEst(N.ch, N.n), boss = N.n===STAGES_PER, g = stageGuardian(N.ch, N.n);
+    obj = `<section class="panel no-card">
+      <div class="no-k"><span class="q2-kicker">NEXT OBJECTIVE</span></div>
+      <div class="no-main"><span class="no-art">${monsterIcon(g)}</span><div class="no-t"><h3>Defeat ${esc(MON[g].name)}</h3><small>บทที่ ${N.ch+1} · ด่าน ${N.ch+1}-${N.n}${boss?' · BOSS':''} · ${esc(L.name)}</small></div></div>
+      <div class="no-meta"><span class="no-rw"><small>รางวัล</small><span class="rw xp">EXP ${fmt(R.xp)}</span><span class="rw">${ICON.coin}${fmt(R.gold)}</span></span></div>
+      <button class="cbtn gold block no-play" data-act="playNext">${IC2.play} PLAY NOW</button>
+    </section>`;
+  } else {
+    obj = `<section class="panel no-card">
+      <div class="no-k"><span class="q2-kicker">NEXT OBJECTIVE</span></div>
+      <div class="no-main"><span class="no-art ic">${IC2.trophy}</span><div class="no-t"><h3>Master the Game</h3><small>Challenge Hall · ${mrInfo().R.k} · Nightmare · Endless · Speedrun</small></div></div>
+      <button class="cbtn gold block no-play" data-act="egView" data-v="hall">${IC2.play} PLAY NOW</button>
+    </section>`;
   }
-  const cta = N.done
-    ? `<button class="cbtn gold hub-play" data-act="egView" data-v="hall">${IC2.trophy}<span><b>Master the Game</b><small>Challenge Hall · ${mrInfo().R.k} · Nightmare · Endless · Speedrun</small></span></button>`
-    : `<button class="cbtn gold hub-play" data-act="playNext">${IC2.play}<span><b>${save.cleared?'ผจญภัยต่อ':'เริ่มผจญภัย'}</b><small>ด่าน ${N.ch+1}-${N.n} · ${esc(L.name)}${N.n===STAGES_PER?' · BOSS':''}</small></span></button>`;
-  const dInf = D.slots.map(s=>({ s, i:dailyInfo(s) })).filter(x=>x.i);
-  const dDone = dInf.filter(x=>x.s.claimed || x.i.done).length;
-  const daily = `<button class="panel hub-daily" data-act="qTab" data-v="daily"><span class="hd-ic">🗓</span><span class="hd-t"><b>ภารกิจประจำวัน</b><small>${dailyBonusReady()?'หีบโบนัสพร้อมรับ!':`ทำแล้ว ${dDone}/${dInf.length} · รีเซ็ตเที่ยงคืน`}</small></span>
-    <span class="hd-pips">${dInf.map(x=>`<i class="${x.s.claimed?'c':x.i.done?'d':''}"></i>`).join('')}</span>${IC2.next}</button>`;
-  const sug = hubSuggestions();
-  const cx = Object.keys(V.seen.mon).length, cxAll = Object.keys(MON).length, tro = Object.keys(ACH).filter(k=>save.achievements[k]).length;
-  const bld = [
-    ['world', IC2.gate, 'ประตูสู่โลก', 'World', `${save.cleared}/${total} ด่าน`],
-    ['heroes', IC2.heroes, 'วิหารนักสู้', 'Heroes', `${save.chars.length}/${CHARACTERS.length} นักสู้`],
-    ['inventory', IC2.bag, 'คลังสมบัติ', 'Inventory', 'ร้านค้า · วัตถุดิบ'],
-    ['codex', IC2.book, 'หอสมุด', 'Codex', `${Object.keys(save.book||{}).length} คำ · ${cx}/${cxAll} มอน`],
-    ['profile', IC2.trophy, 'หอเกียรติยศ', 'Profile', `${tro}/${Object.keys(ACH).length} ถ้วย`],
-    ['endgame', IC2.trophy, 'Challenge Hall', 'Endgame', storyDone() ? `${mrInfo().R.k} · ${fmt(mrInfo().pts)} MP` : `🔒 จบเรื่อง ${save.cleared}/${total}`],
-  ];
-  const bd = navBadges();
-  return `<div class="hub">
+
+  /* ---- QUICK PLAY: continue the story — only when it goes somewhere PLAY NOW doesn't ---- */
+  let quick = '';
+  const qTarget = story || { tower:true };
+  if(!(sameStage(target, qTarget) || (target && target.tower && qTarget.tower))){
+    const t = qTarget.tower ? `<b>Endless Tower</b><small>สถิติ ${save.tower.best||0} ชั้น</small>` : `<b>Continue Story</b><small>ด่าน ${N.ch+1}-${N.n} · ${esc(L.name)}${N.n===STAGES_PER?' · BOSS':''}</small>`;
+    quick = `<button class="panel qp-row" data-act="${qTarget.tower?'goTower':'playNext'}"><span class="qp-k">⚡ QUICK PLAY</span><span class="qp-t">${t}</span><span class="qp-go">PLAY ${IC2.play}</span></button>`;
+  }
+
+  /* ---- one quiet line when something is waiting to be claimed ---- */
+  const adv = advUnclaimed(), qc = claimableCount() - (q && qStatus(q)==='ready' ? 1 : 0), mr = typeof mrUnclaimed==='function' ? mrUnclaimed() : 0;
+  const claim = qc>0 ? { t:`รางวัลภารกิจรอรับ ${qc} รายการ`, a:'go', v:'quests' }
+    : adv ? { t:`รางวัล Adventure Level รอรับ (${adv})`, a:'pfRoad' }
+    : mr ? { t:`รางวัล Master Rank รอรับ`, a:'egView', v:'rank' } : null;
+
+  return `<div class="hub v26">
     <section class="hub-scene" style="--fc:${F.c}">
       ${HUB_BG()}${hubFx()}
-      <div class="hub-loc">${IC2.pin}<span><b>${HUB_NAME.name}</b><small>${HUB_NAME.th} · แนวหน้า: ${esc(N.done?'Endless Tower':L.name)}</small></span></div>
-      <button class="hub-spot s-quest" data-act="go" data-v="quests" aria-label="กระดานภารกิจ">${IC2.scroll}<span>กระดานภารกิจ</span>${claimableCount()?`<em class="q2-badge">${claimableCount()}</em>`:''}</button>
-      <button class="hub-spot s-gate" data-act="go" data-v="world" aria-label="แผนที่โลก">${IC2.gate}<span>ประตูสู่โลก</span></button>
-      <button class="hub-hero" data-act="go" data-v="heroes" aria-label="ไปที่วิหารนักสู้">${rockLedge()}${heroStandalone(save.eq)}</button>
-      <div class="hub-tag"><b>${esc(c.name)}</b><span>Lv ${hi.lv} · ${hi.R.th}</span></div><div class="hub-title">“${esc((TITLES[V.titles.eq]||TITLES.rookie).th)}”</div>
+      <div class="hub-loc">${IC2.pin}<span><b>${HUB_NAME.name}</b><small>แนวหน้า: ${esc(N.done?'Endless Tower':L.name)} · ${save.cleared}/${CHAPTERS.length*STAGES_PER} ด่าน</small></span></div>
+      <button class="hub-hero" data-act="go" data-v="heroes" aria-label="ไปที่หน้าฮีโร่">${rockLedge()}${heroStandalone(save.eq)}</button>
+      <div class="hub-tag"><b>${esc(c.name)}</b><span>Lv ${hi.lv} · ${hi.R.th}</span></div>
     </section>
     <section class="hub-panel">
-      ${qc}
-      ${cta}
-      ${daily}
-      ${sug.length?`<div class="hub-sug"><h4>พัฒนาตัวละคร · ทำอะไรต่อดี?</h4>${sug.map(s=>`<button class="hs-item ${s.hot?'hot':''}" data-act="${s.a}" ${s.v?`data-v="${s.v}"`:''}>${s.ic}<span>${esc(s.t)}</span>${IC2.next}</button>`).join('')}</div>`:''}
-      <div class="hub-bld">${bld.map(([k,ic,th,en,st])=>`<button class="hb-b b-${k}" data-act="${k==='endgame'?'egView':'go'}" data-v="${k==='endgame'?'hall':k}">${ic}<b>${th}</b><small>${en} · ${esc(st)}</small>${bd[k]?`<em class="q2-badge${bd[k]==='!'?' dot':''}">${bd[k]==='!'?'':bd[k]}</em>`:''}</button>`).join('')}</div>
+      ${obj}
+      ${quick}
+      ${claim?`<button class="hub-claim" data-act="${claim.a}" ${claim.v?`data-v="${claim.v}"`:''}>🎁<span>${esc(claim.t)}</span>${IC2.next}</button>`:''}
     </section>
   </div>`;
 }
@@ -144,5 +200,6 @@ SCREENS.hub = { nav:'hub', full:true, render:renderHub };
 Object.assign(ACTS2, {
   heroTrain: v=>{ ui.hsPick = v; ui.hsTab = 'train'; goTo('heroes'); },
   heroPick: v=>{ ui.hsPick = v; ui.hsTab = 'stats'; goTo('heroes'); },
-  shopTab2: v=>{ ui.invTab = v; ui.invShop = true; goTo('inventory'); },
+  shopTab2: v=>{ ui.invTab = v; goTo('shop'); },
+  pfRoad: ()=>{ ui.pfTab = 'road'; goTo('profile'); },
 });

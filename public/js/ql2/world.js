@@ -86,30 +86,31 @@ function renderChapter(){
   const qs = QUESTS.filter(q=>q.loc===ci && (q.type!=='chain' || chainStep(q.chain)===q)).map(q=>({ q, st:qStatus(q) })).filter(x=>x.st!=='claimed' || x.q.type==='main');
   const play = nextN ? `<button class="cbtn gold block lc-play" data-act="stage" data-ch="${ci}" data-n="${nextN}">${IC2.play} ${cl?'ลุยต่อ':'เริ่ม'} ด่าน ${ci+1}-${nextN}${nextN===STAGES_PER?' · BOSS':''}</button>`
     : `<button class="cbtn wood block lc-play" data-act="stage" data-ch="${ci}" data-n="${STAGES_PER}">${IC2.play} ท้าทายบอสอีกครั้ง</button>`;
-  return `<div class="lc-banner" style="--lc:${L.col};--bgimg:url('${LOC_BG[C.id]}')">
+  return `<div class="lc-banner" style="--lc:${L.col};--bgimg:url('${new URL(LOC_BG[C.id], document.baseURI).href}')">
       <button class="q2-back" data-act="go" data-v="world" aria-label="กลับแผนที่โลก">${IC2.back}</button>
       <div class="lc-boss">${monsterIcon(C.boss)}</div>
       <div class="lc-title"><span class="q2-kicker">บทที่ ${ci+1} · LOCATION</span><h2>${esc(L.name)}</h2><small>${esc(L.th)}</small></div>
     </div>
     ${open ? '' : `<div class="panel lc-lock">${ICON.lock}<span><b>ยังไม่ปลดล็อก</b><small>ผ่านด่าน ${ci}-${STAGES_PER} (บอสของ ${esc(LOCS[ci-1].name)}) เพื่อเปิดเส้นทาง</small></span></div>`}
-    <p class="lc-blurb">${esc(L.blurb)}</p>
     <div class="lc-stats"><div><b>${cl}/${STAGES_PER}</b><small>ด่านที่ผ่าน</small></div><div><b>★ ${stars}/${STAGES_PER*3}</b><small>ดาว</small></div><div><b>${fmt(V.chKills[ci]||0)}</b><small>ปราบแล้ว</small></div></div>
-    <div class="q2-meter big"><i style="width:${cl/STAGES_PER*100}%"></i></div>
     ${open?play:''}${typeof nmChapterOpen==='function' && nmChapterOpen(ci) ? `<button class="cbtn red block lc-play eg-nmbtn" data-act="egView" data-v="nightmare">🌙 NIGHTMARE · ${[...Array(STAGES_PER)].filter((_,k)=>nmCleared(ci,k+1)).length}/${STAGES_PER}</button>` : ''}
     <h3 class="q2-sec">เส้นทางด่าน <small>Stages</small></h3>
-    <div class="panel lc-path"><div class="nodes">${nodes}</div><p class="sub">ทุกด่านมี <b>มินิบอส</b> เฝ้าท้ายด่าน · ด่านที่ 8 คือ <b>บอสใหญ่</b></p></div>
+    <div class="panel lc-path"><div class="nodes">${nodes}</div></div>
+    ${qs.length ? `<h3 class="q2-sec">ภารกิจที่นี่ <small>Quests</small></h3>${qs.map(({q,st})=>questRow(q, st, true)).join('')}` : ''}
+    <details class="lc-more" ${ui.lcMore?'open':''}><summary>ข้อมูลพื้นที่ <small>ผู้พิทักษ์ · มอนสเตอร์ · รางวัล</small></summary>
     <h3 class="q2-sec">ผู้พิทักษ์ <small>Mini Boss · Boss</small></h3>
     <div class="lc-foes2">${foe(C.mini,'mini')}${foe(C.boss,'boss')}</div>
+    <p class="sub">ทุกด่านมี <b>มินิบอส</b> เฝ้าท้ายด่าน · ด่านที่ 8 คือ <b>บอสใหญ่</b></p>
     <h3 class="q2-sec">มอนสเตอร์ในพื้นที่ <small>${C.pool.filter(k=>V.seen.mon[k]).length}/${C.pool.length} ค้นพบ</small></h3>
     <div class="lc-pool">${C.pool.map(k=>`<span class="lc-mini ${V.seen.mon[k]?'':'unseen'}" title="${V.seen.mon[k]?esc(MON[k].name):'???'}">${monsterIcon(k)}</span>`).join('')}</div>
-    <h3 class="q2-sec">ภารกิจที่นี่ <small>Quests</small></h3>
-    ${qs.length ? qs.map(({q,st})=>questRow(q, st, true)).join('') : `<p class="sub">ไม่มีภารกิจค้างอยู่ในพื้นที่นี้</p>`}
     <h3 class="q2-sec">รางวัลในพื้นที่ <small>Rewards</small></h3>
     <div class="panel lc-rw">
       <div><span>วัตถุดิบที่หล่น</span><p>${matIcon(L.mat)} ${esc(MATS[L.mat].th)} <small>(มอนสเตอร์ · มินิบอส ×2)</small></p><p>${matIcon(L.gem)} ${esc(MATS[L.gem].th)} <small>(บอส · หายาก)</small></p></div>
       <div><span>ผ่านบทครั้งแรก</span><p>${ICON.potRed}×2 ${ICON.potStar}×1 ${ci<CHAPTERS.length-1?`· ปลดล็อก ${esc(LOCS[ci+1].name)}`:''}</p></div>
       <div><span>ปริศนามินิบอส</span><p>${ICON.coin} ทอง ${ci>=1?'+ ยา (ตอบถูกครั้งแรก)':''}</p></div>
-    </div>`;
+    </div>
+    <p class="sub">ตำนานของพื้นที่นี้อ่านได้ที่ ☰ เพิ่มเติม → โคเด็กซ์ → ตำนาน</p>
+    </details>`;
 }
 function renderTowerLoc(){
   const best = save.tower.best||0, runs = save.tower.runs||0;
@@ -119,12 +120,12 @@ function renderTowerLoc(){
       <div class="lc-boss">${TOWER_ART()}</div>
       <div class="lc-title"><span class="q2-kicker">SPECIAL AREA</span><h2>Endless Tower</h2><small>หอคอยไร้สิ้นสุด</small></div>
     </div>
-    <p class="lc-blurb">ปีนได้ไม่จำกัด ชั้นละ 1 ตัว · มินิบอสทุก 5 ชั้น · บอสทุก 10 ชั้นพร้อมรางวัล · HP ต่อเนื่องข้ามชั้น (ชนะแต่ละตัวฟื้น 15%) · ฉากเปลี่ยนทุก 10 ชั้น</p>
     <div class="lc-stats"><div><b>${best}</b><small>ชั้นสูงสุด</small></div><div><b>${runs}</b><small>จำนวนครั้งที่ปีน</small></div><div><b>${fmt(V2().stats.floors)}</b><small>ชั้นที่ผ่านรวม</small></div></div>
     <button class="cbtn gold block lc-play" data-act="goTower">${IC2.tower} เข้าสู่หอคอย</button>
-    <h3 class="q2-sec">รางวัลหอคอย <small>Milestones</small></h3>
-    <div class="panel lc-rw"><div><span>ทุก 10 ชั้น</span><p>${ICON.coin} ทองโบนัส + ${ICON.potRed}×1</p></div><div><span>ทุกชั้น</span><p>${ICON.coin} ทองจากมอนสเตอร์ (เก็บไว้แม้แพ้) + วัตถุดิบตามฉาก</p></div><div><span>ชั้น 30+</span><p>มอนสเตอร์ได้ความสามารถเพิ่ม · ชั้น 40+ แข็งแกร่งขึ้นไม่มีเพดาน</p></div></div>
+    <details class="lc-more" ${ui.lcMore?'open':''}><summary>กติกา · รางวัล <small>Milestones</small></summary>
+    <p class="sub">ปีนได้ไม่จำกัด ชั้นละ 1 ตัว · มินิบอสทุก 5 ชั้น · บอสทุก 10 ชั้นพร้อมรางวัล · HP ต่อเนื่องข้ามชั้น (ชนะแต่ละตัวฟื้น 15%) · ฉากเปลี่ยนทุก 10 ชั้น</p>
+    <div class="panel lc-rw"><div><span>ทุก 10 ชั้น</span><p>${ICON.coin} ทองโบนัส + ${ICON.potRed}×1</p></div><div><span>ทุกชั้น</span><p>${ICON.coin} ทองจากมอนสเตอร์ (เก็บไว้แม้แพ้) + วัตถุดิบตามฉาก</p></div><div><span>ชั้น 30+</span><p>มอนสเตอร์ได้ความสามารถเพิ่ม · ชั้น 40+ แข็งแกร่งขึ้นไม่มีเพดาน</p></div></div></details>
     <h3 class="q2-sec">ภารกิจที่หอคอย <small>Quests</small></h3>
     ${qs.length ? qs.map(({q,st})=>questRow(q, st, true)).join('') : `<p class="sub">ทำภารกิจหอคอยครบแล้ว</p>`}`;
 }
-SCREENS.chapter = { nav:'world', render:renderChapter, key:()=>String(ui.v2ch) };
+SCREENS.chapter = { nav:'world', render:renderChapter, key:()=>String(ui.v2ch), after:()=>{ const d = document.querySelector('.lc-more'); if(d) d.addEventListener('toggle', ()=>{ ui.lcMore = d.open; }); } };

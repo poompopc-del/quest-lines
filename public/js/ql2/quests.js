@@ -7,14 +7,14 @@
 /* ------------------------------ objectives ------------------------------ */
 const sumObj = o=>Object.values(o||{}).reduce((a,b)=>a+(b||0),0);
 const O = {
-  kills:(ch,n)=>({ txt:`ปราบมอนสเตอร์ใน ${LOCS[ch].name} ${n} ตัว`, cur:()=>V2().chKills[ch]||0, need:n }),
-  kill:(key,n,label)=>({ txt:label || `ปราบ ${MON[key].name}${n>1?` ${n} ตัว`:''}`, cur:()=>V2().kills[key]||0, need:n }),
-  clear:(ch,n,label)=>({ txt:label || `ผ่านด่าน ${ch+1}-${n}`, cur:()=>save.cleared > stageIndex(ch,n) ? 1 : 0, need:1 }),
+  kills:(ch,n)=>({ txt:`ปราบมอนสเตอร์ใน ${LOCS[ch].name} ${n} ตัว`, cur:()=>V2().chKills[ch]||0, need:n, go:{ ch } }),
+  kill:(key,n,label)=>({ txt:label || `ปราบ ${MON[key].name}${n>1?` ${n} ตัว`:''}`, cur:()=>V2().kills[key]||0, need:n, go:{ mon:key } }),
+  clear:(ch,n,label)=>({ txt:label || `ผ่านด่าน ${ch+1}-${n}`, cur:()=>save.cleared > stageIndex(ch,n) ? 1 : 0, need:1, go:{ ch, n } }),
   open:(ch)=>({ txt:`ค้นพบ ${LOCS[ch].name}`, cur:()=>chapterOpen(ch) ? 1 : 0, need:1 }),
   elem:(el,n)=>({ txt:`ใช้คำธาตุ ${ELEM_ICON[el]} ${ELEMENTS[el].name} ${n} ครั้ง`, cur:()=>V2().elem[el]||0, need:n }),
   elemAny:(n)=>({ txt:`ใช้คำธาตุใดก็ได้ ${n} ครั้ง`, cur:()=>sumObj(V2().elem), need:n }),
   elemKinds:(n)=>({ txt:`ใช้คำธาตุให้ครบ ${n} ชนิด`, cur:()=>BASE_ELEMS.filter(e=>V2().elem[e]).length, need:n }),
-  tower:(n)=>({ txt:`ปีนหอคอยไร้สิ้นสุดถึงชั้น ${n}`, cur:()=>save.tower.best||0, need:n }),
+  tower:(n)=>({ txt:`ปีนหอคอยไร้สิ้นสุดถึงชั้น ${n}`, cur:()=>save.tower.best||0, need:n, go:{ tower:1 } }),
   words:(n)=>({ txt:`สะกดคำสำเร็จรวม ${n} คำ`, cur:()=>save.stats.words||0, need:n }),
   combo:(n)=>({ txt:`ทำคอมโบให้ถึง x${n}`, cur:()=>save.stats.bestCombo||0, need:n }),
   puzzles:(n)=>({ txt:`ไขปริศนาคำศัพท์ถูก ${n} ครั้ง`, cur:()=>V2().stats.puzzles||0, need:n }),
@@ -138,7 +138,7 @@ CHAINS.forEach(c=>c.steps.forEach((s,i)=>defQ({ id:`${c.id}_${i+1}`, type:'chain
   req: i ? ()=>!!V2().q.claimed[`${c.id}_${i}`] : ()=>true, reqTxt: i ? `ทำขั้นที่ ${i} ให้สำเร็จ` : '' })));
 
 /* ------------------------------ status ------------------------------ */
-function qObjs(q){ return q.objs.map(o=>{ const cur = Math.min(o.need, Math.max(0, o.cur())); return { txt:o.txt, cur, need:o.need, done:cur>=o.need }; }); }
+function qObjs(q){ return q.objs.map(o=>{ const cur = Math.min(o.need, Math.max(0, o.cur())); return { txt:o.txt, cur, need:o.need, done:cur>=o.need, go:o.go||null }; }); }
 function qStatus(q){
   const V = V2();
   if(V.q.claimed[q.id]) return 'claimed';

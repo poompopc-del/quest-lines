@@ -76,7 +76,7 @@ function cxMonCard(k, tag){
   return `<button class="panel cx-mon ${seen?'':'unseen'} ${tag||''}" data-act="cxMon" data-v="${k}" ${seen?'':'disabled'}><span class="cx-art">${monsterIcon(k)}</span>${tag?`<span class="cx-tag">${tag==='boss'?'BOSS':'MINI'}</span>`:''}<b>${seen?esc(M.name):'???'}</b><small>${seen?`ปราบ ${V.kills[k]||0}`:'ยังไม่พบ'}</small></button>`;
 }
 function traitTextGeneric(t){ return t==='weak' ? 'จุดอ่อนตัวอักษร: คำที่มีตัวอักษรจุดอ่อน (สุ่มแต่ละตัว) แรง x2' : traitText(t, { weak:'?' }); }
-SCREENS.codex = { nav:'codex', render:renderCodex, key:()=>'', after:()=>{
+SCREENS.codex = { nav:'more', back:'more', render:renderCodex, key:()=>'', after:()=>{
   const q = $('#cxQ'); if(!q) return;
   q.value = ui.cxQ || ''; const run = ()=>{ const s = q.value.trim().toLowerCase(); ui.cxQ = q.value; document.querySelectorAll('.cx-w').forEach(b=>{ b.style.display = !s || b.dataset.s.includes(s) ? '' : 'none'; }); };
   q.addEventListener('input', run); if(q.value) run();

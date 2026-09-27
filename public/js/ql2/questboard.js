@@ -54,11 +54,11 @@ function renderQuests(){
   }
   const readyHere = t==='daily' ? 0 : QUESTS.filter(q=>(t==='chain' ? q.type==='chain' : q.type===t) && qStatus(q)==='ready').length;
   if(readyHere>1) body = `<button class="cbtn gold block q2-claimall" data-act="qClaimAll" data-v="${t}">${IC2.star} รับรางวัลทั้งหมด (${readyHere})</button>` + body;
-  return `<div class="q2-head"><button class="q2-back" data-act="go" data-v="hub" aria-label="กลับฐาน">${IC2.back}</button><div><span class="q2-kicker">QUEST BOARD</span><h2 class="q2-h">กระดานภารกิจ</h2></div><span class="q2-headic">${IC2.scroll}</span></div>
+  return `<div class="q2-head"><button class="q2-back" data-act="go" data-v="more" aria-label="กลับเมนู">${IC2.back}</button><div><span class="q2-kicker">QUEST BOARD</span><h2 class="q2-h">กระดานภารกิจ</h2></div><span class="q2-headic">${IC2.scroll}</span></div>
     <div class="q2-anchor"></div><div class="seg q2-tabs">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="qTab" data-v="${k}">${l}${cnt(k)?`<em class="q2-badge">${cnt(k)}</em>`:''}</button>`).join('')}</div>
     <div class="q2-list">${body}</div>`;
 }
-SCREENS.quests = { nav:'hub', render:renderQuests };
+SCREENS.quests = { nav:'more', render:renderQuests };
 
 function claimModal(title, pills, sub){
   sfx.win && sfx.win();

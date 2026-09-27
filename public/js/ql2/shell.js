@@ -1,8 +1,8 @@
 /* ==========================================================================
    QUEST LINES 2.0 — SHELL
-   New main navigation (Hub · World · Heroes · Inventory · Codex · Profile),
-   top bar with Adventure Level, ⚙️ settings overlay, screen transitions and
-   the action router. Replaces the old 4-tab render() but keeps its actions.
+   Main navigation (v26: Home · Adventure · Heroes · ☰ More — everything
+   else lives under More), top bar with Adventure Level, ⚙️ settings overlay,
+   screen transitions and the action router. Keeps every original action.
    ========================================================================== */
 
 /* ------------------------------ icons ------------------------------ */
@@ -25,21 +25,21 @@ const IC2 = (()=>{
     close: s(`<path d="M10,10 L30,30 M30,10 L10,30" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>`),
     anvil: s(`<path d="M6,12 L30,12 Q36,12 36,17 L26,19 L26,24 L30,30 L10,30 L14,24 L14,19 Q6,18 6,12 Z" fill="#8a96a3" ${sw}/><path d="M9,14 L28,14" stroke="#dfe8ff" stroke-width="1.6"/><path d="M29,6 L33,2 M33,8 L37,6" stroke="#ffc83d" stroke-width="2.2" stroke-linecap="round"/>`),
     gate: s(`<path d="M6,37 L6,14 Q6,4 20,4 Q34,4 34,14 L34,37 Z" fill="#433b6b" ${sw}/><path d="M11,37 L11,16 Q11,9 20,9 Q29,9 29,16 L29,37 Z" fill="#3ee0ff" opacity=".85" stroke="${o}" stroke-width="2"/><path d="M14,30 Q20,14 26,30" stroke="#fff" stroke-width="1.6" fill="none" opacity=".8"/>`),
+    menu: s(`<rect x="7" y="9" width="26" height="4.5" rx="2.2" fill="#dfe8ff" ${sw}/><rect x="7" y="18" width="26" height="4.5" rx="2.2" fill="#dfe8ff" ${sw}/><rect x="7" y="27" width="26" height="4.5" rx="2.2" fill="#dfe8ff" ${sw}/>`),
     star: s(`<path d="M20,3 L25,14 L37,15 L28,23 L31,35 L20,29 L9,35 L12,23 L3,15 L15,14 Z" fill="#ffc83d" ${sw}/>`),
   };
 })();
 
 /* ------------------------------ screens ------------------------------ */
 const SCREENS = {};           // filled by the screen modules: { render, nav, title? }
+// v26: 4 main places. Inventory · Shop · Codex · Profile · Quests · Challenge Hall · Settings → ☰ More
 const NAV = [
-  { k:'hub',       th:'ฐาน',       ic:()=>IC2.hub },
-  { k:'world',     th:'โลก',       ic:()=>IC2.world },
-  { k:'heroes',    th:'ฮีโร่',      ic:()=>IC2.heroes },
-  { k:'inventory', th:'กระเป๋า',    ic:()=>IC2.bag },
-  { k:'codex',     th:'โคเด็กซ์',   ic:()=>IC2.book },
-  { k:'profile',   th:'โปรไฟล์',   ic:()=>IC2.trophy },
+  { k:'hub',    th:'ฐาน',      en:'Home',      ic:()=>IC2.hub },
+  { k:'world',  th:'ผจญภัย',    en:'Adventure', ic:()=>IC2.world },
+  { k:'heroes', th:'ฮีโร่',      en:'Heroes',    ic:()=>IC2.heroes },
+  { k:'more',   th:'เพิ่มเติม',  en:'More',      ic:()=>IC2.menu },
 ];
-const ALIAS = { map:'hub', shop:'inventory', hero:'heroes', settings:'hub' };
+const ALIAS = { map:'hub', hero:'heroes', settings:'hub' };
 const navIndex = k=>{ const S = SCREENS[k]; const n = (S && S.nav) || k; return NAV.findIndex(x=>x.k===n); };
 
 // what to point at: small dots on nav items
@@ -51,9 +51,15 @@ function navBadges(){
     const lockedHero = CHARACTERS.some(c=>!save.chars.includes(c.id) && save.gold>=c.price);
     if(save.gold>=cheapUp || lockedHero) b.heroes = '!';
     const curAtk = curWp().atk, curBlk = AR(save.eq.armor).block;
-    if(WEAPONS.some(w=>!save.weapons.includes(w.id) && !(typeof wpLocked==='function' && wpLocked(w)) && w.atk>curAtk && save.gold>=w.price && id!=='boomtos') || ARMORS.some(a=>!save.armors.includes(a.id) && a.block>curBlk && save.gold>=a.price)) b.inventory = '!';
+    if(WEAPONS.some(w=>!save.weapons.includes(w.id) && !(typeof wpLocked==='function' && wpLocked(w)) && w.atk>curAtk && save.gold>=w.price && id!=='boomtos') || ARMORS.some(a=>!save.armors.includes(a.id) && a.block>curBlk && save.gold>=a.price)) b.shop = '!';
+    if(typeof craftable==='function' && craftable().length) b.inventory = '!';
     const adv = advUnclaimed(); if(adv) b.profile = adv;
+    const q = claimableCount(); if(q) b.quests = q;
+    if(typeof mrUnclaimed==='function' && mrUnclaimed()) b.endgame = '!';
   }catch(e){}
+  // the ☰ More tab carries a number when something there can be claimed, a dot for shopping hints
+  const n = (+b.quests||0) + (+b.profile||0);
+  b.more = n || (b.shop || b.inventory || b.endgame ? '!' : '');
   return b;
 }
 
@@ -66,13 +72,11 @@ function topbar(){
       <span class="q2-id"><b>${badge}${esc(save.name||'Hero')}</b><small>${esc((TITLES[V.titles.eq]||TITLES.rookie).th)}</small><i class="q2-xp"><i style="width:${A.pct}%"></i></i></span>
     </button>
     <span class="pill q2-gold">${ICON.coin}<b id="goldTop">${fmt(save.gold)}</b></span>
-    <button class="q2-ib" data-act="go" data-v="quests" aria-label="ภารกิจ">${IC2.scroll}${q?`<em class="q2-badge">${q}</em>`:''}</button>
-    <button class="q2-ib" data-act="settings" aria-label="ตั้งค่า">${ICON.gear}</button>
   </header>`;
 }
 function navbar(){
   const cur = navIndex(ui.screen), bd = navBadges();
-  return `<nav class="tabbar q2-nav" aria-label="เมนูหลัก">${NAV.map((n,i)=>`<button class="${i===cur?'on':''}" data-act="go" data-v="${n.k}" ${i===cur?'aria-current="page"':''}>${n.ic()}<span>${n.th}</span>${bd[n.k]?`<em class="q2-badge${bd[n.k]==='!'?' dot':''}">${bd[n.k]==='!'?'':bd[n.k]}</em>`:''}</button>`).join('')}</nav>`;
+  return `<nav class="tabbar q2-nav n4" aria-label="เมนูหลัก">${NAV.map((n,i)=>`<button class="${i===cur?'on':''}" data-act="go" data-v="${n.k}" ${i===cur?'aria-current="page"':''}>${n.ic()}<span>${n.th}</span>${bd[n.k]?`<em class="q2-badge${bd[n.k]==='!'?' dot':''}">${bd[n.k]==='!'?'':bd[n.k]}</em>`:''}</button>`).join('')}</nav>`;
 }
 // refresh just the chrome (top bar + nav badges) without rebuilding the page
 function refreshChrome(){
@@ -95,7 +99,9 @@ render = function(){
   const same = ui.v2prev===key, old = $('#scr'), keep = same && old ? old.scrollTop : 0;
   let body = '';
   try{ body = S.render(); }catch(e){ console.error(e); body = `<div class="panel" style="padding:16px">เกิดข้อผิดพลาดในการแสดงผล: ${esc(e.message)}</div>`; }
-  app.innerHTML = topbar() + `<main class="screen q2-screen scr-${ui.screen}${S.full?' full':''}${same?'':' enter '+(ui.v2dir||'fade')}" id="scr">${S.full ? body : `<div class="q2-wrap">${body}</div>`}</main>` + navbar();
+  // screens that live under ☰ More get one consistent way back
+  const back = S.back ? `<button class="q2-crumb" data-act="go" data-v="${S.back}">${IC2.back}<span>${S.back==='more'?'เมนู':'กลับ'}</span></button>` : '';
+  app.innerHTML = topbar() + `<main class="screen q2-screen scr-${ui.screen}${S.full?' full':''}${same?'':' enter '+(ui.v2dir||'fade')}" id="scr">${S.full ? body : `<div class="q2-wrap">${back}${body}</div>`}</main>` + navbar();
   const scr = $('#scr'); if(same && scr) scr.scrollTop = keep;
   ui.v2prev = key; ui.v2dir = '';
   if(S.after) try{ S.after(); }catch(e){ console.error(e); }
@@ -163,7 +169,7 @@ QL2.afterBattle = function(kind, b){
   const btns = m.querySelector('.btns');
   if(btns){
     btns.querySelectorAll('[data-act="toMap"]').forEach(x=>{ x.innerHTML = `${IC2.world} แผนที่โลก`; });
-    btns.querySelectorAll('[data-act="toShop"]').forEach(x=>{ x.innerHTML = `${IC2.bag} ร้านค้า / กระเป๋า`; });
+    btns.querySelectorAll('[data-act="toShop"]').forEach(x=>{ x.innerHTML = `${ICON.coin} ร้านค้า`; });
     btns.insertAdjacentHTML('beforeend', `<button class="cbtn wood block" data-act="toHub">${IC2.hub} กลับฐาน</button>`);
   }
   // pretty pop for the result
@@ -193,10 +199,10 @@ document.addEventListener('click', ev=>{
 
 Object.assign(ACTS2, {
   go: v=>{ try{ ctxA(); }catch(e){} if(v==='hub' && ui.screen==='hub'){ const s = $('#scr'); if(s) s.scrollTo({ top:0, behavior:'smooth' }); return; } goTo(v); sfx.tap && sfx.tap(1); },
-  tab: v=>{ if(v==='settings'){ openSettings(); return; } if(v==='shop') ui.invShop = true; goTo(v); },
+  tab: v=>{ if(v==='settings'){ openSettings(); return; } goTo(v); },
   toHub: ()=>{ closeModal(); ui.bat = null; ui.pz = null; goTo('hub', 'rise'); },
   toMap: ()=>{ const b = ui.bat; closeModal(); if(b && b.stage && !b.stage.tower){ ui.v2ch = b.stage.ch; ui.bat = null; ui.pz = null; goTo('chapter', 'rise'); } else { ui.bat = null; ui.pz = null; ui.v2ch = 'tower'; goTo('chapter', 'rise'); } },
-  toShop: ()=>{ closeModal(); ui.bat = null; ui.pz = null; ui.invShop = true; goTo('inventory', 'rise'); },
+  toShop: ()=>{ closeModal(); ui.bat = null; ui.pz = null; goTo('shop', 'rise'); },
   stage: (v, el)=>{ playStage(+el.dataset.ch, +el.dataset.n); },
   playNext: ()=>{ const n = nextStage(); playStage(n.ch, n.n); },
   goTower: ()=>{ playTower(); },

@@ -70,7 +70,7 @@ function renderProfile(){
   }
   return card + `<div class="q2-anchor"></div><div class="seg q2-tabs">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="pfTab" data-v="${k}">${l}${k==='road'&&un?`<em class="q2-badge">${un}</em>`:''}</button>`).join('')}</div><div class="pf-body">${body}</div>`;
 }
-SCREENS.profile = { nav:'profile', render:renderProfile };
+SCREENS.profile = { nav:'more', back:'more', render:renderProfile };
 Object.assign(ACTS2, {
   pfTab: v=>{ ui.pfTab = v; tabRender(); },
   advClaim: ()=>{ const html = claimAdv(); if(html){ claimModal('รางวัล Adventure Level!', html, `Adventure Level ${advInfo(V2().adv.xp).lv}`); render(); } },
