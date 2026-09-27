@@ -51,7 +51,7 @@ function navBadges(){
     const lockedHero = CHARACTERS.some(c=>!save.chars.includes(c.id) && save.gold>=c.price);
     if(save.gold>=cheapUp || lockedHero) b.heroes = '!';
     const curAtk = curWp().atk, curBlk = AR(save.eq.armor).block;
-    if(WEAPONS.some(w=>!save.weapons.includes(w.id) && w.atk>curAtk && save.gold>=w.price && id!=='boomtos') || ARMORS.some(a=>!save.armors.includes(a.id) && a.block>curBlk && save.gold>=a.price)) b.inventory = '!';
+    if(WEAPONS.some(w=>!save.weapons.includes(w.id) && !(typeof wpLocked==='function' && wpLocked(w)) && w.atk>curAtk && save.gold>=w.price && id!=='boomtos') || ARMORS.some(a=>!save.armors.includes(a.id) && a.block>curBlk && save.gold>=a.price)) b.inventory = '!';
     const adv = advUnclaimed(); if(adv) b.profile = adv;
   }catch(e){}
   return b;

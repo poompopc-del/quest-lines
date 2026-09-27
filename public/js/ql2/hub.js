@@ -74,7 +74,7 @@ function hubSuggestions(){
   if(qc) out.push({ ic:IC2.scroll, t:`รับรางวัลภารกิจ ${qc} รายการ`, a:'go', v:'quests', hot:true });
   const ups = Object.entries(UPS).filter(([k,U])=>u[k]<U.max && k!=='slot').map(([k,U])=>({ k, U, c:U.cost(u[k]) })).sort((a,b)=>a.c-b.c)[0];
   if(ups && save.gold>=ups.c) out.push({ ic:ICON.sword, t:`ฝึก ${ups.U.en} ของ ${heroName(id)} (${fmt(ups.c)} ทอง)`, a:'heroTrain', v:id });
-  const w = WEAPONS.filter(x=>!save.weapons.includes(x.id) && x.atk>curWp().atk && save.gold>=x.price).sort((a,b)=>b.atk-a.atk)[0];
+  const w = WEAPONS.filter(x=>!save.weapons.includes(x.id) && !(typeof wpLocked==='function' && wpLocked(x)) && x.atk>curWp().atk && save.gold>=x.price).sort((a,b)=>b.atk-a.atk)[0];
   if(w && id!=='boomtos') out.push({ ic:ICON.sword, t:`ซื้ออาวุธใหม่: ${w.th} (ATK ${w.atk})`, a:'shopTab2', v:'weapon' });
   const h = CHARACTERS.find(c=>!save.chars.includes(c.id) && save.gold>=c.price);
   if(h) out.push({ ic:IC2.heroes, t:`ปลดล็อกนักสู้ ${h.name} ได้แล้ว!`, a:'heroPick', v:h.id });

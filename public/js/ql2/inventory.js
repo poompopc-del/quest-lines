@@ -24,7 +24,7 @@ function renderInventory(){
   if(t==='weapon'){
     if(boom) items += `<p class="sub inv-note">🔥 Boomtos ใช้ดาบหลอมนรกประจำตัวเท่านั้น อาวุธที่ใส่จะมีผลกับนักสู้คนอื่น</p>`;
     WEAPONS.filter(w=>shop || save.weapons.includes(w.id)).forEach(w=>{ const own = save.weapons.includes(w.id), on = save.eq.weapon===w.id;
-      items += card(on, weaponIcon(w.id), esc(w.name), esc(w.th), `ATK ${w.atk}`, esc(w.perkTh||'อาวุธพื้นฐาน'), own ? (shop ? `<span class="inv-own">✔ มีแล้ว</span>` : eqBtn(on,'equipW',w.id)) : buy('buyW', w.id, w.price)); });
+      items += card(on, weaponIcon(w.id), esc(w.name), esc(w.th), `ATK ${w.atk}`, esc(w.perkTh||'อาวุธพื้นฐาน'), own ? (shop ? `<span class="inv-own">✔ มีแล้ว</span>` : eqBtn(on,'equipW',w.id)) : (typeof wpLocked==='function' && wpLocked(w)) ? `<span class="inv-own lock">🔒 ${esc(w.reqTh)}</span>` : buy('buyW', w.id, w.price)); });
   } else if(t==='armor'){
     ARMORS.filter(a=>shop || save.armors.includes(a.id)).forEach(a=>{ const own = save.armors.includes(a.id), on = save.eq.armor===a.id;
       items += card(on, a.id==='none'?'<span class="sub">—</span>':shieldIcon(a.id), esc(a.name), esc(a.th), `กันดาเมจ ${Math.round(a.block*100)}%${a.hp?` · HP +${a.hp}`:''}`, a.id==='none'?'ชุดพื้นฐาน ไม่มีเกราะ':'ลดดาเมจจากมอนสเตอร์ และเพิ่ม HP สูงสุด', own ? (shop ? `<span class="inv-own">✔ มีแล้ว</span>` : eqBtn(on,'equipA',a.id)) : buy('buyA', a.id, a.price)); });

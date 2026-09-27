@@ -16,6 +16,11 @@
 - คำหยาบใช้ได้ 🤬 ดาเมจ x2 แต่สะท้อนเข้าตัวเอง 30% ของ HP — so rude!
 - คีย์บอร์ด: พิมพ์ตัวอักษร · Backspace ลบ · Enter โจมตี · Space สลับ · Esc หยุด
 
+## ⚔️ ใหม่ใน v23 — Armory Update
+- ไอคอนอาวุธและชุดเกราะใหม่ทั้งหมด (`public/items/`)
+- อาวุธใหม่ 11 ชิ้น ความสามารถผูกกับการสะกดคำ: Boomerang (คำ 5+ x1.4) · Gerudo Scimitar (ตัวอักษรซ้ำติดกัน x1.5) · Scholar's Scimitar (คำเป้าหมาย ⭐ x1.5) · Moonlit Sickle (ศัตรู HP <30% x1.6) · Frostblade (20% แช่แข็ง) · Lightning Blade (30% ฟ้าผ่าตาม 50%) · Guardian Sword (+6%/คอมโบ) · Royal Claymore (ทอง +30%) · Lynel Crusher (คำ 3 ตัว x0.5 / 6+ ตัว x1.3) · Ancient Bladesaw (คำ 6–7 ตัวเป็น CRITICAL) · Master Sword (HP ≥90% x1.5 · ปลดล็อกหลังจบเนื้อเรื่อง)
+- ไฟล์ใหม่: `js/ql2/armory.js`
+
 ## 🏆 ใหม่ใน v22 — ENDGAME & MASTERY UPDATE
 เมื่อจบเนื้อเรื่อง (ผ่าน 40 ด่าน) เกมไม่จบ แต่เข้าสู่ **MASTER THE GAME** ที่ฐาน → อาคาร/ปุ่ม **Challenge Hall**
 
