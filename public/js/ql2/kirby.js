@@ -83,7 +83,7 @@ doAttack = (f=>async function(){
 })(doAttack);
 
 /* ------------------------------ effects ------------------------------ */
-const mouthXY = ()=>({ x:HERO_X+46, y:FLOOR_Y-62 });
+const mouthXY = ()=>{ const f = HERO_SPRITE.puff.scale/5; return { x:HERO_X+46*f, y:FLOOR_Y-62*f }; };
 function kSuction(ms){
   const fx = $('#fx'); if(!fx) return;
   const m = mouthXY();

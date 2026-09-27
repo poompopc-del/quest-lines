@@ -25,11 +25,11 @@ const SPRITES = {
   // the boss: cells 0-3 idle loop, 4 = attack (water burst), 5 = hurt (recoil). Pixel art → drawn pixelated.
   aqua:  { img:'bosses/aqua/boss.png', fw:100, fh:100, cells:6, idle:[0,1,2,3], atk:[4], hurt:[5], col:'#4ad8f0', pixel:true, fx:'bosses/aqua/wave.png' },
   // Chapter 5 — Resident Evil sprites (Metal Slug style by DC Hunk). ax = where the feet are inside a cell.
-  tyrant:  { img:'enemies/re/tyrant.png',     fw:83, fh:58, ax:44.6, cells:14, idle:[0,1], atk:[2,3,4,5], heavy:[6,7,8,8], hurt:[9], dead:[10,11,12,13], col:'#b8c0b0', pixel:true, rate:.45 },
-  salvador:{ img:'enemies/re/salvador.png',   fw:56, fh:72, ax:39.5, cells:7,  idle:[0,1], atk:[2,3,4,5,6], col:'#e0b060', pixel:true, rate:.4 },
-  salvadorB:{img:'enemies/re/salvador_b.png', fw:56, fh:72, ax:39.5, cells:7,  idle:[0,1], atk:[2,3,4,5,6], col:'#e05a4a', pixel:true, rate:.4 },
-  licker:  { img:'enemies/re/licker.png',     fw:90, fh:50, ax:47.4, cells:14, idle:[0,1], atk:[2,3,4,5,6,7,8,9], hurt:[10], dead:[11,12,13], col:'#d0584a', pixel:true, rate:.5 },
-  maiden:  { img:'enemies/re/maiden.png',     fw:34, fh:46, ax:14,   cells:3,  idle:[0,1], atk:[2], col:'#a0a8a0', pixel:true, rate:.5 },
+  tyrant:  { img:'enemies/re/tyrant.png',     fw:83, fh:58, ax:44.6, cells:14, idle:[0,1], atk:[2,3,4,5], heavy:[6,7,8,8], hurt:[9], dead:[10,11,12,13], col:'#b8c0b0', pixel:true, rate:.45 , top:.9 },
+  salvador:{ img:'enemies/re/salvador.png',   fw:56, fh:72, ax:39.5, cells:7,  idle:[0,1], atk:[2,3,4,5,6], col:'#e0b060', pixel:true, rate:.4 , top:.9 },
+  salvadorB:{img:'enemies/re/salvador_b.png', fw:56, fh:72, ax:39.5, cells:7,  idle:[0,1], atk:[2,3,4,5,6], col:'#e05a4a', pixel:true, rate:.4 , top:.9 },
+  licker:  { img:'enemies/re/licker.png',     fw:90, fh:50, ax:47.4, cells:14, idle:[0,1], atk:[2,3,4,5,6,7,8,9], hurt:[10], dead:[11,12,13], col:'#d0584a', pixel:true, rate:.5 , top:.9 },
+  maiden:  { img:'enemies/re/maiden.png',     fw:34, fh:46, ax:14,   cells:3,  idle:[0,1], atk:[2], col:'#a0a8a0', pixel:true, rate:.5 , top:.9 },
 };
 const SLIME_SKINS = {
   slime:     { sp:'green',  name:'Green Slime',   th:'สไลม์เขียว' },
@@ -41,11 +41,11 @@ const SLIME_SKINS = {
   mimic:     { sp:'orange', name:'Pumpkin Slime', th:'สไลม์ฟักทองยักษ์', scale:2.6 },      // Chapter-1 mini boss (stages 1-1…1-7)
   kingslime: { sp:'aqua',   name:'Aqua Slime',    th:'ราชินีสไลม์วารี', scale:2.4 },       // Chapter-1 boss
   // Chapter 5 (same keys, stats and traits as before — only the look changes)
-  zombie:    { sp:'salvador', name:'Dr. Salvador',  th:'ด็อกเตอร์ซัลวาดอร์ เลื่อยยนต์', scale:1.7 },
-  wraith:    { sp:'licker',   name:'Licker',        th:'ลิกเกอร์ ลิ้นมรณะ', scale:1.9 },
-  necroskel: { sp:'maiden',   name:'Iron Maiden',   th:'ไอรอนเมเดน หนามเหล็ก', scale:2.3 },
-  mummy:     { sp:'salvadorB',name:'Bloody Salvador',th:'ซัลวาดอร์เลือดสาด', scale:2.2 },   // Chapter-5 mini boss
-  necro:     { sp:'tyrant',   name:'Tyrant',        th:'ไทแรนต์ อาวุธชีวภาพ', scale:3.3 },   // Chapter-5 boss
+  zombie:    { sp:'salvador', name:'Dr. Salvador',  th:'ด็อกเตอร์ซัลวาดอร์ เลื่อยยนต์', scale:2.5 },   // v32: all Chapter-5 sizes ×~1.4
+  wraith:    { sp:'licker',   name:'Licker',        th:'ลิกเกอร์ ลิ้นมรณะ', scale:2.7 },
+  necroskel: { sp:'maiden',   name:'Iron Maiden',   th:'ไอรอนเมเดน หนามเหล็ก', scale:3.2 },
+  mummy:     { sp:'salvadorB',name:'Bloody Salvador',th:'ซัลวาดอร์เลือดสาด', scale:3.1 },   // Chapter-5 mini boss
+  necro:     { sp:'tyrant',   name:'Tyrant',        th:'ไทแรนต์ อาวุธชีวภาพ', scale:4.0 },   // Chapter-5 boss
 };
 const SPRITE_SCALE = 1.75;
 Object.entries(SLIME_SKINS).forEach(([k,S])=>{ const M = MON[k]; if(!M) return; const sc = S.scale || SPRITE_SCALE, P = SPRITES[S.sp];
@@ -89,7 +89,7 @@ function spriteSVG(e, queued){
   const K = spriteOf(e), sc = MON[e.key].spScale || SPRITE_SCALE, w = K.fw*sc, h = K.fh*sc;
   const x0 = K.ax!==undefined ? -K.ax*sc : -w/2;                         // feet on the ground point
   const vals = K.idle.map(c=>-c*K.fw).join(';');
-  const top = K.pixel ? -h*.7 : -h;
+  const top = -h*(K.top || (K.pixel ? .7 : 1));                           // where the hp bar sits (fraction of the cell)
   const col = e.boss ? '#d9452f' : e.mini ? '#f2b42c' : K.col;
   const crown = e.mini ? `<path d="M-14,8 L-16,-4 L-9,2 L-4,-8 L1,2 L8,-4 L6,8 Z" fill="#f2b42c" stroke="${OL}" stroke-width="2.2" stroke-linejoin="round"/>` : '';
   const bar = queued ? '' : `<g class="ehp" transform="translate(-40,${top-26})"><rect width="80" height="12" rx="6" fill="#12100d" stroke="${OL}" stroke-width="3"/><rect class="ehpfill" x="2" y="2" width="76" height="8" rx="4" fill="${col}"/>${crown}</g>`;

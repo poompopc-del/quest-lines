@@ -1332,11 +1332,11 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=31">
-<link rel="stylesheet" href="css/endgame.css?v=31">
-<link rel="stylesheet" href="css/battle.css?v=31">
-<link rel="stylesheet" href="css/ui26.css?v=31">
-<link rel="stylesheet" href="css/boss.css?v=31">
+<link rel="stylesheet" href="css/ql2.css?v=32">
+<link rel="stylesheet" href="css/endgame.css?v=32">
+<link rel="stylesheet" href="css/battle.css?v=32">
+<link rel="stylesheet" href="css/ui26.css?v=32">
+<link rel="stylesheet" href="css/boss.css?v=32">
 </head>
 <body>
 <div id="app"></div>
@@ -1942,7 +1942,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 17; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 18; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1970,7 +1970,7 @@ const HERO_SPRITE = {
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5 },
   // Kirby (id stays 'puff' so old saves keep the fighter) — pixel strips from Kirby Super Star Ultra.
   // f* = the "mouthful" set used while an enemy / letters are held in his mouth (see js/ql2/kirby.js)
-  puff: { dir:'heroes/kirby/', ch:34, scale:5, face:'-58 -128 116 116',
+  puff: { dir:'heroes/kirby/', ch:34, scale:3.8, face:'-44 -98 88 88',            // v32: was 5
     anims:{
       idle:  { n:10, cw:26, ax:13, dur:2.4, loop:true },
       walk:  { n:7,  cw:28, ax:14, dur:.7,  loop:true },
@@ -2013,19 +2013,24 @@ const HERO_SPRITE = {
     // ท่าโจมตีเปลี่ยนเองตามคอมโบ (ดู ELON ท้ายไฟล์) — หน้าฮีโร่ใช้ปุ่มเป็นตัวอย่างอย่างเดียว
     attacks:['melee','pistol','xbow','rpg'], extra:['quick','aim'], demoOnly:true, finMin:99,
     finNote:'อาวุธเปลี่ยนตามคอมโบ (นับต่อเนื่องทั้งด่าน): 1–3 มือเปล่า · 4 ปืนพก x1.25 · 5 หน้าไม้ x1.5 · 6+ ปืนใหญ่ x1.8 (แรงขึ้นอีกทุกคอมโบ สูงสุด x2.3)' },
-  mao: { dir:'heroes/mao/', ch:109, scale:2.2, face:'-30 -168 60 60',
+  // Mia (id stays 'mao' so old saves keep the fighter) — frames cut from mai.png, downscaled ×0.6 and drawn smooth
+  mao: { dir:'heroes/mia/', ch:182, scale:1.05, face:'-24 -138 48 48',
     anims:{
-      idle:{ n:4, cw:59,  ax:29, dur:1.2, loop:true },
-      walk:{ n:4, cw:59,  ax:29, dur:.6,  loop:true },
-      hurt:{ n:3, cw:58,  ax:28, dur:.7 },
-      dead:{ n:3, cw:92,  ax:44, dur:1 },
-      atk1:{ n:5, cw:86,  ax:31, dur:.8,  th:'พัดฟาดเพลิง' },
-      atk2:{ n:5, cw:98,  ax:41, dur:.8,  th:'เตะกระเรียน' },
-      atk3:{ n:6, cw:133, ax:54, dur:1,   th:'ตีลังกากระรอกบิน' },
-      fin: { n:8, cw:106, ax:48, dur:1.5, th:'ระบำมังกรเพลิง' } },
-    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:7,
-    finNote:'สะกดคำ <b>7 ตัวอักษรขึ้นไป</b> จะใช้<b>ระบำมังกรเพลิง</b> อัตโนมัติ' },
-  x: { dir:'heroes/x/', ch:80, scale:3.9, face:'-30 -170 60 60',
+      idle: { n:11, cw:95,  ax:53,  dur:1.6, loop:true },
+      walk: { n:11, cw:118, ax:62,  dur:.9,  loop:true },
+      hurt: { n:4,  cw:112, ax:67,  dur:.6 },
+      dead: { n:5,  cw:173, ax:92,  dur:1.0 },
+      atk1: { n:5,  cw:122, ax:58,  dur:.6,  th:'พัดเสย' },
+      atk2: { n:5,  cw:181, ax:107, dur:.7,  th:'เตะพัดคู่' },
+      atk3: { n:7,  cw:157, ax:92,  dur:.7,  th:'ศอกพุ่ง' },
+      kasen:{ n:5,  cw:151, ax:90,  dur:.7,  th:'คาโชเซ็น (ขว้างพัด)' },
+      roll: { n:11, cw:164, ax:92,  dur:1.0, th:'ชิโนบิบาจิ (ม้วนตัวพุ่ง)' },
+      fin:  { n:12, cw:147, ax:76,  dur:1.5, th:'มุซาซาบิโนะไม' },
+      flip: { n:6,  cw:134, ax:77,  dur:.7,  th:'ตีลังกาหลบ' },
+      taunt:{ n:6,  cw:150, ax:88,  dur:1.0, th:'โพสท่ายั่ว' } },
+    attacks:['atk1','atk2','atk3'], extra:['kasen','roll','flip','taunt'], finisher:'fin', finMin:99,
+    finNote:'คำ <b>4–5 ตัว</b> ขว้างพัด · <b>6 ตัว</b> ม้วนตัวพุ่งชน · <b>7 ตัวขึ้นไป</b> ท่าไม้ตาย<b>มุซาซาบิโนะไม</b>' },
+  x: { dir:'heroes/x/', ch:80, scale:2.5, face:'-20 -110 40 40',                  // v32: was 3.9
     anims:{
       idle:  { n:9,  cw:37, ax:18, dur:1.2, loop:true },
       walk:  { n:14, cw:50, ax:28, dur:.9,  loop:true },
@@ -2060,7 +2065,8 @@ const SPR_STATES = { walk:'walk', hurt:'hurt', dead:'dead' };
   css += `.spr .spr-strip{animation:none !important}
     .spr svg{filter:none !important;overflow:hidden !important}
     .spr image{image-rendering:pixelated;image-rendering:crisp-edges}
-    #heroA.enchanted .spr image{filter:drop-shadow(0 0 4px var(--ec)) drop-shadow(0 0 10px var(--ec))}`;
+    #heroA.enchanted .spr image{filter:drop-shadow(0 0 4px var(--ec)) drop-shadow(0 0 10px var(--ec))}
+    .spr.spr-mao image{image-rendering:auto}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
   Object.values(HERO_SPRITE).forEach(c=>Object.keys(c.anims).forEach(n=>{ const i = new Image(); i.src = `${c.dir}${n}.png?v=${HERO_IMG_VER}`; }));
 })();
@@ -2474,8 +2480,11 @@ const CHAR_ART = {};
 Object.keys(HERO_STYLE).forEach(k=>{ CHAR_ART[k] = eq=>charBody(HERO_STYLE[k], eq); });
 function heroSVG(eq){ return charBody(HERO_STYLE.pip, eq); }
 const CHAR_FACE = { pip:'-40 -164 90 90', bastion:'-40 -180 96 96', mira:'-40 -164 90 90', rook:'-42 -164 92 92', bruna:'-40 -164 90 90', luma:'-40 -164 90 90', kiko:'-40 -164 90 90' };
+// v32: X, Kirby and Mia are smaller in battle — menus (home, heroes, inventory) keep them at showcase size
+const MENU_ZOOM = { x:1.5, puff:1.3, mao:1.45 };
 function heroStandalone(eq, cls){
-  return `<svg class="hero-svg ${cls||''}" viewBox="-88 -206 196 222" aria-hidden="true"><g class="actor idle">${charSVG(eq)}</g></svg>`;
+  const z = MENU_ZOOM[(eq||{}).char||''];
+  return `<svg class="hero-svg ${cls||''}" viewBox="-88 -206 196 222" aria-hidden="true"><g class="actor idle">${z?`<g transform="scale(${z})">`:''}${charSVG(eq)}${z?'</g>':''}</g></svg>`;
 }
 function heroFaceSvg(eq){ const k=(eq||{}).char||'pip'; return `<svg viewBox="${heroImgFace(k)||CHAR_FACE[k]||CHAR_FACE.pip}" aria-hidden="true"><g class="actor idle">${charSVG(eq)}</g></svg>`; }
 function weaponIcon(id){ return `<svg viewBox="-56 -124 112 156" class="wicon" aria-hidden="true"><g transform="rotate(35 0 -40)">${(WEAPON_ART[id]||WEAPON_ART.wood)()}</g></svg>`; }
@@ -6306,7 +6315,7 @@ const PIXEL = (()=>{
    ====================================================================== */
 const PUFF = { id:'puff' };
 CHAR_TIP.puff = 70;
-CHAR_FACE.puff = '-58 -128 116 116';
+CHAR_FACE.puff = '-44 -98 88 88';
 
 /* ======================================================================
    ELON S. KEMNANY — สายลับมือปืน
@@ -6333,7 +6342,7 @@ const isElon = ()=>save.eq && save.eq.char===ELON.id;
 // รูปหน้าในไอคอน HP (ครอปจากรูปพอร์ตเทรต) — vb = 'x y กว้าง สูง' ในพิกัดของรูป
 const HERO_PORTRAIT = {
   elon:{ src:'heroes/elon/portrait.png', w:449, h:305, vb:'135 4 184 184' },
-  mao: { src:'heroes/mao/portrait.png',  w:64,  h:95,  vb:'3 4 40 40', px:true },
+  mao: { src:'heroes/mia/portrait.png',  w:48,  h:48,  vb:'0 0 48 48' },
 };
 const elonTier = c=>c<=3 ? 'melee' : c===4 ? 'pistol' : c===5 ? 'xbow' : 'rpg';
 const elonFocus = b=>!!(b && b.focusUntil && Date.now() < b.focusUntil);
@@ -6524,69 +6533,146 @@ function elonGunFx(pose, shots){
 }
 
 /* ======================================================================
-   MAO — นักระบำพัดไฟ
-   · เปลวไฟชิรานุย (ติดตัว): ทุกการโจมตีทำให้ศัตรูติดไฟ 2 เทิร์น (20% ของดาเมจ)
-     คำธาตุไฟแรงขึ้นอีก x1.3 (ติดไฟ 3 เทิร์นตามธาตุ)
-   · พัดบินเพลิง: คำ 5 ตัวอักษรขึ้นไป ขว้างพัดไฟตามไปอีกดอก ดาเมจ +40%
-   · ระบำกระรอกบิน: 20% หลบการโจมตีของศัตรู
-   · ท่าไม้ตาย ระบำมังกรเพลิง: คำ 7 ตัวขึ้นไป ดาเมจ x1.5 และไฟลุก 4 เทิร์น (35%)
+   MIA — คุโนะอิจิพัดเพลิง (id ยังเป็น 'mao' เพื่อให้เซฟเก่าเก็บตัวละครไว้)
+   ท่าทางทั้งหมดมาจากแผ่นสไปรต์ mai.png ที่ส่งมา (หันขวา)
+   · ≤3 ตัวอักษร : ท่าปกติที่เลือกในหน้าฮีโร่ (เตะพัดกระเรียน / เตะคู่ / พัดฟาดวน)
+   · 4–5 ตัว    : คาโชเซ็น — ขว้างพัดหมุนใส่ศัตรู ดาเมจ +30% และติดไฟ 2 เทิร์น
+   · 6 ตัว      : ชิโนบิบาจิ — ม้วนตัวพุ่งชน x1.5 ติดไฟ + 30% ล้มข้ามเทิร์น (ไม่ใช่บอส)
+   · 7+ ตัว     : ท่าไม้ตาย มุซาซาบิโนะไม — กระโดดสูงแล้วดิ่งหัวลงใส่ศัตรู x1.8
+                   ฝนพัดไฟ + ติดไฟ 4 เทิร์น (35%)
+   · ตีลังกาหลบ (ติดตัว) : 20% หลบการโจมตีด้วยท่าตีลังกาถอยหลัง
+   · เสน่ห์ชิรานุย (ติดตัว) : ปราบศัตรูแล้วโพสท่ายั่ว → การโจมตีครั้งถัดไป +25%
+   · คำธาตุไฟแรงขึ้น x1.3
    ====================================================================== */
-const MAO = { id:'mao', burn:.2, burnT:2, fireMul:1.3, fanLen:5, fanMul:1.4, dodge:.2, finLen:7, finMul:1.5 };
-CHARACTERS.push({ id:'mao', name:'Mao', th:'เหมา นักระบำพัดไฟ', price:3000, role:'ไฟ · หลบหลีก', skill:'เปลวไฟชิรานุย',
-  desc:'ทุกการโจมตีทำให้ศัตรูติดไฟ · คำธาตุไฟแรง x1.3 · คำ 5 ตัวขึ้นไปขว้างพัดไฟ +40% · 20% หลบการโจมตี · คำ 7 ตัวขึ้นไป = ระบำมังกรเพลิง x1.5', hpMul:.95, dmgTaken:1 });
-CHAR_TIP.mao = 120;
+const MAO = { id:'mao', fanLen:4, fanMul:1.3, rollLen:6, rollMul:1.5, stun:.3, finLen:7, finMul:1.8,
+  burn:.2, burnT:2, finBurn:.35, finBurnT:4, fireMul:1.3, dodge:.2, charm:1.25 };
+CHARACTERS.push({ id:'mao', name:'Mia', th:'มีอา คุโนะอิจิพัดเพลิง', price:3000, role:'นินจา · พัด · หลบหลีก', skill:'คาโชเซ็น',
+  desc:'ท่าเปลี่ยนตามความยาวคำ · 4–5 ตัว ขว้างพัดคาโชเซ็น +30% ติดไฟ · 6 ตัว ม้วนตัวชิโนบิบาจิ x1.5 ลุ้นทำศัตรูล้ม · 7 ตัวขึ้นไป ท่าไม้ตายมุซาซาบิโนะไม x1.8 · 20% ตีลังกาหลบ · ปราบศัตรูแล้วโพสท่ายั่ว ครั้งต่อไป +25% · คำธาตุไฟ x1.3', hpMul:.95, dmgTaken:1 });
+CHAR_TIP.mao = 140;
 const isMao = ()=>save.eq && save.eq.char===MAO.id;
+const miaMove = len=>len>=MAO.finLen ? 'fin' : len>=MAO.rollLen ? 'roll' : len>=MAO.fanLen ? 'fan' : null;
 {
   const _ev = evalWord;
   evalWord = function(){
     const r = _ev();
     if(!isMao() || r.state!=='ok' || r.rude) return r;
-    const len = r.w.length; let f = 1;
+    const mv = miaMove(r.w.length), b = ui.bat; let f = 1;
     if(r.el==='fire'){ f *= MAO.fireMul; r.notes.unshift(`🔥 เปลวไฟชิรานุย x${MAO.fireMul}`); }
-    if(len>=MAO.finLen){ f *= MAO.finMul; r.notes.unshift(`🐉 ระบำมังกรเพลิง x${MAO.finMul}`); }
-    else if(len>=MAO.fanLen){ f *= MAO.fanMul; r.notes.unshift('🌀 พัดบินเพลิง +40%'); }
+    if(mv==='fin'){ f *= MAO.finMul; r.notes.unshift(`🐿️ มุซาซาบิโนะไม x${MAO.finMul}`); }
+    else if(mv==='roll'){ f *= MAO.rollMul; r.notes.unshift(`🌀 ชิโนบิบาจิ x${MAO.rollMul}`); }
+    else if(mv==='fan'){ f *= MAO.fanMul; r.notes.unshift('🪭 คาโชเซ็น +30%'); }
+    if(b && b.miaCharm){ f *= MAO.charm; r.notes.unshift('💋 เสน่ห์ชิรานุย +25%'); }
     r.dmg = Math.max(1, Math.round(r.dmg*f));
     return r;
   };
   const _da = doAttack;
   doAttack = async function(){
     if(!isMao() || !ui.bat) return _da();
-    const r = evalWord(); ui.maoHit = r.state==='ok' ? { dmg:r.dmg, len:r.w.length, fire:r.el==='fire', rude:r.rude } : null;
+    const r = evalWord(), b = ui.bat;
+    ui.maoHit = r.state==='ok' ? { dmg:r.dmg, len:r.w.length, rude:r.rude, mv:r.rude ? null : miaMove(r.w.length) } : null;
+    if(ui.maoHit) b.miaCharm = false;          // the charm is spent on this attack
     try{ await _da(); } finally { ui.maoHit = null; }
   };
-  // at the moment the blow lands: fan projectile + set the enemy alight
+  // Mia's own attack choreography (the damage itself is still applied by doAttack)
+  const _ha = heroAttack;
+  heroAttack = async function(lv, rude){
+    const h = ui.maoHit, mv = h && !rude ? h.mv : null;
+    if(!isMao() || !mv || !sprOf()) return _ha(lv, rude);
+    const g = $('#heroG'), D = sprMs(mv==='fan'?'kasen':mv, 900);
+    ui.slashLv = lv||0; ui.slashRude = false;
+    heroPose('pose-'+(mv==='fan'?'kasen':mv), D+80);
+    if(mv==='fan'){
+      const p = anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X+24,FLOOR_Y),offset:.5},{transform:tr(HERO_X,FLOOR_Y)}], { duration:D, easing:'ease-in-out' });
+      await sleep(Math.round(D*.62)); sfx.swing();
+      await miaFanThrow(); slash();
+      await p;
+    } else if(mv==='roll'){
+      const ex = EN_X - 95;
+      setTimeout(()=>sfx.swing(), Math.round(D*.25));
+      const p = anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X-10,FLOOR_Y),offset:.18},{transform:tr(ex,FLOOR_Y),offset:.45},{transform:tr(ex,FLOOR_Y),offset:.7},{transform:tr(HERO_X,FLOOR_Y)}], { duration:D, easing:'ease-in-out' });
+      await sleep(Math.round(D*.45)); slash(); miaSparks(EN_X-30, FLOOR_Y-60, '#ffb04a');
+      await p;
+    } else { // fin: jump high, head-first dive onto the enemy, land and hop back
+      floatText('ท่าไม้ตาย!', HERO_X+20, FLOOR_Y-225, '#ff5a3a', 30, true);
+      floatText('มุซาซาบิโนะไม!', HERO_X+40, FLOOR_Y-260, '#ffd0e8', 24, true);
+      const ex = EN_X - 70;
+      const p = anim(g, [
+        {transform:tr(HERO_X,FLOOR_Y)},
+        {transform:tr(HERO_X+10,FLOOR_Y),offset:.08},
+        {transform:tr(HERO_X+60,FLOOR_Y-190),offset:.2},
+        {transform:tr(HERO_X+90,FLOOR_Y-215),offset:.3},
+        {transform:tr(ex,FLOOR_Y-20),offset:.52},
+        {transform:tr(ex,FLOOR_Y),offset:.6},
+        {transform:tr(ex,FLOOR_Y),offset:.82},
+        {transform:tr(HERO_X,FLOOR_Y)}], { duration:D, easing:'linear' });
+      setTimeout(()=>{ sfx.swing(); miaFanRain(); }, Math.round(D*.3));
+      await sleep(Math.round(D*.55)); slash(); shake(true); sfx.elem('fire');
+      [0,120,240].forEach((d,i)=>setTimeout(()=>firePillar(EN_X + (i-1)*34, 1.3 - i*.1), d));
+      await p;
+    }
+  };
+  // when the blow lands: burn + roll knockdown
   const _sl = slash;
   slash = function(){
     _sl();
-    const h = ui.maoHit, e = curEnemy(); if(!isMao() || !h || !e || h.rude) return;
-    const fin = h.len>=MAO.finLen, turns = fin ? 4 : MAO.burnT;
-    e.burn = Math.max(e.burn||0, turns); e.burnDmg = Math.max(e.burnDmg||0, Math.max(1, Math.round(h.dmg*(fin ? .35 : MAO.burn))));
-    if(fin) maoFlames(); else if(h.len>=MAO.fanLen) maoFan();
-    setTimeout(()=>{ if(curEnemy()===e && e.hp>0){ floatText(`🔥 ติดไฟ ${turns} เทิร์น`, EN_X, FLOOR_Y-e.h*e.sc-60, '#ffb04a', 20); updateEnemyStatus(); renderEnemyPanel(); } }, 250);
+    const h = ui.maoHit, e = curEnemy(); if(!isMao() || !h || !e || h.rude || !h.mv || h._done) return;
+    h._done = true;
+    const fin = h.mv==='fin', turns = fin ? MAO.finBurnT : MAO.burnT;
+    e.burn = Math.max(e.burn||0, turns); e.burnDmg = Math.max(e.burnDmg||0, Math.max(1, Math.round(h.dmg*(fin ? MAO.finBurn : MAO.burn))));
+    let knock = false;
+    if(h.mv==='roll' && !e.boss && !e.bx && Math.random() < MAO.stun){ e.stun = true; knock = true; }
+    setTimeout(()=>{ if(curEnemy()===e && e.hp>0){
+      floatText(`🔥 ติดไฟ ${turns} เทิร์น`, EN_X, FLOOR_Y-e.h*e.sc-60, '#ffb04a', 20);
+      if(knock) floatText('💫 ล้มคว่ำ!', EN_X, FLOOR_Y-e.h*e.sc-90, '#fff', 22);
+      updateEnemyStatus(); renderEnemyPanel(); } }, 250);
   };
-  // flying-squirrel dodge
+  // backflip dodge
   const _et = enemyTurn;
   enemyTurn = async function(){
     const b = ui.bat;
     if(!isMao() || !b || b.evade>0 || Math.random()>=MAO.dodge) return _et();
     b.evade = 1; b.maoDodge = true;
-    const t = setTimeout(()=>{ if(b.maoDodge) floatText('🌀 ระบำกระรอกบิน!', HERO_X, FLOOR_Y-215, '#ffd0e8', 22, true); }, 350);
+    const t = setTimeout(()=>{ if(b.maoDodge){ heroPose('pose-flip', sprMs('flip', 900)+60); floatText('🤸 ตีลังกาหลบ!', HERO_X, FLOOR_Y-215, '#ffd0e8', 22, true); } }, 250);
     try{ await _et(); } finally { clearTimeout(t); if(b.maoDodge && b.evade>0) b.evade--; b.maoDodge = false; }
   };
+  // kill → taunt pose, next attack charmed
+  const _ed = enemyDies;
+  enemyDies = async function(){
+    const b = ui.bat, e = curEnemy();
+    if(isMao() && b && e && !e._miaT){
+      e._miaT = 1; b.miaCharm = true;
+      heroPose('pose-taunt', sprMs('taunt', 900)+60);
+      floatText('💋 เสน่ห์ชิรานุย!', HERO_X, FLOOR_Y-225, '#ff9ad0', 22, true);
+    }
+    return _ed.apply(this, arguments);
+  };
 }
-function maoFan(){
-  const e = curEnemy(); if(!e) return;
+// spinning fan projectile (heroes/mia/fanfx.png, cut from the sheet)
+function miaFanThrow(){
+  const e = curEnemy(); if(!e) return Promise.resolve();
   const fx = $('#fx'), y = FLOOR_Y - e.h*e.sc*.55;
   const g = svgEl('g', {});
-  g.innerHTML = `<circle r="22" fill="#ff7a2a" opacity=".35"/><image href="heroes/mao/fan.png?v=${HERO_IMG_VER}" x="-20" y="-11" width="40" height="22" style="image-rendering:pixelated"/>`;
-  fx.appendChild(g); tone(700, .08, 'triangle', .05);
-  anim(g, [{transform:tr(HERO_X+70,FLOOR_Y-110)+' rotate(0deg)'},{transform:tr(EN_X,y)+' rotate(720deg)'}], { duration:320, easing:'ease-in', fill:'forwards' })
-    .then(()=>{ g.remove(); firePillar(EN_X, .8); });
+  g.innerHTML = `<circle r="30" fill="#ff7a2a" opacity=".28"/><image href="heroes/mia/fanfx.png?v=${HERO_IMG_VER}" x="-29" y="-19" width="58" height="38"/>`;
+  fx.appendChild(g); tone(760, .08, 'triangle', .05);
+  return anim(g, [{transform:tr(HERO_X+70,FLOOR_Y-120)+' rotate(0deg)'},{transform:tr((HERO_X+EN_X)/2+20,y-40)+' rotate(540deg)',offset:.5},{transform:tr(EN_X,y)+' rotate(1080deg)'}], { duration:360, easing:'ease-in', fill:'forwards' })
+    .then(()=>{ g.remove(); firePillar(EN_X, .75); miaSparks(EN_X, y, '#ff7a9a'); });
 }
-function maoFlames(){
+function miaFanRain(){
   const e = curEnemy(); if(!e) return;
-  [0,140,280].forEach((d,i)=>setTimeout(()=>firePillar(EN_X + (i-1)*30, 1.3 - i*.1), d));
-  shake(true); sfx.elem('fire');
+  const fx = $('#fx');
+  for(let k=0;k<7;k++){
+    const g = svgEl('g', {});
+    g.innerHTML = `<image href="heroes/mia/fanfx.png?v=${HERO_IMG_VER}" x="-17" y="-11" width="34" height="22"/>`;
+    fx.appendChild(g);
+    const x0 = EN_X - 120 + k*34, y0 = FLOOR_Y - 330 - (k%3)*25, x1 = EN_X - 40 + rint(-40,60), y1 = FLOOR_Y - rint(20,90);
+    anim(g, [{transform:tr(x0,y0)+' rotate(0deg)',opacity:0},{transform:tr(x0+10,y0+30)+' rotate(120deg)',opacity:1,offset:.2},{transform:tr(x1,y1)+' rotate(720deg)',opacity:1}],
+      { duration:520, delay:k*70, easing:'ease-in', fill:'forwards' }).then(()=>{ g.remove(); hitSpark(x1, y1); });
+  }
+}
+function miaSparks(x, y, col){
+  const fx = $('#fx'); if(!fx) return;
+  for(let k=0;k<8;k++){ const c = svgEl('path', { d:'M0,-7 L2,0 L0,7 L-2,0 Z', fill: k%2 ? col : '#fff' }); fx.appendChild(c);
+    const a = k/8*Math.PI*2; anim(c, [{transform:tr(x,y)+` rotate(${a}rad)`,opacity:1},{transform:tr(x+Math.cos(a)*50,y+Math.sin(a)*50)+` rotate(${a}rad)`,opacity:0}], { duration:380, easing:'ease-out' }).then(()=>c.remove()); }
 }
 
 /* ======================================================================
@@ -6753,7 +6839,7 @@ function xShotLook(n){
   if(n===1) return { img:'ring',  sc:1.7 };
   return { img:'lemon', sc:2.8 };
 }
-const X_MUZZLE = ()=>({ x:HERO_X + 88, y:FLOOR_Y - 102 });
+const X_MUZZLE = ()=>{ const f = HERO_SPRITE.x.scale/3.9; return { x:HERO_X + 88*f, y:FLOOR_Y - 102*f }; };   // follows X's size
 function xMuzzle(n){
   const fx = $('#fx'); if(!fx) return; const M = X_MUZZLE();
   const g = xSprite('muzzle', M.x, M.y, 1.8 + Math.min(n,4)*.35, { ax:.2, ms:60, onEnd:g=>g.remove() });
@@ -7026,24 +7112,24 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=31"></script>
-<script src="js/ql2/quests.js?v=31"></script>
-<script src="js/ql2/shell.js?v=31"></script>
-<script src="js/ql2/settings.js?v=31"></script>
-<script src="js/ql2/hub.js?v=31"></script>
-<script src="js/ql2/world.js?v=31"></script>
-<script src="js/ql2/questboard.js?v=31"></script>
-<script src="js/ql2/heroes.js?v=31"></script>
-<script src="js/ql2/inventory.js?v=31"></script>
-<script src="js/ql2/codex.js?v=31"></script>
-<script src="js/ql2/profile.js?v=31"></script>
-<script src="js/ql2/endgame-core.js?v=31"></script>
-<script src="js/ql2/endgame-modes.js?v=31"></script>
-<script src="js/ql2/endgame-ui.js?v=31"></script>
-<script src="js/ql2/armory.js?v=31"></script>
-<script src="js/ql2/more.js?v=31"></script>
-<script src="js/ql2/wordfx.js?v=31"></script>
-<script src="js/ql2/boss-encounter.js?v=31"></script>
-<script src="js/ql2/kirby.js?v=31"></script>
-<script src="js/ql2/boot.js?v=31"></script>
+<script src="js/ql2/core.js?v=32"></script>
+<script src="js/ql2/quests.js?v=32"></script>
+<script src="js/ql2/shell.js?v=32"></script>
+<script src="js/ql2/settings.js?v=32"></script>
+<script src="js/ql2/hub.js?v=32"></script>
+<script src="js/ql2/world.js?v=32"></script>
+<script src="js/ql2/questboard.js?v=32"></script>
+<script src="js/ql2/heroes.js?v=32"></script>
+<script src="js/ql2/inventory.js?v=32"></script>
+<script src="js/ql2/codex.js?v=32"></script>
+<script src="js/ql2/profile.js?v=32"></script>
+<script src="js/ql2/endgame-core.js?v=32"></script>
+<script src="js/ql2/endgame-modes.js?v=32"></script>
+<script src="js/ql2/endgame-ui.js?v=32"></script>
+<script src="js/ql2/armory.js?v=32"></script>
+<script src="js/ql2/more.js?v=32"></script>
+<script src="js/ql2/wordfx.js?v=32"></script>
+<script src="js/ql2/boss-encounter.js?v=32"></script>
+<script src="js/ql2/kirby.js?v=32"></script>
+<script src="js/ql2/boot.js?v=32"></script>
 </body></html>
