@@ -1,53 +1,5 @@
 /* ==========================================================================
-   QUEST LINES v27 — BOSS ENCOUNTER (layer · phase bar · slime minions)
+   QUEST LINES v28 — sprite enemies (Chapter 1 slimes + Aqua Slime boss)
    ========================================================================== */
-
-/* the boss layer sits behind the actors in the scene SVG */
-#bossG{pointer-events:none}
-#bossG .bx-body{transform-box:fill-box;transform-origin:50% 100%}
-#bossG image{image-rendering:auto}
-#bossG .bx-body{filter:brightness(.78) saturate(.9);transition:filter .5s}
-#bossG.active .bx-body{filter:none}
-html:not(.noanim) #bossG .bx-body{animation:bxBreath 3.6s ease-in-out infinite}
-@keyframes bxBreath{50%{transform:translateY(-4px) scale(1.008)}}
-
-@keyframes bxRise{0%{opacity:0;transform:translateY(140px)}60%{opacity:1}100%{opacity:1;transform:translateY(0)}}
-#bossG .bx-aura{opacity:.55;transition:opacity .5s}
-#bossG.active .bx-aura{opacity:1}
-html:not(.noanim) #bossG .bx-aura{animation:bxAura 2.8s ease-in-out infinite alternate}
-@keyframes bxAura{to{opacity:.35}}
-#bossG.gone{display:none}
-
-/* phase flash */
-.bx-flash{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(circle at 70% 40%,rgba(200,120,255,.55),rgba(60,10,90,.35) 55%,transparent 80%);animation:bxFlash .9s ease-out forwards}
-@keyframes bxFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
-
-/* multi-bar HP: one bar, 4 segments = 4 phases */
-.bx-bar{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:5;width:min(440px,calc(100% - 20px));pointer-events:none;
-  padding:6px 10px 7px;border-radius:12px;background:rgba(14,8,26,.82);border:1px solid rgba(176,106,255,.45);box-shadow:0 6px 20px rgba(0,0,0,.45),0 0 18px rgba(150,70,255,.18)}
-.bx-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.bx-name{font:italic 900 14px/1.1 var(--hand);letter-spacing:.8px;color:#fff;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bx-name small{font:600 11px var(--thai);letter-spacing:0;text-transform:none;color:#d8b8ff;margin-left:4px}
-.bx-ph{font:italic 800 11.5px var(--hand);font-style:normal;letter-spacing:1px;color:var(--k-gold);flex:none}
-.bx-segs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:5px}
-.bx-segs span{position:relative;height:10px;border-radius:3px;background:rgba(0,0,0,.55);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);overflow:hidden}
-.bx-segs i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8a3aff,#d86aff);transition:width .35s}
-.bx-segs span.now i{background:linear-gradient(90deg,#ff3b6a,#ff9a5a);box-shadow:0 0 8px rgba(255,80,110,.8)}
-.bx-segs span.now{box-shadow:inset 0 0 0 1px rgba(255,120,140,.6),0 0 8px rgba(255,59,106,.35)}
-.bx-segs span.done{opacity:.45}
-.bx-segs span.done::after{content:'✕';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 9px/1 var(--hand);color:#fff}
-.bx-pat{margin-top:4px;font:500 11px/1.3 var(--thai);color:#cdbfe8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bx-bar.wait .bx-pat{color:#9fe0a8}
-@media (max-width:420px){ .bx-bar{padding:5px 8px 6px} .bx-name{font-size:12.5px} .bx-pat{font-size:10.5px} }
-
-/* portrait icon (world map, codex, home objective) */
-.bx-icon{border-radius:50%;overflow:hidden;background:radial-gradient(circle,#3a1a60,#12081e)}
-
-/* slime minions */
-.bx-minion image{image-rendering:auto}
-/* wide screens: keep the bar clear of the boss's face (she stands on the right) */
-@media (min-width:760px){ .bx-bar{left:14px;transform:none;width:min(420px,40%)} }
-
-/* blush strike: a short pink pulse over the scene */
-.bx-blush{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(circle at 25% 60%,rgba(255,120,200,.5),rgba(255,80,160,.18) 45%,transparent 75%);animation:bxFlash 1.1s ease-out forwards}
-html:not(.noanim) #bossG.rise .bx-riser{animation:bxRise 1.5s cubic-bezier(.2,.8,.2,1)}
+.spr-pixel image,image.spr-pixel{image-rendering:pixelated;image-rendering:crisp-edges}
+.spr-icon{overflow:hidden}

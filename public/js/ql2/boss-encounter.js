@@ -1,29 +1,18 @@
 /* ==========================================================================
-   QUEST LINES v27 — BOSS ENCOUNTERS (multi-phase bosses + slime waves)
+   QUEST LINES v28 — CHAPTER 1: SLIMES + THE AQUA SLIME BOSS (sprite enemies)
    --------------------------------------------------------------------------
-   Built on top of the existing battle engine — nothing is rewritten:
-     · the fight is still the original one-enemy-at-a-time queue
-       (stage.enemies / b.idx / walkToNext / enemyDies / enemyTurn)
-     · a boss "phase" is the boss enemy's own hp/maxHp; when it hits 0 the
-       outermost enemyDies wrapper turns the kill into a PHASE TRANSITION
-       (new face, new hp bar, new traits, a new slime wave spliced into the
-       queue in front of the boss) until the last phase — only then does the
-       original death / reward / stageClear run
-     · attack patterns reuse the engine's traits (stone · heavy · weak ·
-       vamp · caster) — each phase just swaps the list
-     · Chapter 1's monsters are re-skinned as slimes (same keys / stats /
-       traits) and the waves are made of them, so quests / codex still count
-   The boss art is an extra SVG layer (#bossG) behind the actors: a large,
-   cropped upper body rising out of an abyss pool — scaled uniformly, never
-   stretched. The fighting slot (#enemyG) holds an invisible placeholder
-   while the boss is the target, so every engine animation still works.
-
-   To add another boss later: add an entry to BOSS_DEFS (+ its art folder).
+   Presentation layer on the original battle engine — nothing is rewritten:
+     · every Chapter-1 monster keeps its key, stats and traits (so saves,
+       quests, codex and kill counts stay valid); only its look and name
+       change to one of the slimes (3-frame idle strips in /enemies)
+     · the Chapter-1 boss (key 'kingslime') is the Aqua Slime girl from a
+       pixel sprite strip (bosses/aqua/boss.png: idle ×4 · attack · hurt)
+     · stage 1-8 = slime → slime → boss, fought one at a time like every
+       other stage. The boss is a normal single-bar boss, just very tough:
+       see BOSS_TUNING below.
    ========================================================================== */
 
-/* ------------------------------ Chapter 1 = the slime chapter (sprite strips) ------------------------------ */
-// every Chapter-1 monster keeps its key, stats and traits (so saves, quests, codex and kill counts stay valid) —
-// only its look and name change to one of the slimes. 3-frame idle strips live in /enemies.
+/* ------------------------------ sprite sheets ------------------------------ */
 const SPRITES = {
   green: { img:'enemies/slime_green.png',  fw:69, fh:50, frames:3, col:'#7ed957' },
   blue:  { img:'enemies/slime_blue.png',   fw:74, fh:50, frames:3, col:'#6fb6ff' },
@@ -33,6 +22,8 @@ const SPRITES = {
   red:   { img:'enemies/slime_red.png',    fw:69, fh:50, frames:3, col:'#ff5a4a' },
   coke:  { img:'enemies/slime_coke.png',   fw:74, fh:50, frames:3, col:'#b87a4a' },
   golden:{ img:'enemies/slime_golden.png', fw:69, fh:50, frames:3, col:'#ffcf4a' },
+  // the boss: cells 0-3 idle loop, 4 = attack (water burst), 5 = hurt (recoil). Pixel art → drawn pixelated.
+  aqua:  { img:'bosses/aqua/boss.png', fw:100, fh:100, frames:4, col:'#4ad8f0', pixel:true, atk:4, hurt:5, fx:'bosses/aqua/wave.png' },
 };
 const SLIME_SKINS = {
   slime:     { sp:'green',  name:'Green Slime',   th:'สไลม์เขียว' },
@@ -41,345 +32,86 @@ const SLIME_SKINS = {
   bat:       { sp:'red',    name:'Blood Slime',   th:'สไลม์โลหิต' },
   candle:    { sp:'devil',  name:'Shadow Slime',  th:'สไลม์เงา' },
   coinspider:{ sp:'coke',   name:'Choco Slime',   th:'สไลม์ช็อกโกแลต' },
-  mimic:     { sp:'orange', name:'Pumpkin Slime', th:'สไลม์ฟักทองยักษ์', scale:2.6 },      // Chapter-1 mini boss
+  mimic:     { sp:'orange', name:'Pumpkin Slime', th:'สไลม์ฟักทองยักษ์', scale:2.6 },      // Chapter-1 mini boss (stages 1-1…1-7)
+  kingslime: { sp:'aqua',   name:'Aqua Slime',    th:'ราชินีสไลม์วารี', scale:2.4 },       // Chapter-1 boss
 };
 const SPRITE_SCALE = 1.75;
-Object.entries(SLIME_SKINS).forEach(([k,S])=>{ const M = MON[k]; if(!M) return; const sc = S.scale || SPRITE_SCALE;
-  Object.assign(M, { name:S.name, th:S.th, sprite:S.sp, spScale:sc, sc:1, h:Math.round(SPRITES[S.sp].fh*sc), pal:{ a:SPRITES[S.sp].col, b:SPRITES[S.sp].col, c:SPRITES[S.sp].col } }); });
+Object.entries(SLIME_SKINS).forEach(([k,S])=>{ const M = MON[k]; if(!M) return; const sc = S.scale || SPRITE_SCALE, P = SPRITES[S.sp];
+  Object.assign(M, { name:S.name, th:S.th, sprite:S.sp, spScale:sc, sc:1, h:Math.round(P.fh*sc*.8), pal:{ a:P.col, b:P.col, c:P.col } }); });
 const spriteOf = e=>{ const M = e && MON[e.key]; return M && M.sprite ? SPRITES[e.golden ? 'golden' : M.sprite] : null; };
 
-/* ------------------------------ boss configuration ------------------------------ */
-// the story boss hides until the first two slimes are down, then rises from the pool (bx.shown).
-const BOSS_DEFS = {
-  abyss: {
-    key:'kingslime', ch:0, n:8,                                   // Chapter 1 · stage 1-8 (story)
-    name:'Abyss Slime', th:'ราชินีสไลม์อเวจี',
-    art:{ dir:'bosses/abyss/', body:'body.png', w:609, h:490,        // cropped upper body (bottom edge fades into the pool)
-          face:{ x:150, y:160, w:102, h:88 },                        // where the face patch sits on the body
-          icon:'icon.png', defeat:'face4.png',
-          hurt:'face4.png', hurtAlt:'face2.png',                    // pain face when she's hit (alt when the phase face is already the pain face)
-          attack:'face1.png',                                         // her attack: she blushes… and it hurts a lot
-          height:380, x:EN_X+20, floor:FLOOR_Y+36 },               // on-screen size (scene units) and anchor
-    minion:{ hp:.5, atk:.55, gold:.6 },                          // wave slimes are weaker than the stage's own
-    // her only attack is the BLUSH STRIKE: she charges one turn (heavy), then blushes and hits for a big share of the hero's max HP.
-    // blush = fraction of the hero's max HP (before armor / DEF / evade / stone-skin, which still apply).
-    // hp = fraction of the stage's classic boss HP (≈2.15× in total — tough, with heals from each slime kill to keep it fair)
-    phases:[
-      { face:'face5.png', hp:.45, blush:.22, traits:['heavy'],          wave:['slime','rat'],
-        pattern:'Blush Strike', patternTh:'ชาร์จ 1 เทิร์น แล้วเขิน… ดาเมจแรงมาก' },
-      { face:'face3.png', hp:.50, blush:.25, traits:['heavy','stone'],  wave:['slime','skel'],
-        pattern:'Blush Strike + Sticky Spit', patternTh:'เขินแรงขึ้น · ตัวอักษรกลายเป็นหิน' },
-      { face:'face2.png', hp:.52, blush:.27, traits:['heavy','weak'],   wave:['candle','skel'], support:3,
-        pattern:'Blush Strike + Abyss Orb', patternTh:'เขินแรงขึ้นอีก · มีจุดอ่อนตัวอักษร · ยิงช่วยสไลม์' },
-      { face:'face4.png', hp:.50, blush:.29, traits:['heavy','vamp'], caster:true, wave:['bat'], support:3, summon:{ every:4, max:1, kind:'bat' },
-        pattern:'Final Blush', patternTh:'เขินระยะไกล · ดูดเลือด · เรียกสไลม์เป็นช่วงๆ' },
-    ],
-  },
-};
-const bossDefFor = key=>Object.values(BOSS_DEFS).find(d=>d.key===key) || null;
-const isBxBoss = x=>!!(x && (x.bxBoss || bossDefFor(x.key)));
-
-// the chapter-1 boss is now Abyss Slime everywhere (quests, codex, map); the key stays 'kingslime' so old saves / quests keep working
-try{ Object.assign(MON.kingslime, { name:BOSS_DEFS.abyss.name, th:BOSS_DEFS.abyss.th, h:190, sc:1 }); }catch(e){}
-
-/* ------------------------------ encounter setup ------------------------------ */
-const BX = { pending:null };
-function bxMinion(key, s, rng, def){
-  const M = def.minion, e = makeEnemy(MON[key] ? key : 'slime', s, rng || Math.random, false, false);
-  const hp = Math.max(6, Math.round(e.maxHp*M.hp));
-  return Object.assign(e, { hp, maxHp:hp, atk:Math.max(1, Math.round(e.atk*M.atk)), gold:Math.max(1, Math.round(e.gold*M.gold)),
-    golden:false, name:MON[e.key].name, th:MON[e.key].th, minion:e.key });
-}
-function bxApplyPhase(e, i){
-  const B = e.bx, P = B.def.phases[i];
-  B.phase = i+1; B.turns = 0; B.summons = 0;
-  const hp = Math.max(10, Math.round(B.baseHp*P.hp));
-  // the heavy trait hits for atk×2.2 → pick atk so a blush strike lands at ~P.blush of the hero's max HP
-  const heroMax = (ui.bat && ui.bat.max) || maxHp();
-  const atk = P.blush ? Math.round(P.blush*heroMax/2.2) : Math.round(B.baseAtk*(P.atk||1));
-  Object.assign(e, { hp, maxHp:hp, atk:Math.max(1, atk), traits:P.traits.slice(), caster:!!P.caster,
-    charge:0, burn:0, poison:0, frozen:0, stun:false });
-  B.face = P.face;
-}
-// stage 1-8 in story mode: wave 1 + the boss (the old mimic mini boss is left out of this stage only)
+/* ------------------------------ the boss: very tough, hits very hard ------------------------------ */
+// multipliers on the stage's normal boss stats; 'heavy' = charges one turn, then hits ×2.2 (the engine's own trait)
+const BOSS_TUNING = { kingslime:{ ch:0, n:8, hp:2.6, atk:1.3, traits:['heavy','weak'] } };
 buildStage = (f=>function(ch, n){
   const st = f.apply(this, arguments);
-  const def = BX.pending;
-  if(!def || ch!==def.ch || n!==def.n) return st;
-  const rng = mulberry(hashStr('bx'+st.s));
-  const boss = st.enemies.find(e=>e.key===def.key);
+  const T = Object.entries(BOSS_TUNING).find(([k,t])=>t.ch===ch && t.n===n);
+  if(!T) return st;
+  const [key, t] = T, boss = st.enemies.find(e=>e.key===key);
   if(!boss) return st;
-  boss.bx = { def, baseHp:boss.maxHp, baseAtk:boss.atk, phase:1, sup:0 };
-  boss.phase2 = true;                  // the engine's own 50% "PHASE 2" is replaced by the phase system
-  bxApplyPhase(boss, 0);
-  st.enemies = [ ...def.phases[0].wave.map(k=>bxMinion(k, st.s, rng, def)), boss ];
-  st.bx = def;
+  boss.maxHp = boss.hp = Math.round(boss.maxHp*t.hp);
+  boss.atk = Math.round(boss.atk*t.atk);
+  boss.traits = t.traits.slice();
+  // slime → slime → boss (the stage's mini boss is left out here)
+  const rng = mulberry(hashStr('b8'+st.s)), C = CHAPTERS[ch];
+  const normals = st.enemies.filter(e=>!e.boss && !e.mini);
+  while(normals.length < 2){ const k = C.pool[Math.floor(rng()*C.pool.length)]; normals.push(makeEnemy(k==='slime' && normals[0] && normals[0].key==='slime' ? 'rat' : k, st.s, rng, false)); }
+  st.enemies = [ ...normals.slice(0,2), boss ];
   return st;
 })(buildStage);
-startStage = (f=>function(ch, n){
-  const story = !(ui.run && ui.run.pending);           // endgame runs keep the classic single-bar fight
-  const def = story ? Object.values(BOSS_DEFS).find(d=>d.ch===ch && d.n===n) : null;
-  BX.pending = def || null;
-  let r;
-  try{ r = f.apply(this, arguments); } finally { BX.pending = null; }
-  return r;
-})(startStage);
-const bxBoss = ()=>{ const b = ui.bat; return b && b.stage && b.stage.enemies.find(e=>e.bx) || null; };
 
 /* ------------------------------ drawing ------------------------------ */
 function spriteSVG(e, queued){
   const K = spriteOf(e), sc = MON[e.key].spScale || SPRITE_SCALE, w = K.fw*sc, h = K.fh*sc;
-  const vals = Array.from({ length:K.frames }, (_,i)=>-i*K.fw).concat(K.frames>2 ? [-K.fw] : []).join(';');
+  const vals = Array.from({ length:K.frames }, (_,i)=>-i*K.fw).concat(K.frames===3 ? [-K.fw] : []).join(';');
+  const top = K.pixel ? -h*.7 : -h;                                   // boss cells have headroom for the attack pose
   const col = e.boss ? '#d9452f' : e.mini ? '#f2b42c' : K.col;
   const crown = e.mini ? `<path d="M-14,8 L-16,-4 L-9,2 L-4,-8 L1,2 L8,-4 L6,8 Z" fill="#f2b42c" stroke="${OL}" stroke-width="2.2" stroke-linejoin="round"/>` : '';
-  const bar = queued ? '' : `<g class="ehp" transform="translate(-40,${-h-26})"><rect width="80" height="12" rx="6" fill="#12100d" stroke="${OL}" stroke-width="3"/><rect class="ehpfill" x="2" y="2" width="76" height="8" rx="4" fill="${col}"/>${crown}</g>`;
-  const ring = e.mini && !queued ? `<ellipse class="elite-ring" cx="0" cy="2" rx="${w*.46}" ry="${10*sc/1.75}" fill="none" stroke="#f2b42c" stroke-width="4" opacity=".8"/>` : '';
-  return `<g class="enemy spr-enemy ${e.minion?'bx-minion':''} ${queued?'queued':''} ${e.golden?'golden':''}">${ring}<ellipse cx="0" cy="2" rx="${w*.38}" ry="7" fill="#000" opacity=".28"/>
-    <svg x="${-w/2}" y="${-h+4}" width="${w}" height="${h}" viewBox="0 0 ${K.fw} ${K.fh}" overflow="hidden"><image href="${K.img}" width="${K.fw*K.frames}" height="${K.fh}">${save.settings.anim===false?'':`<animate attributeName="x" values="${vals}" dur="${(.3*(K.frames+1)).toFixed(2)}s" calcMode="discrete" repeatCount="indefinite"/>`}</image></svg>${bar}${e.golden&&!queued?`<text class="golden-tag" x="-35" y="${-h-34}">★ GOLDEN ★</text>`:''}</g>`;
+  const bar = queued ? '' : `<g class="ehp" transform="translate(-40,${top-26})"><rect width="80" height="12" rx="6" fill="#12100d" stroke="${OL}" stroke-width="3"/><rect class="ehpfill" x="2" y="2" width="76" height="8" rx="4" fill="${col}"/>${crown}</g>`;
+  const ring = (e.mini || e.boss) && !queued ? `<ellipse class="elite-ring" cx="0" cy="2" rx="${Math.min(w*.4, 90)}" ry="12" fill="none" stroke="${e.boss?'#ff6a4a':'#f2b42c'}" stroke-width="4" opacity=".8"/>` : '';
+  const anim = save.settings.anim===false ? '' : `<animate attributeName="x" values="${vals}" dur="${(.28*(K.frames+(K.frames===3?1:0))).toFixed(2)}s" calcMode="discrete" repeatCount="indefinite"/>`;
+  const pose = K.atk!==undefined ? `<svg class="spr-pose" x="${-w/2}" y="${-h+4}" width="${w}" height="${h}" viewBox="0 0 ${K.fw} ${K.fh}" overflow="hidden" visibility="hidden"><image href="${K.img}" width="${K.fw*6}" height="${K.fh}"/></svg>` : '';
+  return `<g class="enemy spr-enemy ${K.pixel?'spr-pixel':''} ${queued?'queued':''} ${e.golden?'golden':''}">${ring}<ellipse cx="0" cy="2" rx="${Math.min(w*.3, 70)}" ry="7" fill="#000" opacity=".28"/>
+    <svg class="spr-idle" x="${-w/2}" y="${-h+4}" width="${w}" height="${h}" viewBox="0 0 ${K.fw} ${K.fh}" overflow="hidden"><image href="${K.img}" width="${K.fw*(K.atk!==undefined?6:K.frames)}" height="${K.fh}">${anim}</image></svg>${pose}${bar}${e.golden&&!queued?`<text class="golden-tag" x="-35" y="${top-34}">★ GOLDEN ★</text>`:''}</g>`;
 }
-enemyMarkup = (f=>function(e, queued){
-  if(e && e.key==='kingslime'){ e.bxBoss = true; setTimeout(bxEnsureLayer, 0); return `<g class="enemy bx-ph"></g>`; }
-  if(spriteOf(e)) return spriteSVG(e, queued);
-  return f.apply(this, arguments);
-})(enemyMarkup);
+enemyMarkup = (f=>function(e, queued){ return spriteOf(e) ? spriteSVG(e, queued) : f.apply(this, arguments); })(enemyMarkup);
 monsterIcon = (f=>function(key){
-  if(key==='kingslime'){ const A = BOSS_DEFS.abyss.art; return `<svg viewBox="0 0 128 128" class="bx-icon" aria-hidden="true"><image href="${A.dir}${A.icon}" width="128" height="128"/></svg>`; }
-  const K = spriteOf({ key }); if(K) return `<svg viewBox="0 -4 ${K.fw} ${K.fh+6}" class="spr-icon" aria-hidden="true"><image href="${K.img}" width="${K.fw*K.frames}" height="${K.fh}"/></svg>`;
-  return f.apply(this, arguments);
+  const K = spriteOf({ key }); if(!K) return f.apply(this, arguments);
+  const v = K.pixel ? `12 6 ${K.fw-24} ${K.fh-6}` : `0 -4 ${K.fw} ${K.fh+6}`;
+  return `<svg viewBox="${v}" class="spr-icon ${K.pixel?'spr-pixel':''}" aria-hidden="true"><image href="${K.img}" width="${K.fw*(K.atk!==undefined?6:K.frames)}" height="${K.fh}"/></svg>`;
 })(monsterIcon);
 
-function bxFaceOf(e){
-  if(e.bx) return e.bx.face;
-  const P = BOSS_DEFS.abyss.phases;                       // classic fights: face follows the engine's own phases
-  return e.egP3 ? P[3].face : e.phase2 ? P[2].face : P[0].face;
+/* ------------------------------ boss poses: attack / hurt ------------------------------ */
+function spritePose(e, cell, ms){
+  const K = spriteOf(e), g = document.querySelector('#enemyG .spr-enemy'); if(!K || !g || cell===undefined) return;
+  const idle = g.querySelector('.spr-idle'), pose = g.querySelector('.spr-pose'); if(!idle || !pose) return;
+  pose.querySelector('image').setAttribute('x', -cell*K.fw);
+  pose.setAttribute('visibility', 'visible'); idle.setAttribute('visibility', 'hidden');
+  clearTimeout(g._poseT); g._poseT = setTimeout(()=>{ pose.setAttribute('visibility', 'hidden'); idle.setAttribute('visibility', 'visible'); }, ms);
 }
-function bxEnsureLayer(){
-  const b = ui.bat, act = $('#actors'); if(!b || !act) return null;
-  const e = b.stage.enemies.slice(b.idx).find(isBxBoss); if(!e) return null; e.bxBoss = true;
-  if(e.bx && !e.bx.shown){ if(curEnemy()!==e) return null; e.bx.shown = true; }      // story boss: appears only when she enters the fight
-  let g = $('#bossG');
-  if(!g){
-    const def = bossDefFor(e.key) || BOSS_DEFS.abyss, A = def.art, s = A.height/A.h, W = A.w*s, H = A.h*s;
-    g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'bossG'; g.setAttribute('class', 'bx-boss rise');
-    g.setAttribute('transform', `translate(${A.x},${A.floor})`);
-    g.innerHTML = `<defs><radialGradient id="bxPool"><stop offset="0" stop-color="#1a0a2e" stop-opacity=".95"/><stop offset=".55" stop-color="#2a1048" stop-opacity=".75"/><stop offset="1" stop-color="#2a1048" stop-opacity="0"/></radialGradient>
-        <radialGradient id="bxAura"><stop offset="0" stop-color="#b04aff" stop-opacity=".35"/><stop offset="1" stop-color="#b04aff" stop-opacity="0"/></radialGradient></defs>
-      <g class="bx-riser"><ellipse class="bx-aura" cx="${-W*.05}" cy="${-H*.55}" rx="${W*.62}" ry="${H*.6}" fill="url(#bxAura)"/>
-      <g class="bx-body"><image href="${A.dir}${A.body}" x="${-W/2}" y="${-H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid meet"/>
-        <image class="bx-face" href="${A.dir}${bxFaceOf(e)}" x="${-W/2 + A.face.x*s}" y="${-H + A.face.y*s}" width="${A.face.w*s}" height="${A.face.h*s}"/></g>
-      <ellipse class="bx-pool" cx="0" cy="-2" rx="${W*.62}" ry="34" fill="url(#bxPool)"/>
-      <g class="bx-drips">${[-.34,-.12,.1,.3].map((k,i)=>`<ellipse cx="${W*k}" cy="${-4 - (i%2)*6}" rx="${16+i*4}" ry="7" fill="#3a1a60" opacity=".7"/>`).join('')}</g></g>`;
-    act.insertBefore(g, act.firstChild);
-  }
-  bxRefresh();
-  return g;
+function spriteWave(K){
+  const fx = $('#fx'); if(!fx || !K.fx) return;
+  const w = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+  w.setAttribute('href', K.fx); w.setAttribute('width', 69*2.2); w.setAttribute('height', 83*2.2); w.setAttribute('x', -69*1.1); w.setAttribute('y', -83*2.2);
+  w.setAttribute('class', 'spr-pixel'); fx.appendChild(w);
+  anim(w, [{ transform:tr(EN_X-90, FLOOR_Y+8)+' scale(.5)', opacity:.9 },{ transform:tr(HERO_X+30, FLOOR_Y+8)+' scale(1.05)', opacity:1, offset:.7 },{ transform:tr(HERO_X-10, FLOOR_Y+8)+' scale(1.15)', opacity:0 }], { duration:560, easing:'ease-in' }).then(()=>w.remove());
 }
-function bxSetFace(file){
-  const g = $('#bossG'), f = g && g.querySelector('.bx-face'); if(!f) return;
-  const e = bxBoss() || curEnemy(), A = ((e && bossDefFor(e.key)) || BOSS_DEFS.abyss).art;
-  f.setAttribute('href', A.dir + file);
-}
-// active / waiting look + face + hp bar
-function bxRefresh(){
-  const b = ui.bat, g = $('#bossG'); if(!b || !g) return;
-  const e = curEnemy(), boss = b.stage.enemies.slice(b.idx).find(isBxBoss);
-  if(!boss){ return; }
-  g.classList.toggle('active', isBxBoss(e));
-  if(!boss._bxDying && !(boss._bxExpr && boss._bxExpr > performance.now())) bxSetFace(bxFaceOf(boss));
-  bxBar();
-}
-
-/* ------------------------------ phase hp bar (4 segments) ------------------------------ */
-function bxBar(){
-  const b = ui.bat, st = $('#stage'); if(!b || !st) return;
-  const boss = b.stage.enemies.find(x=>x.bx); let el = $('#bxBar');
-  if(!boss || !boss.bx.shown){ if(el) el.remove(); return; }
-  const B = boss.bx, P = B.def.phases, n = P.length, cur = B.phase;
-  if(!el){
-    st.insertAdjacentHTML('beforeend', `<div class="bx-bar" id="bxBar" aria-live="polite"><div class="bx-top"><b class="bx-name"></b><em class="bx-ph"></em></div><div class="bx-segs">${P.map(()=>'<span><i></i></span>').join('')}</div><div class="bx-pat"></div></div>`);
-    el = $('#bxBar');
-  }
-  const hud = st.querySelector('.hud'); if(hud) el.style.top = (hud.offsetTop + hud.offsetHeight + 4) + 'px';
-  el.querySelector('.bx-name').innerHTML = `${esc(B.def.name)} <small>${esc(B.def.th)}</small>`;
-  el.querySelector('.bx-ph').textContent = boss._bxDying ? 'DEFEATED' : `PHASE ${cur}/${n}`;
-  el.querySelectorAll('.bx-segs span').forEach((s,i)=>{
-    const done = boss._bxDying || i < cur-1, now = !done && i===cur-1;
-    const pct = done ? 0 : now ? Math.max(0, boss.hp/boss.maxHp*100) : 100;
-    s.className = done ? 'done' : now ? 'now' : 'next';
-    s.firstChild.style.width = pct + '%';
-  });
-  const e = curEnemy(), P0 = P[cur-1];
-  el.querySelector('.bx-pat').textContent = boss._bxDying ? '' : e && e.minion ? `🟢 WAVE · สไลม์ ${b.stage.enemies.slice(b.idx).filter(x=>x.minion).length} ตัวขวางอยู่ — บอสรออยู่ด้านหลัง` : `⚔ ${P0.pattern} — ${P0.patternTh}`;
-  el.classList.toggle('wait', !!(e && e.minion));
-  // the word-streak chip sits under this bar
-  const ws = $('#wsChip'); if(ws && !ws.hidden) ws.style.top = (el.offsetTop + el.offsetHeight + 6) + 'px';
-}
-['updateEnemyHp','renderEnemyPanel','updateHud'].forEach(fn=>{
-  const f = window[fn]; if(typeof f!=='function') return;
-  window[fn] = function(){ const r = f.apply(this, arguments); try{ if(ui.bat && ($('#bossG') || $('#bxBar'))) bxRefresh(); }catch(e){} return r; };
-});
-buildBattleDom = (f=>function(){ const r = f.apply(this, arguments); try{ bxEnsureLayer(); bxBar(); }catch(e){ console.error(e); } return r; })(buildBattleDom);
-// entrance: a short title once the boss is in view
-intro = (f=>async function(){
-  const r = await f.apply(this, arguments);
-  const b = ui.bat;
-  if(b && b.stage.bx && !b.bxIntro && isBxBoss(curEnemy())){ b.bxIntro = true; sfx.boss && sfx.boss(); banner(b.stage.bx.name.toUpperCase(), `${b.stage.bx.th} ปรากฏตัว!`); shake(true); }
-  return r;
-})(intro);
-
-/* ------------------------------ expressions: pain when hit, blush when she attacks ------------------------------ */
-function bxExpress(e, file, ms){
-  if(!e || e._bxDying || !$('#bossG')) return;
-  e._bxExpr = performance.now() + ms; bxSetFace(file);
-  clearTimeout(e._bxExprT); e._bxExprT = setTimeout(()=>{ if(!e._bxDying && ui.bat && $('#bossG')) bxSetFace(bxFaceOf(e)); }, ms);
-}
-const bxArt = e=>((e && bossDefFor(e.key)) || BOSS_DEFS.abyss).art;
-const bxHurtFace = e=>{ const A = bxArt(e); return bxFaceOf(e)===A.hurt ? A.hurtAlt : A.hurt; };
-
-/* ------------------------------ boss animations (the placeholder does the engine's moves) ------------------------------ */
-const bxBody = ()=>document.querySelector('#bossG .bx-body');
 enemyHurt = (f=>function(dmg, big){
   const r = f.apply(this, arguments);
-  try{ const e = curEnemy(), body = bxBody();
-    if(isBxBoss(e) && body){ bxExpress(e, bxHurtFace(e), big ? 750 : 550); anim(body, [{ transform:'translateX(0)', filter:'brightness(1)' },{ transform:'translateX(14px)', filter:'brightness(2.2) saturate(.3)' },{ transform:'translateX(-6px)', filter:'brightness(1.3)' },{ transform:'translateX(0)', filter:'brightness(1)' }], { duration:big?420:320 }); bxBar(); }
-  }catch(err){}
+  try{ const e = curEnemy(), K = spriteOf(e); if(K && K.hurt!==undefined) spritePose(e, K.hurt, big ? 620 : 460); }catch(err){}
   return r;
 })(enemyHurt);
-function bxSplash(col){
-  const fx = $('#fx'); if(!fx) return;
-  for(let k=0;k<7;k++){ const c = document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('r', rint(6,12)); c.setAttribute('fill', col); c.setAttribute('stroke', '#1a0a2e'); c.setAttribute('stroke-width', 2); fx.appendChild(c);
-    const a = -Math.PI*(.15+k/7*.7), d = rint(30,70);
-    anim(c, [{ transform:tr(HERO_X+20, FLOOR_Y-70)+' scale(.4)', opacity:1 },{ transform:tr(HERO_X+20+Math.cos(a)*d, FLOOR_Y-70+Math.sin(a)*d)+' scale(1)', opacity:0 }], { duration:520, easing:'ease-out' }).then(()=>c.remove()); }
-}
-// BLUSH STRIKE: she blushes, a pink heart wave hits the hero hard
-function bxBlush(e){
-  bxExpress(e, bxArt(e).attack, 1500);
-  floatText('💗 BLUSH STRIKE!', EN_X-40, FLOOR_Y-e.h*e.sc-60, '#ff8ad0', 28, true);
-  const st = $('#stage'); if(st){ const f = document.createElement('div'); f.className = 'bx-blush'; st.appendChild(f); setTimeout(()=>f.remove(), 1100); }
-}
-async function bxLunge(heavy){
-  const body = bxBody(); if(!body) return;
-  anim(body, [{ transform:'translate(0,0) scale(1)' },{ transform:'translate(10px,4px) scale(.99)', offset:.3 },{ transform:`translate(${heavy?-70:-46}px,8px) scale(${heavy?1.08:1.05})`, offset:.55 },{ transform:'translate(0,0) scale(1)' }], { duration:heavy?760:640, easing:'ease-in-out' });
-  await sleep(330);
-  bxSplash('#ff6ac8');
-}
 enemyAttackAnim = (f=>async function(){
-  const e = curEnemy();
-  if(isBxBoss(e)){ bxBlush(e); await sleep(380); const p = f.apply(this, arguments); await bxLunge(e.traits.includes('heavy')); return p; }
+  const e = curEnemy(), K = spriteOf(e);
+  if(K && K.atk!==undefined){
+    spritePose(e, K.atk, 900);
+    if(e.traits.includes('heavy')) floatText('💦 TIDAL CRUSH!', EN_X-30, FLOOR_Y-e.h*e.sc-40, '#8ff0ff', 26, true);
+    setTimeout(()=>{ try{ spriteWave(K); }catch(err){} }, 180);
+  }
   return f.apply(this, arguments);
 })(enemyAttackAnim);
-casterAttackAnim = (f=>async function(){
-  const e = curEnemy(), body = bxBody();
-  if(isBxBoss(e) && body){ bxBlush(e); e.pal = Object.assign({}, e.pal, { c:'#ff6ac8' }); anim(body, [{ transform:'translateY(0)' },{ transform:'translateY(-10px) scale(1.02)' },{ transform:'translateY(0)' }], { duration:900 }); }
-  return f.apply(this, arguments);
-})(casterAttackAnim);
 enemyCharge = (f=>async function(){
-  const e = curEnemy(), body = bxBody();
-  if(isBxBoss(e) && body) floatText('💗 กำลังเขิน… เทิร์นหน้าแรงมาก!', EN_X-30, FLOOR_Y-e.h*e.sc-40, '#ffb0e0', 20);
-  if(isBxBoss(e) && body) anim(body, [{ filter:'brightness(1)' },{ filter:'brightness(1.4) drop-shadow(0 0 14px #ff3b6a)' },{ filter:'brightness(1)' },{ filter:'brightness(1.4) drop-shadow(0 0 14px #ff3b6a)' },{ filter:'brightness(1)' }], { duration:800 });
+  const e = curEnemy(), K = spriteOf(e);
+  if(K && K.atk!==undefined) floatText('💧 รวบรวมพลังน้ำ… เทิร์นหน้าแรงมาก!', EN_X-20, FLOOR_Y-e.h*e.sc-40, '#bff6ff', 20);
   return f.apply(this, arguments);
 })(enemyCharge);
-
-/* ------------------------------ phase transition + waves ------------------------------ */
-async function bxPhaseBreak(e){
-  const b = ui.bat, B = e.bx, P = B.def.phases, next = B.phase;          // index of the next phase
-  B.lock = true; b.busy = true;
-  clearEnchant && clearEnchant();
-  sfx.boss && sfx.boss(); shake(true);
-  const st = $('#stage'); if(st){ const f = document.createElement('div'); f.className = 'bx-flash'; st.appendChild(f); setTimeout(()=>f.remove(), 900); }
-  const body = bxBody();
-  if(body) anim(body, [{ transform:'scale(1)', filter:'brightness(1)' },{ transform:'scale(.97) translateX(10px)', filter:'brightness(2.4)', offset:.35 },{ transform:'scale(1.03)', filter:'brightness(1.2) drop-shadow(0 0 20px #b04aff)', offset:.7 },{ transform:'scale(1)', filter:'brightness(1)' }], { duration:1100, easing:'ease-out' });
-  await sleep(420);
-  bxApplyPhase(e, next);
-  bxSetFace(B.face);
-  const Pn = P[next];
-  banner(`PHASE ${next+1}`, `${Pn.pattern} · ${Pn.patternTh}`);
-  updateEnemyHp(); renderEnemyPanel(); updateHud(); bxBar();
-  await sleep(1150);
-  // spawn this phase's wave in front of the boss (the engine only ever fights one at a time, one waits in the queue)
-  const wave = (Pn.wave||[]).map(k=>bxMinion(k, b.stage.s, null, B.def));
-  B.lock = false;
-  if(wave.length && !b.over){
-    b.stage.enemies.splice(b.idx, 1, ...wave, e);
-    await walkToNext();
-    banner(`WAVE ${next+1}`, `สไลม์ ${wave.length} ตัวบุกเข้ามา!`, 'mini');
-    await sleep(500);
-  }
-  b.busy = false; renderTray(); renderEnemyPanel(); updateHud(); bxRefresh();
-}
-async function bxDefeat(e){
-  const b = ui.bat, B = e.bx;
-  e._bxDying = true; b.busy = true;
-  // no more slimes: drop anything still queued behind the boss
-  b.stage.enemies = b.stage.enemies.filter((x,i)=>i<=b.idx || !x.minion);
-  bxSetFace((bossDefFor(e.key) || BOSS_DEFS.abyss).art.defeat);
-  bxBar(); sfx.boss && sfx.boss(); shake(true);
-  banner('BOSS DEFEATED!', `${B ? B.def.th : e.th} พ่ายแพ้!`);
-  const g = $('#bossG'), body = bxBody();
-  if(body) await anim(body, [{ transform:'translate(0,0)', filter:'brightness(1)', opacity:1 },{ transform:'translate(8px,0)', filter:'brightness(2)', opacity:1, offset:.2 },{ transform:'translate(-8px,10px)', filter:'brightness(1.4)', opacity:1, offset:.4 },{ transform:'translate(0,160px)', filter:'brightness(.6) blur(1px)', opacity:0 }], { duration:1500, easing:'ease-in', fill:'forwards' });
-  if(g) g.classList.add('gone');
-  const eg = $('#enemyG'); if(eg) eg.innerHTML = '';
-}
-// the outermost kill hook: a boss with phases left doesn't die — it changes phase
-enemyDies = (f=>async function(){
-  const b = ui.bat, e = b && curEnemy();
-  if(e && e.bx && !b.over){
-    if(e.bx.lock) return;                                   // already transitioning (guards double triggers)
-    if(e.bx.phase < e.bx.def.phases.length){ await bxPhaseBreak(e); return; }
-    if(!e._bxDying) await bxDefeat(e);
-  } else if(isBxBoss(e) && !e.bx && !e._bxDying && b && !b.over){
-    await bxDefeat(e);                                      // classic (endgame / tower) fights: same art, single bar
-  }
-  const r = await f.apply(this, arguments);
-  try{ if(!b || !b.stage.enemies.slice(b.idx).some(isBxBoss)){ const g = $('#bossG'); if(g) g.remove(); const bar = $('#bxBar'); if(bar) bar.remove(); } else bxRefresh(); }catch(err){}
-  return r;
-})(enemyDies);
-// after any walk the active/waiting look follows the new target
-walkToNext = (f=>async function(){ const r = await f.apply(this, arguments); try{ bxEnsureLayer(); bxRefresh(); }catch(e){} return r; })(walkToNext);
-
-/* ------------------------------ patterns that need the boss off-target ------------------------------ */
-async function bxSupportShot(boss){
-  const b = ui.bat, fx = $('#fx'); if(!b || !fx) return false;
-  const body = bxBody(); if(body) anim(body, [{ transform:'translateY(0)' },{ transform:'translateY(-8px) scale(1.02)' },{ transform:'translateY(0)' }], { duration:700 });
-  floatText('Abyss Orb!', EN_X+40, FLOOR_Y-250, '#d8a8ff', 22);
-  await sleep(300);
-  const orb = document.createElementNS('http://www.w3.org/2000/svg','g');
-  orb.innerHTML = `<circle r="22" fill="#b06aff" opacity=".3"/><circle r="12" fill="#8a4aff" stroke="#1a0a2e" stroke-width="3"/>`;
-  fx.appendChild(orb);
-  const sx = EN_X-10, sy = FLOOR_Y-180, hx = HERO_X+15, hy = FLOOR_Y-80;
-  await anim(orb, [{ transform:tr(sx,sy)+' scale(.3)' },{ transform:tr((sx+hx)/2, sy-50)+' scale(1.1)', offset:.5 },{ transform:tr(hx,hy) }], { duration:520, easing:'ease-in' });
-  orb.remove(); bxSplash('#b06aff');
-  const dmg = Math.max(1, Math.round(boss.atk*.45*(1 - AR(save.eq.armor).block)*CH(save.eq.char).dmgTaken*defMul()));
-  if(b.evade>0){ b.evade--; floatText('MISS! 🌪️', HERO_X, FLOOR_Y-170, '#dfffff', 26, true); return false; }
-  b.hp -= dmg; sfx.hurt && sfx.hurt(); heroHurt(dmg, false); updateHud();
-  await sleep(380);
-  return await checkHeroDeath();
-}
-async function bxSummon(boss, kind){
-  const b = ui.bat, B = boss.bx;
-  const body = bxBody(); if(body) anim(body, [{ transform:'scale(1)' },{ transform:'scale(1.04) translateY(-6px)' },{ transform:'scale(1)' }], { duration:700 });
-  floatText('สไลม์ มา!', EN_X+30, FLOOR_Y-240, '#d8a8ff', 24, true);
-  sfx.power && sfx.power(); await sleep(450);
-  const m = bxMinion(kind, b.stage.s, null, B.def);
-  b.stage.enemies.splice(b.idx, 0, m);         // the slime steps in front, the boss waits right behind it
-  B.summons++;
-  await walkToNext();
-  bxRefresh();
-}
-enemyTurn = (f=>async function(){
-  const b = ui.bat, e = b && curEnemy(), boss = b && bxBoss();
-  if(b && e && boss && boss.bx && !b.over && !boss._bxDying){
-    const P = boss.bx.def.phases[boss.bx.phase-1];
-    // Phase 4: every few boss turns she calls a slime in instead of attacking
-    if(e===boss && P.summon && !e.frozen && !e.stun && e.hp>0){
-      boss.bx.turns++;
-      if(boss.bx.turns % P.summon.every===0 && boss.bx.summons < P.summon.max){ await bxSummon(boss, P.summon.kind); endTurn(); return; }
-    }
-    // Phases 3–4: while a slime is in front, the boss fires a support orb every N slime turns
-    if(e.minion && P.support && e.hp>0){
-      boss.bx.sup = (boss.bx.sup||0) + 1;
-      if(boss.bx.sup % P.support===0){ if(await bxSupportShot(boss)) return; }
-    }
-  }
-  return f.apply(this, arguments);
-})(enemyTurn);
