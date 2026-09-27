@@ -6800,9 +6800,10 @@ function xImpact(n){
    X — charge pierce (x4+ punches through into the enemies queued after
    this one): x4 → next 1 enemy, x5 → next 2, x6 → next 3 … (n-3 enemies).
    Each pierced enemy takes the same released damage as the main target.
-   Reuses the same "carry into the next enemy via walkToNext" plumbing
-   Boomtos's BOOM finisher already uses, generalised into a queue so it
-   can reach more than one enemy ahead.
+   Applied the instant the shot is released (not only on a kill): the
+   enemies queued after the current one just have their stored HP reduced
+   ahead of time, so when they later step on screen they're already hurt
+   (or skipped outright if the pierce finished them off).
    ====================================================================== */
 {
   const _xDa = doAttack;
@@ -6810,26 +6811,35 @@ function xImpact(n){
     const b = ui.bat;
     if(!isX() || !b || b.xCharging) return _xDa();
     const n = b.xLvl||0, had = n>0, w0 = b.words;
-    let pierceDmg = 0, pierceCount = 0;
-    if(n>=4){ const r = evalWord(); pierceDmg = r.dmg; pierceCount = n-3; }
+    let pierceDmg = 0, targets = [];
+    if(n>=4 && b.stage && b.stage.enemies){
+      const r = evalWord(); pierceDmg = r.dmg;
+      const count = n-3, baseIdx = b.idx;
+      for(let k=1;k<=count;k++){ const qe = b.stage.enemies[baseIdx+k]; if(qe) targets.push(qe); }
+    }
     await _xDa();
     if(had && ui.bat===b && b.words>w0){
       b.xBank = 0; b.xLvl = 0; xAura(); updateHud();
-      if(pierceCount>0) b.xPierceQ = (b.xPierceQ||[]).concat(Array(pierceCount).fill(pierceDmg));
+      if(targets.length) await xApplyPierce(targets, pierceDmg);
     }
   };
+  async function xApplyPierce(targets, dmg){
+    const b = ui.bat; if(!b) return;
+    targets.forEach(qe=>{ if(qe.hp>0){ qe.hp -= dmg; if(qe.hp<0) qe.hp = 0; } });
+    xImpact(4); sfx.hit(true); shake(true);
+    floatText(`⚡ ทะลุ ${dmg} x${targets.length}`, HERO_X+40, FLOOR_Y-230, xColor(4), 24, true);
+    const cur = curEnemy();
+    if(cur && targets.includes(cur)){
+      updateEnemyHp(); renderEnemyPanel();
+      if(cur.hp<=0 && !b.busy && !b.over){ b.busy = true; await sleep(300); await enemyDies(); }
+    }
+  }
+  // if a queued enemy was already finished off by an earlier pierce, clear it the instant it steps up
   const _xWalk = walkToNext;
   walkToNext = async function(){
     await _xWalk();
     const b = ui.bat, n = curEnemy();
-    if(b && n && b.xPierceQ && b.xPierceQ.length){
-      const d = b.xPierceQ.shift();
-      xImpact(4); sfx.hit(true); shake(true);
-      n.hp -= d; b.score += d; enemyHurt(d, true);
-      floatText(`⚡ ทะลุ ${d}`, EN_X, FLOOR_Y-n.h*n.sc-80, xColor(4), 26, true);
-      if(n.hp<=0){ n.hp = 0; b.pendingKill = true; }
-      updateEnemyHp(); renderEnemyPanel(); await sleep(450);
-    }
+    if(b && n && n.hp<=0 && !b.pendingKill) b.pendingKill = true;
   };
 }
 /* ======================================================================
