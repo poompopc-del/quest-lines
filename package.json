@@ -1,6 +1,6 @@
 {
   "name": "quest-lines-app",
-  "version": "24.0.0",
+  "version": "25.0.0",
   "private": true,
   "type": "module",
   "description": "Quest Lines 2.0 \u2014 Word Battle RPG (static PWA, no backend)",

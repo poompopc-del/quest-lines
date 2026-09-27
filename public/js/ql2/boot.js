@@ -14,6 +14,9 @@
     V.booted = 1; persist();
     if(wasPlayer) setTimeout(()=>toast(`✨ ยินดีต้อนรับสู่ Quest Lines 2.0! ความคืบหน้าเดิมอยู่ครบ${n?` · ปลดล็อกถ้วยรางวัลใหม่ ${n} ถ้วย`:''}${claimableCount()?` · มีภารกิจรอรับรางวัล ${claimableCount()}`:''}`), 900);
   }
+  // use the real visible height (iOS home-screen apps get 100vh/100dvh wrong → black band / cut-off bottom)
+  const setH = ()=>{ const h = Math.round((window.visualViewport && window.visualViewport.height) || window.innerHeight); document.documentElement.style.setProperty('--app-h', h+'px'); };
+  setH(); window.addEventListener('resize', setH); window.addEventListener('orientationchange', ()=>setTimeout(setH, 250)); if(window.visualViewport) window.visualViewport.addEventListener('resize', setH);
   window.__QL2_READY = 1;
   dailyEnsure();
   // renaming from settings updates the top bar
