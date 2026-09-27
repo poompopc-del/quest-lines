@@ -49,26 +49,30 @@ Object.entries(SLIME_SKINS).forEach(([k,S])=>{ const M = MON[k]; if(!M) return; 
 const spriteOf = e=>{ const M = e && MON[e.key]; return M && M.sprite ? SPRITES[e.golden ? 'golden' : M.sprite] : null; };
 
 /* ------------------------------ boss configuration ------------------------------ */
-// hp / atk are fractions of the stage's classic boss (so the fight scales with the stage like before);
-// the total is ~1.4× the old single bar — the difficulty comes from phases, patterns and waves, not a sponge.
+// the story boss hides until the first two slimes are down, then rises from the pool (bx.shown).
 const BOSS_DEFS = {
   abyss: {
     key:'kingslime', ch:0, n:8,                                   // Chapter 1 · stage 1-8 (story)
     name:'Abyss Slime', th:'ราชินีสไลม์อเวจี',
     art:{ dir:'bosses/abyss/', body:'body.png', w:609, h:490,        // cropped upper body (bottom edge fades into the pool)
           face:{ x:150, y:160, w:102, h:88 },                        // where the face patch sits on the body
-          icon:'icon.png', defeat:'face1.png',
+          icon:'icon.png', defeat:'face4.png',
+          hurt:'face4.png', hurtAlt:'face2.png',                    // pain face when she's hit (alt when the phase face is already the pain face)
+          attack:'face1.png',                                         // her attack: she blushes… and it hurts a lot
           height:380, x:EN_X+20, floor:FLOOR_Y+36 },               // on-screen size (scene units) and anchor
     minion:{ hp:.5, atk:.55, gold:.6 },                          // wave slimes are weaker than the stage's own
+    // her only attack is the BLUSH STRIKE: she charges one turn (heavy), then blushes and hits for a big share of the hero's max HP.
+    // blush = fraction of the hero's max HP (before armor / DEF / evade / stone-skin, which still apply).
+    // hp = fraction of the stage's classic boss HP (≈2.15× in total — tough, with heals from each slime kill to keep it fair)
     phases:[
-      { face:'face5.png', hp:.30, atk:.90, traits:[],               wave:['slime'],
-        pattern:'Slime Slap', patternTh:'ตบสไลม์ — เรียนรู้จังหวะ' },
-      { face:'face3.png', hp:.34, atk:1.00, traits:['stone'],        wave:['slime','skel'],
-        pattern:'Sticky Spit', patternTh:'ถ่มเมือก — ตัวอักษรกลายเป็นหิน' },
-      { face:'face2.png', hp:.36, atk:1.10, traits:['heavy','weak'], wave:['candle','skel'], support:3,
-        pattern:'Abyss Crash', patternTh:'ชาร์จแล้วทุบหนัก · มีจุดอ่อนตัวอักษร · ยิงสนับสนุนสไลม์' },
-      { face:'face4.png', hp:.42, atk:1.15, traits:['vamp'], caster:true, wave:['bat'], support:2, summon:{ every:3, max:2, kind:'bat' },
-        pattern:'Abyss Orb', patternTh:'ยิงลูกเมือกระยะไกล · ดูดเลือด · เรียกสไลม์เป็นช่วงๆ' },
+      { face:'face5.png', hp:.45, blush:.22, traits:['heavy'],          wave:['slime','rat'],
+        pattern:'Blush Strike', patternTh:'ชาร์จ 1 เทิร์น แล้วเขิน… ดาเมจแรงมาก' },
+      { face:'face3.png', hp:.50, blush:.25, traits:['heavy','stone'],  wave:['slime','skel'],
+        pattern:'Blush Strike + Sticky Spit', patternTh:'เขินแรงขึ้น · ตัวอักษรกลายเป็นหิน' },
+      { face:'face2.png', hp:.52, blush:.27, traits:['heavy','weak'],   wave:['candle','skel'], support:3,
+        pattern:'Blush Strike + Abyss Orb', patternTh:'เขินแรงขึ้นอีก · มีจุดอ่อนตัวอักษร · ยิงช่วยสไลม์' },
+      { face:'face4.png', hp:.50, blush:.29, traits:['heavy','vamp'], caster:true, wave:['bat'], support:3, summon:{ every:4, max:1, kind:'bat' },
+        pattern:'Final Blush', patternTh:'เขินระยะไกล · ดูดเลือด · เรียกสไลม์เป็นช่วงๆ' },
     ],
   },
 };
@@ -90,7 +94,10 @@ function bxApplyPhase(e, i){
   const B = e.bx, P = B.def.phases[i];
   B.phase = i+1; B.turns = 0; B.summons = 0;
   const hp = Math.max(10, Math.round(B.baseHp*P.hp));
-  Object.assign(e, { hp, maxHp:hp, atk:Math.max(1, Math.round(B.baseAtk*P.atk)), traits:P.traits.slice(), caster:!!P.caster,
+  // the heavy trait hits for atk×2.2 → pick atk so a blush strike lands at ~P.blush of the hero's max HP
+  const heroMax = (ui.bat && ui.bat.max) || maxHp();
+  const atk = P.blush ? Math.round(P.blush*heroMax/2.2) : Math.round(B.baseAtk*(P.atk||1));
+  Object.assign(e, { hp, maxHp:hp, atk:Math.max(1, atk), traits:P.traits.slice(), caster:!!P.caster,
     charge:0, burn:0, poison:0, frozen:0, stun:false });
   B.face = P.face;
 }
@@ -149,6 +156,7 @@ function bxFaceOf(e){
 function bxEnsureLayer(){
   const b = ui.bat, act = $('#actors'); if(!b || !act) return null;
   const e = b.stage.enemies.slice(b.idx).find(isBxBoss); if(!e) return null; e.bxBoss = true;
+  if(e.bx && !e.bx.shown){ if(curEnemy()!==e) return null; e.bx.shown = true; }      // story boss: appears only when she enters the fight
   let g = $('#bossG');
   if(!g){
     const def = bossDefFor(e.key) || BOSS_DEFS.abyss, A = def.art, s = A.height/A.h, W = A.w*s, H = A.h*s;
@@ -156,11 +164,11 @@ function bxEnsureLayer(){
     g.setAttribute('transform', `translate(${A.x},${A.floor})`);
     g.innerHTML = `<defs><radialGradient id="bxPool"><stop offset="0" stop-color="#1a0a2e" stop-opacity=".95"/><stop offset=".55" stop-color="#2a1048" stop-opacity=".75"/><stop offset="1" stop-color="#2a1048" stop-opacity="0"/></radialGradient>
         <radialGradient id="bxAura"><stop offset="0" stop-color="#b04aff" stop-opacity=".35"/><stop offset="1" stop-color="#b04aff" stop-opacity="0"/></radialGradient></defs>
-      <ellipse class="bx-aura" cx="${-W*.05}" cy="${-H*.55}" rx="${W*.62}" ry="${H*.6}" fill="url(#bxAura)"/>
+      <g class="bx-riser"><ellipse class="bx-aura" cx="${-W*.05}" cy="${-H*.55}" rx="${W*.62}" ry="${H*.6}" fill="url(#bxAura)"/>
       <g class="bx-body"><image href="${A.dir}${A.body}" x="${-W/2}" y="${-H}" width="${W}" height="${H}" preserveAspectRatio="xMidYMid meet"/>
         <image class="bx-face" href="${A.dir}${bxFaceOf(e)}" x="${-W/2 + A.face.x*s}" y="${-H + A.face.y*s}" width="${A.face.w*s}" height="${A.face.h*s}"/></g>
       <ellipse class="bx-pool" cx="0" cy="-2" rx="${W*.62}" ry="34" fill="url(#bxPool)"/>
-      <g class="bx-drips">${[-.34,-.12,.1,.3].map((k,i)=>`<ellipse cx="${W*k}" cy="${-4 - (i%2)*6}" rx="${16+i*4}" ry="7" fill="#3a1a60" opacity=".7"/>`).join('')}</g>`;
+      <g class="bx-drips">${[-.34,-.12,.1,.3].map((k,i)=>`<ellipse cx="${W*k}" cy="${-4 - (i%2)*6}" rx="${16+i*4}" ry="7" fill="#3a1a60" opacity=".7"/>`).join('')}</g></g>`;
     act.insertBefore(g, act.firstChild);
   }
   bxRefresh();
@@ -177,7 +185,7 @@ function bxRefresh(){
   const e = curEnemy(), boss = b.stage.enemies.slice(b.idx).find(isBxBoss);
   if(!boss){ return; }
   g.classList.toggle('active', isBxBoss(e));
-  if(!boss._bxDying) bxSetFace(bxFaceOf(boss));
+  if(!boss._bxDying && !(boss._bxExpr && boss._bxExpr > performance.now())) bxSetFace(bxFaceOf(boss));
   bxBar();
 }
 
@@ -185,7 +193,7 @@ function bxRefresh(){
 function bxBar(){
   const b = ui.bat, st = $('#stage'); if(!b || !st) return;
   const boss = b.stage.enemies.find(x=>x.bx); let el = $('#bxBar');
-  if(!boss){ if(el) el.remove(); return; }
+  if(!boss || !boss.bx.shown){ if(el) el.remove(); return; }
   const B = boss.bx, P = B.def.phases, n = P.length, cur = B.phase;
   if(!el){
     st.insertAdjacentHTML('beforeend', `<div class="bx-bar" id="bxBar" aria-live="polite"><div class="bx-top"><b class="bx-name"></b><em class="bx-ph"></em></div><div class="bx-segs">${P.map(()=>'<span><i></i></span>').join('')}</div><div class="bx-pat"></div></div>`);
@@ -215,16 +223,25 @@ buildBattleDom = (f=>function(){ const r = f.apply(this, arguments); try{ bxEnsu
 intro = (f=>async function(){
   const r = await f.apply(this, arguments);
   const b = ui.bat;
-  if(b && b.stage.bx && !b.bxIntro){ b.bxIntro = true; sfx.boss && sfx.boss(); banner(b.stage.bx.name.toUpperCase(), `${b.stage.bx.th} ปรากฏตัว!`); shake(true); }
+  if(b && b.stage.bx && !b.bxIntro && isBxBoss(curEnemy())){ b.bxIntro = true; sfx.boss && sfx.boss(); banner(b.stage.bx.name.toUpperCase(), `${b.stage.bx.th} ปรากฏตัว!`); shake(true); }
   return r;
 })(intro);
+
+/* ------------------------------ expressions: pain when hit, blush when she attacks ------------------------------ */
+function bxExpress(e, file, ms){
+  if(!e || e._bxDying || !$('#bossG')) return;
+  e._bxExpr = performance.now() + ms; bxSetFace(file);
+  clearTimeout(e._bxExprT); e._bxExprT = setTimeout(()=>{ if(!e._bxDying && ui.bat && $('#bossG')) bxSetFace(bxFaceOf(e)); }, ms);
+}
+const bxArt = e=>((e && bossDefFor(e.key)) || BOSS_DEFS.abyss).art;
+const bxHurtFace = e=>{ const A = bxArt(e); return bxFaceOf(e)===A.hurt ? A.hurtAlt : A.hurt; };
 
 /* ------------------------------ boss animations (the placeholder does the engine's moves) ------------------------------ */
 const bxBody = ()=>document.querySelector('#bossG .bx-body');
 enemyHurt = (f=>function(dmg, big){
   const r = f.apply(this, arguments);
   try{ const e = curEnemy(), body = bxBody();
-    if(isBxBoss(e) && body){ anim(body, [{ transform:'translateX(0)', filter:'brightness(1)' },{ transform:'translateX(14px)', filter:'brightness(2.2) saturate(.3)' },{ transform:'translateX(-6px)', filter:'brightness(1.3)' },{ transform:'translateX(0)', filter:'brightness(1)' }], { duration:big?420:320 }); bxBar(); }
+    if(isBxBoss(e) && body){ bxExpress(e, bxHurtFace(e), big ? 750 : 550); anim(body, [{ transform:'translateX(0)', filter:'brightness(1)' },{ transform:'translateX(14px)', filter:'brightness(2.2) saturate(.3)' },{ transform:'translateX(-6px)', filter:'brightness(1.3)' },{ transform:'translateX(0)', filter:'brightness(1)' }], { duration:big?420:320 }); bxBar(); }
   }catch(err){}
   return r;
 })(enemyHurt);
@@ -234,24 +251,31 @@ function bxSplash(col){
     const a = -Math.PI*(.15+k/7*.7), d = rint(30,70);
     anim(c, [{ transform:tr(HERO_X+20, FLOOR_Y-70)+' scale(.4)', opacity:1 },{ transform:tr(HERO_X+20+Math.cos(a)*d, FLOOR_Y-70+Math.sin(a)*d)+' scale(1)', opacity:0 }], { duration:520, easing:'ease-out' }).then(()=>c.remove()); }
 }
+// BLUSH STRIKE: she blushes, a pink heart wave hits the hero hard
+function bxBlush(e){
+  bxExpress(e, bxArt(e).attack, 1500);
+  floatText('💗 BLUSH STRIKE!', EN_X-40, FLOOR_Y-e.h*e.sc-60, '#ff8ad0', 28, true);
+  const st = $('#stage'); if(st){ const f = document.createElement('div'); f.className = 'bx-blush'; st.appendChild(f); setTimeout(()=>f.remove(), 1100); }
+}
 async function bxLunge(heavy){
   const body = bxBody(); if(!body) return;
   anim(body, [{ transform:'translate(0,0) scale(1)' },{ transform:'translate(10px,4px) scale(.99)', offset:.3 },{ transform:`translate(${heavy?-70:-46}px,8px) scale(${heavy?1.08:1.05})`, offset:.55 },{ transform:'translate(0,0) scale(1)' }], { duration:heavy?760:640, easing:'ease-in-out' });
   await sleep(330);
-  bxSplash('#9a5aff');
+  bxSplash('#ff6ac8');
 }
 enemyAttackAnim = (f=>async function(){
   const e = curEnemy();
-  if(isBxBoss(e)){ const p = f.apply(this, arguments); await bxLunge(e.traits.includes('heavy')); return p; }
+  if(isBxBoss(e)){ bxBlush(e); await sleep(380); const p = f.apply(this, arguments); await bxLunge(e.traits.includes('heavy')); return p; }
   return f.apply(this, arguments);
 })(enemyAttackAnim);
 casterAttackAnim = (f=>async function(){
   const e = curEnemy(), body = bxBody();
-  if(isBxBoss(e) && body){ e.pal = Object.assign({}, e.pal, { c:'#b06aff' }); anim(body, [{ transform:'translateY(0)' },{ transform:'translateY(-10px) scale(1.02)' },{ transform:'translateY(0)' }], { duration:900 }); }
+  if(isBxBoss(e) && body){ bxBlush(e); e.pal = Object.assign({}, e.pal, { c:'#ff6ac8' }); anim(body, [{ transform:'translateY(0)' },{ transform:'translateY(-10px) scale(1.02)' },{ transform:'translateY(0)' }], { duration:900 }); }
   return f.apply(this, arguments);
 })(casterAttackAnim);
 enemyCharge = (f=>async function(){
   const e = curEnemy(), body = bxBody();
+  if(isBxBoss(e) && body) floatText('💗 กำลังเขิน… เทิร์นหน้าแรงมาก!', EN_X-30, FLOOR_Y-e.h*e.sc-40, '#ffb0e0', 20);
   if(isBxBoss(e) && body) anim(body, [{ filter:'brightness(1)' },{ filter:'brightness(1.4) drop-shadow(0 0 14px #ff3b6a)' },{ filter:'brightness(1)' },{ filter:'brightness(1.4) drop-shadow(0 0 14px #ff3b6a)' },{ filter:'brightness(1)' }], { duration:800 });
   return f.apply(this, arguments);
 })(enemyCharge);
