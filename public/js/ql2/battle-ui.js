@@ -60,7 +60,7 @@ function btBuild(){
   const ib = pops.querySelector('#btPopItems .bt-pbody');
   [heal, pow].forEach(p=>{ ib.appendChild(p); p.classList.add('bt-item'); });
   heal.insertAdjacentHTML('beforeend', '<span class="bt-il"><b>ยาฟื้นพลัง</b><small>HP +50%</small></span>');
-  pow.insertAdjacentHTML('beforeend', '<span class="bt-il"><b>ยาพลังคูณ</b><small>คำถัดไป x2</small></span>');
+  pow.insertAdjacentHTML('beforeend', '<span class="bt-il"><b>ยาพลังคูณ</b><small>คำถัดไป +50%</small></span>');
 
   // move the old side panels out of sight (they keep receiving updates)
   ['.left','.right','.tools'].forEach(s=>{ const n = dock.querySelector(s); if(n) hold.appendChild(n); });
@@ -217,7 +217,7 @@ Object.assign(ACTS2, {
   },
   btLog: ()=>{
     const b = ui.bat; if(!b) return;
-    const words = b.recent.slice(0,8).map(r=>{ const m = r.rude ? null : (save.book[r.w] || null); return `<div class="bt-lw"><b>${esc(r.w.toUpperCase())}</b><span>${m?esc(m.th):''}</span><em>${r.dmg}</em>${r.rude?'':`<button data-act="say" data-v="${esc(r.w)}" aria-label="ฟังเสียง">🔊</button>`}</div>`; }).join('');
+    const words = b.recent.slice(0,8).map(r=>{ const th = r.rude ? '' : bookThai(r.w); return `<div class="bt-lw"><b>${esc(r.w.toUpperCase())}</b><span>${esc(th)}</span><em>${r.dmg}</em>${r.rude?'':`<button data-act="say" data-v="${esc(r.w)}" aria-label="ฟังเสียง">🔊</button>`}</div>`; }).join('');
     modal(`<div class="bt-sheet"><span class="q2-kicker">BATTLE LOG</span><h3>บันทึกการต่อสู้</h3>
       <div class="bt-logl">${BT.log.length ? BT.log.map(x=>`<div class="${x.c}">${esc(x.t)}</div>`).join('') : '<p class="sub">ยังไม่มีเหตุการณ์</p>'}</div>
       ${words?`<h4 class="bt-sh">คำที่ใช้ (คำแปล)</h4><div class="bt-lws">${words}</div>`:''}

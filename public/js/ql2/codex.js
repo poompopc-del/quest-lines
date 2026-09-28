@@ -50,7 +50,7 @@ function renderCodex(){
       <div class="cx-tools"><input class="text-in cx-q" id="cxQ" placeholder="🔍 ค้นหาคำ หรือคำแปล" autocomplete="off" aria-label="ค้นหาคำศัพท์">
       <div class="seg cx-sort">${[['recent','ล่าสุด'],['mastery','ใช้บ่อย'],['az','A–Z']].map(([k,l])=>`<button class="${sort===k?'on':''}" data-act="cxSort" data-v="${k}">${l}</button>`).join('')}</div></div>
       <div class="cx-words">${words.length ? words.map(([w,d])=>{ const m = masteryInfo(w), md = save.mastery[w]||{}, el = md.el;
-        return `<button class="cx-w" data-act="cxWord" data-v="${esc(w)}" data-s="${esc((w+' '+(d.th||'')).toLowerCase())}"><b>${esc(w.toUpperCase())}${d.bank?' <i class="st">⭐</i>':''}${el?` <i>${ELEM_ICON[el]}</i>`:''}</b><span>${esc(d.th||'')}</span><span class="cx-lv"><em style="color:${WTIERS[wordTier(w)].c}">${WTIERS[wordTier(w)].k}</em><span class="mastery-bar"><i style="width:${m.lv>=5?100:m.prog/5*100}%"></i></span></span></button>`; }).join('')
+        return `<button class="cx-w" data-act="cxWord" data-v="${esc(w)}" data-s="${esc((w+' '+bookThai(w, d)).toLowerCase())}"><b>${esc(w.toUpperCase())}${d.bank?' <i class="st">⭐</i>':''}${el?` <i>${ELEM_ICON[el]}</i>`:''}</b><span>${esc(bookThai(w, d))}</span><span class="cx-lv"><em style="color:${WTIERS[wordTier(w)].c}">${WTIERS[wordTier(w)].k}</em><span class="mastery-bar"><i style="width:${m.lv>=5?100:m.prog/5*100}%"></i></span></span></button>`; }).join('')
         : `<p class="sub cx-empty">ยังไม่มีคำ ออกไปผจญภัยแล้วสะกดคำแรกเลย!</p>`}</div>`;
   } else if(t==='mon'){
     body = CHAPTERS.map((Ch,ci)=>`<h3 class="q2-sec">${esc(LOCS[ci].name)} <small>${Ch.pool.filter(k=>V.seen.mon[k]).length}/${Ch.pool.length}</small></h3>
@@ -76,7 +76,27 @@ function cxMonCard(k, tag){
   const V = V2(), seen = tag ? !!V.kills[k] || !!V.seen.mon[k] : !!V.seen.mon[k], M = MON[k];
   return `<button class="panel cx-mon ${seen?'':'unseen'} ${tag||''}" data-act="cxMon" data-v="${k}" ${seen?'':'disabled'}><span class="cx-art">${monsterIcon(k)}</span>${tag?`<span class="cx-tag">${tag==='boss'?'BOSS':'MINI'}</span>`:''}<b>${seen?esc(M.name):'???'}</b><small>${seen?`ปราบ ${V.kills[k]||0}`:'ยังไม่พบ'}</small></button>`;
 }
-function traitTextGeneric(t){ return t==='weak' ? 'จุดอ่อนตัวอักษร: คำที่มีตัวอักษรจุดอ่อน (สุ่มแต่ละตัว) แรง x2' : traitText(t, { weak:'?' }); }
+/* v45: word details from the Vocabulary Database — every meaning, part of speech, difficulty, category, review status */
+function vocabCardHtml(v, d){
+  const g = VocabularyManager.getWord(v), S = VocabularyManager.SCHEMA;
+  if(!g) return `<p class="cx-th">${esc((d||{}).th||'')}${(d||{}).bank?' ⭐':''}</p><p class="sub vc-st unk">Unknown Word · ยังไม่มีในคลังคำศัพท์</p>`;
+  const r = g.record, tr = r.preferredTranslation ? [r.preferredTranslation] : r.translations;
+  const list = r.translations.length > 1 && !r.preferredTranslation
+    ? `<ol class="vc-tr">${r.translations.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>` : `<p class="cx-th">${esc(tr[0])}</p>`;
+  const chips = [ g.target ? '⭐ คำเป้าหมาย' : '', ...(r.partOfSpeech||[]).map(p=>S.posTh[p] || p), r.difficulty ? `${S.difficulty[r.difficulty]} · ${S.difficultyTh[r.difficulty]}` : '', ...(r.category||[]).filter(c=>c!=='general').map(c=>S.categoryTh[c] || c) ].filter(Boolean);
+  const st = g.official ? '<span class="vc-st ok">✔ ตรวจสอบแล้ว</span>' : g.pending ? '<span class="vc-st pend">⏳ แปลอัตโนมัติ · รอตรวจ</span>' : r.status==='deprecated' ? '<span class="vc-st">เลิกใช้</span>' : '<span class="vc-st">คลังคำของเกม · ยังไม่ได้ตรวจทาน</span>';
+  return `${g.match==='form' ? `<p class="sub">รูปของคำว่า <b>${esc(g.base)}</b></p>` : ''}${list}
+    ${chips.length?`<div class="vc-chips">${chips.map(c=>`<span>${esc(c)}</span>`).join('')}</div>`:''}
+    ${r.pron||r.definition?`<p class="sub vc-def">${esc([r.pron, r.definition].filter(Boolean).join(' · '))}</p>`:''}${st}`;
+}
+(function(){ const st = document.createElement('style'); st.textContent = `
+  .vc-tr{margin:4px auto 6px;padding:0;list-style:none;counter-reset:vc;display:grid;gap:2px;justify-items:center}
+  .vc-tr li{counter-increment:vc;font-size:18px}.vc-tr li::before{content:counter(vc) '. ';opacity:.6}
+  .vc-chips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:6px 0}
+  .vc-chips span{font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(127,227,245,.12);border:1px solid rgba(127,227,245,.35)}
+  .vc-def{margin:4px 0}.vc-st{display:inline-block;font-size:12px;opacity:.85;margin:2px 0 6px}.vc-st.ok{color:#7dff9a}.vc-st.pend{color:#ffd27a}.vc-st.unk{color:#ff9a9a}`;
+  document.head.appendChild(st); })();
+function traitTextGeneric(t){ return t==='weak' ? 'จุดอ่อนตัวอักษร: คำที่มีตัวอักษรจุดอ่อน (สุ่มแต่ละตัว) แรงขึ้น +50%' : traitText(t, { weak:'?' }); }
 SCREENS.codex = { nav:'more', back:'more', render:renderCodex, key:()=>'', after:()=>{
   const q = $('#cxQ'); if(!q) return;
   q.value = ui.cxQ || ''; const run = ()=>{ const s = q.value.trim().toLowerCase(); ui.cxQ = q.value; document.querySelectorAll('.cx-w').forEach(b=>{ b.style.display = !s || b.dataset.s.includes(s) ? '' : 'none'; }); };
@@ -88,7 +108,7 @@ Object.assign(ACTS2, {
   cxWord: v=>{
     const d = (save.book||{})[v] || {}, m = masteryInfo(v), md = save.mastery[v]||{}, el = md.el || (()=>{ try{ const e = elementOf(v); return e && ELEMENTS[e] && ELEMENTS[e].god ? ELEMENTS[e].base : e; }catch(e){ return null; } })();
     const pct = m.lv>=5 ? 100 : Math.round(m.prog/5*100);
-    modal(`<div class="cx-card"><span class="q2-kicker">WORD MASTERY</span><h3 class="cx-cw">${esc(v.toUpperCase())}</h3><p class="cx-th">${esc(d.th||'')}${d.bank?' ⭐':''}</p>
+    modal(`<div class="cx-card"><span class="q2-kicker">WORD MASTERY</span><h3 class="cx-cw">${esc(v.toUpperCase())}</h3>${vocabCardHtml(v, d)}
       <div class="cx-tierline">${WTIERS.slice(1).map((t,i)=>`<span class="${wordTier(v)>=i+1?'on':''}" style="--wt:${t.c}">${t.k}</span>`).join('<i>›</i>')}</div>
       <div class="cx-mlv"><b>Level ${m.lv}</b><span>${m.lv>=5?'MAX':`อีก ${5-m.prog} ครั้งถึง Lv.${m.lv+1}`}</span></div>
       <div class="cx-blocks">${Array.from({length:10},(_,i)=>`<i class="${i<Math.round(pct/10)?'on':''}"></i>`).join('')}</div>

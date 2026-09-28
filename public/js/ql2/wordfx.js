@@ -1,7 +1,7 @@
 /* ==========================================================================
    QUEST LINES v26 — WORD STREAK · WORD MASTERY (per hero)
    Presentation + record-keeping only. The combo itself (and its damage
-   bonus: +8% per word, max +40% — see evalWord) is the original system;
+   bonus: v44 +5% per word, max +25% — BALANCE.COMBO_*) is the original system;
    this file just makes it visible and short-lived:
      · a small "🔥 WORD STREAK ×n · +x% DMG" chip that appears from 2 words
      · a quick GOOD! / GREAT! / AMAZING! / PERFECT! pop that fades by itself
@@ -10,7 +10,7 @@
      · longest word. Stored in save.v2.wm — nothing existing is changed.
    ========================================================================== */
 const WS = { tiers:[ null, 'GOOD!', 'GREAT!', 'AMAZING!', 'PERFECT!' ] };
-const streakBonus = c=>Math.round(Math.min(5, c||0)*8);          // mirrors evalWord: 1 + min(5,combo)*.08
+const streakBonus = c=>Math.round(BALANCE.comboBonus(c)*100);   // mirrors evalWord (BALANCE.comboBonus)
 
 /* ------------------------------ per-hero word mastery ------------------------------ */
 function wmOf(id){

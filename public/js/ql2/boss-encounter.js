@@ -60,10 +60,10 @@ const spriteOf = e=>{ const M = e && MON[e.key]; return M && M.sprite ? SPRITES[
 /* ------------------------------ the boss: very tough, hits very hard ------------------------------ */
 // multipliers on the stage's normal boss stats; 'heavy' = charges one turn, then hits ×2.2 (the engine's own trait)
 const BOSS_TUNING = {
-  kingslime:{ ch:0, n:8, hp:2.6, atk:1.3, traits:['heavy','weak'], lineup:'two' },     // slime → slime → boss
+  kingslime:{ ch:0, n:8, hp:BALANCE.BOSS_TUNING.kingslime.hp, atk:BALANCE.BOSS_TUNING.kingslime.atk, traits:['heavy','weak'], lineup:'two' },     // slime → slime → boss
   // Tyrant: much tougher than the old Necromancer — huge HP, charged claw rush (×2.2), thick hide
   // (3-letter words do half) and it drinks back part of what it deals
-  necro:    { ch:4, n:8, hp:2.4, atk:1.35, traits:['heavy','armor3','vamp'] },
+  necro:    { ch:4, n:8, hp:BALANCE.BOSS_TUNING.necro.hp, atk:BALANCE.BOSS_TUNING.necro.atk, traits:['heavy','armor3','vamp'] },
 };
 buildStage = (f=>function(ch, n){
   const st = f.apply(this, arguments);

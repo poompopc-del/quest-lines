@@ -321,7 +321,7 @@ addMastery = (f=>function(w){
       if(el && ELEMENTS[el] && ELEMENTS[el].god){ V.gods[el] = (V.gods[el]||0) + 1; el = ELEMENTS[el].base; }
       if(el && BASE_ELEMS.includes(el)){ V.elem[el] = (V.elem[el]||0) + 1; if(!V.seen.el[el]){ V.seen.el[el] = 1; note('codex', `📖 Codex: ค้นพบธาตุ ${ELEM_ICON[el]} ${ELEMENTS[el].name}`); } if(d) d.el = el; }
       if(w.length>=6) V.stats.long6++;
-      let bank = !!BANK[w]; if(!bank){ try{ const m = meaning(w); bank = !!(m && m.bank); }catch(e){} }
+      let bank = false; try{ bank = VocabularyManager.isTargetWord(w); }catch(e){}
       if(bank) V.stats.bankWords++;
       const t = today(); t.combo = Math.max(t.combo, combo);
       addXp(2 + Math.max(0, w.length-4));

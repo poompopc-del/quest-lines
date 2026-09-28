@@ -24,7 +24,7 @@ function openSettings(tab){
     body = `<div class="set2-row col"><div class="lab">ชื่อผู้เล่น</div><input class="text-in" data-input="rename" maxlength="14" value="${esc(save.name)}" aria-label="ชื่อผู้เล่น"></div>
       ${tg('haptic','การสั่นเมื่อแตะ','สั่นเบาๆ เมื่อสะกดคำยาว (มือถือ)')}
       ${tg('awake','หน้าจอไม่ดับระหว่างเล่น','ให้จอเปิดค้างไว้ตลอดที่เปิดเกม')}
-      ${tg('webTr','แปลคำด้วยอินเทอร์เน็ต','คำที่ไม่มีในพจนานุกรมในเครื่องจะแปลออนไลน์แล้วจำไว้')}
+      ${tg('webTr','แปลคำด้วยอินเทอร์เน็ต','คำที่ยังไม่มีในคลังคำศัพท์จะแปลออนไลน์เป็นฉบับร่าง (รอตรวจ) แล้วจำไว้ในเครื่อง')}
       <div class="set2-keys"><b>⌨️ คีย์บอร์ด (Controls)</b>
         <span><kbd>A–Z</kbd> เลือกตัวอักษร</span><span><kbd>Backspace</kbd> ลบตัวล่าสุด</span><span><kbd>Enter</kbd> โจมตี</span><span><kbd>Space</kbd> สลับตัวอักษร</span><span><kbd>Esc</kbd> หยุดเกม</span></div>
       <button class="cbtn blue block" data-act="howto">📘 วิธีเล่น</button>`;

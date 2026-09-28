@@ -14,16 +14,18 @@
          · stored damage keeps stacking until he attacks
      ⚔ โจมตี (right) — mouth empty: a normal Kirby attack
                         mouth full : STAR SPIT = (word + stored) × letter bonus
-   Letter bonus: every 10 letters held doubles it → 10 = x2 · 20 = x4 ·
-   30 = x8 · 40 = x16 … The star grows with everything he has swallowed.
+   Letter bonus (v44, BALANCE.KIRBY): every 10 letters held adds +50% →
+   10 = x1.5 · 20 = x2 · 30 = x2.5 · 40+ = x3 (cap). Was x2 per 10 letters
+   (x8 at 30, x16 at 40 …). A swallowed enemy now adds 50% of its max HP.
+   The star grows with everything he has swallowed.
    Two animation sets: normal (idle/walk/hurt + slide · roll · flip attacks)
    and mouthful (fidle/fwalk/fhurt + spit), switched by the 'kfull' class.
    Everything is a wrapper — the battle engine is untouched.
    ========================================================================== */
-const KIRBY = { id:'puff', min:4, per:10 };
+const KIRBY = { id:'puff', min:4, per:BALANCE.KIRBY.per };
 const isKirby = ()=>typeof charIs==='function' && charIs(KIRBY.id);
-// letter bonus: x2 for every full 10 letters in his mouth
-const kMult = letters=>Math.pow(2, Math.floor((letters||0)/KIRBY.per));
+// letter bonus: +50% for every full 10 letters in his mouth, capped (v44 — was x2 per 10 letters)
+const kMult = letters=>BALANCE.kirbyMult(letters);
 const kFull = b=>!!(b && ((b.kLetters||0) > 0 || (b.kStore||0) > 0));
 const kFmt = n=>n>=1e6 ? (n/1e6).toFixed(n>=1e7?0:1)+'M' : n>=1e4 ? Math.round(n/1e3)+'K' : String(n);
 // letters that can be sucked in right now: the whole board except stone tiles
@@ -77,7 +79,7 @@ function kSync(){
   if(!el){ el = document.createElement('span'); el.id = 'kBadge'; el.className = 'k-badge'; me.appendChild(el); }
   const L = b.kLetters||0;
   el.textContent = `😋${L} ⭐x${kMult(L)} 💥${kFmt(b.kStore||0)}`;
-  el.title = `อม ${L} ตัวอักษร (อีก ${KIRBY.per - L%KIRBY.per} ตัวได้ x${kMult(L)*2}) · ดาเมจสะสม ${b.kStore||0}`;
+  el.title = `อม ${L} ตัวอักษร (อีก ${KIRBY.per - L%KIRBY.per} ตัวได้ x${kMult(L+KIRBY.per)}) · ดาเมจสะสม ${b.kStore||0}`;
 }
 
 /* ------------------------------ the split button ------------------------------ */
@@ -127,11 +129,11 @@ evalWord = (f=>function(){
   r.kBase = r.dmg;
   if(inhale){
     const gain = kBoardCount(), eat = (!e.boss && !e.mini) || !!r.rude;   // a rude word swallows bosses too
-    const L = (b.kLetters||0) + gain, add = r.dmg + (eat ? e.maxHp : 0);
+    const L = (b.kLetters||0) + gain, add = r.dmg + (eat ? Math.round(e.maxHp*BALANCE.KIRBY.eatHp) : 0);
     r.kMode = eat ? 'eat' : 'suck'; r.kGain = gain; r.kAdd = add;
     r.dmg = eat ? Math.max(1, Math.ceil(e.hp)) : 0;       // swallowed = gone · bosses take nothing
     r.notes.unshift(eat
-      ? `${r.rude && (e.boss || e.mini) ? '🤬 ดูดด้วยคำหยาบ! ' : '🌀 ดูด! '}กลืน ${e.name} (HP ${e.maxHp}) + ตัวอักษร ${gain} ตัว → สะสม ${(b.kStore||0)+add} ⭐x${kMult(L)}`
+      ? `${r.rude && (e.boss || e.mini) ? '🤬 ดูดด้วยคำหยาบ! ' : '🌀 ดูด! '}กลืน ${e.name} (+${Math.round(e.maxHp*BALANCE.KIRBY.eatHp)}) + ตัวอักษร ${gain} ตัว → สะสม ${(b.kStore||0)+add} ⭐x${kMult(L)}`
       : `🌀 ${e.boss?'บอส':'มินิบอส'}ดูดไม่ได้ → ดูดตัวอักษร ${gain} ตัว → สะสม ${(b.kStore||0)+add} ⭐x${kMult(L)}`);
   } else if(kFull(b)){
     const m = kMult(b.kLetters), st = b.kStore||0;

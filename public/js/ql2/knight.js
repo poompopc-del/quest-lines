@@ -3,17 +3,18 @@
    --------------------------------------------------------------------------
    ELITE KNIGHT  (id 'knight', free, everyone owns him)
      · 🛡️ เกราะเหล็ก   — takes 15% less damage (dmgTaken .85) · HP x1.1
-     · ⚔️ คลื่นดาบอัศวิน — words of 5+ letters use the finisher, +20%
-     · 🔥 ใจอัศวิน      — below half HP, +15% damage
+     · ⚔️ คลื่นดาบอัศวิน — words of 5+ letters use the finisher (animation; v44: no extra damage)
+     · 🔥 ใจอัศวิน      — below half HP, +10% damage (BALANCE.KNIGHT)
    PLINK  (id 'pip', 1200 gold — saves that already had him keep him)
-     · ✨ ลำแสงดาบ      — at full HP a sword beam flies ahead of the swing, +30%
-     · 🔥 คลื่นดาบเพลิง — words of 6+ letters use the finisher, x1.5
+     · ✨ ลำแสงดาบ      — at full HP a sword beam flies ahead of the swing, +20% (BALANCE.PLINK)
+     · 🔥 คลื่นดาบเพลิง — words of 6+ letters use the finisher (animation; v44: no extra damage)
      · 🛡️ โล่           — 15% chance to block an enemy attack completely
      · 📚 นักเรียนขยัน  — +1 hint per stage, ⭐ target words give +3 gold (engine)
    Everything is a wrapper — the battle engine is untouched.
    ========================================================================== */
-const KNIGHT = { id:'knight', finLen:5, finMul:1.2, lowHp:.5, lowMul:1.15 };
-const PLINK = { id:'pip', beamMul:1.3, finLen:6, finMul:1.5, block:.15 };
+// v44 balance: one damage mechanic per hero, additive (BONUS group) — see js/ql2/balance.js
+const KNIGHT = { id:'knight', finLen:5, finMul:1+BALANCE.KNIGHT.finBonus, lowHp:BALANCE.KNIGHT.lowHp, lowMul:1+BALANCE.KNIGHT.lowBonus };
+const PLINK = { id:'pip', beamMul:1+BALANCE.PLINK.beamBonus, finLen:6, finMul:1+BALANCE.PLINK.finBonus, block:BALANCE.PLINK.block };
 const isKnight = ()=>save.eq && save.eq.char===KNIGHT.id;
 const isPlink = ()=>save.eq && save.eq.char===PLINK.id;
 CHAR_TIP.knight = 160;
@@ -22,15 +23,14 @@ CHAR_TIP.knight = 160;
 evalWord = (f=>function(){
   const r = f.apply(this, arguments), b = ui.bat;
   if(!b || r.state!=='ok' || r.rude) return r;
-  let m = 1;
+  const pc = m=>`+${Math.round((m-1)*100)}%`;
   if(isKnight()){
-    if(r.w.length >= KNIGHT.finLen){ m *= KNIGHT.finMul; r.notes.unshift(`⚔️ คลื่นดาบอัศวิน +${Math.round((KNIGHT.finMul-1)*100)}%`); }
-    if(b.hp > 0 && b.hp < b.max*KNIGHT.lowHp){ m *= KNIGHT.lowMul; r.notes.unshift(`🔥 ใจอัศวิน +${Math.round((KNIGHT.lowMul-1)*100)}%`); }
+    if(r.w.length >= KNIGHT.finLen && KNIGHT.finMul > 1) dmgMod(r, 'bonus', KNIGHT.finMul-1, `⚔️ คลื่นดาบอัศวิน ${pc(KNIGHT.finMul)}`);
+    if(b.hp > 0 && b.hp < b.max*KNIGHT.lowHp) dmgMod(r, 'bonus', KNIGHT.lowMul-1, `🔥 ใจอัศวิน ${pc(KNIGHT.lowMul)}`);
   } else if(isPlink()){
-    if(b.hp >= b.max){ m *= PLINK.beamMul; r.notes.unshift(`✨ ลำแสงดาบ +${Math.round((PLINK.beamMul-1)*100)}%`); }
-    if(r.w.length >= PLINK.finLen){ m *= PLINK.finMul; r.notes.unshift(`🔥 คลื่นดาบเพลิง x${PLINK.finMul}`); }
+    if(b.hp >= b.max) dmgMod(r, 'bonus', PLINK.beamMul-1, `✨ ลำแสงดาบ ${pc(PLINK.beamMul)}`);
+    if(r.w.length >= PLINK.finLen && PLINK.finMul > 1) dmgMod(r, 'bonus', PLINK.finMul-1, `🔥 คลื่นดาบเพลิง ${pc(PLINK.finMul)}`);
   }
-  if(m !== 1) r.dmg = Math.max(1, Math.round(r.dmg*m));
   return r;
 })(evalWord);
 
