@@ -90,6 +90,7 @@ const BALANCE = {
 
   /* ----------------------------- NEW ACCESSORIES (v51, js/ql2/items.js) --- */
   ACC_NEW: { prism:.15, monocle:.25, rune:.20, leaf:.03, ironHeart:.15, hourglassUlt:2 },
+  BOOTS_CHANCE: .30,        // Swift Boots (400 gold): shuffling keeps your turn 30% of the time (was: always)
 
   /* ----------------------------- HEROES --------------------------- */
   // Each hero: ONE damage mechanic (core) + ONE supporting passive.

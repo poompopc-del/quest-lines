@@ -4,7 +4,7 @@
    Heroes, Elements, Bosses and Lore. Undiscovered entries stay as ???.
    ========================================================================== */
 const LORE = [
-  { id:'haven', t:'ฐานแสงจันทร์', en:'Moonlit Haven', req:()=>true, txt:'ป้อมเล็กๆ บนหน้าผาริมทะเล ที่ซึ่งนักสะกดคำทุกคนเริ่มต้นการเดินทาง ใต้แสงจันทร์ดวงใหญ่ที่ไม่เคยลับฟ้า' },
+  { id:'haven', t:'ฐานถ้ำลับ', en:'Hollow Haven', req:()=>true, txt:'ค่ายลับหน้าปากถ้ำเก่า กองไฟไม่เคยมอด กระดูกของผู้ที่มาก่อนยังเกลื่อนพื้น และในความมืดลึกเข้าไป… มีดวงตาคู่แดงเฝ้ามองนักสะกดคำทุกคนที่เริ่มต้นการเดินทางจากที่นี่' },
   { id:'words', t:'พลังแห่งถ้อยคำ', en:'The Power of Words', req:()=>save.stats.words>=10, reqTxt:'สะกดคำ 10 คำ', txt:'ในโลกนี้ คำที่สะกดถูกต้องคือเวทมนตร์ ยิ่งคำยาว พลังยิ่งมาก และคำบางคำยังปลุกธาตุที่หลับใหลอยู่ในอาวุธ' },
   ...LOCS.map((L,i)=>({ id:'loc'+i, t:L.th, en:L.name, req:()=>chapterOpen(i), reqTxt:`ปลดล็อก ${L.name}`, txt:L.blurb })),
   ...CHAPTERS.map((C,i)=>({ id:'boss'+i, t:`บันทึกการปราบ ${MON[C.boss].name}`, en:'Boss Record', req:()=>(V2().kills[C.boss]||0)>0, reqTxt:`ปราบ ${MON[C.boss].name}`,

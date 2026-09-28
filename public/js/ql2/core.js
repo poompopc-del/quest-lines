@@ -26,7 +26,7 @@ const LOCS = [
 ];
 // the new location names show everywhere (battle banners, reward screens …)
 CHAPTERS.forEach((C,i)=>{ const L = LOCS[i]; if(L){ C.name = L.name; C.th = L.th; } });
-const HUB_NAME = { name:'Moonlit Haven', th:'ฐานแสงจันทร์' };
+const HUB_NAME = { name:'Hollow Haven', th:'ฐานถ้ำลับ' };
 
 /* ------------------------------ materials ------------------------------ */
 const MATS = {
