@@ -32,7 +32,7 @@ function openSettings(tab){
     body = `<div class="set2-row"><div class="lab">สำรอง / ย้ายเซฟ (Export)<small>คัดลอกรหัสไปวางในอีกเครื่อง</small></div><button class="cbtn small wood" data-act="export">Export</button></div>
       <div class="set2-row"><div class="lab">นำเข้าเซฟ (Import)<small>วางรหัสจากเครื่องอื่น</small></div><button class="cbtn small wood" data-act="importOpen">Import</button></div>
       <div class="set2-row danger"><div class="lab">ล้างข้อมูลทั้งหมด (Reset)<small>ลบความคืบหน้า ทอง และอุปกรณ์</small></div><button class="cbtn small red" data-act="resetAsk" ${battle?'disabled':''}>Reset</button></div>
-      <p class="sub set2-ver">Quest Lines ${QL2.ver} · World &amp; Progression · เซฟอยู่ในเครื่องนี้ · เล่นออฟไลน์ได้</p>`;
+      <p class="sub set2-ver">LETTERⁿ ${QL2.ver} · World &amp; Progression · เซฟอยู่ในเครื่องนี้ · เล่นออฟไลน์ได้</p>`;
   }
   modal(`<div class="set2"><div class="set2-head"><span class="set2-k">⚙️ SETTINGS<small>ตั้งค่า</small></span><button class="q2-x" data-act="closeModal" aria-label="ปิด">${IC2.close}</button></div>
     <div class="seg set2-tabs" role="tablist">${tabs.map(([k,i,l])=>`<button class="${k===tab?'on':''}" data-act="settings" data-v="${k}" role="tab" aria-selected="${k===tab}">${i} ${l}</button>`).join('')}</div>

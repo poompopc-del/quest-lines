@@ -1,6 +1,6 @@
 {
-  "name": "Quest Lines 2.0 — Word Battle RPG",
-  "short_name": "Quest Lines",
+  "name": "LETTERⁿ — Word Battle RPG",
+  "short_name": "LETTERⁿ",
   "description": "RPG ผจญภัยที่ใช้การสะกดคำภาษาอังกฤษเป็นระบบต่อสู้ — ฐาน · แผนที่โลก · ภารกิจ · ฮีโร่ · โคเด็กซ์ · เล่นได้แม้ออฟไลน์",
   "start_url": "./index.html",
   "scope": "./",
