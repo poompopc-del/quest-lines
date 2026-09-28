@@ -1332,11 +1332,11 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=35">
-<link rel="stylesheet" href="css/endgame.css?v=35">
-<link rel="stylesheet" href="css/battle.css?v=35">
-<link rel="stylesheet" href="css/ui26.css?v=35">
-<link rel="stylesheet" href="css/boss.css?v=35">
+<link rel="stylesheet" href="css/ql2.css?v=36">
+<link rel="stylesheet" href="css/endgame.css?v=36">
+<link rel="stylesheet" href="css/battle.css?v=36">
+<link rel="stylesheet" href="css/ui26.css?v=36">
+<link rel="stylesheet" href="css/boss.css?v=36">
 </head>
 <body>
 <div id="app"></div>
@@ -1942,7 +1942,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 20; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 21; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1967,7 +1967,22 @@ const HERO_SPRITE = {
       atk2:{ n:4,  cw:47,  ax:17, dur:.7,  th:'แทงดาบ' },
       atk3:{ n:5,  cw:57,  ax:35, dur:.7,  th:'ฟันเสย' },
       fin: { n:10, cw:118, ax:45, dur:1.4, th:'คลื่นดาบเพลิง' } },
-    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5 },
+    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:6,
+    finNote:'สะกดคำ <b>6 ตัวอักษรขึ้นไป</b> = ท่าไม้ตาย <b>คลื่นดาบเพลิง</b> x1.5 · HP เต็มยิง <b>ลำแสงดาบ</b> +30%' },
+  // Elite Knight (v36 starter) — frames from "Dungeon Maker · Hero · Elite Knight", mirrored to face right.
+  // The sheet's armour-break defeat frames are not used; 'dead' is an armoured fall built from a hurt frame.
+  knight: { dir:'heroes/knight/', ch:112, scale:2, face:'-16 -150 50 50',
+    anims:{
+      idle:{ n:4, cw:216, ax:70,  dur:1.6, loop:true },
+      walk:{ n:8, cw:216, ax:70,  dur:.8,  loop:true },
+      hurt:{ n:3, cw:216, ax:70,  dur:.6 },
+      dead:{ n:4, cw:216, ax:110, dur:1.0 },
+      atk1:{ n:5, cw:216, ax:70,  dur:.7, th:'แทงดาบยักษ์' },
+      atk2:{ n:5, cw:216, ax:70,  dur:.7, th:'วิ่งพุ่งแทง' },
+      atk3:{ n:5, cw:216, ax:70,  dur:.75, th:'ฟันคลื่นแสง' },
+      fin: { n:7, cw:216, ax:70,  dur:1.1, th:'คลื่นดาบอัศวิน' } },
+    attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5,
+    finNote:'สะกดคำ <b>5 ตัวอักษรขึ้นไป</b> = ท่าไม้ตาย <b>คลื่นดาบอัศวิน</b> แรง +20%' },
   // Kirby (id stays 'puff' so old saves keep the fighter) — pixel strips from Kirby Super Star Ultra.
   // f* = the "mouthful" set used while an enemy / letters are held in his mouth (see js/ql2/kirby.js)
   puff: { dir:'heroes/kirby/', ch:34, scale:3.8, face:'-44 -98 88 88',            // v32: was 5
@@ -2135,7 +2150,7 @@ function sprActiveName(actor, c){
   requestAnimationFrame(frame);
 })();
 function charSVG(eq){
-  const k = (eq||{}).char || 'pip', img = HERO_IMG[k];
+  const k = (eq||{}).char || 'knight', img = HERO_IMG[k];
   if(HERO_SPRITE[k]) return heroSpriteSVG(k);
   if(img && img.src) return heroImgSVG(img);
   const art = (CHAR_ART[k] || heroSVG)(eq);
@@ -2481,12 +2496,12 @@ Object.keys(HERO_STYLE).forEach(k=>{ CHAR_ART[k] = eq=>charBody(HERO_STYLE[k], e
 function heroSVG(eq){ return charBody(HERO_STYLE.pip, eq); }
 const CHAR_FACE = { pip:'-40 -164 90 90', bastion:'-40 -180 96 96', mira:'-40 -164 90 90', rook:'-42 -164 92 92', bruna:'-40 -164 90 90', luma:'-40 -164 90 90', kiko:'-40 -164 90 90' };
 // v32: X, Kirby and Mia are smaller in battle — menus (home, heroes, inventory) keep them at showcase size
-const MENU_ZOOM = { x:1.5, puff:1.3, mao:1.45 };
+const MENU_ZOOM = { x:1.5, puff:1.3, mao:1.45, knight:1.1 };
 function heroStandalone(eq, cls){
   const z = MENU_ZOOM[(eq||{}).char||''];
   return `<svg class="hero-svg ${cls||''}" viewBox="-88 -206 196 222" aria-hidden="true"><g class="actor idle">${z?`<g transform="scale(${z})">`:''}${charSVG(eq)}${z?'</g>':''}</g></svg>`;
 }
-function heroFaceSvg(eq){ const k=(eq||{}).char||'pip'; return `<svg viewBox="${heroImgFace(k)||CHAR_FACE[k]||CHAR_FACE.pip}" aria-hidden="true"><g class="actor idle">${charSVG(eq)}</g></svg>`; }
+function heroFaceSvg(eq){ const k=(eq||{}).char||'knight'; return `<svg viewBox="${heroImgFace(k)||CHAR_FACE[k]||CHAR_FACE.pip}" aria-hidden="true"><g class="actor idle">${charSVG(eq)}</g></svg>`; }
 function weaponIcon(id){ return `<svg viewBox="-56 -124 112 156" class="wicon" aria-hidden="true"><g transform="rotate(35 0 -40)">${(WEAPON_ART[id]||WEAPON_ART.wood)()}</g></svg>`; }
 function shieldIcon(id){ return `<svg viewBox="-30 -32 60 64" class="wicon" aria-hidden="true">${id==='none'?'':(SHIELD_ART[id]||SHIELD_ART.none)()}</svg>`; }
 // rocky ledge with grass tufts (as on the character sheet)
@@ -4266,7 +4281,8 @@ const ACCESSORIES = [
   { id:'phoenix',  name:'Phoenix Feather',th:'ขนนกฟีนิกซ์', price:900, desc:'เมื่อ HP หมด ฟื้นคืนชีพ 40% (1 ครั้ง/ด่าน)' },
 ];
 const CHARACTERS = [
-  { id:'pip',     name:'Plink',       th:'พลิงค์ นักดาบหมวกเขียว', price:0,    role:'สมดุล', skill:'นักเรียนขยัน', desc:'คำใบ้ +1 ครั้งต่อด่าน และคำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
+  { id:'knight',  name:'Elite Knight', th:'อัศวินเหล็กผมแดง', price:0, role:'อัศวิน · ทนทาน', skill:'เกราะเหล็ก', desc:'🛡️ เกราะเหล็ก: รับดาเมจน้อยลง 15% · ⚔️ คำ 5 ตัวอักษรขึ้นไป = ท่าไม้ตายคลื่นดาบอัศวิน +20% · 🔥 ใจอัศวิน: HP ต่ำกว่าครึ่ง ดาเมจ +15%', hpMul:1.1, dmgTaken:.85 },
+  { id:'pip',     name:'Plink',       th:'พลิงค์ นักดาบหมวกเขียว', price:1200, role:'นักดาบ · ครบเครื่อง', skill:'ลำแสงดาบ', desc:'✨ ลำแสงดาบ: HP เต็ม = ยิงลำแสงดาบ ดาเมจ +30% · 🔥 คำ 6 ตัวอักษรขึ้นไป = ท่าไม้ตายคลื่นดาบเพลิง x1.5 · 🛡️ โล่: 15% ปัดการโจมตีได้หมด · 📚 นักเรียนขยัน: คำใบ้ +1 ครั้ง/ด่าน · คำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
   { id:'puff',    name:'Kirby',       th:'เคอร์บี้ ก้อนชมพูจอมดูด', price:1800, role:'จอมดูด', skill:'ดูดแล้วพ่น', desc:'ปุ่มโจมตีแบ่งครึ่ง: 🌀 ดูด (คำ 4 ตัวขึ้นไป) หรือ ⚔ โจมตี · ดูดศัตรูทั้งตัว (เอา HP มาสะสมเป็นดาเมจ) + ตัวอักษรทั้งกระดาน · ยิ่งดูดยิ่งสะสม ทุก 10 ตัวอักษรดาเมจคูณ 2 (10=x2 · 20=x4 · 30=x8…) · กดโจมตีตอนอม = พ่นดาวยักษ์ · บอส/มินิบอสดูดได้แค่ตัวอักษร ยกเว้นใช้คำหยาบ 🤬 จะกลืนบอสได้เลย (แต่ยังเจ็บตัวเอง)', hpMul:1, dmgTaken:1 },
 ];
 /* ---------------- elemental words → weapon enchant ---------------- */
@@ -4398,7 +4414,7 @@ function makeEnemy(key, s, rng, boss, mini){
 /* ------------------------------ save ------------------------------ */
 const SAVE_KEY = 'questlines_wordbattle_v1';
 function defaultSave(){
-  return { v:2, name:'', gold:0, hpLv:0, weapons:['wood'], armors:['none'], accs:[], acc:[null,null,null,null], chars:['pip'], eq:{ weapon:'wood', armor:'none', char:'pip' },
+  return { v:2, name:'', gold:0, hpLv:0, weapons:['wood'], armors:['none'], accs:[], acc:[null,null,null,null], chars:['knight'], eq:{ weapon:'wood', armor:'none', char:'knight' },
     potions:{ heal:2, power:1 }, up:{}, cleared:0, stars:{}, best:{},
     stats:{ words:0, longest:'', bestDmg:0, bestWord:'', kills:0, bosses:0, damage:0, bestCombo:0, golden:0, ultimates:0, crit:0 },
     mastery:{}, achievements:{}, book:{}, tutorial:false, settings:{ sfx:70, music:false, tts:true, autoSpeak:true, awake:true, webTr:true, rim:true } };
@@ -6932,9 +6948,9 @@ function xImpact(n){
   const REMOVED = {"mira": 400, "rook": 600, "bastion": 800, "luma": 1000, "bruna": 1400, "kiko": 2200};
   const valid = new Set(CHARACTERS.map(c=>c.id));
   let refund = 0;
-  save.chars = (save.chars||['pip']).filter(id=>{ if(valid.has(id)) return true; refund += REMOVED[id]||0; return false; });
-  if(!save.chars.includes('pip')) save.chars.unshift('pip');
-  if(!valid.has(save.eq.char)) save.eq.char = 'pip';
+  save.chars = (save.chars||['knight']).filter(id=>{ if(valid.has(id)) return true; refund += REMOVED[id]||0; return false; });
+  if(!save.chars.includes('knight')) save.chars.unshift('knight');
+  if(!valid.has(save.eq.char)) save.eq.char = 'knight';
   if(refund){ save.gold += refund; persist(); setTimeout(()=>toast(`ตัวละครเก่าถูกถอดออก · คืนทอง ${refund}`), 800); }
   else persist();
   if(ui.screen!=='battle') render();
@@ -6945,7 +6961,8 @@ function xImpact(n){
    the character tab (fighters are unlocked from the hero screen now).
    ====================================================================== */
 const FIGHTER = {
-  pip:    { c:'#46d17a', atk:3, def:3, spd:3, diff:1 },
+  knight: { c:'#d8d2c4', atk:3, def:5, spd:2, diff:1 },
+  pip:    { c:'#46d17a', atk:4, def:3, spd:4, diff:2 },
   puff:   { c:'#ff7ac0', atk:2, def:4, spd:3, diff:1 },
   mao:    { c:'#ff4d62', atk:4, def:2, spd:5, diff:2 },
   x:      { c:'#2f9bff', atk:5, def:3, spd:3, diff:3 },
@@ -7011,7 +7028,7 @@ renderShop = (_rs=>function(){
 
 /* title: fighter line-up */
 renderTitle = function(){
-  const order = ['mao','elon','x','pip','boomtos','puff'].filter(id=>CHARACTERS.some(c=>c.id===id));
+  const order = ['mao','elon','x','knight','pip','boomtos','puff'].filter(id=>CHARACTERS.some(c=>c.id===id));
   const line = order.map(id=>heroStandalone(Object.assign({}, save.eq, { char:id }))).join('');
   return `<div class="title-screen t9">${TITLE_BG9()}
     <div class="title-content">
@@ -7122,24 +7139,25 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=35"></script>
-<script src="js/ql2/quests.js?v=35"></script>
-<script src="js/ql2/shell.js?v=35"></script>
-<script src="js/ql2/settings.js?v=35"></script>
-<script src="js/ql2/hub.js?v=35"></script>
-<script src="js/ql2/world.js?v=35"></script>
-<script src="js/ql2/questboard.js?v=35"></script>
-<script src="js/ql2/heroes.js?v=35"></script>
-<script src="js/ql2/inventory.js?v=35"></script>
-<script src="js/ql2/codex.js?v=35"></script>
-<script src="js/ql2/profile.js?v=35"></script>
-<script src="js/ql2/endgame-core.js?v=35"></script>
-<script src="js/ql2/endgame-modes.js?v=35"></script>
-<script src="js/ql2/endgame-ui.js?v=35"></script>
-<script src="js/ql2/armory.js?v=35"></script>
-<script src="js/ql2/more.js?v=35"></script>
-<script src="js/ql2/wordfx.js?v=35"></script>
-<script src="js/ql2/boss-encounter.js?v=35"></script>
-<script src="js/ql2/kirby.js?v=35"></script>
-<script src="js/ql2/boot.js?v=35"></script>
+<script src="js/ql2/core.js?v=36"></script>
+<script src="js/ql2/quests.js?v=36"></script>
+<script src="js/ql2/shell.js?v=36"></script>
+<script src="js/ql2/settings.js?v=36"></script>
+<script src="js/ql2/hub.js?v=36"></script>
+<script src="js/ql2/world.js?v=36"></script>
+<script src="js/ql2/questboard.js?v=36"></script>
+<script src="js/ql2/heroes.js?v=36"></script>
+<script src="js/ql2/inventory.js?v=36"></script>
+<script src="js/ql2/codex.js?v=36"></script>
+<script src="js/ql2/profile.js?v=36"></script>
+<script src="js/ql2/endgame-core.js?v=36"></script>
+<script src="js/ql2/endgame-modes.js?v=36"></script>
+<script src="js/ql2/endgame-ui.js?v=36"></script>
+<script src="js/ql2/armory.js?v=36"></script>
+<script src="js/ql2/more.js?v=36"></script>
+<script src="js/ql2/wordfx.js?v=36"></script>
+<script src="js/ql2/boss-encounter.js?v=36"></script>
+<script src="js/ql2/kirby.js?v=36"></script>
+<script src="js/ql2/knight.js?v=36"></script>
+<script src="js/ql2/boot.js?v=36"></script>
 </body></html>
