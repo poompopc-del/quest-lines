@@ -16,6 +16,10 @@
 - คำหยาบใช้ได้ 🤬 ดาเมจ x2 แต่สะท้อนเข้าตัวเอง 30% ของ HP — so rude!
 - คีย์บอร์ด: พิมพ์ตัวอักษร · Backspace ลบ · Enter โจมตี · Space สลับ · Esc หยุด
 
+## 🎨 ใหม่ใน v38 — ไอคอนเกมใหม่ · หน้าเริ่มเกมไม่มีฮีโร่
+- ไอคอนแอป/เว็บใหม่จากโลโก้ Quest Lines — Word Battle RPG (`icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`)
+- หน้าเริ่มเกมของผู้เล่นใหม่เอาแถวตัวฮีโร่ออกทั้งหมด
+
 ## ⭐ ใหม่ใน v37 — ดาวของ Kirby เป็นสไปรต์จริง
 - ดาวที่ Kirby พ่นใช้สไปรต์ Warp Star จาก *SNES Kirby Super Star* (กะพริบเหลือง/ขาว หมุน 4 เฟรม) `heroes/kirby/star.png` · ยังใหญ่ขึ้นตามจำนวนที่ดูดเหมือนเดิม
 - ตอนโดนศัตรู แตกเป็นดาวดวงเล็ก `heroes/kirby/starmini.png`
