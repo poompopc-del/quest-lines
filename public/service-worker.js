@@ -1,6 +1,6 @@
-const CACHE_NAME = 'quest-lines-v46';
-const V = '?v=46';
-const MODULES = ['balance','vocab','core','quests','shell','settings','hub','world','questboard','heroes','inventory','codex','profile','endgame-core','endgame-modes','endgame-ui','armory','more','wordfx','boss-encounter','kirby','knight','title','boot'];
+const CACHE_NAME = 'quest-lines-v47';
+const V = '?v=47';
+const MODULES = ['balance','vocab','core','quests','shell','settings','hub','world','questboard','heroes','inventory','codex','profile','endgame-core','endgame-modes','endgame-ui','armory','more','wordfx','boss-encounter','zombies','kirby','knight','title','boot'];
 const APP_SHELL = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './css/ql2.css' + V, './css/endgame.css' + V, './css/battle.css' + V, './css/ui26.css' + V, './css/boss.css' + V,
   './data/lexicon.js' + V, './data/vocabulary.js' + V,
   ...MODULES.map((m) => `./js/ql2/${m}.js${V}`)];

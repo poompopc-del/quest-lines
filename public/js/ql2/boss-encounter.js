@@ -55,7 +55,9 @@ Object.entries(SLIME_SKINS).forEach(([k,S])=>{ const M = MON[k]; if(!M) return; 
 Object.values(SPRITES).forEach(P=>{ if(!P.cells){ P.cells = P.frames; P.idle = P.frames===3 ? [0,1,2,1] : [...Array(P.frames).keys()]; } });
 // Chapter 5 is fought only by the Resident Evil creatures
 try{ CHAPTERS[4].pool = ['zombie','wraith','necroskel']; }catch(e){}
-const spriteOf = e=>{ const M = e && MON[e.key]; return M && M.sprite ? SPRITES[e.golden ? 'golden' : M.sprite] : null; };
+// golden variants use the golden slime skin only for slimes; other sprites keep their own sheet (v47)
+const SLIME_SPRITES = new Set(['green','blue','yellow','devil','orange','red','coke','golden']);
+const spriteOf = e=>{ const M = e && MON[e.key]; return M && M.sprite ? SPRITES[e.golden && SLIME_SPRITES.has(M.sprite) ? 'golden' : M.sprite] : null; };
 
 /* ------------------------------ the boss: very tough, hits very hard ------------------------------ */
 // multipliers on the stage's normal boss stats; 'heavy' = charges one turn, then hits ×2.2 (the engine's own trait)
@@ -130,12 +132,12 @@ function spriteWave(K){
 }
 enemyHurt = (f=>function(dmg, big){
   const r = f.apply(this, arguments);
-  try{ const e = curEnemy(), K = spriteOf(e); if(K && K.hurt) spritePose(e, K.hurt, big ? 520 : 380); }catch(err){}
+  try{ const e = curEnemy(), K = spriteOf(e); if(K && K.hurt && !K.cols) spritePose(e, K.hurt, big ? 520 : 380); }catch(err){}
   return r;
 })(enemyHurt);
 enemyAttackAnim = (f=>async function(){
   const e = curEnemy(), K = spriteOf(e);
-  if(K && K.atk){
+  if(K && K.atk && !K.cols){   // grid sheets (js/ql2/zombies.js) animate themselves
     const heavy = e.traits.includes('heavy'), cells = heavy && K.heavy ? K.heavy : K.atk;
     spritePose(e, cells, cells.length>2 ? 110 : 700);
     if(heavy) floatText(K.fx ? '💦 TIDAL CRUSH!' : '💥 CRUSHING BLOW!', EN_X-30, FLOOR_Y-e.h*e.sc-40, K.fx ? '#8ff0ff' : '#ffb0a0', 26, true);
@@ -145,18 +147,18 @@ enemyAttackAnim = (f=>async function(){
 })(enemyAttackAnim);
 casterAttackAnim = (f=>async function(){
   const e = curEnemy(), K = spriteOf(e);
-  if(K && K.atk) spritePose(e, K.atk, K.atk.length>2 ? 110 : 700);
+  if(K && K.atk && !K.cols) spritePose(e, K.atk, K.atk.length>2 ? 110 : 700);
   return f.apply(this, arguments);
 })(casterAttackAnim);
 // death frames (when the sheet has them) play before the engine's own vanish
 enemyDies = (f=>async function(){
   const e = curEnemy(), K = spriteOf(e);
-  if(K && K.dead && ui.bat && !ui.bat.over && !e._sprDead){ e._sprDead = true; const t = spritePose(e, K.dead, 150, true); await sleep(Math.min(700, t)); }
+  if(K && K.dead && !K.cols && ui.bat && !ui.bat.over && !e._sprDead){ e._sprDead = true; const t = spritePose(e, K.dead, 150, true); await sleep(Math.min(700, t)); }
   return f.apply(this, arguments);
 })(enemyDies);
 enemyCharge = (f=>async function(){
   const e = curEnemy(), K = spriteOf(e);
-  if(K && K.atk && e.boss) floatText(K.fx ? '💧 รวบรวมพลังน้ำ… เทิร์นหน้าแรงมาก!' : '⚠ กำลังเกร็งกรงเล็บ… เทิร์นหน้าแรงมาก!', EN_X-20, FLOOR_Y-e.h*e.sc-40, '#bff6ff', 20);
+  if(K && K.atk && !K.cols && e.boss) floatText(K.fx ? '💧 รวบรวมพลังน้ำ… เทิร์นหน้าแรงมาก!' : '⚠ กำลังเกร็งกรงเล็บ… เทิร์นหน้าแรงมาก!', EN_X-20, FLOOR_Y-e.h*e.sc-40, '#bff6ff', 20);
   return f.apply(this, arguments);
 })(enemyCharge);
 
