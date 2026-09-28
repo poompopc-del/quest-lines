@@ -33,7 +33,7 @@
     // Dr. Zomboss — v58: HEAD ONLY (no Zombot legs). The big Zombot head with Zomboss riding it:
     // idle bob, bite / slam lunges, and the head layer: comes down, eye yellow = fireball / blue = iceball, spits, rises.
     // "Up" (out of reach) = the whole head floats higher (CSS .zb-only.up), "down" = it drops to the ground.
-    zomboss: { img:'enemies/pvz/zomboss.png', cols:10, rows:8, fw:186, fh:247, ax:62, by:232, topPx:92, pixel:false, rate:.2, col:'#c0584a', headOnly:true, hx:44,
+    zomboss: { img:'enemies/pvz/zomboss.png', cols:10, rows:8, fw:186, fh:247, ax:62, by:232, topPx:92, pixel:false, rate:.2, col:'#c0584a', headOnly:true, hx:44, cut:86,
       idle:[57,58,59,58], bite:[68,69,70,70,69,68], slam:[54,55,56,60,60,56,55],
       dead:[60,59,58,57], deadMs:160, deadMax:1300,
       head:{ down:[54,55,56,57,58,59,60], fire:[61,62,63], ice:[64,65,66,67], spit:[68,69,70], up:[71,72] }, icon:[-2, 88, 88, 150] },
@@ -143,7 +143,7 @@
     .zb-only.up .zb-lift{transform:translateY(-42px)}
     .zb-only.up .zb-bob{animation:zbBob 2.6s ease-in-out infinite}
     @keyframes zbBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
-    .zb-only.zb-dying .zb-lift{transform:translateY(40px) rotate(10deg);opacity:0;transition:transform 1.1s ease-in,opacity .9s ease-in .35s;transform-box:fill-box;transform-origin:50% 100%}
+    .zb-only.zb-dying .zb-lift{transform:translateY(70px);opacity:0;transition:transform 1.1s ease-in,opacity .9s ease-in .35s;transform-box:fill-box;transform-origin:50% 100%}
     html.noanim .zb-only.up .zb-bob{animation:none}`;
   document.head.appendChild(st);
 
@@ -192,7 +192,19 @@
   // re-drawn markup (walking in, re-renders) keeps the head where it was
   const LIFT = 42;
   const ZB_FADE = id => `<defs><linearGradient id="${id}G" gradientUnits="userSpaceOnUse" x1="67" y1="0" x2="86" y2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="186" height="247"><rect width="186" height="247" fill="url(#${id}G)"/></mask></defs>`;
-  window.ZB_FADE = ZB_FADE;   // px the head floats up while out of reach
+  window.ZB_FADE = ZB_FADE;
+  let zbDx = 0;
+  function zbEdgeFit(){
+    const e = curEnemy(), K = e && spriteOf(e), svg = document.getElementById('sceneSvg');
+    if(!K || !K.headOnly || !svg) return;
+    const r = svg.getBoundingClientRect(); if(!r.width || !r.height) return;
+    const vb = svg.viewBox && svg.viewBox.baseVal, vx = vb && vb.width ? vb.x : 0, vw = vb && vb.width ? vb.width : 800, vh = vb && vb.height ? vb.height : 400;
+    const k = Math.max(r.width/vw, r.height/vh), x1 = vx + vw/2 + (r.width/k)/2;      // right edge of what is visible (the battle camera changes the viewBox)
+    zbDx = Math.max(0, x1 + 12 - (EN_X + (K.cut - K.ax)*(MON[e.key].spScale||1)));
+    document.querySelectorAll('#enemyG .zb-edge').forEach(g => g.setAttribute('transform', `translate(${zbDx.toFixed(1)},0)`));
+  }
+  addEventListener('resize', () => setTimeout(zbEdgeFit, 60));
+  fitScene = (f => function(){ const r = f.apply(this, arguments); try{ zbEdgeFit(); }catch(e){} return r; })(fitScene);   // px the head floats up while out of reach
   const _svg = spriteSVG;
   spriteSVG = function(e, queued){ let out = _svg.apply(this, arguments);
     const K = spriteOf(e);
@@ -201,9 +213,11 @@
       const a = out.indexOf('<svg class="spr-idle"'), b = out.indexOf('<g class="ehp"');
       if(a > 0){ const end = b > a ? b : out.lastIndexOf('</g>');
         out = out.slice(0, a) + `<g class="zb-lift"><g class="zb-bob">` + out.slice(a, end) + `</g></g>` + out.slice(end); }
-      // the sheet cuts the neck off with a hard edge: fade it out softly
-      out = out.split('<image class="spr-sheet"').join('<image class="spr-sheet" mask="url(#zbFade)"');
-      out = out.replace(/(<g class="enemy[^>]*>)/, `$1${ZB_FADE('zbFade')}`);
+      // the sheet cuts the neck off at the right: push that side against the screen edge, so the
+      // Zombot head looks like it is thrusting in from off-screen (hubless: zbEdgeFit sets the shift)
+      out = out.replace(/(<g class="enemy[^>]*>)/, `$1<g class="zb-edge" transform="translate(${zbDx.toFixed(1)},0)">`);
+      out = out.replace(/<\/g>\s*$/, '</g></g>');
+      if(!queued) setTimeout(zbEdgeFit, 0);
       out = out.replace('class="enemy spr-enemy spr-grid', `class="enemy spr-enemy spr-grid zb-only${up ? ' up' : ''}`)
                .replace(/class="ehp" transform="translate\(-40,(-?[\d.]+)\)"/, (m, y) => `class="ehp" transform="translate(${((K.hx - K.ax)*(MON[e.key].spScale||1) - 40).toFixed(1)},${(+y - LIFT).toFixed(1)})"`);
     }
@@ -215,7 +229,7 @@
   function zbBall(eye){
     const fx = $('#fx'), e = curEnemy(); if(!fx || !e) return Promise.resolve();
     const K = spriteOf(e), sc = MON[e.key].spScale, fire = eye!=='ice';
-    const x0 = EN_X + (38 - K.ax)*sc, y0 = FLOOR_Y + (200 - K.by)*sc, r = 34;
+    const x0 = EN_X + zbDx + (38 - K.ax)*sc, y0 = FLOOR_Y + (200 - K.by)*sc, r = 34;
     const g = svgEl('g', {});
     g.innerHTML = `<defs><radialGradient id="zbg${fire?'f':'i'}"><stop offset="0" stop-color="${fire?'#fff6b0':'#ffffff'}"/><stop offset=".45" stop-color="${fire?'#ffb020':'#8fe8ff'}"/><stop offset="1" stop-color="${fire?'#e0401a':'#2a8adf'}"/></radialGradient></defs>
       <circle r="${r+10}" fill="${fire?'#ff7a1a':'#9fe8ff'}" opacity=".35"/><circle r="${r}" fill="url(#zbg${fire?'f':'i'})" stroke="${fire?'#a0200a':'#1a5a9a'}" stroke-width="3"/>
@@ -233,7 +247,7 @@
   }
   function zbShatter(eye){
     const fx = $('#fx'), e = curEnemy(); if(!fx || !e) return;
-    const K = spriteOf(e), sc = MON[e.key].spScale, x = EN_X + (38 - K.ax)*sc - 40, y = FLOOR_Y + (200 - K.by)*sc;
+    const K = spriteOf(e), sc = MON[e.key].spScale, x = EN_X + zbDx + (38 - K.ax)*sc - 40, y = FLOOR_Y + (200 - K.by)*sc;
     for(let i=0;i<14;i++){ const p = svgEl('circle', { r:rint(5,11), fill: eye==='ice' ? '#bff6ff' : '#ffb030' }); fx.appendChild(p);
       const a = Math.random()*Math.PI*2, d = rint(40,110); anim(p, [{ transform:tr(x,y), opacity:1 },{ transform:tr(x+Math.cos(a)*d, y+Math.sin(a)*d), opacity:0 }], { duration:600, easing:'ease-out' }).then(() => p.remove()); }
   }
@@ -329,8 +343,9 @@
     const txt = { bite:'🤖 ZOMBOT CHOMP!', slam:'💥 ZOMBOT HEADBUTT!' }[z.act];
     if(txt) floatText(txt, EN_X-40, FLOOR_Y-e.h*e.sc-30, '#ffb0a0', 24, true);
     setTimeout(() => { if(curEnemy()===e && e.hp>0 && zbOf(e).phase==='up') setUp(true); }, Math.max(700, t));
+    // no forward lunge: the head's cut side stays hidden against the screen edge
     if(z.act==='slam'){ await sleep(420); shake(true); await sleep(260); return; }
-    return f.apply(this, arguments);   // the bite reaches forward (the engine's lunge)
+    await sleep(300); sfx.hit && sfx.hit(); shake(false); await sleep(260); return;
   })(enemyAttackAnim);
   // death: the head layer goes, the full collapse plays on the body layer
   enemyDies = (f => async function(){
