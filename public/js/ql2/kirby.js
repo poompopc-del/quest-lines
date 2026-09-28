@@ -1,5 +1,5 @@
 /* ==========================================================================
-   QUEST LINES v35 — KIRBY (the fighter id stays 'puff')
+   QUEST LINES v37 — KIRBY (the fighter id stays 'puff')
    --------------------------------------------------------------------------
    The attack button is split in half:
      🌀 ดูด (left)  — only for words of 4+ letters
@@ -218,20 +218,30 @@ function kRefillBoard(){
 function kStarSize(letters, store){
   return Math.min(9, .9 + (letters||0)*.11 + Math.log10(1 + (store||0))*.35);
 }
+// the star sprite (SNES Kirby Super Star warp-star frames): 4 frames that flash yellow / white and turn
+const KSTAR = { big:{ src:'heroes/kirby/star.png', px:24, n:4 }, mini:{ src:'heroes/kirby/starmini.png', px:16, n:4 } };
+function kStarSprite(kind, size, ms){
+  const K = KSTAR[kind], g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.innerHTML = `<svg x="${-size/2}" y="${-size/2}" width="${size}" height="${size}" viewBox="0 0 ${K.px} ${K.px}" overflow="hidden"><image href="${K.src}?v=${HERO_IMG_VER}" width="${K.px*K.n}" height="${K.px}" style="image-rendering:pixelated"/></svg>`;
+  const sv = g.firstElementChild; let f = Math.floor(Math.random()*K.n);
+  const step = ()=>{ sv.setAttribute('viewBox', `${f*K.px} 0 ${K.px} ${K.px}`); f = (f+1) % K.n; };
+  step(); const t = setInterval(()=>{ if(!g.isConnected) return clearInterval(t); step(); }, ms||70);
+  return g;
+}
 function kStar(s){
   const fx = $('#fx'), e = curEnemy(); if(!fx || !e) return Promise.resolve();
-  const m = mouthXY();
+  const m = mouthXY(), D = 56*s;
   const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-  g.innerHTML = `<circle r="${34*s}" fill="#fff6a0" opacity=".35"/><circle r="${24*s}" fill="#fff" opacity=".25"/><path d="M0,${-26*s} L${7*s},${-8*s} L${26*s},${-8*s} L${11*s},${4*s} L${16*s},${24*s} L0,${12*s} L${-16*s},${24*s} L${-11*s},${4*s} L${-26*s},${-8*s} L${-7*s},${-8*s} Z" fill="#ffe14a" stroke="#2a1a10" stroke-width="${Math.min(8, 3 + s*.4)}" stroke-linejoin="round"/><circle cx="${-5*s}" cy="${-2*s}" r="${2.4*s}" fill="#2a1a10"/><circle cx="${5*s}" cy="${-2*s}" r="${2.4*s}" fill="#2a1a10"/>`;
+  g.innerHTML = `<circle r="${D*.62}" fill="#fff6a0" opacity=".3"/>`;
+  g.appendChild(kStarSprite('big', D, 60));
   fx.appendChild(g);
   const ex = EN_X, ey = FLOOR_Y - e.h*e.sc*.5, dur = 430 + Math.min(400, s*45);
   // a big star starts small at the mouth and swells on its way
-  return anim(g, [{ transform:tr(m.x, m.y)+' scale(.25) rotate(0deg)' },{ transform:tr((m.x+ex)/2, Math.min(m.y, ey)-30-s*6)+' scale(1) rotate(360deg)', offset:.5 },{ transform:tr(ex, ey)+' scale(1.1) rotate(720deg)' }], { duration:dur, easing:'ease-in' })
+  return anim(g, [{ transform:tr(m.x, m.y)+' scale(.25)' },{ transform:tr((m.x+ex)/2, Math.min(m.y, ey)-30-s*6)+' scale(1)', offset:.5 },{ transform:tr(ex, ey)+' scale(1.1)' }], { duration:dur, easing:'ease-in' })
     .then(()=>{ g.remove(); if(s>=3){ try{ shake(true); }catch(err){} }
-      const pieces = Math.min(20, 8 + Math.round(s*1.5));
-      for(let k=0;k<pieces;k++){ const c = document.createElementNS('http://www.w3.org/2000/svg','path'); const q = 8*Math.min(3, .7 + s*.25);
-        c.setAttribute('d',`M0,${-q} L${q/4},${-q/4} L${q},0 L${q/4},${q/4} L0,${q} L${-q/4},${q/4} L${-q},0 L${-q/4},${-q/4} Z`); c.setAttribute('fill','#ffe14a'); fx.appendChild(c);
-        const a = k/pieces*Math.PI*2, d = 40 + s*28; anim(c, [{ transform:tr(ex,ey)+' scale(.6)', opacity:1 },{ transform:tr(ex+Math.cos(a)*d, ey+Math.sin(a)*d)+' scale(1.4)', opacity:0 }], { duration:520 + s*30, easing:'ease-out' }).then(()=>c.remove()); } });
+      const pieces = Math.min(20, 8 + Math.round(s*1.5)), q = 18*Math.min(3, .7 + s*.25);
+      for(let k=0;k<pieces;k++){ const c = kStarSprite('mini', q, 80); fx.appendChild(c);
+        const a = k/pieces*Math.PI*2, d = 40 + s*28; anim(c, [{ transform:tr(ex,ey)+' scale(.6)', opacity:1 },{ transform:tr(ex+Math.cos(a)*d, ey+Math.sin(a)*d)+' scale(1.3)', opacity:0 }], { duration:520 + s*30, easing:'ease-out' }).then(()=>c.remove()); } });
 }
 
 /* ------------------------------ the moves (replace the normal attack animation) ------------------------------ */
