@@ -26,20 +26,24 @@ function renderInventory(){
   const eqBtn = (on, act, id)=> on ? `<button class="cbtn small wood" disabled>ใส่อยู่</button>` : `<button class="cbtn small blue" data-act="${act}" data-v="${id}">ใส่</button>`;
   const buy = (act, id, price)=>`<button class="cbtn small gold" data-act="${act}" data-v="${id}" ${save.gold<price?'disabled':''}>${ICON.coin} ${fmt(price)}</button>`;
   const card = (on, pic, h, small, stat, p, btn, cls)=>`<div class="panel item inv-it ${on?'equipped':''} ${cls||''}"><div class="pic">${pic}</div><div class="meta"><h4>${h}<small>${small}</small></h4>${stat?`<div class="stat">${stat}</div>`:''}<p>${p}</p>${btn}</div></div>`;
+  // v51: items with unmet feats show them (with progress) instead of the price button — js/ql2/unlocks.js
+  const isLocked = (k, it) => typeof itemLocked==='function' && itemLocked(k, it);
+  const lockOr = (k, it, btn) => isLocked(k, it) ? `<span class="inv-own lock">🔒 ${fmt(it.price)}</span>${itemLockHtml(k, it)}` : btn;
+  const lockCls = (k, it) => isLocked(k, it) ? 'locked' : '';
   const boom = save.eq.char==='boomtos';
   let items = '';
   if(t==='weapon'){
     if(boom) items += `<p class="sub inv-note">🔥 Boomtos ใช้ดาบหลอมนรกประจำตัวเท่านั้น อาวุธที่ใส่จะมีผลกับนักสู้คนอื่น</p>`;
     WEAPONS.filter(w=>shop || save.weapons.includes(w.id)).forEach(w=>{ const own = save.weapons.includes(w.id), on = save.eq.weapon===w.id;
-      items += card(on, weaponIcon(w.id), esc(w.name), esc(w.th), `ATK ${w.atk}`, esc(w.perkTh||'อาวุธพื้นฐาน'), own ? (shop ? `<span class="inv-own">✔ มีแล้ว</span>` : eqBtn(on,'equipW',w.id)) : (typeof wpLocked==='function' && wpLocked(w)) ? `<span class="inv-own lock">🔒 ${esc(w.reqTh)}</span>` : buy('buyW', w.id, w.price)); });
+      items += card(on, weaponIcon(w.id), esc(w.name), esc(w.th), `ATK ${w.atk}`, esc(w.perkTh||'อาวุธพื้นฐาน'), own ? (shop ? `<span class="inv-own">✔ มีแล้ว</span>` : eqBtn(on,'equipW',w.id)) : lockOr('weapon', w, buy('buyW', w.id, w.price)), lockCls('weapon', w)); });
   } else if(t==='armor'){
     ARMORS.filter(a=>shop || save.armors.includes(a.id)).forEach(a=>{ const own = save.armors.includes(a.id), on = save.eq.armor===a.id;
-      items += card(on, a.id==='none'?'<span class="sub">—</span>':shieldIcon(a.id), esc(a.name), esc(a.th), `กันดาเมจ ${Math.round(a.block*100)}%${a.hp?` · HP +${a.hp}`:''}`, a.id==='none'?'ชุดพื้นฐาน ไม่มีเกราะ':'ลดดาเมจจากมอนสเตอร์ และเพิ่ม HP สูงสุด', own ? (shop ? `<span class="inv-own">✔ มีแล้ว</span>` : eqBtn(on,'equipA',a.id)) : buy('buyA', a.id, a.price)); });
+      items += card(on, a.id==='none'?'<span class="sub">—</span>':shieldIcon(a.id), esc(a.name), esc(a.th), `กันดาเมจ ${Math.round(a.block*100)}%${a.hp?` · HP +${a.hp}`:''}`, a.id==='none'?'ชุดพื้นฐาน ไม่มีเกราะ':'ลดดาเมจจากมอนสเตอร์ และเพิ่ม HP สูงสุด', own ? (shop ? `<span class="inv-own">✔ มีแล้ว</span>` : eqBtn(on,'equipA',a.id)) : lockOr('armor', a, buy('buyA', a.id, a.price)), lockCls('armor', a)); });
   } else if(t==='acc'){
     items += `<div class="panel inv-slots"><span>${esc(CH(save.eq.char).name)} ใส่ได้ ${accSlots()} ชิ้น</span><div class="acc-slots">${[0,1,2,3].map(i=>{ if(i>=accSlots()) return `<span class="acc-slot locked" title="ปลดล็อกที่ ฮีโร่ → ฝึกฝน">${ICON.lock}</span>`; const a = save.acc[i]; return `<span class="acc-slot ${a?'':'empty'}" title="${a?esc(ACC(a).th):'ช่องว่าง'}">${a?ACC_ART[a]:'+'}</span>`; }).join('')}</div></div>`;
     const list = ACCESSORIES.filter(x=>shop || save.accs.includes(x.id));
     list.forEach(x=>{ const own = save.accs.includes(x.id), on = hasAcc(x.id);
-      items += card(on, ACC_ART[x.id], esc(x.name), esc(x.th), '', esc(x.desc), !own ? buy('buyX', x.id, x.price) : shop ? `<span class="inv-own">✔ มีแล้ว</span>` : on ? `<button class="cbtn small wood" data-act="unequipX" data-v="${x.id}">ถอดออก</button>` : `<button class="cbtn small blue" data-act="equipX" data-v="${x.id}">ใส่</button>`); });
+      items += card(on, ACC_ART[x.id], esc(x.name), esc(x.th), '', esc(x.desc), !own ? lockOr('acc', x, buy('buyX', x.id, x.price)) : shop ? `<span class="inv-own">✔ มีแล้ว</span>` : on ? `<button class="cbtn small wood" data-act="unequipX" data-v="${x.id}">ถอดออก</button>` : `<button class="cbtn small blue" data-act="equipX" data-v="${x.id}">ใส่</button>`, lockCls('acc', x)); });
     if(!list.length) items += `<div class="inv-empty">ยังไม่มีไอเทมเสริม<button class="cbtn gold small" data-act="invShop" data-v="1">เปิดร้านค้า</button></div>`;
   } else if(t==='item'){
     Object.entries(POTIONS).forEach(([k,p])=>{ items += card(false, ICON[p.icon], esc(p.name), `${esc(p.th)} · มีอยู่ ${save.potions[k]||0}`, '', `${esc(p.desc)} · ใช้ได้ระหว่างต่อสู้`, shop ? buy('buyP', k, p.price) : `<span class="inv-own">×${save.potions[k]||0}</span>`); });

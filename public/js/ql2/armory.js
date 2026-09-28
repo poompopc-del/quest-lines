@@ -19,7 +19,7 @@ WEAPONS.push(
   { id:'royal',   name:'Royal Claymore',     th:'ดาบใหญ่ราชวงศ์',        atk:20, price:3600, perk:'gold',    perkTh:'ทองจากศัตรู +30%' },
   { id:'savage',  name:'Lynel Crusher',      th:'ค้อนไลเนล',             atk:24, price:4500, perk:'heavy',   perkTh:'หนักมาก: คำ 3 ตัว x0.5 · คำ 6 ตัวขึ้นไป +20%' },
   { id:'ancient', name:'Ancient Bladesaw',   th:'เลื่อยโบราณ',            atk:26, price:6000, perk:'ancient', perkTh:'คำ 6–7 ตัวอักษรก็เป็น CRITICAL WORD (+35%)' },
-  { id:'master',  name:'Master Sword',       th:'ดาบผู้กล้า',             atk:30, price:8000, perk:'master',  perkTh:'HP 90% ขึ้นไป ปล่อยลำแสง +25% · คำธาตุแสงใส่ผี/โครงกระดูก +30%', req:()=>storyDone(), reqTh:'จบเนื้อเรื่องหลักก่อน' },
+  { id:'master',  name:'Master Sword',       th:'ดาบผู้กล้า',             atk:30, price:8000, perk:'master',  perkTh:'HP 90% ขึ้นไป ปล่อยลำแสง +25% · คำธาตุแสงใส่ผี/โครงกระดูก +30%' },   // unlock feats: js/ql2/unlocks.js
 );
 WEAPONS.forEach(w=>{ w.atk = BALANCE.weaponAtk(w.id, w.atk); });   // v44: ATK curve lives in BALANCE.WEAPON_ATK
 WEAPONS.sort((a,b)=>a.price-b.price);
@@ -73,4 +73,4 @@ enemyDies = (f=>async function(){
 })(enemyDies);
 
 /* Master Sword needs the story finished */
-ACTS2.buyW = function(v){ const w = W(v); if(!w || w.id!==v) return; if(wpLocked(w)){ toast(`🔒 ${esc(w.reqTh)}`); return; } return false; };
+// buy guard for locked weapons: js/ql2/unlocks.js (ACTS2.buyW)

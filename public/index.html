@@ -1332,18 +1332,18 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=48">
-<link rel="stylesheet" href="css/endgame.css?v=48">
-<link rel="stylesheet" href="css/battle.css?v=48">
-<link rel="stylesheet" href="css/ui26.css?v=48">
-<link rel="stylesheet" href="css/boss.css?v=48">
+<link rel="stylesheet" href="css/ql2.css?v=51">
+<link rel="stylesheet" href="css/endgame.css?v=51">
+<link rel="stylesheet" href="css/battle.css?v=51">
+<link rel="stylesheet" href="css/ui26.css?v=51">
+<link rel="stylesheet" href="css/boss.css?v=51">
 </head>
 <body>
 <div id="app"></div>
-<script src="js/ql2/balance.js?v=48"></script>
-<script src="data/lexicon.js?v=48"></script>
-<script src="data/vocabulary.js?v=48"></script>
-<script src="js/ql2/vocab.js?v=48"></script>
+<script src="js/ql2/balance.js?v=51"></script>
+<script src="data/lexicon.js?v=51"></script>
+<script src="data/vocabulary.js?v=51"></script>
+<script src="js/ql2/vocab.js?v=51"></script>
 <script>window.__QL2 = 1; setTimeout(function(){ if(!window.__QL2_READY && typeof render==='function'){ window.__QL2 = 0; render(); } }, 5000);</script>
 <div class="toasts" id="toasts"></div>
 <div id="overlay"></div>
@@ -4127,8 +4127,8 @@ const ACCESSORIES = [
 ];
 const CHARACTERS = [
   { id:'knight',  name:'Elite Knight', th:'อัศวินเหล็กผมแดง', price:0, role:'อัศวิน · ทนทาน', skill:'เกราะเหล็ก', desc:'🛡️ เกราะเหล็ก: รับดาเมจน้อยลง 15% · 🔥 ใจอัศวิน: HP ต่ำกว่าครึ่ง ดาเมจ +10% · ⚔️ คำ 5 ตัวอักษรขึ้นไป = ท่าไม้ตายคลื่นดาบอัศวิน', hpMul:1.1, dmgTaken:.85 },
-  { id:'pip',     name:'Plink',       th:'พลิงค์ นักดาบหมวกเขียว', price:1200, role:'นักดาบ · ครบเครื่อง', skill:'ลำแสงดาบ', desc:'✨ ลำแสงดาบ: HP เต็ม = ยิงลำแสงดาบ ดาเมจ +20% · 🛡️ โล่: 15% ปัดการโจมตีได้หมด · 🔥 คำ 6 ตัวอักษรขึ้นไป = ท่าไม้ตายคลื่นดาบเพลิง · 📚 นักเรียนขยัน: คำใบ้ +1 ครั้ง/ด่าน · คำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
-  { id:'puff',    name:'Kirby',       th:'เคอร์บี้ ก้อนชมพูจอมดูด', price:1800, role:'จอมดูด', skill:'ดูดแล้วพ่น', desc:'ปุ่มโจมตีแบ่งครึ่ง: 🌀 ดูด (คำ 4 ตัวขึ้นไป) หรือ ⚔ โจมตี · ดูดศัตรูทั้งตัว (เอา HP ครึ่งหนึ่งมาสะสมเป็นดาเมจ) + ตัวอักษรทั้งกระดาน · ยิ่งดูดยิ่งสะสม ทุก 10 ตัวอักษรดาเมจ +50% (10=x1.5 · 20=x2 · 30=x2.5 · สูงสุด x3) · กดโจมตีตอนอม = พ่นดาวยักษ์ · บอส/มินิบอสดูดได้แค่ตัวอักษร ยกเว้นใช้คำหยาบ 🤬 จะกลืนบอสได้เลย (แต่ยังเจ็บตัวเอง)', hpMul:1, dmgTaken:1 },
+  { id:'pip',     name:'Plink',       th:'พลิงค์ นักดาบหมวกเขียว', price:900, role:'นักดาบ · ครบเครื่อง', skill:'ลำแสงดาบ', desc:'✨ ลำแสงดาบ: HP เต็ม = ยิงลำแสงดาบ ดาเมจ +20% · 🛡️ โล่: 15% ปัดการโจมตีได้หมด · 🔥 คำ 6 ตัวอักษรขึ้นไป = ท่าไม้ตายคลื่นดาบเพลิง · 📚 นักเรียนขยัน: คำใบ้ +1 ครั้ง/ด่าน · คำศัพท์เป้าหมาย ⭐ ได้ทอง +3', hpMul:1, dmgTaken:1 },
+  { id:'puff',    name:'Kirby',       th:'เคอร์บี้ ก้อนชมพูจอมดูด', price:12000, role:'จอมดูด', skill:'ดูดแล้วพ่น', desc:'ปุ่มโจมตีแบ่งครึ่ง: 🌀 ดูด (คำ 4 ตัวขึ้นไป) หรือ ⚔ โจมตี · ดูดศัตรูทั้งตัว (เอา HP ครึ่งหนึ่งมาสะสมเป็นดาเมจ) + ตัวอักษรทั้งกระดาน · ยิ่งดูดยิ่งสะสม ทุก 10 ตัวอักษรดาเมจ +50% (10=x1.5 · 20=x2 · 30=x2.5 · สูงสุด x3) · กดโจมตีตอนอม = พ่นดาวยักษ์ · บอส/มินิบอสดูดได้แค่ตัวอักษร ยกเว้นใช้คำหยาบ 🤬 จะกลืนบอสได้เลย (แต่ยังเจ็บตัวเอง)', hpMul:1, dmgTaken:1 },
 ];
 /* ---------------- elemental words → weapon enchant ---------------- */
 const ELEMENTS = {
@@ -5777,7 +5777,7 @@ renderMap = function(){
    ====================================================================== */
 const BOOM = { id:'boomtos', word:'boom', cap:BALANCE.BOOM.rageMax, letters:['b','o','o','m','t','o','s'] };   // v44: rage is linear (+20%/turn, max x2) — was x2 per turn up to x32
 const HELLBLADE = { id:'hellblade', name:'Hellforged Blade', th:'ดาบหลอมนรก', atk:BALANCE.weaponAtk('hellblade', 20), price:0, perk:'burn', perkTh:'เผาไหม้ศัตรู 2 เทิร์น' };
-CHARACTERS.push({ id:'boomtos', name:'Boomtos', th:'บูมทอส ผู้พิทักษ์ไฟใต้พิภพ', price:3500, role:'ไฟนรก', skill:'โทสะไฟนรก',
+CHARACTERS.push({ id:'boomtos', name:'Boomtos', th:'บูมทอส ผู้พิทักษ์ไฟใต้พิภพ', price:6000, role:'ไฟนรก', skill:'โทสะไฟนรก',
   desc:'ใช้ดาบหลอมนรกประจำตัวเท่านั้น · โทสะ: ดาเมจ +20% ทุกเทิร์น ซ้อนได้ (สูงสุด x2 ต่อด่าน) · HP ต่ำกว่า 10% ไฟนรกคลั่ง +50% · สะกด BOOM = ท่าไม้ตาย: ศัตรูทั่วไปตายทันทีและทะลุถึงตัวถัดไป · บอส/มินิบอสโดนหนัก · ชื่อเทพกรีกมีพลังพิเศษ', hpMul:1.1, dmgTaken:1 });
 CHAR_TIP.boomtos = 90;
 CHAR_FACE.boomtos = '-27 -188 66 66';
@@ -6229,7 +6229,7 @@ const ELON = { id:'elon', qsCost:3, focusCost:6, focusMs:8000,
   tier:{ melee:{ m:1+BALANCE.ELON.tier.melee,  ic:'👊', th:'มือเปล่า' }, pistol:{ m:1+BALANCE.ELON.tier.pistol, ic:'🔫', th:'ปืนพก' },
          xbow: { m:1+BALANCE.ELON.tier.xbow,   ic:'🏹', th:'หน้าไม้' },  rpg:   { m:1+BALANCE.ELON.tier.rpg,    ic:'🚀', th:'ปืนใหญ่' } },
   rpgStep:BALANCE.ELON.rpgStep, rpgCap:BALANCE.ELON.rpgCap };
-CHARACTERS.push({ id:'elon', name:'ELON S. KEMNANY', th:'อีลอน เอส. เคมนานี สายลับมือปืน', price:2800, role:'มือปืน', skill:'Combat Training',
+CHARACTERS.push({ id:'elon', name:'ELON S. KEMNANY', th:'อีลอน เอส. เคมนานี สายลับมือปืน', price:3500, role:'มือปืน', skill:'Combat Training',
   desc:'คอมโบต่อเนื่องทั้งด่าน: 4 ปืนพก +10% · 5 หน้าไม้ +20% · 6+ ปืนใหญ่ +30% (สูงสุด +40%) · คำ 4 ตัวยิง 2 นัด +25% · คำ 5 ตัวขึ้นไปลุ้น Critical · คำยาวแรงขึ้นตามตัวอักษร · สกิล 🔥 Quick Shot และ 🥽 Agent\'s Focus', hpMul:1, dmgTaken:1 });
 CHAR_TIP.elon = 100;
 CHAR_FACE.elon = '-30 -176 60 60';
@@ -6441,7 +6441,7 @@ function elonGunFx(pose, shots){
    ====================================================================== */
 const MAO = { id:'mao', fanLen:4, fanMul:1+BALANCE.MIA.fan, rollLen:6, rollMul:1+BALANCE.MIA.roll, stun:.3, finLen:7, finMul:1+BALANCE.MIA.fin,
   burn:.2, burnT:2, finBurn:.25, finBurnT:4, fireMul:1+BALANCE.MIA.fire, dodge:.2, charm:1+BALANCE.MIA.charm };   // v44 balance (was 1.3 / 1.5 / 1.8, fire 1.3, charm 1.25, finisher burn 35%)
-CHARACTERS.push({ id:'mao', name:'Mia', th:'มีอา คุโนะอิจิพัดเพลิง', price:3000, role:'นินจา · พัด · หลบหลีก', skill:'คาโชเซ็น',
+CHARACTERS.push({ id:'mao', name:'Mia', th:'มีอา คุโนะอิจิพัดเพลิง', price:2000, role:'นินจา · พัด · หลบหลีก', skill:'คาโชเซ็น',
   desc:'ท่าเปลี่ยนตามความยาวคำ · 4–5 ตัว ขว้างพัดคาโชเซ็น +10% ติดไฟ · 6 ตัว ม้วนตัวชิโนบิบาจิ +20% ลุ้นทำศัตรูล้ม · 7 ตัวขึ้นไป ท่าไม้ตายมุซาซาบิโนะไม +30% · 20% ตีลังกาหลบ · ปราบศัตรูแล้วโพสท่ายั่ว ครั้งต่อไป +10% · คำธาตุไฟ +10%', hpMul:.95, dmgTaken:1 });
 CHAR_TIP.mao = 140;
 const isMao = ()=>save.eq && save.eq.char===MAO.id;
@@ -6592,7 +6592,7 @@ function miaSparks(x, y, col){
    ภาพสไปรต์: Mega Man X compilation sheet (Capcom · DarkSamus993 · Random Talking Bush · The Spriters Resource และผู้ร่วมทำ)
    ====================================================================== */
 const XH = { id:'x', guard:.85, hadoken:3, cols:['#9fe8ff','#4fb8ff','#7dff7a'] };
-CHARACTERS.push({ id:'x', name:'X', th:'เอ็กซ์ นักรบบัสเตอร์', price:3200, role:'ชาร์จ · บัสเตอร์', skill:'X-Buster ชาร์จ',
+CHARACTERS.push({ id:'x', name:'X', th:'เอ็กซ์ นักรบบัสเตอร์', price:9000, role:'ชาร์จ · บัสเตอร์', skill:'X-Buster ชาร์จ',
   desc:'ปุ่มโจมตีแบ่งครึ่งเป็น ⚡ชาร์จ กับ ยิง · ชาร์จ = เก็บดาเมจของคำไว้ ไม่โจมตี (ศัตรูยังตีกลับ) · ยิง = (ดาเมจที่เก็บ + คำนี้) x ตัวคูณชาร์จ (x1 · x1.25 · x1.5 · x1.75 · สูงสุด x2) · ระหว่างถือชาร์จรับดาเมจ -15% · ชาร์จ x3 ขึ้นไปปล่อยชาร์จเต็มพลัง (คลื่นเสี้ยวสีเขียว) · ชาร์จ x4 ขึ้นไปยิงทะลุถึงศัตรูตัวถัดไปด้วย 50% ของดาเมจ (x4=ทะลุ 1 ตัว, x5=ทะลุ 2 ตัว, …)',
   hpMul:1, get dmgTaken(){ const b = ui.bat; return b && b.xLvl>0 ? XH.guard : 1; } });
 CHAR_TIP.x = 95;
@@ -7018,27 +7018,29 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=48"></script>
-<script src="js/ql2/quests.js?v=48"></script>
-<script src="js/ql2/shell.js?v=48"></script>
-<script src="js/ql2/settings.js?v=48"></script>
-<script src="js/ql2/hub.js?v=48"></script>
-<script src="js/ql2/world.js?v=48"></script>
-<script src="js/ql2/questboard.js?v=48"></script>
-<script src="js/ql2/heroes.js?v=48"></script>
-<script src="js/ql2/inventory.js?v=48"></script>
-<script src="js/ql2/codex.js?v=48"></script>
-<script src="js/ql2/profile.js?v=48"></script>
-<script src="js/ql2/endgame-core.js?v=48"></script>
-<script src="js/ql2/endgame-modes.js?v=48"></script>
-<script src="js/ql2/endgame-ui.js?v=48"></script>
-<script src="js/ql2/armory.js?v=48"></script>
-<script src="js/ql2/more.js?v=48"></script>
-<script src="js/ql2/wordfx.js?v=48"></script>
-<script src="js/ql2/boss-encounter.js?v=48"></script>
-<script src="js/ql2/zombies.js?v=48"></script>
-<script src="js/ql2/kirby.js?v=48"></script>
-<script src="js/ql2/knight.js?v=48"></script>
-<script src="js/ql2/title.js?v=48"></script>
-<script src="js/ql2/boot.js?v=48"></script>
+<script src="js/ql2/core.js?v=51"></script>
+<script src="js/ql2/quests.js?v=51"></script>
+<script src="js/ql2/shell.js?v=51"></script>
+<script src="js/ql2/settings.js?v=51"></script>
+<script src="js/ql2/hub.js?v=51"></script>
+<script src="js/ql2/world.js?v=51"></script>
+<script src="js/ql2/questboard.js?v=51"></script>
+<script src="js/ql2/heroes.js?v=51"></script>
+<script src="js/ql2/inventory.js?v=51"></script>
+<script src="js/ql2/codex.js?v=51"></script>
+<script src="js/ql2/profile.js?v=51"></script>
+<script src="js/ql2/endgame-core.js?v=51"></script>
+<script src="js/ql2/endgame-modes.js?v=51"></script>
+<script src="js/ql2/endgame-ui.js?v=51"></script>
+<script src="js/ql2/armory.js?v=51"></script>
+<script src="js/ql2/items.js?v=51"></script>
+<script src="js/ql2/more.js?v=51"></script>
+<script src="js/ql2/wordfx.js?v=51"></script>
+<script src="js/ql2/boss-encounter.js?v=51"></script>
+<script src="js/ql2/zombies.js?v=51"></script>
+<script src="js/ql2/kirby.js?v=51"></script>
+<script src="js/ql2/knight.js?v=51"></script>
+<script src="js/ql2/unlocks.js?v=51"></script>
+<script src="js/ql2/title.js?v=51"></script>
+<script src="js/ql2/boot.js?v=51"></script>
 </body></html>

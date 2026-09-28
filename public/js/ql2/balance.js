@@ -88,6 +88,9 @@ const BALANCE = {
     chain: .50, chainOdds: .30,   // Lightning Blade (unchanged)
   },
 
+  /* ----------------------------- NEW ACCESSORIES (v51, js/ql2/items.js) --- */
+  ACC_NEW: { prism:.15, monocle:.25, rune:.20, leaf:.03, ironHeart:.15, hourglassUlt:2 },
+
   /* ----------------------------- HEROES --------------------------- */
   // Each hero: ONE damage mechanic (core) + ONE supporting passive.
   KNIGHT: { lowHp: .5, lowBonus: .10, finBonus: 0 },            // core: -15% damage taken · passive: HP < 50% → +10%

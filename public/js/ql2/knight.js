@@ -5,7 +5,7 @@
      · 🛡️ เกราะเหล็ก   — takes 15% less damage (dmgTaken .85) · HP x1.1
      · ⚔️ คลื่นดาบอัศวิน — words of 5+ letters use the finisher (animation; v44: no extra damage)
      · 🔥 ใจอัศวิน      — below half HP, +10% damage (BALANCE.KNIGHT)
-   PLINK  (id 'pip', 1200 gold — saves that already had him keep him)
+   PLINK  (id 'pip', 900 gold + feats — see js/ql2/unlocks.js; saves that already had him keep him)
      · ✨ ลำแสงดาบ      — at full HP a sword beam flies ahead of the swing, +20% (BALANCE.PLINK)
      · 🔥 คลื่นดาบเพลิง — words of 6+ letters use the finisher (animation; v44: no extra damage)
      · 🛡️ โล่           — 15% chance to block an enemy attack completely
