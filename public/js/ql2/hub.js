@@ -9,6 +9,47 @@
 // v54: the base is the cave camp — just the painted scene (scenes/hub/cave.png, 787×440 pixel art), no props.
 // .hd-live keeps pixel-art mode from rasterising the image layer away.
 const HUB_W = 787, HUB_H = 440;
+// the Merchant stands on the grass left of the cave mouth (between the boulders) holding a violet candle — tap him to open the shop.
+// Own SVG layer with the same viewBox / slice as HUB_BG so he stays on the same spot of the painting.
+const HUB_NPC = ()=>{
+  const still = save.settings && save.settings.anim===false;
+  requestAnimationFrame(hubNpcFit); setTimeout(hubNpcFit, 250);
+  const blink = still ? '' : `<animate attributeName="x" values="0;-33;0" keyTimes="0;.86;.93" dur="5s" calcMode="discrete" repeatCount="indefinite"/>`;
+  return `<svg class="hub-npc" viewBox="0 0 ${HUB_W} ${HUB_H}" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="npcAura"><stop offset="0" stop-color="#c77dff" stop-opacity=".55"/><stop offset=".6" stop-color="#9b4dff" stop-opacity=".16"/><stop offset="1" stop-color="#9b4dff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="npcLight"><stop offset="0" stop-color="#d9a0ff" stop-opacity=".35"/><stop offset="1" stop-color="#9b4dff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <g class="npc-merchant" data-act="go" data-v="shop" role="button" tabindex="0" aria-label="พ่อค้า — ไปที่ร้านค้า">
+    <title>พ่อค้า · ร้านค้า</title>
+    <g class="npc-pos"><g transform="translate(166,314) scale(2.6,2.6) translate(-14,-43)">
+      <rect class="npc-hit" x="-2" y="2" width="38" height="43" fill="transparent" pointer-events="all"/>
+      <ellipse class="npc-ring" cx="14" cy="42.5" rx="15" ry="3.2" fill="none" stroke="#c77dff" stroke-width=".8"/>
+      <ellipse class="npc-aura" cx="16" cy="24" rx="24" ry="28" fill="url(#npcAura)"/>
+      <circle class="npc-light" cx="29.6" cy="10" r="22" fill="url(#npcLight)"/>
+      <g class="npc-body"><svg x="0" y="0" width="33" height="43" viewBox="0 0 33 43" overflow="hidden"><image href="npc/merchant.png" x="0" y="0" width="66" height="43" style="image-rendering:pixelated">${blink}</image></svg></g>
+      <!-- violet candle in his open hand -->
+      <g class="npc-candle">
+        <rect x="27.3" y="20.2" width="5" height="1.6" rx=".6" fill="#8a6a3a" stroke="#1b1b1b" stroke-width=".4"/>
+        <rect x="28.4" y="14.2" width="2.6" height="6.2" rx=".5" fill="#e8dcff" stroke="#1b1b1b" stroke-width=".4"/>
+        <path d="M28.6,15.4 q.6,1.4 0,2.6" stroke="#b9a8e0" stroke-width=".5" fill="none"/>
+        <path d="M29.7,14.2 L29.7,13.2" stroke="#1b1b1b" stroke-width=".4"/>
+        <path class="npc-flame" d="M29.7,13.4 Q27.6,11.6 29.2,8.8 Q29.6,10.2 30.2,9.8 Q30.4,7.6 29.9,6.4 Q32.6,9.2 31.4,11.8 Q30.9,13.2 29.7,13.4 Z" fill="#a24dff"/>
+        <path class="npc-flame" d="M29.7,13.1 Q28.7,12 29.5,10.6 Q30.2,11.4 30.6,11.2 Q30.9,12.4 29.7,13.1 Z" fill="#f2dcff" style="animation-delay:.12s"/>
+        ${still ? '' : [0,1,2].map(i=>`<circle class="npc-mote" cx="${29.2+i*.6}" cy="9" r=".45" fill="#e2b8ff" style="animation-delay:${(i*1.1).toFixed(1)}s"/>`).join('')}
+      </g>
+    </g></g>
+  </g>
+</svg>`;
+};
+// keep him inside the visible part of the sliced scene (desktop panel is narrower than the painting)
+function hubNpcFit(){
+  const svg = document.querySelector('.hub-npc'), g = svg && svg.querySelector('.npc-pos'); if(!g) return;
+  const r = svg.getBoundingClientRect(); if(!r.width || !r.height) return;
+  const k = Math.max(r.width/HUB_W, r.height/HUB_H), x0 = (HUB_W - r.width/k)/2 + 4;
+  g.setAttribute('transform', `translate(${Math.max(0, x0 - 124).toFixed(1)},0)`);
+}
+addEventListener('resize', ()=>requestAnimationFrame(hubNpcFit));
 const HUB_BG = ()=>`<svg class="title-bg hub-bg hub-cave" viewBox="0 0 ${HUB_W} ${HUB_H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
   <image class="hd-live" href="scenes/hub/cave.png" x="0" y="0" width="${HUB_W}" height="${HUB_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>
 </svg>`;
@@ -139,7 +180,7 @@ function renderHub(){
 
   return `<div class="hub v26">
     <section class="hub-scene" style="--fc:${F.c}">
-      ${HUB_BG()}${hubFx()}
+      ${HUB_BG()}${hubFx()}${HUB_NPC()}
       <div class="hub-loc">${IC2.pin}<span><b>${HUB_NAME.name}</b><small>แนวหน้า: ${esc(N.done?'Endless Tower':L.name)} · ${save.cleared}/${CHAPTERS.length*STAGES_PER} ด่าน</small></span></div>
       <button class="hub-hero" data-act="go" data-v="heroes" aria-label="ไปที่หน้าฮีโร่">${rockLedge()}${heroStandalone(save.eq)}</button>
       <div class="hub-tag"><b>${esc(c.name)}</b><span>Lv ${hi.lv} · ${hi.R.th}</span></div>

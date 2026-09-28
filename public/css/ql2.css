@@ -102,6 +102,24 @@ html.noanim .q2-screen.enter,html.noanim .q2-badge{animation:none !important}
 .hub-scene .title-bg,.wm-map .title-bg{position:absolute;inset:0;width:100%;height:100%;z-index:0}
 .hub-scene:has(.hub-cave)::after{height:24%}
 html.pixel .hub-bg .px-on .hd-live{visibility:visible}
+.hub-npc{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;overflow:visible}
+.hub-npc .npc-merchant{pointer-events:none;cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent}
+.hub-npc .npc-hit{cursor:pointer}
+.hub-npc .npc-body{filter:drop-shadow(0 0 1.2px rgba(199,125,255,.75));animation:npcGlow 2.8s ease-in-out infinite}
+.hub-npc .npc-aura{opacity:.5;animation:npcAura 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 50%}
+.hub-npc .npc-ring{opacity:.35;animation:npcAura 2.8s ease-in-out infinite}
+.hub-npc .npc-light{opacity:.7;animation:npcFlick 1.6s ease-in-out infinite}
+.hub-npc .npc-flame{transform-box:fill-box;transform-origin:50% 100%;animation:npcFlame .9s ease-in-out infinite alternate}
+.hub-npc .npc-mote{opacity:0;animation:npcMote 3.3s linear infinite}
+.hub-npc .npc-merchant:hover .npc-body,.hub-npc .npc-merchant:focus-visible .npc-body{filter:drop-shadow(0 0 1.6px rgba(214,160,255,1))}
+.hub-npc .npc-merchant:hover .npc-aura,.hub-npc .npc-merchant:focus-visible .npc-aura{opacity:.85}
+.hub-npc .npc-merchant:active .npc-body{filter:drop-shadow(0 0 2.2px #e2b8ff) brightness(1.2)}
+@keyframes npcGlow{0%,100%{filter:drop-shadow(0 0 .8px rgba(199,125,255,.45))}50%{filter:drop-shadow(0 0 1.6px rgba(199,125,255,.85))}}
+@keyframes npcAura{0%,100%{opacity:.28}50%{opacity:.55}}
+@keyframes npcFlick{0%,100%{opacity:.6}40%{opacity:.8}70%{opacity:.5}}
+@keyframes npcFlame{from{transform:scale(1,1) skewX(-4deg)}to{transform:scale(.9,1.12) skewX(5deg)}}
+@keyframes npcMote{0%{opacity:0;transform:translate(0,0)}20%{opacity:.9}100%{opacity:0;transform:translate(1.5px,-9px)}}
+html.noanim .hub-npc :is(.npc-body,.npc-aura,.npc-ring,.npc-light,.npc-flame){animation:none}
 html.pixel .hub-bg .px-on :is(.w-flame,.w-glow),html.pixel .world-bg .px-on :is(.lava-glow,.twin){visibility:visible;shape-rendering:crispEdges}
 .hub-loc{position:absolute;left:10px;top:10px;z-index:3;display:flex;align-items:center;gap:6px;padding:5px 12px 5px 7px;background:var(--q2-glass);border:1px solid var(--q2-line);border-radius:999px;backdrop-filter:blur(4px);max-width:calc(100% - 20px)}
 .hub-loc .ico{font-size:20px;flex:none}
