@@ -200,7 +200,7 @@
     const r = svg.getBoundingClientRect(); if(!r.width || !r.height) return;
     const vb = svg.viewBox && svg.viewBox.baseVal, vx = vb && vb.width ? vb.x : 0, vw = vb && vb.width ? vb.width : 800, vh = vb && vb.height ? vb.height : 400;
     const k = Math.max(r.width/vw, r.height/vh), x1 = vx + vw/2 + (r.width/k)/2;      // right edge of what is visible (the battle camera changes the viewBox)
-    zbDx = Math.max(0, x1 + 12 - (EN_X + (K.cut - K.ax)*(MON[e.key].spScale||1)));
+    zbDx = Math.max(0, x1 + 34 - (EN_X + (K.cut - K.ax)*(MON[e.key].spScale||1)));
     document.querySelectorAll('#enemyG .zb-edge').forEach(g => g.setAttribute('transform', `translate(${zbDx.toFixed(1)},0)`));
   }
   addEventListener('resize', () => setTimeout(zbEdgeFit, 60));
