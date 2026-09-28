@@ -94,12 +94,15 @@ function dtLayout(){
     hit = { x: ax + 72*ks, y: ground - 62*ks };
     left = Math.max(W - DT.fw*sc*.92, hit.x + W*.08 - DT.mouth.x*sc);
   } else {
-    // phone: knight bottom-left, a big dragon above-right → the fire arcs down onto the blade
-    ks = Math.min(W/260, (H - uiH)/400, 2); ground = H - uiH; ax = 50*ks + 4;
-    sc = Math.min(W*.88/142, H*.34/124);
-    dBottom = ground - 112*ks;
-    hit = { x: ax + 42*ks, y: ground - 84*ks };
-    left = Math.max(W - DT.fw*sc*.82, hit.x + 30 - DT.mouth.x*sc);
+    // phone: knight bottom-left standing just above the name box / START button, a dragon above-right
+    // (v42: smaller so nothing hides behind the buttons, and the dragon shows more of its body)
+    const uiTop = uiEl ? uiEl.getBoundingClientRect().top - root.getBoundingClientRect().top : H - 150;
+    ground = Math.min(H - 110, uiTop - 14);
+    ks = Math.min(W/300, ground/470, 1.6); ax = 50*ks + 6;
+    sc = Math.min(W*.74/142, H*.27/124, (ground - 150*ks)/124);
+    dBottom = ground - 96*ks;
+    hit = { x: ax + 40*ks, y: ground - 84*ks };
+    left = Math.max(W - DT.fw*sc, hit.x + 26 - DT.mouth.x*sc);
   }
   dr.style.transform = `translate(${left}px,${dBottom - DT.fh*sc}px) scale(${sc})`;
   kn.style.transform = `translate(${ax - DT.kn.ax*ks}px,${ground - DT.kn.fh*ks}px) scale(${ks})`;
