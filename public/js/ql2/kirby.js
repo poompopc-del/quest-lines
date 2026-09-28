@@ -2,7 +2,9 @@
    QUEST LINES v35 — KIRBY (the fighter id stays 'puff')
    --------------------------------------------------------------------------
    The attack button is split in half:
-     🌀 ดูด (left)  — only for words of 4+ letters (not rude words)
+     🌀 ดูด (left)  — only for words of 4+ letters
+         · a RUDE word (4+) can swallow even a boss / mini boss (the
+           rude backlash still hits Kirby)
          · normal enemy → swallowed whole (counts as a kill) and its HP is
            added to the stored damage
          · boss / mini boss can't be swallowed → only the letters go in
@@ -97,11 +99,11 @@ function kButtons(){
   }
   const bi = $('#bInhale'), e = curEnemy();
   const prev = b.kChoice; b.kChoice = null; const r = evalWord(); b.kChoice = prev;
-  const okWord = r.state==='ok' && !r.rude, long = okWord && r.w.length >= KIRBY.min;
+  const okWord = r.state==='ok', long = okWord && r.w.length >= KIRBY.min;
   const can = long && !!e && !b.busy;
   bi.disabled = !can;
   bi.classList.toggle('ready', can);
-  const tip = !okWord ? `คำ ${KIRBY.min} ตัวขึ้นไป` : !long ? `ต้อง ${KIRBY.min} ตัว+` : (e && !e.boss && !e.mini) ? `กลืน +${kBoardCount()} ตัว` : `+${kBoardCount()} ตัว`;
+  const tip = !okWord ? `คำ ${KIRBY.min} ตัวขึ้นไป` : !long ? `ต้อง ${KIRBY.min} ตัว+` : (e && (e.boss || e.mini) && r.rude) ? `🤬 กลืน${e.boss?'บอส':'มินิบอส'}!` : (e && !e.boss && !e.mini) ? `กลืน +${kBoardCount()} ตัว` : `+${kBoardCount()} ตัว`;
   bi.innerHTML = `<span class="kt"><span class="ki">🌀</span>ดูด</span><small>${tip}</small>`;
   bAtk.classList.toggle('kspit', kFull(b));
 }
@@ -118,16 +120,18 @@ updateHud = (f=>function(){ const r = f.apply(this, arguments); try{ kSync(); kB
 /* ------------------------------ what a word does ------------------------------ */
 evalWord = (f=>function(){
   const r = f.apply(this, arguments), b = ui.bat;
-  if(!b || !isKirby() || r.state!=='ok' || r.rude) return r;
+  if(!b || !isKirby() || r.state!=='ok') return r;
   const e = curEnemy(); if(!e) return r;
+  const inhale = b.kChoice==='inhale' && r.w.length >= KIRBY.min;
+  if(r.rude && !inhale) return r;                         // rude words only matter for inhaling
   r.kBase = r.dmg;
-  if(b.kChoice==='inhale' && r.w.length >= KIRBY.min){
-    const gain = kBoardCount(), eat = !e.boss && !e.mini;
+  if(inhale){
+    const gain = kBoardCount(), eat = (!e.boss && !e.mini) || !!r.rude;   // a rude word swallows bosses too
     const L = (b.kLetters||0) + gain, add = r.dmg + (eat ? e.maxHp : 0);
     r.kMode = eat ? 'eat' : 'suck'; r.kGain = gain; r.kAdd = add;
     r.dmg = eat ? Math.max(1, Math.ceil(e.hp)) : 0;       // swallowed = gone · bosses take nothing
     r.notes.unshift(eat
-      ? `🌀 ดูด! กลืน ${e.name} (HP ${e.maxHp}) + ตัวอักษร ${gain} ตัว → สะสม ${(b.kStore||0)+add} ⭐x${kMult(L)}`
+      ? `${r.rude && (e.boss || e.mini) ? '🤬 ดูดด้วยคำหยาบ! ' : '🌀 ดูด! '}กลืน ${e.name} (HP ${e.maxHp}) + ตัวอักษร ${gain} ตัว → สะสม ${(b.kStore||0)+add} ⭐x${kMult(L)}`
       : `🌀 ${e.boss?'บอส':'มินิบอส'}ดูดไม่ได้ → ดูดตัวอักษร ${gain} ตัว → สะสม ${(b.kStore||0)+add} ⭐x${kMult(L)}`);
   } else if(kFull(b)){
     const m = kMult(b.kLetters), st = b.kStore||0;
