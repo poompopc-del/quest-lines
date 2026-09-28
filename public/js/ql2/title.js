@@ -1,5 +1,5 @@
 /* ==========================================================================
-   QUEST LINES v40 — DRAGON TITLE SCREEN
+   QUEST LINES v43 — DRAGON TITLE SCREEN
    Shown every time the game is opened.
      · new player    → name box + START
      · saved player  → START only
@@ -7,6 +7,9 @@
    fire in a loop, in front of the castle wall at night. v40: the starter
    hero (Elite Knight) stands bottom-left and slashes every fireball apart.
    The loop is slower, and the dragon sits further right to make room.
+   v43: comedy — the knight panics and runs back and forth to dodge the first
+   three fireballs (they blow up on the ground where he stood), walks back to
+   his spot, squares up… and slashes the fourth one with his finisher.
    Sprites: title/dragon.png · fireball.png · burst.png
      Dragon from "Shrek: Hassle at the Castle" (GBA) — ripped by A.J. Nitro.
    Logo: title/logo.jpg (blended onto the scene with mix-blend-mode:screen)
@@ -17,10 +20,13 @@ const DT = {
   // the loop: [strip frame, ms, fire?]
   seq:[ [0,260],[1,260],[2,260],[1,260],[0,260],[1,260],[2,260],[1,260],
         [3,190],[4,190],[5,210],
-        [6,220],[7,220],[8,190,1],[9,190],[10,190],[9,190],[10,190],[9,190,2],[10,190],[9,190],[10,190],[9,190],[10,190,3],[9,190],[10,190],[9,220],[11,300],
+        [6,220],[7,220],[8,190,1],[9,190],[10,190],[9,190],[10,190,2],[9,190],[10,190],[9,190],[10,190,3],
+        [9,190],[10,190],[9,190],[10,190],[9,190],[10,190],[9,190],[10,190,4],[9,190],[10,190],[9,220],[11,300],
         [12,180],[13,180],[14,180],[15,180],[16,200],[17,300] ],
   // the knight (starter hero) — strips from heroes/knight/: 216×112 frames, feet at x=70
-  kn:{ fw:216, fh:112, ax:70, idle:{ n:4, ms:380 }, atk3:{ n:5, ms:150, hit:2 }, atk1:{ n:5, ms:150, hit:2 }, fin:{ n:7, ms:160, hit:3 } },
+  kn:{ fw:216, fh:112, ax:70, idle:{ n:4, ms:380 }, walk:{ n:8, ms:70 }, atk3:{ n:5, ms:150, hit:2 }, atk1:{ n:5, ms:150, hit:2 }, fin:{ n:7, ms:160, hit:3 } },
+  // v43: fireballs 1–3 are dodged (the knight panics and runs back and forth), #4 is slashed
+  k:{ spot:'home', face:1, x:null, moving:false },
   speed:.32,                              // fireball speed (px per ms) — slow enough to watch
   ball:{ src:'title/fireball.png', w:56, h:32, n:6 },
   burst:{ src:'title/burst.png', w:55, h:50, n:8 },
@@ -44,6 +50,7 @@ const DT = {
   .dt-dragon{position:absolute;left:0;top:0;width:142px;height:124px;transform-origin:0 0;
     background:url(title/dragon.png) 0 0 / 1800% 100% no-repeat;image-rendering:pixelated;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6))}
   .dt-knight{position:absolute;left:0;top:0;width:216px;height:112px;transform-origin:0 0;background:url(heroes/knight/idle.png) 0 0 / 400% 100% no-repeat;image-rendering:pixelated;filter:drop-shadow(0 8px 10px rgba(0,0,0,.55))}
+  .dt-emote{position:absolute;left:0;top:0;font:900 26px/1 var(--hand);color:#fff;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.7);pointer-events:none;white-space:nowrap}
   .dt-shadow{position:absolute;height:14px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.55),transparent 70%);pointer-events:none}
   .dt-fx{position:absolute;inset:0;pointer-events:none}
   .dt-spr{position:absolute;background-repeat:no-repeat;image-rendering:pixelated;will-change:transform}
@@ -60,7 +67,7 @@ const DT = {
     .dt-ui{left:20%;right:auto;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px))}
   }`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
-  [DT.ball.src, DT.burst.src, 'title/dragon.png', 'title/logo.jpg', 'heroes/knight/idle.png', 'heroes/knight/atk3.png', 'heroes/knight/atk1.png', 'heroes/knight/fin.png'].forEach(s=>{ const i = new Image(); i.src = s; });
+  [DT.ball.src, DT.burst.src, 'title/dragon.png', 'title/logo.jpg', 'heroes/knight/idle.png', 'heroes/knight/walk.png', 'heroes/knight/atk3.png', 'heroes/knight/atk1.png', 'heroes/knight/fin.png'].forEach(s=>{ const i = new Image(); i.src = s; });
 })();
 
 renderTitle = function(){
@@ -105,13 +112,48 @@ function dtLayout(){
     left = Math.max(W - DT.fw*sc, hit.x + 26 - DT.mouth.x*sc);
   }
   dr.style.transform = `translate(${left}px,${dBottom - DT.fh*sc}px) scale(${sc})`;
-  kn.style.transform = `translate(${ax - DT.kn.ax*ks}px,${ground - DT.kn.fh*ks}px) scale(${ks})`;
-  if(sh){ sh.style.width = 90*ks+'px'; sh.style.left = ax - 45*ks + 'px'; sh.style.top = ground - 7 + 'px'; }
-  return { W, H, ks, sc, ground, ax, hit, mouth:{ x:left + DT.mouth.x*sc, y:dBottom - DT.fh*sc + DT.mouth.y*sc } };
+  // where he runs to when dodging: under the dragon, toward the middle
+  const far = land ? ax + Math.min(W*.14, 130*ks) : Math.min(W*.62, ax + 150*ks);
+  const L = DT.L = { W, H, ks, sc, ground, ax, far, hit, mouth:{ x:left + DT.mouth.x*sc, y:dBottom - DT.fh*sc + DT.mouth.y*sc } };
+  if(!DT.k.moving) DT.k.x = DT.k.spot==='far' ? far : ax;
+  dtKPlace();
+  return L;
 }
 window.addEventListener('resize', ()=>{ if(ui.screen==='title') dtLayout(); });
 
 /* ------------------------------ the knight ------------------------------ */
+function dtKPlace(){
+  const kn = $('#dtKnight'), sh = $('#dtKShadow'), L = DT.L; if(!kn || !L) return;
+  const { ks, ground } = L, x = DT.k.x, f = DT.k.face;
+  // facing left = mirrored around the feet
+  kn.style.transform = f > 0 ? `translate(${x - DT.kn.ax*ks}px,${ground - DT.kn.fh*ks}px) scale(${ks})`
+                             : `translate(${x + DT.kn.ax*ks}px,${ground - DT.kn.fh*ks}px) scale(${-ks},${ks})`;
+  if(sh){ sh.style.width = 90*ks+'px'; sh.style.left = x - 45*ks + 'px'; sh.style.top = ground - 7 + 'px'; }
+}
+function dtEmote(txt, ms){
+  const fx = $('#dtFx'), L = DT.L; if(!fx || !L) return;
+  const e = document.createElement('div'); e.className = 'dt-emote'; e.textContent = txt; fx.appendChild(e);
+  e.style.fontSize = Math.round(16 + 7*L.ks) + 'px';
+  const x = DT.k.x + (txt==='💦' ? -10*L.ks : 6*L.ks), y = L.ground - 96*L.ks;
+  e.animate([{ transform:`translate(${x}px,${y}px) scale(.3)`, opacity:0 },{ transform:`translate(${x}px,${y - 14}px) scale(1.2)`, opacity:1, offset:.2 },{ transform:`translate(${x}px,${y - 24}px) scale(1)`, opacity:1, offset:.75 },{ transform:`translate(${x}px,${y - 34}px) scale(1)`, opacity:0 }],
+    { duration:ms||700, easing:'ease-out' }).finished.catch(()=>{}).then(()=>e.remove());
+}
+// run (fast, arms flailing) or walk back — the walk strip plays and he faces where he goes
+function dtKRun(spot, ms, then){
+  const L = DT.L, run = DT.run; if(!L) return;
+  const from = DT.k.x, to = spot==='far' ? L.far : L.ax; if(Math.abs(to - from) < 2){ DT.k.spot = spot; then && then(); return; }
+  DT.k.face = to > from ? 1 : -1; DT.k.moving = true; DT.k.spot = spot;
+  dtKnightPlay('walk');
+  const t0 = performance.now();
+  const step = now=>{
+    if(run!==DT.run) return;
+    const p = Math.min(1, (now - t0)/ms), e = p<.5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+    DT.k.x = from + (to - from)*e; dtKPlace();
+    if(p < 1){ requestAnimationFrame(step); return; }
+    DT.k.moving = false; dtKnightPlay('idle'); then && then();
+  };
+  requestAnimationFrame(step);
+}
 function dtKnightPlay(name){
   const kn = $('#dtKnight'); if(!kn) return;
   const A = DT.kn[name], run = DT.run; kn._act = (kn._act||0) + 1; const me = kn._act;
@@ -119,7 +161,7 @@ function dtKnightPlay(name){
   let k = 0;
   const step = ()=>{
     if(run!==DT.run || !kn.isConnected || kn._act!==me) return;
-    if(name==='idle'){ kn.style.backgroundPosition = `${(k % A.n)/(A.n-1)*100}% 0`; k++; setTimeout(step, A.ms); return; }
+    if(name==='idle' || name==='walk'){ kn.style.backgroundPosition = `${(k % A.n)/(A.n-1)*100}% 0`; k++; setTimeout(step, A.ms); return; }
     if(k >= A.n){ dtKnightPlay('idle'); return; }
     kn.style.backgroundPosition = `${k/(A.n-1)*100}% 0`; k++; setTimeout(step, A.ms);
   };
@@ -130,6 +172,7 @@ function dtKnightPlay(name){
 function dtStart(){
   const root = $('#dtRoot'), dr = $('#dtDragon'); if(!root || !dr || root._on) return;
   root._on = true; const run = ++DT.run; let i = 0;
+  DT.k = { spot:'home', face:1, x:null, moving:false };
   dtLayout(); dtKnightPlay('idle');
   const tick = ()=>{
     if(run!==DT.run || !dr.isConnected) return;
@@ -162,7 +205,9 @@ function dtBurst(fx, x, y, scale, op){
 // n = 1, 2, 3 — the third fireball of a volley gets the knight's finisher
 function dtFire(root, n){
   const fx = $('#dtFx'), L = dtLayout(); if(!fx || !L) return;
-  const { mouth, hit, sc, ks } = L;
+  const { mouth, sc, ks } = L, dodge = n < 4;
+  // 1–3 are aimed at his feet (where he is heading); 4 meets the blade
+  const tx = DT.k.spot==='far' ? L.far : L.ax, hit = dodge ? { x: tx + 8*ks, y: L.ground - 6*ks } : L.hit;
   const s = Math.min(sc*1.05, ks*1.5), ball = dtSprite(fx, DT.ball, s, 3), w = DT.ball.w*s, h = DT.ball.h*s;
   const dx = hit.x - mouth.x, dy = hit.y - mouth.y, dist = Math.hypot(dx, dy);
   const T = Math.max(1000, dist/DT.speed);
@@ -183,17 +228,31 @@ function dtFire(root, n){
     if(tt < T){ requestAnimationFrame(fly); return; }
     clearInterval(t); ball.remove();
     if(!fx.isConnected) return;
+    if(dodge){                                                   // missed! it blows up on the floor
+      dtBurst(fx, hit.x, hit.y - 18*ks, ks*1.9); setTimeout(()=>fx.isConnected && dtBurst(fx, hit.x + 22*ks, hit.y - 10*ks, ks*1.1, .9), 90);
+      try{ tone(120, .25, 'sawtooth', .05); }catch(e){}
+      return;
+    }
     dtBurst(fx, hit.x, hit.y, ks*1.5);
     try{ tone(900, .06, 'square', .04); tone(300, .18, 'triangle', .05, .03); }catch(e){}
-    const st = $('#dtRoot'); if(st && n===3){ st.animate([{ transform:'translate(0,0)' },{ transform:'translate(-5px,3px)' },{ transform:'translate(4px,-2px)' },{ transform:'translate(0,0)' }], { duration:260 }); }
+    const st = $('#dtRoot'); if(st){ st.animate([{ transform:'translate(0,0)' },{ transform:'translate(-5px,3px)' },{ transform:'translate(4px,-2px)' },{ transform:'translate(0,0)' }], { duration:260 }); }
   };
   ball.style.transformOrigin = '30% 50%';                      // turn around the round head, not the tail
   requestAnimationFrame(fly);
   // flash at the mouth
   dtBurst(fx, mouth.x - 10*sc, mouth.y, sc*.9, .8);
+  const run = DT.run, ok = ()=>run===DT.run;
+  if(dodge){
+    // "!" → panic → sprint the other way with a drop of sweat
+    setTimeout(()=>{ if(ok()) dtEmote('!', 650); }, 80);
+    setTimeout(()=>{ if(!ok()) return; dtEmote('💦', 700); dtKRun(DT.k.spot==='far' ? 'home' : 'far', 430); }, T*.42);
+    if(n===3) setTimeout(()=>{ if(!ok()) return;                // phew… back to his spot, turn around, square up
+      dtKRun('home', 650, ()=>{ if(!ok()) return; DT.k.face = 1; dtKPlace(); dtEmote('😤', 900); }); }, T + 220);
+    return;
+  }
   // the knight swings so the blade lands as the fireball arrives
-  const move = n===3 ? 'fin' : n===2 ? 'atk1' : 'atk3', A = DT.kn[move], lead = A.ms*(A.hit + .5), run = DT.run;
-  setTimeout(()=>{ if(run===DT.run) dtKnightPlay(move); }, Math.max(0, T - lead));
+  const A = DT.kn.fin, lead = A.ms*(A.hit + .5);
+  setTimeout(()=>{ if(!ok()) return; DT.k.face = 1; dtKPlace(); dtKnightPlay('fin'); }, Math.max(0, T - lead));
 }
 
 /* ------------------------------ start ------------------------------ */
