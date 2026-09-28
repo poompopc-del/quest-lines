@@ -87,19 +87,19 @@ function dtLayout(){
   const uiEl = root.querySelector('.dt-ui'), uiH = uiEl ? uiEl.offsetHeight + 34 : 120;
   let ks, ground, ax, sc, dBottom, hit, left;
   if(land){
-    // logo + buttons on the left fifth · knight in the middle · dragon on the right, same floor
-    ks = Math.min(3.2, H/300); ground = H - 16; ax = W*.42;
-    sc = Math.min(H*.6/124, W*.42/142);
-    dBottom = ground - 40*ks;
+    // logo + buttons on the left fifth · knight in the middle · a big dragon on the right, same floor
+    ks = Math.min(3.2, H/300); ground = H - 16; ax = W*.40;
+    sc = Math.min(H*.72/124, W*.5/142);
+    dBottom = ground - 16*ks;
     hit = { x: ax + 72*ks, y: ground - 62*ks };
-    left = Math.max(W - DT.fw*sc, hit.x + W*.1 - DT.mouth.x*sc);
+    left = Math.max(W - DT.fw*sc*.92, hit.x + W*.08 - DT.mouth.x*sc);
   } else {
-    // phone: knight bottom-left, dragon above-right → the fire dives down onto the blade
-    ks = Math.min(W/240, (H - uiH)/380, 2.2); ground = H - uiH; ax = 50*ks + 4;
-    sc = Math.min(W*.78/142, H*.3/124);
-    dBottom = ground - 120*ks;
-    hit = { x: ax + 50*ks, y: ground - 80*ks };
-    left = Math.max(W - DT.fw*sc*.88, hit.x + 60 - DT.mouth.x*sc);
+    // phone: knight bottom-left, a big dragon above-right → the fire arcs down onto the blade
+    ks = Math.min(W/260, (H - uiH)/400, 2); ground = H - uiH; ax = 50*ks + 4;
+    sc = Math.min(W*.88/142, H*.34/124);
+    dBottom = ground - 112*ks;
+    hit = { x: ax + 42*ks, y: ground - 84*ks };
+    left = Math.max(W - DT.fw*sc*.82, hit.x + 30 - DT.mouth.x*sc);
   }
   dr.style.transform = `translate(${left}px,${dBottom - DT.fh*sc}px) scale(${sc})`;
   kn.style.transform = `translate(${ax - DT.kn.ax*ks}px,${ground - DT.kn.fh*ks}px) scale(${ks})`;
@@ -162,17 +162,30 @@ function dtFire(root, n){
   const { mouth, hit, sc, ks } = L;
   const s = Math.min(sc*1.05, ks*1.5), ball = dtSprite(fx, DT.ball, s, 3), w = DT.ball.w*s, h = DT.ball.h*s;
   const dx = hit.x - mouth.x, dy = hit.y - mouth.y, dist = Math.hypot(dx, dy);
-  const ang = Math.atan2(-dy, -dx)*180/Math.PI;            // the sprite's head points left → turn it toward the knight
-  const T = Math.max(900, dist/DT.speed);
-  const t = setInterval(()=>{ if(!ball.isConnected) return clearInterval(t); ball._step(); }, 80);
+  const T = Math.max(1000, dist/DT.speed);
+  // a real throw: launched from the mouth, pulled down by gravity, lands on the blade at time T.
+  // p(t) = m + v·t + ½·g·t²  →  v = (d − ½·g·T²) / T.  The sprite's round head points left, so it is
+  // turned every frame to face its velocity (v + g·t): the tail of flame always trails behind.
+  const g = .0005 * (L.H/800), vx = dx/T, vy = (dy - .5*g*T*T)/T;
   try{ tone(150 + Math.random()*50, .3, 'sawtooth', .025); }catch(e){}
-  const at = (p, sc2)=>`translate(${mouth.x + dx*p - w/2}px,${mouth.y + dy*p - h/2}px) rotate(${-ang}deg) scale(${sc2})`;
-  ball.animate([{ transform:at(0,.45) },{ transform:at(.2,.9), offset:.2 },{ transform:at(1,1.1) }], { duration:T, easing:'linear', fill:'forwards' })
-    .finished.catch(()=>{}).then(()=>{ clearInterval(t); ball.remove();
-      if(!fx.isConnected) return;
-      dtBurst(fx, hit.x, hit.y, ks*1.5);
-      try{ tone(900, .06, 'square', .04); tone(300, .18, 'triangle', .05, .03); }catch(e){}
-      const st = $('#dtRoot'); if(st && n===3){ st.animate([{ transform:'translate(0,0)' },{ transform:'translate(-5px,3px)' },{ transform:'translate(4px,-2px)' },{ transform:'translate(0,0)' }], { duration:260 }); } });
+  const t = setInterval(()=>{ if(!ball.isConnected) return clearInterval(t); ball._step(); }, 80);
+  const t0 = performance.now();
+  const fly = now=>{
+    if(!ball.isConnected) return;
+    const tt = Math.min(T, now - t0), p = tt/T;
+    const x = mouth.x + vx*tt, y = mouth.y + vy*tt + .5*g*tt*tt;
+    const ang = Math.atan2(-(vy + g*tt), -vx)*180/Math.PI;      // head (−x of the sprite) → along the velocity
+    const grow = p < .2 ? .45 + p/.2*.5 : .95 + (p-.2)*.2;
+    ball.style.transform = `translate(${x - w*.3}px,${y - h/2}px) rotate(${ang}deg) scale(${grow})`;
+    if(tt < T){ requestAnimationFrame(fly); return; }
+    clearInterval(t); ball.remove();
+    if(!fx.isConnected) return;
+    dtBurst(fx, hit.x, hit.y, ks*1.5);
+    try{ tone(900, .06, 'square', .04); tone(300, .18, 'triangle', .05, .03); }catch(e){}
+    const st = $('#dtRoot'); if(st && n===3){ st.animate([{ transform:'translate(0,0)' },{ transform:'translate(-5px,3px)' },{ transform:'translate(4px,-2px)' },{ transform:'translate(0,0)' }], { duration:260 }); }
+  };
+  ball.style.transformOrigin = '30% 50%';                      // turn around the round head, not the tail
+  requestAnimationFrame(fly);
   // flash at the mouth
   dtBurst(fx, mouth.x - 10*sc, mouth.y, sc*.9, .8);
   // the knight swings so the blade lands as the fireball arrives
