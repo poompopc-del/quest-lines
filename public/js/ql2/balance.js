@@ -65,6 +65,11 @@ const BALANCE = {
   // hand-tuned bosses (js/ql2/boss-encounter.js) — multipliers on the stage's normal boss HP / ATK
   BOSS_TUNING: { kingslime:{ hp:2.2, atk:1.3 },   // chapter 1 boss (was HP x2.6 — player damage in chapter 1 is lower now)
                  necro:    { hp:2.4, atk:1.35 } }, // Tyrant, chapter 5 final boss (unchanged)
+  // Dr. Zomboss (chapter 2 boss, js/ql2/zombies.js) — a long fight in cycles, like the original:
+  //   head UP  (upTurns enemy turns): claw / stomp / crush, words only deal upDmg (the head is out of reach)
+  //   head DOWN: eye turns yellow (fireball) or blue (iceball) → next turn it fires; the head stays low one
+  //              more turn → words deal +weakBonus. An ice word stops a fireball, a fire word stops an iceball.
+  ZOMBOSS: { hp:3.2, upTurns:3, upTurnsRage:2, upDmg:.35, weakBonus:.5, crushAtk:1.4, iceAtk:.75, iceStones:3, counterBonus:.5 },
 
   /* ----------------------------- WEAPON PERKS --------------------- */
   PERK: {

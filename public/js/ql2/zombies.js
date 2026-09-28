@@ -30,10 +30,12 @@
       idle:row(0,10), walk:row(1,9), atk:[19,20,21,22,23,24,25,26,27], charge:[18,19,20,21], heavy:[21,22,23,24,25,26,27,28,29],
       dead:[40,41,42,43,44,45,46,47,48], atkMs:80, deadMs:130, deadMax:1400, lift:{ 46:-24, 47:-24, 48:-24 },   // the fallen body is drawn 24px low on the sheet
       heavyTxt:'💥 GARGANTUAR SMASH!', chargeTxt:'⚠ การ์แกนทัวร์ยกเสาไฟฟ้า… เทิร์นหน้าทุบหนัก!' },
-    // Dr. Zomboss (built from the Zombot sheet: robot + claw arm composites, then its collapse)
-    zomboss: { img:'enemies/pvz/zomboss.png', cols:10, rows:4, fw:160, fh:244, ax:72, by:232, topPx:2, pixel:false, rate:.5, col:'#c0584a',
-      idle:[0,1], atk:[2,3,4,5,6,7,8,9,10,11], charge:[12], heavy:[12,13,14,15,16,17,18,19], dead:[20,21,22,23,24,25,26,27,28,29,30,31,32,33,34],
-      atkMs:70, deadMs:120, deadMax:2000, heavyTxt:'🤖 ZOMBOT CLAW SLAM!', chargeTxt:'⚠ ซอมบอทง้างกรงเล็บ… เทิร์นหน้าแรงมาก!' },
+    // Dr. Zomboss — the Zombot. Body layer: legs idle / walk / stomp / claw / crush + the collapse (with dome & head).
+    // Head layer (drawn over the legs): descends, eye yellow = fireball / blue = iceball, spits, rises.
+    zomboss: { img:'enemies/pvz/zomboss.png', cols:10, rows:8, fw:186, fh:247, ax:69.6, by:231, topPx:40, pixel:false, rate:.22, col:'#c0584a',
+      idle:[0,1,2,3], walk:[4,5,6,7,8,9], stomp:[10,11,12,13,14,15,16], claw:[17,18,19,20,21,22,23,24,25,26], crush:[27,28,29,30,31,32,33,34],
+      dead:[35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51], deadMs:115, deadMax:2200,
+      head:{ down:[52,53,54,55,56,57,58,59,60], fire:[61,62,63], ice:[64,65,66,67], spit:[68,69,70], up:[71,72,73,74] }, iconHead:61 },
   });
   Object.values(SPRITES).forEach(P => { if(P.cols) P.cells = P.cols*P.rows; });
 
@@ -43,7 +45,7 @@
     shroom: { sp:'zcone',   name:'Conehead Zombie',   th:'ซอมบี้หัวกรวย',        scale:3.2, traits:['armor3'] },
     wolf:   { sp:'zbucket', name:'Buckethead Zombie', th:'ซอมบี้หัวถัง',         scale:3.2, traits:['armor4'] },
     treant: { sp:'garg',    name:'Gargantuar',        th:'การ์แกนทัวร์ ยักษ์ซอมบี้', scale:2.35, traits:['heavy','armor4'] },
-    ogre:   { sp:'zomboss', name:'Dr. Zomboss',       th:'ดร.ซอมบอส & ซอมบอท',  scale:1.2, traits:['heavy','armor3'] },
+    ogre:   { sp:'zomboss', name:'Dr. Zomboss',       th:'ดร.ซอมบอส & ซอมบอท',  scale:1.45, traits:['armor3'] },   // 'heavy' is switched on only for the head-down cycle
   };
   Object.entries(SKINS).forEach(([k, S]) => { const M = MON[k], P = SPRITES[S.sp]; if(!M) return;
     Object.assign(M, { name:S.name, th:S.th, sprite:S.sp, spScale:S.scale, sc:1, h:Math.round((P.by - P.topPx)*S.scale), traits:S.traits.slice(), caster:false, pal:{ a:P.col, b:P.col, c:P.col } }); });
@@ -68,7 +70,7 @@
     const bar = queued ? '' : `<g class="ehp" transform="translate(-40,${top-22})"><rect width="80" height="12" rx="6" fill="#12100d" stroke="${OL}" stroke-width="3"/><rect class="ehpfill" x="2" y="2" width="76" height="8" rx="4" fill="${col}"/>${crown}</g>`;
     const w = K.fw*sc, ring = (e.mini || e.boss) && !queued ? `<ellipse class="elite-ring" cx="0" cy="2" rx="${Math.min(w*.4, 90)}" ry="12" fill="none" stroke="${e.boss?'#ff6a4a':'#f2b42c'}" stroke-width="4" opacity=".8"/>` : '';
     return `<g class="enemy spr-enemy spr-grid ${K.walk?'has-walk':''} ${K.pixel?'spr-pixel':''} ${queued?'queued':''} ${e.golden?'golden':''}" data-spr="${esc(MON[e.key].sprite)}">${ring}<ellipse cx="0" cy="2" rx="${Math.min(w*.3, 70)}" ry="7" fill="#000" opacity=".28"/>
-      ${layer(K, 'spr-idle', sc, K.idle, href, K.rate||.2)}${K.walk ? layer(K, 'spr-walk', sc, K.walk, href, K.rate||.2) : ''}${layer(K, 'spr-pose', sc, [K.idle[0]], href, 1, 'visibility="hidden"')}${bar}${e.golden&&!queued?`<text class="golden-tag" x="-35" y="${top-30}">★ GOLDEN ★</text>`:''}</g>`;
+      ${layer(K, 'spr-idle', sc, K.idle, href, K.rate||.2)}${K.walk ? layer(K, 'spr-walk', sc, K.walk, href, K.rate||.2) : ''}${layer(K, 'spr-pose', sc, [K.idle[0]], href, 1, 'visibility="hidden"')}${K.head ? layer(K, 'zb-head', sc, [K.head.down[0]], href, 1, 'visibility="hidden"') : ''}${bar}${e.golden&&!queued?`<text class="golden-tag" x="-35" y="${top-30}">★ GOLDEN ★</text>`:''}</g>`;
   };
   const _icon = monsterIcon;
   monsterIcon = function(key){
@@ -76,7 +78,7 @@
     const c = K.idle[0], m = K.fw*.08;
     // clip to the one cell, so neighbouring frames never show in wide / tall icon boxes
     const vx = m, vy = K.topPx - 2, vw = K.fw - 2*m, vh = K.by - K.topPx + 6, id = 'zc-' + key;
-    return `<svg viewBox="${vx} ${vy} ${vw} ${vh}" class="spr-icon ${K.pixel?'spr-pixel':''}" aria-hidden="true"><defs><clipPath id="${id}"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh}"/></clipPath></defs><g clip-path="url(#${id})"><image href="${K.img}" width="${K.fw*K.cols}" height="${K.fh*K.rows}" x="${cellX(K, c)}" y="${cellY(K, c)}"/></g></svg>`;
+    return `<svg viewBox="${vx} ${vy} ${vw} ${vh}" class="spr-icon ${K.pixel?'spr-pixel':''}" aria-hidden="true"><defs><clipPath id="${id}"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh}"/></clipPath></defs><g clip-path="url(#${id})"><image href="${K.img}" width="${K.fw*K.cols}" height="${K.fh*K.rows}" x="${cellX(K, c)}" y="${cellY(K, c)}"/>${K.iconHead!==undefined ? `<image href="${K.img}" width="${K.fw*K.cols}" height="${K.fh*K.rows}" x="${cellX(K, K.iconHead)}" y="${cellY(K, K.iconHead)}"/>` : ''}</g></svg>`;
   };
   // play cells on the pose layer (x + y for grid sheets); death cells may sit a little higher (deadDy)
   const _pose = spritePose;
@@ -137,6 +139,186 @@
     .spr-grid.golden image{filter:sepia(1) saturate(3.2) hue-rotate(-12deg) brightness(1.12)}`;
   document.head.appendChild(st);
 
+  /* ======================================================================
+     DR. ZOMBOSS — the Zombot fight (cycles, like the original boss battle)
+       UP   : head out of reach → claw / stomp / crush; words deal 35%
+       DOWN : the head comes down, the eye glows yellow (fireball) or blue
+              (iceball) — next turn it fires, then the head stays low one
+              more turn. Words deal +50% while it is down.
+              Counter: an ICE word melts nothing but stops the fireball,
+              a FIRE word stops the iceball → the ball shatters, no damage.
+     Numbers: BALANCE.ZOMBOSS. The engine's own 'heavy' trait (charge turn
+     → ×2.2 hit) is switched on only for the head-down cycle.
+     ====================================================================== */
+  const ZB = BALANCE.ZOMBOSS;
+  const isZB = e => !!(e && e.key==='ogre' && e.boss && MON.ogre.sprite==='zomboss');
+  const zbOf = e => e.zb || (e.zb = { phase:'up', t:0, eye:null, shot:false, cancel:false, act:null });
+  const setHeavy = (e, on) => { const i = e.traits.indexOf('heavy'); if(on && i<0) e.traits.push('heavy'); if(!on && i>=0) e.traits.splice(i, 1); };
+  const baseEl = el => { const E = el && ELEMENTS[el]; return E && E.god ? E.base : el; };
+  // tougher boss everywhere it appears (story stage, tower floors, challenges)
+  makeEnemy = (f => function(key, s, rng, boss, mini){
+    const e = f.apply(this, arguments);
+    if(key==='ogre' && boss && MON.ogre.sprite==='zomboss'){ e.hp = e.maxHp = Math.round(e.maxHp*ZB.hp); e.traits = e.traits.filter(t => t!=='heavy'); }
+    return e;
+  })(makeEnemy);
+
+  /* ---------- head layer ---------- */
+  const zbG = () => document.querySelector('#enemyG .spr-enemy');
+  function headPlay(cells, ms, then){
+    const e = curEnemy(), K = spriteOf(e), g = zbG(); if(!K || !K.head || !g) return 0;
+    const hd = g.querySelector('.zb-head'); if(!hd) return 0;
+    const img = hd.querySelector('image'); let k = 0;
+    clearInterval(g._headI);
+    const show = c => { img.setAttribute('x', cellX(K, c)); img.setAttribute('y', cellY(K, c)); };
+    show(cells[0]); hd.setAttribute('visibility', 'visible');
+    g._headI = setInterval(() => { k++;
+      if(k < cells.length){ show(cells[k]); return; }
+      if(then==='hide'){ clearInterval(g._headI); hd.setAttribute('visibility', 'hidden'); return; }
+      if(Array.isArray(then)){ cells = then; k = 0; show(cells[0]); return; }   // loop
+      clearInterval(g._headI); }, ms);
+    return ms*cells.length;
+  }
+  const headHold = e => { const K = spriteOf(e), z = zbOf(e); if(!K || !K.head) return; headPlay(K.head[z.eye==='ice'?'ice':'fire'], 150, K.head[z.eye==='ice'?'ice':'fire']); };
+  // re-drawn markup (walking in, re-renders) keeps the head where it was
+  const _svg = spriteSVG;
+  spriteSVG = function(e, queued){ const out = _svg.apply(this, arguments);
+    if(!queued && isZB(e) && e.zb && e.zb.phase==='down') setTimeout(() => { if(curEnemy()===e && e.hp>0) headHold(e); }, 0);
+    return out; };
+
+  /* ---------- the ball ---------- */
+  function zbBall(eye){
+    const fx = $('#fx'), e = curEnemy(); if(!fx || !e) return Promise.resolve();
+    const K = spriteOf(e), sc = MON[e.key].spScale, fire = eye!=='ice';
+    const x0 = EN_X + (38 - K.ax)*sc, y0 = FLOOR_Y + (200 - K.by)*sc, r = 34;
+    const g = svgEl('g', {});
+    g.innerHTML = `<defs><radialGradient id="zbg${fire?'f':'i'}"><stop offset="0" stop-color="${fire?'#fff6b0':'#ffffff'}"/><stop offset=".45" stop-color="${fire?'#ffb020':'#8fe8ff'}"/><stop offset="1" stop-color="${fire?'#e0401a':'#2a8adf'}"/></radialGradient></defs>
+      <circle r="${r+10}" fill="${fire?'#ff7a1a':'#9fe8ff'}" opacity=".35"/><circle r="${r}" fill="url(#zbg${fire?'f':'i'})" stroke="${fire?'#a0200a':'#1a5a9a'}" stroke-width="3"/>
+      <path d="M-18,-8 Q0,-26 18,-8 M-20,10 Q0,-6 20,10" stroke="${fire?'#fff3a0':'#ffffff'}" stroke-width="4" fill="none" opacity=".8"/>`;
+    fx.appendChild(g);
+    // a trail of flames / frost left on the lane, like the rolling ball in the original
+    const trail = setInterval(() => { const t = g.getAttribute('data-x'); if(!t) return;
+      const p = svgEl('circle', { r:rint(8,16), fill: fire ? ['#ff5a1a','#ffb030','#ffe27a'][rint(0,2)] : ['#bff6ff','#8fe8ff','#ffffff'][rint(0,2)], opacity:.85 }); fx.appendChild(p);
+      anim(p, [{ transform:tr(+t, FLOOR_Y-6)+' scale(1)', opacity:.85 },{ transform:tr(+t+rint(-6,6), FLOOR_Y-rint(30,60))+' scale(.2)', opacity:0 }], { duration:600, easing:'ease-out' }).then(() => p.remove()); }, 45);
+    const t0 = performance.now(), dur = 620, x1 = HERO_X + 20, y1 = FLOOR_Y - r;
+    return new Promise(res => { const step = now => { const k = Math.min(1, (now-t0)/dur), x = x0 + (x1-x0)*k, y = y0 + (y1-y0)*Math.min(1, k*2.2);
+        g.setAttribute('data-x', x); g.setAttribute('transform', `translate(${x},${y}) rotate(${-k*720})`);
+        if(k<1) requestAnimationFrame(step); else { clearInterval(trail); g.remove(); res(); } };
+      requestAnimationFrame(step); });
+  }
+  function zbShatter(eye){
+    const fx = $('#fx'), e = curEnemy(); if(!fx || !e) return;
+    const K = spriteOf(e), sc = MON[e.key].spScale, x = EN_X + (38 - K.ax)*sc - 40, y = FLOOR_Y + (200 - K.by)*sc;
+    for(let i=0;i<14;i++){ const p = svgEl('circle', { r:rint(5,11), fill: eye==='ice' ? '#bff6ff' : '#ffb030' }); fx.appendChild(p);
+      const a = Math.random()*Math.PI*2, d = rint(40,110); anim(p, [{ transform:tr(x,y), opacity:1 },{ transform:tr(x+Math.cos(a)*d, y+Math.sin(a)*d), opacity:0 }], { duration:600, easing:'ease-out' }).then(() => p.remove()); }
+  }
+
+  /* ---------- player damage: out of reach vs weak spot ---------- */
+  evalWord = (f => function(){
+    const r = f.apply(this, arguments), e = curEnemy();
+    if(!r || r.state!=='ok' || !r.dmg || !isZB(e)) return r;
+    const z = zbOf(e);
+    if(z.phase==='up'){ r.dmg = Math.max(1, Math.round(r.dmg*ZB.upDmg)); r.notes.unshift(`🤖 หัวซอมบอสอยู่สูง — ดาเมจเหลือ ${BALANCE.pct(ZB.upDmg)}%`); }
+    else dmgMod(r, 'burst', ZB.weakBonus, `🎯 WEAK SPOT! หัวลงมาแล้ว +${BALANCE.pct(ZB.weakBonus)}%`);
+    const el = baseEl(r.el);
+    if(z.phase==='down' && !z.shot && ((z.eye==='fire' && el==='ice') || (z.eye==='ice' && el==='fire'))){ r.zbCounter = true; dmgMod(r, 'bonus', ZB.counterBonus, z.eye==='fire' ? '❄ คำน้ำแข็งสกัดลูกไฟ!' : '🔥 คำไฟละลายลูกน้ำแข็ง!'); }
+    return r;
+  })(evalWord);
+  doAttack = (f => async function(){
+    const b = ui.bat, e = curEnemy();
+    if(b && !b.busy && isZB(e)){ const r = evalWord(); if(r.state==='ok' && r.zbCounter){ const z = zbOf(e); z.cancel = true; } }
+    return f.apply(this, arguments);
+  })(doAttack);
+
+  /* ---------- the boss turn ---------- */
+  enemyTurn = (f => async function(){
+    const b = ui.bat, e = curEnemy();
+    if(!b || !isZB(e) || e.hp<=0) return f.apply(this, arguments);
+    const z = zbOf(e), K = spriteOf(e);
+    // the ball was stopped by a counter word → it shatters, the head stays down one more turn
+    if(z.phase==='down' && !z.shot && e.charge && z.cancel){
+      z.cancel = false; z.shot = true; e.charge = 0; setHeavy(e, false);
+      zbShatter(z.eye); sfx.elem(z.eye==='ice' ? 'fire' : 'ice'); shake(false);
+      floatText(z.eye==='ice' ? '🔥 ลูกน้ำแข็งแตก!' : '❄ ลูกไฟดับ!', EN_X-60, FLOOR_Y-e.h*e.sc-30, '#fff', 28, true);
+      headPlay(K.head.spit, 110, K.head[z.eye==='ice'?'ice':'fire']);
+      await sleep(900); endTurn(); return;
+    }
+    // after the shot the head rises again (and the Zombot stomps as it does)
+    if(z.phase==='down' && z.shot){
+      z.phase = 'up'; z.shot = false; z.eye = null; z.t = 0; setHeavy(e, false);
+      headPlay(K.head.up, 110, 'hide'); floatText('🤖 หัวซอมบอทกลับขึ้นไป!', EN_X-40, FLOOR_Y-e.h*e.sc-30, '#ffd0c0', 22);
+      await sleep(500);
+    }
+    if(z.phase==='up'){
+      z.t++;
+      if(z.t > (e.phase2 ? ZB.upTurnsRage : ZB.upTurns)){
+        // lower the head: this turn = the engine's charge turn (enemyCharge below plays it)
+        z.phase = 'down'; z.shot = false; z.cancel = false; z.eye = Math.random()<.5 ? 'fire' : 'ice'; setHeavy(e, true);
+        return f.apply(this, arguments);
+      }
+      z.act = ['claw','stomp','crush'][(z.t-1) % 3];
+      const mul = z.act==='crush' ? ZB.crushAtk : 1, a0 = e.atk; e.atk = Math.round(a0*mul);
+      try{ return await f.apply(this, arguments); } finally { if(mul!==1) e.atk = Math.max(1, Math.round(e.atk/mul)); }
+    }
+    // head down, charged → fire the ball (or re-charge if a freeze / stun cost the charge)
+    if(!e.charge) return f.apply(this, arguments);
+    const mul = z.eye==='ice' ? ZB.iceAtk : 1, a0 = e.atk; e.atk = Math.round(a0*mul);
+    const hp0 = b.hp;
+    try{ await f.apply(this, arguments); } finally { if(mul!==1) e.atk = Math.max(1, Math.round(e.atk/mul)); }
+    if(ui.bat!==b || b.over) return;
+    if(!e.charge){ z.shot = true; setHeavy(e, false);
+      if(z.eye==='ice' && b.hp < hp0){   // iceball: a few letters freeze into stone
+        const free = b.tiles.map((t,i)=>i).filter(i=>!b.tiles[i].stone && !b.tiles[i].sel).sort(()=>Math.random()-.5).slice(0, ZB.iceStones);
+        free.forEach(i=>{ b.tiles[i].stone = 2; b.tiles[i].gem = null; }); if(free.length){ sfx.stone(); renderTiles(); floatText(`❄ ตัวอักษรแข็งตัว ${free.length} ตัว`, HERO_X, FLOOR_Y-215, '#bff6ff', 20); }
+      }
+    }
+  })(enemyTurn);
+  // charge turn = the head comes down, eye telegraphs the ball
+  enemyCharge = (f => async function(){
+    const e = curEnemy();
+    if(!isZB(e)) return f.apply(this, arguments);
+    const z = zbOf(e), K = spriteOf(e);
+    const t = headPlay(K.head.down, 85, K.head[z.eye==='ice'?'ice':'fire']);
+    sfx.boss(); setTimeout(() => shake(true), t);
+    floatText(z.eye==='ice' ? '❄ ตาสีฟ้า — ลูกน้ำแข็งกำลังมา! ใช้คำธาตุไฟสกัด' : '🔥 ตาสีเหลือง — ลูกไฟกำลังมา! ใช้คำธาตุน้ำแข็งสกัด', EN_X-70, FLOOR_Y-e.h*e.sc-40, z.eye==='ice' ? '#bff6ff' : '#ffd27a', 19);
+    await sleep(t + 150);
+    renderEnemyPanel();
+  })(enemyCharge);
+  // attacks: body moves while the head is up, the head spits the ball when it is down
+  enemyAttackAnim = (f => async function(){
+    const e = curEnemy();
+    if(!isZB(e)) return f.apply(this, arguments);
+    const z = zbOf(e), K = spriteOf(e);
+    if(z.phase==='down'){
+      headPlay(K.head.spit, 110, K.head[z.eye==='ice'?'ice':'fire']);
+      floatText(z.eye==='ice' ? '❄ ICEBALL!' : '🔥 FIREBALL!', EN_X-60, FLOOR_Y-e.h*e.sc-40, z.eye==='ice' ? '#bff6ff' : '#ffb030', 28, true);
+      sfx.elem(z.eye==='ice' ? 'ice' : 'fire');
+      await sleep(260); await zbBall(z.eye); shake(true);
+      return;
+    }
+    const cells = K[z.act] || K.claw;
+    spritePose(e, cells, z.act==='stomp' ? 95 : 70);
+    const txt = { claw:'🤖 ZOMBOT CLAW!', stomp:'🦶 ZOMBOT STOMP!', crush:'💥 ZOMBOT CRUSH!' }[z.act];
+    if(txt) floatText(txt, EN_X-40, FLOOR_Y-e.h*e.sc-30, '#ffb0a0', 24, true);
+    if(z.act==='stomp'){ await sleep(380); shake(true); await sleep(250); return; }
+    return f.apply(this, arguments);   // claw / crush reach forward (the engine's lunge)
+  })(enemyAttackAnim);
+  // death: the head layer goes, the full collapse plays on the body layer
+  enemyDies = (f => async function(){
+    const e = curEnemy();
+    if(isZB(e)){ const g = zbG(); if(g){ clearInterval(g._headI); const hd = g.querySelector('.zb-head'); if(hd) hd.setAttribute('visibility', 'hidden'); } }
+    return f.apply(this, arguments);
+  })(enemyDies);
+  // enemy panel says what to do right now
+  renderEnemyPanel = (f => function(){
+    const r = f.apply(this, arguments), e = curEnemy(), el = $('#enemyPanel');
+    if(el && isZB(e) && e.hp>0){ const z = zbOf(e);
+      const tip = z.phase==='up' ? `🤖 หัวอยู่สูง: คำทำดาเมจแค่ ${BALANCE.pct(ZB.upDmg)}% · อีก ${Math.max(0, (e.phase2 ? ZB.upTurnsRage : ZB.upTurns) - z.t + 1)} เทิร์นหัวจะลงมา`
+        : z.shot ? `🎯 หัวยังค้างอยู่! ดาเมจ +${BALANCE.pct(ZB.weakBonus)}% — รีบโจมตี`
+        : z.eye==='ice' ? `❄ ตาสีฟ้า: ลูกน้ำแข็งเทิร์นหน้า · ใช้คำธาตุไฟ 🔥 สกัด · ดาเมจ +${BALANCE.pct(ZB.weakBonus)}%`
+        : `🔥 ตาสีเหลือง: ลูกไฟเทิร์นหน้า · ใช้คำธาตุน้ำแข็ง ❄ สกัด · ดาเมจ +${BALANCE.pct(ZB.weakBonus)}%`;
+      el.insertAdjacentHTML('beforeend', `<div class="trait charge">${esc(tip)}</div>`); }
+    return r;
+  })(renderEnemyPanel);
   /* ------------------------------ story text ------------------------------ */
   try{
     LOCS[1].blurb = 'ทุ่งหญ้าใต้ท้องฟ้าเต็มดาวถูกกองทัพซอมบี้ของ ดร.ซอมบอส ยึดครอง การ์แกนทัวร์เฝ้าประตูโบราณของอาณาจักรที่สาบสูญ';
