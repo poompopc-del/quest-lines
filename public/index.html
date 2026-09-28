@@ -1332,18 +1332,18 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=45">
-<link rel="stylesheet" href="css/endgame.css?v=45">
-<link rel="stylesheet" href="css/battle.css?v=45">
-<link rel="stylesheet" href="css/ui26.css?v=45">
-<link rel="stylesheet" href="css/boss.css?v=45">
+<link rel="stylesheet" href="css/ql2.css?v=46">
+<link rel="stylesheet" href="css/endgame.css?v=46">
+<link rel="stylesheet" href="css/battle.css?v=46">
+<link rel="stylesheet" href="css/ui26.css?v=46">
+<link rel="stylesheet" href="css/boss.css?v=46">
 </head>
 <body>
 <div id="app"></div>
-<script src="js/ql2/balance.js?v=45"></script>
-<script src="data/lexicon.js?v=45"></script>
-<script src="data/vocabulary.js?v=45"></script>
-<script src="js/ql2/vocab.js?v=45"></script>
+<script src="js/ql2/balance.js?v=46"></script>
+<script src="data/lexicon.js?v=46"></script>
+<script src="data/vocabulary.js?v=46"></script>
+<script src="js/ql2/vocab.js?v=46"></script>
 <script>window.__QL2 = 1; setTimeout(function(){ if(!window.__QL2_READY && typeof render==='function'){ window.__QL2 = 0; render(); } }, 5000);</script>
 <div class="toasts" id="toasts"></div>
 <div id="overlay"></div>
@@ -4261,8 +4261,31 @@ function makeEnemy(key, s, rng, boss, mini){
 
 /* ------------------------------ save ------------------------------ */
 const SAVE_KEY = 'questlines_wordbattle_v1';
+/* ---------------- global progress reset (v46) ----------------
+   Bump GLOBAL_RESET_VERSION to make EVERY existing save start over once (developer-set number — never a date).
+   A save whose globalResetVersion differs (or is missing) is backed up, then replaced by a fresh save that keeps
+   only the player's settings and name. New saves are born with the current number, so they are never reset. */
+const GLOBAL_RESET_VERSION = 1;
+const GLOBAL_RESET_KEEP = ['settings','name'];          // preferences, not progress
+let globalResetInfo = null;                             // set when a reset happened on this load → notice on screen
+function globalResetIfNeeded(d, raw){
+  if(!d || typeof d!=='object' || Array.isArray(d)) return null;          // not a save object → normal recovery path
+  if(d.globalResetVersion === GLOBAL_RESET_VERSION) return null;
+  const from = Number.isInteger(d.globalResetVersion) ? d.globalResetVersion : 0;
+  const backupKey = SAVE_KEY + '_backup_r' + from;
+  try{ if(localStorage.getItem(backupKey)===null) localStorage.setItem(backupKey, raw); }catch(e){}   // backup of the old save (first one kept; not used by gameplay)
+  const fresh = defaultSave();
+  GLOBAL_RESET_KEEP.forEach(k=>{
+    if(k==='settings' && d.settings && typeof d.settings==='object') fresh.settings = Object.assign(fresh.settings, d.settings);
+    if(k==='name' && typeof d.name==='string') fresh.name = d.name.slice(0, 40);
+  });
+  fresh.globalResetVersion = GLOBAL_RESET_VERSION;
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(fresh)); }catch(e){}
+  globalResetInfo = { from, to:GLOBAL_RESET_VERSION, backupKey };
+  return fresh;
+}
 function defaultSave(){
-  return { v:2, name:'', gold:0, hpLv:0, weapons:['wood'], armors:['none'], accs:[], acc:[null,null,null,null], chars:['knight'], eq:{ weapon:'wood', armor:'none', char:'knight' },
+  return { v:2, globalResetVersion:GLOBAL_RESET_VERSION, name:'', gold:0, hpLv:0, weapons:['wood'], armors:['none'], accs:[], acc:[null,null,null,null], chars:['knight'], eq:{ weapon:'wood', armor:'none', char:'knight' },
     potions:{ heal:2, power:1 }, up:{}, cleared:0, stars:{}, best:{},
     stats:{ words:0, longest:'', bestDmg:0, bestWord:'', kills:0, bosses:0, damage:0, bestCombo:0, golden:0, ultimates:0, crit:0 },
     mastery:{}, achievements:{}, book:{}, tutorial:false, settings:{ sfx:70, music:false, tts:true, autoSpeak:true, awake:true, webTr:true, rim:true } };
@@ -4280,11 +4303,19 @@ function migrate(d){
   return d;
 }
 function loadSave(){
-  try{ const raw = localStorage.getItem(SAVE_KEY); if(raw){ const d = migrate(JSON.parse(raw)); return Object.assign(defaultSave(), d, { settings:Object.assign(defaultSave().settings, d.settings||{}), stats:Object.assign(defaultSave().stats, d.stats||{}), potions:Object.assign({heal:0,power:0}, d.potions||{}), eq:Object.assign(defaultSave().eq, d.eq||{}) }); } }catch(e){}
+  try{ const raw = localStorage.getItem(SAVE_KEY); if(raw){ const parsed = JSON.parse(raw); const reset = globalResetIfNeeded(parsed, raw); if(reset) return reset; const d = migrate(parsed); return Object.assign(defaultSave(), d, { settings:Object.assign(defaultSave().settings, d.settings||{}), stats:Object.assign(defaultSave().stats, d.stats||{}), potions:Object.assign({heal:0,power:0}, d.potions||{}), eq:Object.assign(defaultSave().eq, d.eq||{}) }); } }catch(e){}
   return defaultSave();
 }
 let save = loadSave();
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+/* shown once, right after a global reset (boot / importing an old save code) */
+function showGlobalResetNotice(){
+  if(!globalResetInfo) return; globalResetInfo = null;
+  modal(`<h3>อัปเดตครั้งใหญ่ของ Quest Lines</h3>
+    <p>เกมได้รับการปรับสมดุลระบบการต่อสู้และความก้าวหน้าใหม่ทั้งหมด เพื่อให้ทุกคนได้สัมผัสระบบใหม่อย่างเท่าเทียม <b>ความคืบหน้าเดิมจึงถูกรีเซ็ตให้เริ่มใหม่ตั้งแต่ต้น</b> (ด่าน ทอง อุปกรณ์ ฮีโร่ อัปเกรด ภารกิจ ไอเทม และความชำนาญคำศัพท์)</p>
+    <p class="sub">การรีเซ็ตนี้เกิดขึ้นครั้งเดียวและยกเลิกไม่ได้ · <b>การตั้งค่าและชื่อผู้เล่นยังอยู่ครบ</b> · เซฟเก่าถูกสำรองไว้ในเครื่องแล้ว</p>
+    <div class="btns"><button class="cbtn gold block" data-act="closeModal">เริ่มการผจญภัยใหม่ ▶</button></div>`);
+}
 
 const ACH = {
   word10:{th:'นักสะกดมือใหม่',d:'สะกดคำสำเร็จ 10 คำ',need:s=>s.words>=10},
@@ -5551,7 +5582,7 @@ document.addEventListener('click', e=>{
     case 'export': { const code = btoa(unescape(encodeURIComponent(JSON.stringify(save)))); modal(`<h3>รหัสเซฟ</h3><p>คัดลอกข้อความนี้ไปวางที่ "นำเข้า" ในอีกเครื่อง</p><textarea class="text-in" style="max-width:none;height:120px;font-size:12px;text-align:left" readonly onclick="this.select()">${code}</textarea><div class="btns" style="margin-top:12px"><button class="cbtn gold block" data-act="copyCode">คัดลอก</button><button class="cbtn wood block" data-act="closeModal">ปิด</button></div>`, { dismiss:true }); ui.code = code; break; }
     case 'copyCode': navigator.clipboard && navigator.clipboard.writeText(ui.code).then(()=>toast('คัดลอกแล้ว'),()=>toast('คัดลอกไม่ได้ ให้กดค้างที่ข้อความแทน')); break;
     case 'importOpen': modal(`<h3>นำเข้าเซฟ</h3><textarea class="text-in" id="impIn" style="max-width:none;height:120px;font-size:12px;text-align:left" placeholder="วางรหัสเซฟที่นี่"></textarea><div class="btns" style="margin-top:12px"><button class="cbtn gold block" data-act="importDo">นำเข้า</button><button class="cbtn wood block" data-act="closeModal">ยกเลิก</button></div>`, { dismiss:true }); break;
-    case 'importDo': try{ const d = JSON.parse(decodeURIComponent(escape(atob($('#impIn').value.trim())))); if(!d || typeof d!=='object' || !('gold' in d)) throw 0; localStorage.setItem(SAVE_KEY, JSON.stringify(d)); save = loadSave(); closeModal(); toast('นำเข้าเซฟแล้ว'); render(); }catch(err){ toast('รหัสไม่ถูกต้อง'); } break;
+    case 'importDo': try{ const d = JSON.parse(decodeURIComponent(escape(atob($('#impIn').value.trim())))); if(!d || typeof d!=='object' || !('gold' in d)) throw 0; localStorage.setItem(SAVE_KEY, JSON.stringify(d)); save = loadSave(); closeModal(); if(globalResetInfo){ showGlobalResetNotice(); } else toast('นำเข้าเซฟแล้ว'); render(); }catch(err){ toast('รหัสไม่ถูกต้อง'); } break;
     case 'resetAsk': modal(`<h3 class="lose">ล้างเซฟ?</h3><p>ความคืบหน้า ทอง และอุปกรณ์ทั้งหมดจะหายไป</p><div class="btns"><button class="cbtn red block" data-act="resetDo">ล้างทั้งหมด</button><button class="cbtn wood block" data-act="closeModal">ยกเลิก</button></div>`, { dismiss:true }); break;
     case 'resetDo': localStorage.removeItem(SAVE_KEY); save = defaultSave(); closeModal(); goto('title'); break;
     // battle
@@ -6987,26 +7018,26 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=45"></script>
-<script src="js/ql2/quests.js?v=45"></script>
-<script src="js/ql2/shell.js?v=45"></script>
-<script src="js/ql2/settings.js?v=45"></script>
-<script src="js/ql2/hub.js?v=45"></script>
-<script src="js/ql2/world.js?v=45"></script>
-<script src="js/ql2/questboard.js?v=45"></script>
-<script src="js/ql2/heroes.js?v=45"></script>
-<script src="js/ql2/inventory.js?v=45"></script>
-<script src="js/ql2/codex.js?v=45"></script>
-<script src="js/ql2/profile.js?v=45"></script>
-<script src="js/ql2/endgame-core.js?v=45"></script>
-<script src="js/ql2/endgame-modes.js?v=45"></script>
-<script src="js/ql2/endgame-ui.js?v=45"></script>
-<script src="js/ql2/armory.js?v=45"></script>
-<script src="js/ql2/more.js?v=45"></script>
-<script src="js/ql2/wordfx.js?v=45"></script>
-<script src="js/ql2/boss-encounter.js?v=45"></script>
-<script src="js/ql2/kirby.js?v=45"></script>
-<script src="js/ql2/knight.js?v=45"></script>
-<script src="js/ql2/title.js?v=45"></script>
-<script src="js/ql2/boot.js?v=45"></script>
+<script src="js/ql2/core.js?v=46"></script>
+<script src="js/ql2/quests.js?v=46"></script>
+<script src="js/ql2/shell.js?v=46"></script>
+<script src="js/ql2/settings.js?v=46"></script>
+<script src="js/ql2/hub.js?v=46"></script>
+<script src="js/ql2/world.js?v=46"></script>
+<script src="js/ql2/questboard.js?v=46"></script>
+<script src="js/ql2/heroes.js?v=46"></script>
+<script src="js/ql2/inventory.js?v=46"></script>
+<script src="js/ql2/codex.js?v=46"></script>
+<script src="js/ql2/profile.js?v=46"></script>
+<script src="js/ql2/endgame-core.js?v=46"></script>
+<script src="js/ql2/endgame-modes.js?v=46"></script>
+<script src="js/ql2/endgame-ui.js?v=46"></script>
+<script src="js/ql2/armory.js?v=46"></script>
+<script src="js/ql2/more.js?v=46"></script>
+<script src="js/ql2/wordfx.js?v=46"></script>
+<script src="js/ql2/boss-encounter.js?v=46"></script>
+<script src="js/ql2/kirby.js?v=46"></script>
+<script src="js/ql2/knight.js?v=46"></script>
+<script src="js/ql2/title.js?v=46"></script>
+<script src="js/ql2/boot.js?v=46"></script>
 </body></html>
