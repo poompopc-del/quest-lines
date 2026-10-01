@@ -44,7 +44,7 @@ const MAIN = [
     reward:{ gold:500, xp:220, mats:{ fireGem:1 } } },
   { id:'m3', loc:2, en:'THE FROZEN HEART', title:'หัวใจน้ำแข็ง',
     desc:'เลยประตูโบราณไปคือถ้ำน้ำแข็ง ไททันผู้หลับใหลเริ่มตื่น ใช้พลังคำธาตุเพื่อฝ่าความหนาวไปให้ถึงหัวใจของถ้ำ',
-    objs:[O.open(2), O.elemAny(3), O.kill('yeti',1,'ปราบมินิบอส Yeti'), O.kill('frostgol',1,'ปราบบอส Frost Titan')],
+    objs:[O.open(2), O.clear(2,4), O.kill('yeti',1,'ปราบมินิบอส Yeti'), O.kill('frostgol',1,'ปราบบอส Frost Titan')],   // v64: was elemAny(3) — main story never needs element grinding
     reward:{ gold:700, xp:300, potions:{ power:2 }, mats:{ frostGem:1 } } },
   { id:'m4', loc:3, en:'SIEGE OF FLAMES', title:'ศึกป้อมเปลวเพลิง',
     desc:'ป้อมที่ไม่เคยดับไฟคือคลังอาวุธของกองทัพเงา บุกเข้าไป ฝ่าสุนัขนรก และดับไฟของมังกรเพลิง',

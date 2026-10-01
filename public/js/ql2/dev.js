@@ -121,8 +121,9 @@
   // feats (hero / item unlock conditions, True Final Boss requirements) all count as done
   function passFeats(){
     const pass = r => { if(r && typeof r==='object' && 'need' in r){ r.cur = () => r.need; } };
-    try{ Object.values(window.HERO_UNLOCK||{}).forEach(U => (U.reqs||[]).forEach(pass)); }catch(e){}
-    try{ Object.values(window.ITEM_UNLOCK||{}).forEach(map => Object.values(map).forEach(list => list.forEach(pass))); }catch(e){}
+    const group = U => { if(Array.isArray(U)) U.forEach(pass); else if(U){ (U.reqs||[]).forEach(pass); (U.opts||[]).forEach(pass); } };
+    try{ Object.values(window.HERO_UNLOCK||{}).forEach(group); }catch(e){}
+    try{ Object.values(window.ITEM_UNLOCK||{}).forEach(map => Object.values(map).forEach(group)); }catch(e){}
     try{ if(typeof TFB_REQ!=='undefined') TFB_REQ.forEach(pass); }catch(e){}
   }
 

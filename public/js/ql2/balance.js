@@ -104,6 +104,26 @@ const BALANCE = {
   X:      { releaseStep: .25, releaseMax: 2.0, pierce: .50 },   // release ×1, ×1.25, ×1.5 … max ×2 (was ×1, ×2, ×3 … unlimited) · x4+ pierce 50% (was 100%)
   KIRBY:  { per: 10, step: .50, max: 3.0, eatHp: .50 },         // every 10 letters +50% (max ×3); a swallowed enemy adds 50% of its HP (was 100%)
 
+  /* ----------------------------- v64 TACTICS ---------------------- */
+  // Enemy intent · word roles · guard · chain · perfect · objectives · events · tactical Ultimates (js/ql2/tactics.js, events.js)
+  TAC: {
+    guard: .75, guardCapHp: .60, guardRole: .25,     // 🛡 Guard: shield = 75% of the word's damage (max 60% max HP) · combat/weapon/body words +25%
+    precisionLen: 6,                                 // 🎯 6+ letters (or a Critical Word) = PRECISION: shatters enemy shields
+    controlEls: ['ice','thunder','wind','earth'],    // 🌀 CONTROL words interrupt spells and heals
+    breakPct: .20,                                   // …so does any single hit of 20% of the enemy's max HP
+    foodHeal: .06,                                   // 💚 food words heal 6% max HP
+    chargeUlt: 1,                                    // ⚡ fantasy / technology / science words: Ultimate +1 extra
+    chainStep: .08, chainMax: 5,                     // 🔗 word chain (next word starts with the last letter): +8% per link, max 5 links (+40%)
+    perfect: .15, perfectUlt: 1,                     // ✨ PERFECT word (counters the intent): +15% burst · Ultimate +1
+    enemyShield: .30, healPct: .12, healPoisoned: .5,// enemy DEFEND shield 30% max HP · HEAL 12% (half while burning / poisoned)
+    hexMul: .5, hexStones: 3, venomMul: .8, venomTurns: 3, venomPct: .04, repeatVenom: 2,
+    castMul: 2.0, castStones: 2, mimicPct: .40, summonMax: 2, summonHp: .45,
+    bossFinal: .15, finalLen: 5,                     // boss FINAL WORD: under 15% HP only a 5+ letter word (or Ultimate) can finish it
+    objChance: .55, objGold: 20, objGoldPer: 3, objXp: 30,
+    elite: { hp: .40, atk: .20, gold: 2, gem: 1 },   // choice event: Elite battle
+    freeShuffle: true,                               // shuffling a board with no playable word costs no turn
+  },
+
   /* ----------------------------- helpers -------------------------- */
   weaponAtk(id, fallback){ const v = this.WEAPON_ATK[id]; return typeof v === 'number' ? v : fallback; },
   armorBlock(id, fallback){ const v = this.ARMOR_BLOCK[id]; return typeof v === 'number' ? v : fallback; },

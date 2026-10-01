@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="LETTERⁿ">
 <meta name="theme-color" content="#08070f">
 <meta name="description" content="LETTERⁿ — เกมสะกดคำภาษาอังกฤษสู้มอนสเตอร์">
-<link rel="manifest" href="manifest.json?v=63">
-<link rel="icon" href="icons/icon-192.png?v=63">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=63">
+<link rel="manifest" href="manifest.json?v=64">
+<link rel="icon" href="icons/icon-192.png?v=64">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=64">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>LETTERⁿ — Word Battle RPG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1333,18 +1333,19 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=63">
-<link rel="stylesheet" href="css/endgame.css?v=63">
-<link rel="stylesheet" href="css/battle.css?v=63">
-<link rel="stylesheet" href="css/ui26.css?v=63">
-<link rel="stylesheet" href="css/boss.css?v=63">
+<link rel="stylesheet" href="css/ql2.css?v=64">
+<link rel="stylesheet" href="css/endgame.css?v=64">
+<link rel="stylesheet" href="css/battle.css?v=64">
+<link rel="stylesheet" href="css/ui26.css?v=64">
+<link rel="stylesheet" href="css/boss.css?v=64">
+<link rel="stylesheet" href="css/tactics.css?v=64">
 </head>
 <body>
 <div id="app"></div>
-<script src="js/ql2/balance.js?v=63"></script>
-<script src="data/lexicon.js?v=63"></script>
-<script src="data/vocabulary.js?v=63"></script>
-<script src="js/ql2/vocab.js?v=63"></script>
+<script src="js/ql2/balance.js?v=64"></script>
+<script src="data/lexicon.js?v=64"></script>
+<script src="data/vocabulary.js?v=64"></script>
+<script src="js/ql2/vocab.js?v=64"></script>
 <script>window.__QL2 = 1; setTimeout(function(){ if(!window.__QL2_READY && typeof render==='function'){ window.__QL2 = 0; render(); } }, 5000);</script>
 <div class="toasts" id="toasts"></div>
 <div id="overlay"></div>
@@ -5080,6 +5081,8 @@ async function checkHeroDeath(){
 async function useUltimate(){
   const b=ui.bat,e=curEnemy(); if(!b||b.busy||b.ult<5||!e) return;
   b.busy=true; b.ult=0; b.combo=0; save.stats.ultimates=(save.stats.ultimates||0)+1; checkAchievements();
+  if(b.ultMode==='util' && typeof tacUltUtil==='function'){ b.ultMode=null; await tacUltUtil(b, e); return; }   // v64: tactical (non-damage) Ultimate
+  b.ultMode=null;
   const dmg=BALANCE.ultDamage(b);
   floatText('⚡ ULTIMATE!',HERO_X,FLOOR_Y-210,'#e4b6ff',36,true);
   auraBurst(5,false,'#c77dff'); await heroAttack(5,false);
@@ -5091,11 +5094,12 @@ async function useUltimate(){
 async function doShuffle(){
   const b = ui.bat; if(b.busy) return;
   b.busy = true; clearSelSilent(); sfx.shuffle();
-  b.tiles = b.tiles.map(t=>t.stone ? t : newTile(b.stage.s));
+  b.tiles = b.tiles.map(t=>(t.stone || t.keep) ? t : newTile(b.stage.s)); b.tiles.forEach(t=>{ t.keep = false; });   // v64: selected letters are kept
   balanceTiles(b.tiles, true); applyAura();
   renderTiles(); renderTray();
   floatText('สลับ!', HERO_X, FLOOR_Y-170, '#8fe0ff', 24);
   await sleep(400);
+  if(b.tacFree){ b.tacFree = false; floatText('🆓 สลับฟรี — กระดานเดิมไม่มีคำ', HERO_X, FLOOR_Y-200, '#bfffd0', 20); endTurn(); return; }   // v64
   if(hasAcc('boots') && Math.random() < BALANCE.BOOTS_CHANCE){ floatText('💨 ไม่เสียเทิร์น', HERO_X, FLOOR_Y-200, '#fff', 20); endTurn(); return; }   // v52: a chance, not every time
   await enemyTurn();
 }
@@ -5119,25 +5123,29 @@ async function enemyTurn(){
   if(e.frozen>0){ e.frozen--; floatText('❄ แข็งทื่อ!', EN_X, FLOOR_Y-e.h*e.sc-20, '#bff6ff', 24); sfx.elem('ice'); await sleep(600); updateEnemyStatus(); endTurn(); return; }
   if(e.stun){ e.stun=false; floatText('💫 ข้ามเทิร์น', EN_X, FLOOR_Y-e.h*e.sc-20, '#fff', 22); await sleep(500); endTurn(); return; }
   if(e.traits.includes('regen')){ const h = Math.round(e.maxHp*.06); if(e.hp<e.maxHp){ e.hp = Math.min(e.maxHp, e.hp+h); floatText(`+${h}`, EN_X+30, FLOOR_Y-e.h*e.sc-10, '#6ef08a', 22); updateEnemyHp(); } }
+  if(typeof tacEnemyAct==='function'){ if(await tacEnemyAct(b, e)) return; }   // v64: enemy intent (heal · defend · summon · cast …) — js/ql2/tactics.js
   if(e.traits.includes('heavy')){
     if(!e.charge){ e.charge = 1; floatText('ชาร์จพลัง…', EN_X, FLOOR_Y-e.h*e.sc-20, '#ffb0a0', 22); renderEnemyPanel(); await enemyCharge(); endTurn(); return; }
     e.charge = 0;
   }
   const heavy = e.traits.includes('heavy');
   let dmg = Math.round(e.atk * (heavy?2.2:1) * rnd(.85,1.15) * BALANCE.takenMul(AR(save.eq.armor).block * (charIs('bruna')?.5:1), CH(save.eq.char).dmgTaken, defMul()));
+  if(e.tacMul) dmg = Math.round(dmg*e.tacMul); if(e.tacFlat) dmg = e.tacFlat;   // v64: intent strength
   dmg = Math.max(1, dmg);
   if(e.caster) await casterAttackAnim(); else await enemyAttackAnim();
   if(b.evade>0){ b.evade--; floatText('MISS! 🌪️', HERO_X, FLOOR_Y-170, '#dfffff', 30, true); sfx.elem('wind');
     anim($('#heroG'), [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(HERO_X-50,FLOOR_Y-30)},{transform:tr(HERO_X,FLOOR_Y)}], { duration:420, easing:'ease-out' });
     await sleep(500); endTurn(); return; }
   if(b.stoneSkin>0){ b.stoneSkin--; dmg = Math.max(1, Math.round(dmg*.3)); floatText('🪨 ผิวหิน', HERO_X-10, FLOOR_Y-205, '#e8c890', 22); }
-  b.hp -= dmg; b.combo=0; b.ult=Math.max(0,b.ult-1); sfx.hurt(); heroHurt(dmg, heavy);
-  if(hasAcc('thorn')){ const rf = Math.max(1, Math.round(dmg*.3)); e.hp -= rf; b.score += rf; setTimeout(()=>floatText(`🌵${rf}`, EN_X-10, FLOOR_Y-e.h*e.sc-10, '#b8ff8a', 24), 250); updateEnemyHp(); }
-  if(e.traits.includes('vamp')){ const h=Math.round(dmg*.5); e.hp=Math.min(e.maxHp,e.hp+h); floatText(`+${h}`, EN_X+30, FLOOR_Y-e.h*e.sc-10, '#6ef08a', 22); updateEnemyHp(); }
+  if(typeof tacAbsorb==='function') dmg = tacAbsorb(b, e, dmg, heavy);   // v64: 🛡 guard shield soaks the hit first
+  if(dmg>0){ b.hp -= dmg; b.combo=0; b.ult=Math.max(0,b.ult-1); sfx.hurt(); heroHurt(dmg, heavy); }
+  if(dmg>0 && hasAcc('thorn')){ const rf = Math.max(1, Math.round(dmg*.3)); e.hp -= rf; b.score += rf; setTimeout(()=>floatText(`🌵${rf}`, EN_X-10, FLOOR_Y-e.h*e.sc-10, '#b8ff8a', 24), 250); updateEnemyHp(); }
+  if(dmg>0 && e.traits.includes('vamp')){ const h=Math.round(dmg*.5); e.hp=Math.min(e.maxHp,e.hp+h); floatText(`+${h}`, EN_X+30, FLOOR_Y-e.h*e.sc-10, '#6ef08a', 22); updateEnemyHp(); }
   if(e.traits.includes('stone')){
     const c = b.tiles.map((t,i)=>i).filter(i=>!b.tiles[i].stone && !b.tiles[i].sel);
     if(c.length){ const i = c[rint(0,c.length-1)]; b.tiles[i].stone = 2; b.tiles[i].gem = null; sfx.stone(); }
   }
+  if(typeof tacAfterHit==='function') tacAfterHit(b, e, dmg);   // v64: venom · hex · spell after-effects
   applyAura(); updateHud(); renderEnemyPanel();
   await sleep(420);
   if(await checkHeroDeath()) return;
@@ -7041,30 +7049,32 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=63"></script>
-<script src="js/ql2/quests.js?v=63"></script>
-<script src="js/ql2/shell.js?v=63"></script>
-<script src="js/ql2/settings.js?v=63"></script>
-<script src="js/ql2/hub.js?v=63"></script>
-<script src="js/ql2/world.js?v=63"></script>
-<script src="js/ql2/questboard.js?v=63"></script>
-<script src="js/ql2/heroes.js?v=63"></script>
-<script src="js/ql2/inventory.js?v=63"></script>
-<script src="js/ql2/codex.js?v=63"></script>
-<script src="js/ql2/profile.js?v=63"></script>
-<script src="js/ql2/endgame-core.js?v=63"></script>
-<script src="js/ql2/endgame-modes.js?v=63"></script>
-<script src="js/ql2/endgame-ui.js?v=63"></script>
-<script src="js/ql2/armory.js?v=63"></script>
-<script src="js/ql2/items.js?v=63"></script>
-<script src="js/ql2/more.js?v=63"></script>
-<script src="js/ql2/wordfx.js?v=63"></script>
-<script src="js/ql2/boss-encounter.js?v=63"></script>
-<script src="js/ql2/zombies.js?v=63"></script>
-<script src="js/ql2/kirby.js?v=63"></script>
-<script src="js/ql2/knight.js?v=63"></script>
-<script src="js/ql2/unlocks.js?v=63"></script>
-<script src="js/ql2/title.js?v=63"></script>
-<script src="js/ql2/dev.js?v=63"></script>
-<script src="js/ql2/boot.js?v=63"></script>
+<script src="js/ql2/core.js?v=64"></script>
+<script src="js/ql2/quests.js?v=64"></script>
+<script src="js/ql2/shell.js?v=64"></script>
+<script src="js/ql2/settings.js?v=64"></script>
+<script src="js/ql2/hub.js?v=64"></script>
+<script src="js/ql2/world.js?v=64"></script>
+<script src="js/ql2/questboard.js?v=64"></script>
+<script src="js/ql2/heroes.js?v=64"></script>
+<script src="js/ql2/inventory.js?v=64"></script>
+<script src="js/ql2/codex.js?v=64"></script>
+<script src="js/ql2/profile.js?v=64"></script>
+<script src="js/ql2/endgame-core.js?v=64"></script>
+<script src="js/ql2/endgame-modes.js?v=64"></script>
+<script src="js/ql2/endgame-ui.js?v=64"></script>
+<script src="js/ql2/armory.js?v=64"></script>
+<script src="js/ql2/items.js?v=64"></script>
+<script src="js/ql2/more.js?v=64"></script>
+<script src="js/ql2/wordfx.js?v=64"></script>
+<script src="js/ql2/boss-encounter.js?v=64"></script>
+<script src="js/ql2/zombies.js?v=64"></script>
+<script src="js/ql2/kirby.js?v=64"></script>
+<script src="js/ql2/knight.js?v=64"></script>
+<script src="js/ql2/unlocks.js?v=64"></script>
+<script src="js/ql2/tactics.js?v=64"></script>
+<script src="js/ql2/events.js?v=64"></script>
+<script src="js/ql2/title.js?v=64"></script>
+<script src="js/ql2/dev.js?v=64"></script>
+<script src="js/ql2/boot.js?v=64"></script>
 </body></html>

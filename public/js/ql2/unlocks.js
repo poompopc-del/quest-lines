@@ -11,8 +11,9 @@
      ★★★★★  X        — banks damage, pierces the queue     (story done + tower)
      ★★★★★+ Kirby    — swallows enemies whole, even bosses  (story + tower + nightmare + mastery)
 
-   Heroes already owned stay owned. Progress is read from data the game
-   already saves (no new save fields).
+   v64: no element-specific grinding for heroes or gear — milestones +
+   "choose 2 of 3" paths (see the table below). Heroes / items already owned
+   stay owned; old element counters are kept in the save but no longer used.
    ========================================================================== */
 (function(){
   const V = () => V2(), E = () => EGS();
@@ -24,7 +25,6 @@
     combo:  n => ({ ic:'🔥', th:`ทำคอมโบให้ถึง x${n}`, cur:() => save.stats.bestCombo||0, need:n }),
     crit:   n => ({ ic:'💥', th:`ทำ Critical Word ${n} ครั้ง`, cur:() => save.stats.crit||0, need:n }),
     ult:    n => ({ ic:'⚡', th:`ใช้ Ultimate ${n} ครั้ง`, cur:() => save.stats.ultimates||0, need:n }),
-    elem:   (el, n) => ({ ic:ELEM_ICON[el], th:`ใช้คำธาตุ${ELEMENTS[el].th} ${n} ครั้ง`, cur:() => V().elem[el]||0, need:n }),
     kill:   (k, n, label) => ({ ic:'⚔️', th:label || `ปราบ ${MON[k].name}`, cur:() => V().kills[k]||0, need:n||1 }),
     long:   n => ({ ic:'📏', th:`สะกดคำยาว 6 ตัวอักษรขึ้นไป ${n} คำ`, cur:() => V().stats.long6||0, need:n }),
     adv:    n => ({ ic:'⭐', th:`Adventure Level ${n}`, cur:() => advInfo(V().adv.xp).lv, need:n }),
@@ -34,34 +34,59 @@
     stage:  n => ({ ic:'🗺️', th:`ผ่านด่าน 1-${n}`, cur:() => Math.min(save.cleared||0, n), need:n, unit:'ด่าน' }),
     kills:  n => ({ ic:'💀', th:`ปราบมอนสเตอร์ ${n} ตัว`, cur:() => save.stats.kills||0, need:n }),
     bosses: n => ({ ic:'👑', th:`ปราบบอส ${n} ตัว`, cur:() => save.stats.bosses||0, need:n }),
+    minis:  n => ({ ic:'🛡️', th:`ปราบมินิบอส ${n} ตัว`, cur:() => V().stats.minis||0, need:n }),
     bank:   n => ({ ic:'⭐', th:`สะกดคำศัพท์เป้าหมาย ${n} ครั้ง`, cur:() => V().stats.bankWords||0, need:n }),
-    elems:  n => ({ ic:'🌈', th:`ใช้คำธาตุ (ธาตุใดก็ได้) ${n} ครั้ง`, cur:() => Object.values(V().elem||{}).reduce((a,x)=>a+(x||0),0), need:n }),
     puzzles:n => ({ ic:'🧩', th:`ไขปริศนาคำศัพท์ ${n} ครั้ง`, cur:() => V().stats.puzzles||0, need:n }),
     longest:n => ({ ic:'📐', th:`สะกดคำยาว ${n} ตัวอักษรได้สักคำ`, cur:() => Math.min(n, ((save.stats.longest)||'').length), need:n, unit:'ตัว' }),
+    // v64 milestones — earned by playing well, not by repeating one thing
+    flawless:n => ({ ic:'💎', th:`Perfect Battle ${n} ครั้ง (ผ่านด่านโดยเสีย HP ไม่เกิน 20%)`, cur:() => V().stats.flawless||0, need:n }),
+    objs:   n => ({ ic:'🎯', th:`ทำ Battle Objective สำเร็จ ${n} ครั้ง`, cur:() => V().stats.objs||0, need:n }),
+    perfectRun: n => ({ ic:'✨', th:`ผ่านโหมด Perfect Run ${n} ครั้ง`, cur:() => E().cnt.perfects||0, need:n }),
+    tfb:    () => ({ ic:'☠️', th:'ปราบ True Final Boss (Lexivore)', cur:() => (E().tfb && E().tfb.wins)||0, need:1 }),
+    heroes: n => ({ ic:'🧑‍🤝‍🧑', th:`มีฮีโร่ในทีม ${n} คน`, cur:() => (save.chars||[]).length, need:n }),
+    // still defined so old data / quests keep working — no longer used by core unlocks (v64)
+    elem:   (el, n) => ({ ic:ELEM_ICON[el], th:`ใช้คำธาตุ${ELEMENTS[el].th} ${n} ครั้ง`, cur:() => V().elem[el]||0, need:n }),
+    elems:  n => ({ ic:'🌈', th:`ใช้คำธาตุ (ธาตุใดก็ได้) ${n} ครั้ง`, cur:() => Object.values(V().elem||{}).reduce((a,x)=>a+(x||0),0), need:n }),
   };
   window.UNLOCK_REQ = R;
-  // Prices follow the gold a first-time player has earned when the feats are done (enemies + word puzzles + quests):
-  //   end of ch1 ≈ 1.2k · ch2 ≈ 4k · ch3 ≈ 8.7k · ch4 ≈ 15.5k · story ≈ 25k (+ level-up / tower / daily gold)
-  //   → cheap kits cost ~⅓–¾ of one chapter; the broken ones cost a big chunk of the whole game's gold.
+  /* ----------------------------------------------------------------------
+     v64 UNLOCK REWORK — "play well → unlock", never "grind one element".
+       reqs  = must all be done
+       opts  = choose your own path: any `pick` of them
+     Numbers follow a first playthrough (8 stages × ~4 enemies per chapter,
+     1 mini boss per stage, Battle Objectives in ~half the stages):
+       ch1 end ≈ 70 words · ch2 ≈ 150 · ch3 ≈ 230 · ch4 ≈ 320 · story ≈ 420
+       mini bosses ≈ 8 per chapter · objectives done ≈ 2–3 per chapter
+     ---------------------------------------------------------------------- */
   const HERO_UNLOCK = {
-    pip:     { tier:1, price:900,  reqs:[ R.clear(1), R.words(60) ] },
-    mao:     { tier:2, price:2000, reqs:[ R.clear(2), R.elem('fire', 10), R.combo(8) ] },
-    elon:    { tier:3, price:3500, reqs:[ R.clear(3), R.combo(12), R.crit(25) ] },
-    boomtos: { tier:4, price:6000, reqs:[ R.clear(4), R.kill('dragon', 1, 'ปราบบอส Ember Dragon'), R.elem('fire', 30), R.adv(15) ] },
-    x:       { tier:5, price:9000, reqs:[ R.story(), R.tower(25), R.long(80), R.ult(20) ] },
-    puff:    { tier:6, price:12000, reqs:[ R.story(), R.tower(40), R.nm(3), R.master(15) ] },
+    pip:     { tier:1, price:900,   reqs:[ R.clear(1) ], pick:1, opts:[ R.words(60), R.minis(6) ],
+               quote:'นักดาบหมวกเขียวเห็นฝีมือคุณในสุสานแล้ว — "ไปด้วยกันเถอะ!"' },
+    mao:     { tier:2, price:2000,  reqs:[ R.clear(2) ], pick:2, opts:[ R.combo(8), R.long(15), R.objs(3) ],
+               quote:'คุโนะอิจิพัดเพลิงยอมรับความว่องไวของถ้อยคำของคุณ' },
+    elon:    { tier:3, price:3500,  reqs:[ R.clear(3) ], pick:2, opts:[ R.combo(12), R.crit(20), R.flawless(3) ],
+               quote:'"คุณพิสูจน์แล้วว่าเชี่ยวชาญทั้งการต่อคำและการต่อสู้" — สายลับมือปืนพร้อมร่วมทีม' },
+    boomtos: { tier:4, price:6000,  reqs:[ R.clear(4) ], pick:2, opts:[ R.ult(15), R.objs(10), R.adv(15) ],
+               quote:'ผู้พิทักษ์ไฟใต้พิภพตื่นขึ้นเพราะเสียงคำรามแห่งชัยชนะของคุณ' },
+    x:       { tier:5, price:9000,  reqs:[ R.story() ], pick:2, opts:[ R.tower(25), R.long(50), R.flawless(5) ],
+               quote:'นักรบบัสเตอร์จากอนาคตตรวจพบพลังถ้อยคำระดับสูงสุด' },
+    puff:    { tier:6, price:12000, reqs:[ R.story() ], pick:3, opts:[ R.tower(40), R.nm(3), R.master(15), R.perfectRun(1), R.tfb() ],
+               quote:'ก้อนชมพูจอมดูดอยากชิม "ถ้อยคำ" ของวีรบุรุษตัวจริง' },
   };
   window.HERO_UNLOCK = HERO_UNLOCK;
   CHARACTERS.forEach(c => { const U = HERO_UNLOCK[c.id]; if(U) c.price = U.price; });
 
-  const reqsMet = id => { const U = HERO_UNLOCK[id]; return !U || U.reqs.every(r => r.cur() >= r.need); };
+  const metN = list => (list||[]).filter(r => r.cur() >= r.need).length;
+  const groupMet = U => !U || (metN(U.reqs) === (U.reqs||[]).length && metN(U.opts) >= (U.pick||0));
+  const reqsMet = id => groupMet(HERO_UNLOCK[id]);
   window.heroReqsMet = reqsMet;
+  window.unlockGroupMet = groupMet;
   const stars = t => t >= 6 ? '★★★★★+' : '★'.repeat(t) + '☆'.repeat(5 - t);
+  const row = r => { const c = Math.min(r.cur(), r.need), ok = c >= r.need, pct = Math.round(c / r.need * 100);
+    return `<div class="ul-r ${ok?'ok':''}"><span class="ul-i">${ok ? '✅' : r.ic}</span><span class="ul-t">${esc(r.th)}<i style="--p:${pct}%"></i></span><b>${ok ? 'ผ่าน' : `${fmt(c)}/${fmt(r.need)}`}</b></div>`; };
   function unlockHtml(id){
     const U = HERO_UNLOCK[id]; if(!U) return '';
-    const rows = U.reqs.map(r => { const c = Math.min(r.cur(), r.need), ok = c >= r.need, pct = Math.round(c / r.need * 100);
-      return `<div class="ul-r ${ok?'ok':''}"><span class="ul-i">${ok ? '✅' : r.ic}</span><span class="ul-t">${esc(r.th)}<i style="--p:${pct}%"></i></span><b>${ok ? 'ผ่าน' : `${fmt(c)}/${fmt(r.need)}`}</b></div>`; }).join('');
-    return `<div class="panel ul-box"><div class="ul-h"><span>🔓 เงื่อนไขปลดล็อก</span><em title="ยิ่งสกิลโกง ยิ่งปลดล็อกยาก">ความโกง ${stars(U.tier)}</em></div>${rows}</div>`;
+    const opts = U.opts && U.opts.length ? `<p class="ul-pick">เลือกทำ ${U.pick} จาก ${U.opts.length} อย่าง (ทำแล้ว ${Math.min(metN(U.opts), U.pick)}/${U.pick})</p>${U.opts.map(row).join('')}` : '';
+    return `<div class="panel ul-box"><div class="ul-h"><span>🔓 เงื่อนไขปลดล็อก</span><em title="ยิ่งสกิลโกง ยิ่งปลดล็อกยาก">ความโกง ${stars(U.tier)}</em></div>${(U.reqs||[]).map(row).join('')}${opts}</div>`;
   }
   // replace the unlock button of a locked hero with the feat list (+ a disabled button until every feat is done)
   function inject(html){
@@ -74,78 +99,117 @@
   fighterSelect = (f => function(){ return inject(f.apply(this, arguments)); })(fighterSelect);
   renderHeroes = (f => function(){ return inject(f.apply(this, arguments)); })(renderHeroes);
   if(SCREENS.heroes) SCREENS.heroes.render = renderHeroes;
-  // the purchase itself is guarded too (old shop cards, stale buttons)
+  const unmetList = U => { const out = (U.reqs||[]).filter(r => r.cur() < r.need).map(r => r.th);
+    const need = (U.pick||0) - metN(U.opts); if(need > 0) out.push(`ทำอีก ${need} อย่างจากตัวเลือก`); return out; };
+  // the purchase itself is guarded too (old shop cards, stale buttons) — and celebrated
   ACTS2.buyC = function(v){
-    if(!reqsMet(v)){ const U = HERO_UNLOCK[v], left = U.reqs.filter(r => r.cur() < r.need).map(r => r.th); toast(`🔒 ยังปลดล็อก ${CH(v).name} ไม่ได้ — ${left[0]}${left.length>1 ? ` และอีก ${left.length-1} เงื่อนไข` : ''}`); sfx.bad && sfx.bad(); return; }
+    if(!reqsMet(v)){ const left = unmetList(HERO_UNLOCK[v]); toast(`🔒 ยังปลดล็อก ${CH(v).name} ไม่ได้ — ${left[0]}${left.length>1 ? ` และอีก ${left.length-1} เงื่อนไข` : ''}`); sfx.bad && sfx.bad(); return; }
+    const had = save.chars.includes(v);
+    setTimeout(() => { if(!had && save.chars.includes(v)) celebrate('hero', v, true); }, 60);
     return false;                                   // → the original purchase (gold check, equip, save)
   };
   /* ======================================================================
-     ITEMS — weapons / armor / accessories need feats too (gold price unchanged)
+     ITEMS — milestone feats (no element grinding); key items: 2 of 3
      ====================================================================== */
+  const I = (reqs, pick, opts) => ({ reqs, pick:pick||0, opts:opts||[] });
   const ITEM_UNLOCK = {
     weapon: {
-      axe:     [ R.stage(3) ],
-      boomer:  [ R.stage(5), R.long(10) ],
-      hammer:  [ R.clear(1) ],
-      gerudo:  [ R.clear(1), R.words(120) ],
-      moon:    [ R.clear(1), R.bank(25) ],
-      staff:   [ R.clear(2) ],
-      sickle:  [ R.clear(2), R.kills(150) ],
-      frost:   [ R.clear(2), R.elem('ice', 15) ],
-      flame:   [ R.clear(2), R.elem('fire', 20) ],
-      storm:   [ R.clear(3), R.elem('thunder', 15) ],
-      guardian:[ R.clear(3), R.combo(15) ],
-      thunder: [ R.clear(3), R.crit(30) ],
-      royal:   [ R.clear(4), R.adv(12) ],
-      savage:  [ R.clear(4), R.kill('hellhound', 3, 'ปราบมินิบอส Hellhound 3 ครั้ง') ],
-      ancient: [ R.story(), R.crit(60) ],
-      master:  [ R.story(), R.bosses(8), R.master(10) ],
+      axe:     I([ R.stage(3) ]),
+      boomer:  I([ R.stage(5), R.long(10) ]),
+      hammer:  I([ R.clear(1) ]),
+      gerudo:  I([ R.clear(1), R.words(120) ]),
+      moon:    I([ R.clear(1), R.bank(25) ]),
+      staff:   I([ R.clear(2) ]),
+      sickle:  I([ R.clear(2), R.kills(150) ]),
+      frost:   I([ R.clear(2) ], 1, [ R.objs(3), R.minis(12) ]),
+      flame:   I([ R.clear(2) ], 1, [ R.combo(8), R.long(20) ]),
+      storm:   I([ R.clear(3) ], 1, [ R.crit(15), R.objs(5) ]),
+      guardian:I([ R.clear(3), R.combo(15) ]),
+      thunder: I([ R.clear(3), R.crit(30) ]),
+      royal:   I([ R.clear(4), R.adv(12) ]),
+      savage:  I([ R.clear(4), R.kill('hellhound', 3, 'ปราบมินิบอส Hellhound 3 ครั้ง') ]),
+      ancient: I([ R.story() ], 2, [ R.crit(60), R.tower(20), R.objs(15) ]),
+      master:  I([ R.story() ], 2, [ R.bosses(8), R.master(10), R.flawless(5) ]),
     },
     armor: {
-      kite:    [ R.clear(1) ],
-      dragon:  [ R.clear(3), R.kill('frostgol', 1, 'ปราบบอส Frost Titan') ],
-      mythril: [ R.story(), R.tower(20) ],
+      kite:    I([ R.clear(1) ]),
+      dragon:  I([ R.clear(3), R.kill('frostgol', 1, 'ปราบบอส Frost Titan') ]),
+      mythril: I([ R.story() ], 2, [ R.tower(20), R.flawless(4), R.nm(1) ]),
     },
     acc: {
-      auraRing:  [ R.stage(4) ],
-      lens:      [ R.bank(20) ],
-      boots:     [ R.clear(1) ],
-      fang:      [ R.clear(2), R.elem('shadow', 10) ],
-      thorn:     [ R.clear(2), R.kills(120) ],
-      sage:      [ R.clear(2), R.long(40) ],
-      phoenix:   [ R.clear(4), R.bosses(4) ],
-      monocle:   [ R.clear(2), R.kill('goblin', 15, 'ปราบ Basic Zombie 15 ตัว') ],
-      prism:     [ R.clear(3), R.elems(40) ],
-      ironHeart: [ R.clear(2), R.kills(200) ],
-      hourglass: [ R.clear(3), R.ult(15) ],
-      rune:      [ R.clear(3), R.long(60), R.longest(8) ],
-      leaf:      [ R.clear(3), R.puzzles(10) ],
+      auraRing:  I([ R.stage(4) ]),
+      lens:      I([ R.bank(20) ]),
+      boots:     I([ R.clear(1) ]),
+      fang:      I([ R.clear(2) ], 1, [ R.minis(10), R.flawless(2) ]),
+      thorn:     I([ R.clear(2), R.kills(120) ]),
+      sage:      I([ R.clear(2), R.long(40) ]),
+      phoenix:   I([ R.clear(4), R.bosses(4) ]),
+      monocle:   I([ R.clear(2), R.kill('goblin', 15, 'ปราบ Basic Zombie 15 ตัว') ]),
+      prism:     I([ R.clear(3) ], 1, [ R.objs(6), R.puzzles(8) ]),
+      ironHeart: I([ R.clear(2), R.kills(200) ]),
+      hourglass: I([ R.clear(3), R.ult(15) ]),
+      rune:      I([ R.clear(3), R.long(60), R.longest(8) ]),
+      leaf:      I([ R.clear(3), R.puzzles(10) ]),
     },
   };
   window.ITEM_UNLOCK = ITEM_UNLOCK;
   const LISTS = { weapon:() => WEAPONS, armor:() => ARMORS, acc:() => ACCESSORIES };
   const OWNED = { weapon:() => save.weapons, armor:() => save.armors, acc:() => save.accs };
-  const unmet = reqs => (reqs||[]).filter(r => r.cur() < r.need);
   // hook into the engine's existing weapon lock (w.req / w.reqTh — used by the shop, hub and nav badges)
-  Object.entries(ITEM_UNLOCK).forEach(([kind, map]) => Object.entries(map).forEach(([id, reqs]) => {
+  Object.entries(ITEM_UNLOCK).forEach(([kind, map]) => Object.entries(map).forEach(([id, U]) => {
     const it = LISTS[kind]().find(x => x.id===id); if(!it) return;
-    it.reqs = reqs; it.req = () => !unmet(reqs).length;
-    Object.defineProperty(it, 'reqTh', { configurable:true, get(){ const u = unmet(reqs); return u.length ? `${u[0].th} (${fmt(Math.min(u[0].cur(), u[0].need))}/${fmt(u[0].need)})${u.length>1 ? ` +${u.length-1}` : ''}` : ''; } });
+    it.unlock = U; it.reqs = U.reqs.concat(U.opts); it.req = () => groupMet(U);
+    Object.defineProperty(it, 'reqTh', { configurable:true, get(){ const u = unmetList(U); return u.length ? `${u[0]}${u.length>1 ? ` +${u.length-1}` : ''}` : ''; } });
   }));
-  const itemLocked = (kind, it) => !!(it && it.reqs && unmet(it.reqs).length && !OWNED[kind]().includes(it.id));
+  const itemLocked = (kind, it) => !!(it && it.unlock && !groupMet(it.unlock) && !OWNED[kind]().includes(it.id));
   window.itemLocked = itemLocked;
   // shop card: the feats with progress instead of the buy button
   window.itemLockHtml = (kind, it) => {
     if(!itemLocked(kind, it)) return '';
-    return `<div class="ul-mini">${it.reqs.map(r => { const c = Math.min(r.cur(), r.need), ok = c>=r.need;
-      return `<span class="${ok?'ok':''}">${ok?'✅':'🔒'} ${esc(r.th)}${ok?'':` <b>${fmt(c)}/${fmt(r.need)}</b>`}</span>`; }).join('')}</div>`;
+    const U = it.unlock, line = r => { const c = Math.min(r.cur(), r.need), ok = c>=r.need;
+      return `<span class="${ok?'ok':''}">${ok?'✅':'🔒'} ${esc(r.th)}${ok?'':` <b>${fmt(c)}/${fmt(r.need)}</b>`}</span>`; };
+    return `<div class="ul-mini">${U.reqs.map(line).join('')}${U.opts.length ? `<span class="ul-pick">เลือกทำ ${U.pick} จาก ${U.opts.length}:</span>${U.opts.map(line).join('')}` : ''}</div>`;
   };
   const guard = kind => function(v){
     const it = LISTS[kind]().find(x => x.id===v);
-    if(it && itemLocked(kind, it)){ const u = unmet(it.reqs); toast(`🔒 ยังซื้อ ${it.th} ไม่ได้ — ${u[0].th}${u.length>1 ? ` และอีก ${u.length-1} เงื่อนไข` : ''}`); sfx.bad && sfx.bad(); return; }
+    if(it && itemLocked(kind, it)){ const u = unmetList(it.unlock); toast(`🔒 ยังซื้อ ${it.th} ไม่ได้ — ${u[0]}${u.length>1 ? ` และอีก ${u.length-1} เงื่อนไข` : ''}`); sfx.bad && sfx.bad(); return; }
     return false;
   };
   ACTS2.buyW = guard('weapon'); ACTS2.buyA = guard('armor'); ACTS2.buyX = guard('acc');
+
+  /* ======================================================================
+     🔓 UNLOCK CELEBRATION — when the feats of a hero / item are completed
+     (shown back on the menus, never on top of a battle result)
+     ====================================================================== */
+  const seen = () => { const v = V(); return v.ulSeen || (v.ulSeen = {}); };
+  function available(){
+    const out = [];
+    CHARACTERS.forEach(c => { if(HERO_UNLOCK[c.id] && !save.chars.includes(c.id) && reqsMet(c.id)) out.push({ kind:'hero', id:c.id }); });
+    Object.entries(ITEM_UNLOCK).forEach(([kind, map]) => Object.keys(map).forEach(id => {
+      const it = LISTS[kind]().find(x => x.id===id); if(it && !OWNED[kind]().includes(id) && groupMet(map[id])) out.push({ kind, id }); }));
+    return out;
+  }
+  function celebrate(kind, id, owned){
+    let face = '', name = '', label = '', quote = '';
+    if(kind==='hero'){ const c = CH(id); try{ face = heroFaceSvg({ char:id, weapon:'wood', armor:'none' }); }catch(e){} name = c.name; label = owned ? 'NEW HERO · ร่วมทีมแล้ว!' : 'NEW HERO · ปลดล็อกได้แล้ว'; quote = (HERO_UNLOCK[id] && HERO_UNLOCK[id].quote) || ''; }
+    else { const it = LISTS[kind]().find(x => x.id===id); if(!it) return; name = it.th || it.name; label = kind==='weapon' ? 'NEW WEAPON' : kind==='armor' ? 'NEW ARMOR' : 'NEW ACCESSORY';
+      face = kind==='acc' ? (ACC_ART[id]||'') : `<span style="font-size:52px">${kind==='weapon'?'⚔️':'🛡️'}</span>`; quote = 'ทำเงื่อนไขครบแล้ว — ซื้อได้ที่ร้านค้า'; }
+    sfx.win && sfx.win();
+    modal(`<div class="ul-cel"><div class="ul-k">🔓 ${esc(label)}</div><div class="ul-face">${face}</div><div class="ul-n">${esc(name)}</div>${quote?`<p class="ul-q">"${esc(quote)}"</p>`:''}
+      <div class="btns">${!owned ? `<button class="cbtn gold block" data-act="go" data-v="${kind==='hero'?'heroes':'shop'}">${kind==='hero'?'ไปที่หน้าฮีโร่':'ไปร้านค้า'}</button>` : ''}<button class="cbtn wood block" data-act="closeModal">เยี่ยม!</button></div></div>`, { dismiss:true });
+  }
+  window.celebrateUnlock = celebrate;
+  function checkNews(){
+    if(ui.screen==='battle' || document.querySelector('#overlay .modal')) return;
+    const S = seen(), list = available(), fresh = list.filter(x => !S[x.kind+':'+x.id]);
+    if(!fresh.length) return;
+    fresh.forEach(x => { S[x.kind+':'+x.id] = 1; }); persist();
+    if(!V().ulInit){ V().ulInit = 1; persist(); toast(`🔓 ระบบปลดล็อกใหม่! ตอนนี้ปลดล็อกได้ ${fresh.length} อย่าง (ดูที่หน้าฮีโร่ / ร้านค้า)`); return; }
+    const hero = fresh.find(x => x.kind==='hero');
+    if(hero) celebrate('hero', hero.id, false); else celebrate(fresh[0].kind, fresh[0].id, false);
+    if(fresh.length > 1) setTimeout(() => toast(`🔓 ปลดล็อกได้อีก ${fresh.length-1} อย่าง`), 900);
+  }
+  if(typeof goTo==='function') goTo = (f => function(){ const out = f.apply(this, arguments); setTimeout(checkNews, 450); return out; })(goTo);
 
   // a small lock on locked roster cards
 
