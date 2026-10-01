@@ -7013,6 +7013,28 @@ sceneSVG = (_sc=>function(themeId, seed, depth){
   }catch(e){ return html; }
 })(sceneSVG);
 sceneSVG = (_sc=>function(themeId, seed, depth){ return themeId==='woods' ? meadowScene(seed, depth) : _sc(themeId, seed, depth); })(sceneSVG);
+/* ======================================================================
+   v64 — ฉากต่อสู้ของบทที่ 1, 3, 4, 5 ถูกถอดออกชั่วคราว (รอภาพชุดใหม่)
+   ใช้ฉากเปล่า: พื้นหลังสีเข้ม + เส้นพื้นบางๆ ให้ตัวละครยืน (layer id เดิมครบ → parallax/เอฟเฟกต์ไม่พัง)
+   ใส่ฉากใหม่ของบทไหนแล้ว ให้ลบ id ของบทนั้นออกจาก SCENE_HIDDEN
+   (มีผลกับหอคอย Endless / True Final Boss ที่ยืมฉากของบทเหล่านี้ด้วย)
+   ====================================================================== */
+const SCENE_HIDDEN = new Set(['crypt','ice','lava','necro']);
+function blankScene(themeId, seed, depth){
+  const col = (CHAPTERS.find(c=>c.id===themeId)||{}).color || '#5a4e9a';
+  return `<svg class="scene-svg sc9 th-${themeId} scene-blank pxd" id="sceneSvg" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs><linearGradient id="blkSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07061a"/><stop offset="1" stop-color="#151036"/></linearGradient>
+  <radialGradient id="vig-blk" cx="50%" cy="42%" r="75%"><stop offset="62%" stop-color="#02040e" stop-opacity="0"/><stop offset="100%" stop-color="#02040e" stop-opacity=".45"/></radialGradient></defs>
+  <g id="lySky"><rect x="-1200" y="-400" width="4000" height="1000" fill="url(#blkSky)"/></g>
+  <g id="lyBack"></g><g id="lyFar"></g><g id="lyNear"></g>
+  <g id="lyFloor"><rect x="-1200" y="${FLOOR_Y+2}" width="4000" height="200" fill="#0b0920"/><rect x="-1200" y="${FLOOR_Y}" width="4000" height="3" fill="${col}" opacity=".55"/></g>
+  <g id="actors"></g>
+  <g id="lyFore"></g>
+  <rect id="vig" x="0" y="0" width="800" height="400" fill="url(#vig-blk)" pointer-events="none"/>
+  <g id="fx"></g>
+  </svg>`;
+}
+sceneSVG = (_sc=>function(themeId, seed, depth){ return SCENE_HIDDEN.has(themeId) ? blankScene(themeId, seed, depth) : _sc(themeId, seed, depth); })(sceneSVG);
 { const C = CHAPTERS.find(c=>c.id==='woods'); if(C){ C.name = 'Star Meadow'; C.th = 'ทุ่งดาวเขียวขจี'; C.color = '#3fae4a'; } }
 document.documentElement.classList.add('v16');
 { const m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', '#08070f'); }

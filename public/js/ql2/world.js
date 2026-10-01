@@ -35,7 +35,7 @@ const WORLD_BG = ()=>{
   ${waves}
   <path d="${path}" stroke="#07060d" stroke-width="7" fill="none" stroke-linecap="round" opacity=".6"/>
   <path d="${path}" stroke="#ffc83d" stroke-width="2.6" fill="none" stroke-dasharray="7 7" stroke-linecap="round" opacity=".85"/>
-  ${I.map((b,i)=>isle(i,b)).join('')}
+  ${I.map((b,i)=>isle(i, typeof SCENE_HIDDEN!=='undefined' && SCENE_HIDDEN.has(CHAPTERS[i].id) ? base('#2a2550','#4a4290') : b)).join('')}
   <g transform="translate(${T[0]},${T[1]})"><ellipse cx="0" cy="40" rx="40" ry="12" fill="#0c0a22" opacity=".6"/><path d="M-36,40 Q-30,24 0,22 Q30,24 36,40 Z" fill="#2d2750" stroke="#07060d" stroke-width="2"/>
     <path d="M-14,30 L-10,-40 L-16,-40 L0,-72 L16,-40 L10,-40 L14,30 Z" fill="#3a4e86" stroke="#07060d" stroke-width="2"/>${[-20,0,16].map((y,i)=>`<rect class="twin" x="-3" y="${y}" width="6" height="8" rx="3" fill="#ffd27a" style="animation-delay:${i*.4}s"/>`).join('')}<path d="M0,-72 L0,-84 L10,-80 L0,-76" fill="#ff3b4e" stroke="#07060d" stroke-width="1"/></g>
   <g transform="translate(200,846)"><path d="M-40,14 Q-30,-6 0,-8 Q30,-6 40,14 Z" fill="#2d2750" stroke="#07060d" stroke-width="2"/><path d="M-10,0 L-10,-18 L-4,-18 L-4,-26 L4,-26 L4,-18 L10,-18 L10,0 Z" fill="#5a4e9a" stroke="#07060d" stroke-width="1.6"/></g>
@@ -86,7 +86,7 @@ function renderChapter(){
   const qs = QUESTS.filter(q=>q.loc===ci && (q.type!=='chain' || chainStep(q.chain)===q)).map(q=>({ q, st:qStatus(q) })).filter(x=>x.st!=='claimed' || x.q.type==='main');
   const play = nextN ? `<button class="cbtn gold block lc-play" data-act="stage" data-ch="${ci}" data-n="${nextN}">${IC2.play} ${cl?'ลุยต่อ':'เริ่ม'} ด่าน ${ci+1}-${nextN}${nextN===STAGES_PER?' · BOSS':''}</button>`
     : `<button class="cbtn wood block lc-play" data-act="stage" data-ch="${ci}" data-n="${STAGES_PER}">${IC2.play} ท้าทายบอสอีกครั้ง</button>`;
-  return `<div class="lc-banner" style="--lc:${L.col};--bgimg:url('${new URL(LOC_BG[C.id], document.baseURI).href}')">
+  return `<div class="lc-banner" style="--lc:${L.col};--bgimg:${typeof SCENE_HIDDEN!=='undefined' && SCENE_HIDDEN.has(C.id) ? 'none' : `url('${new URL(LOC_BG[C.id], document.baseURI).href}')`}">
       <button class="q2-back" data-act="go" data-v="world" aria-label="กลับแผนที่โลก">${IC2.back}</button>
       <div class="lc-boss">${monsterIcon(C.boss)}</div>
       <div class="lc-title"><span class="q2-kicker">บทที่ ${ci+1} · LOCATION</span><h2>${esc(L.name)}</h2><small>${esc(L.th)}</small></div>
