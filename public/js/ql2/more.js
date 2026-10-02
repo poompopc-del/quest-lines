@@ -14,6 +14,9 @@ function renderMore(){
   const row = (act, v, ic, th, sub, k)=>`<button class="mr-row" data-act="${act}" ${v!==null?`data-v="${v}"`:''}><span class="mr-ic">${ic}</span><span class="mr-t"><b>${th}</b><small>${sub}</small></span>${badge(k)}${IC2.next}</button>`;
   const grp = (title, rows)=>`<section class="mr-grp"><h3>${title}</h3><div class="mr-list">${rows.join('')}</div></section>`;
   return `<div class="mr-head"><span class="q2-kicker">MENU</span><h2 class="q2-h">เมนูทั้งหมด</h2></div>`
+    + grp('ฝึกภาษา', [
+        row('go', 'ecl', `<span class="mr-emoji">🎓</span>`, 'ECL EXAM', 'ฝึกสอบ A2–C1 · Reading · Listening · Writing (ECL-style)', ''),
+      ])
     + grp('ความก้าวหน้า', [
         row('go', 'quests', IC2.scroll, 'กระดานภารกิจ', 'ภารกิจหลัก · เสริม · ต่อเนื่อง · ประจำวัน', 'quests'),
         row('egView', 'hall', IC2.trophy, 'Challenge Hall', eg, 'endgame'),

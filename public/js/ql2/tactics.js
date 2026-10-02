@@ -294,6 +294,7 @@
   })(doAttack);
 
   enemyHurt = (f => function(dmg, big){
+    if(ui.bat && ui.bat.exam) return f.call(this, dmg, big);   // 🎓 ECL exam battles use their own rules
     const b = ui.bat, e = curEnemy(), W = b && b.tacR;
     if(b && e && dmg > 0){
       // enemy shield
