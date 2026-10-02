@@ -48,7 +48,7 @@ const MAIN = [
     reward:{ gold:700, xp:300, potions:{ power:2 }, mats:{ frostGem:1 } } },
   { id:'m4', loc:3, en:'SIEGE OF FLAMES', title:'ศึกป้อมเปลวเพลิง',
     desc:'ป้อมที่ไม่เคยดับไฟคือคลังอาวุธของกองทัพเงา บุกเข้าไป ฝ่าสุนัขนรก และดับไฟของมังกรเพลิง',
-    objs:[O.open(3), O.kills(3,15), O.kill('hellhound',1,'ปราบมินิบอส Hellhound'), O.kill('dragon',1,'ปราบบอส Ember Dragon')],
+    objs:[O.open(3), O.kills(3,15), O.kill('hellhound',1,'ปราบมินิบอส Hellhound'), O.kill('dragon',1,'ปราบบอส Black Dragon')],
     reward:{ gold:900, xp:380, mats:{ fireGem:1, ember:5 } } },
   { id:'m5', loc:4, en:"THE TYRANT'S END", title:'จุดจบไทแรนต์',
     desc:'ใต้บ้านร้างมีห้องทดลองลับ อาวุธชีวภาพไทแรนต์ถูกปลุกขึ้นมาเฝ้าถ้อยคำที่ถูกขโมย สะกดคำให้ได้ แล้วหยุดมันให้ได้',

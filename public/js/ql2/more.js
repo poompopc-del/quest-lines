@@ -15,7 +15,7 @@ function renderMore(){
   const grp = (title, rows)=>`<section class="mr-grp"><h3>${title}</h3><div class="mr-list">${rows.join('')}</div></section>`;
   return `<div class="mr-head"><span class="q2-kicker">MENU</span><h2 class="q2-h">เมนูทั้งหมด</h2></div>`
     + grp('ฝึกภาษา', [
-        row('go', 'ecl', `<span class="mr-emoji">🎓</span>`, 'ECL EXAM', 'ฝึกสอบ A2–C1 · Reading · Listening · Writing (ECL-style)', ''),
+        row('openEcl', null, `<span class="mr-emoji">🎓</span>`, 'ECL EXAM', 'ฝึกสอบ A2–C1 · Reading · Listening · Writing (ECL-style)', ''),
       ])
     + grp('ความก้าวหน้า', [
         row('go', 'quests', IC2.scroll, 'กระดานภารกิจ', 'ภารกิจหลัก · เสริม · ต่อเนื่อง · ประจำวัน', 'quests'),
@@ -38,4 +38,14 @@ function renderMore(){
 SCREENS.more = { nav:'more', render:renderMore };
 Object.assign(ACTS2, {
   moreTrophy: ()=>{ ui.pfTab = 'trophy'; goTo('profile'); },
+  // v66: if an older cached page is still running without the ECL module, load it on demand instead of failing silently
+  openEcl: ()=>{
+    if(SCREENS.ecl){ goTo('ecl'); return; }
+    toast('🎓 กำลังโหลดโหมด ECL…');
+    const v = Date.now(), css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'css/ecl.css?r=' + v; document.head.appendChild(css);
+    const s = document.createElement('script'); s.src = 'js/ql2/ecl.js?r=' + v;
+    s.onload = ()=>{ if(SCREENS.ecl) goTo('ecl'); else toast('เกมยังเป็นเวอร์ชันเก่า — ปิดแอปแล้วเปิดใหม่อีกครั้ง'); };
+    s.onerror = ()=>toast('โหลดโหมด ECL ไม่ได้ — ตรวจอินเทอร์เน็ต แล้วปิดแอปเปิดใหม่');
+    document.head.appendChild(s);
+  },
 });

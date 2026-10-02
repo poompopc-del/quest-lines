@@ -42,7 +42,7 @@
     if(window.ECL_LIBRARY){ LIB = window.ECL_LIBRARY; return Promise.resolve(LIB); }
     if(loading) return loading;
     loading = new Promise((res, rej) => {
-      const s = document.createElement('script'); s.src = 'data/ecl-content.js?v=65';
+      const s = document.createElement('script'); s.src = 'data/ecl-content.js?v=66';
       s.onload = () => { LIB = window.ECL_LIBRARY; res(LIB); };
       s.onerror = () => { loading = null; rej(new Error('load')); };
       document.head.appendChild(s);

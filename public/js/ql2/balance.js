@@ -102,7 +102,10 @@ const BALANCE = {
   BOOM:   { rageStep: .20, rageMax: 2.0, lowHp: .1, lowHpBonus: .50, finisher: .50,   // core: rage stacks (linear, was x2/turn → x32) · passive: hellfire at low HP (was x10)
             carry: .50, bossPct: .20 },  // BOOM: normal enemy dies, 50% of its HP carries on (was 150%) · boss/mini takes the hit + 20% max HP (was: instant kill)
   X:      { releaseStep: .25, releaseMax: 2.0, pierce: .50 },   // release ×1, ×1.25, ×1.5 … max ×2 (was ×1, ×2, ×3 … unlimited) · x4+ pierce 50% (was 100%)
-  KIRBY:  { per: 10, step: .50, max: 3.0, eatHp: .50 },         // every 10 letters +50% (max ×3); a swallowed enemy adds 50% of its HP (was 100%)
+  KIRBY:  { per: 10, step: .50, max: 3.0, eatHp: .50 },
+  // v66 Luffy — core: Gum-Gum move by word length · passive: rubber body vs heavy blows
+  SONIC:  { dashLen: 5, dash: .20, homLen: 7, homing: .30, ringCut: .50, killRings: 10, superDmg: .30, superPer: 20, superMax: 3 },   // rings soak half a hit; Super Sonic = immune
+  LUFFY:  { axeLen: 5, axe: .15, axeStun: .25, gatLen: 6, gatling: .22, bazLen: 8, bazooka: .35, rubber: .40, reflect: .25 },         // every 10 letters +50% (max ×3); a swallowed enemy adds 50% of its HP (was 100%)
 
   /* ----------------------------- v64 TACTICS ---------------------- */
   // Enemy intent · word roles · guard · chain · perfect · objectives · events · tactical Ultimates (js/ql2/tactics.js, events.js)
