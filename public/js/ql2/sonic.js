@@ -109,7 +109,8 @@
       anim(c, [{transform:tr(x,y),opacity:1},{transform:tr(x+Math.cos(a)*d, y-up),opacity:1,offset:.45},{transform:tr(x+Math.cos(a)*d*1.4, y+30),opacity:0}], { duration:rint(700,1000), easing:'ease-out' }).then(()=>c.remove());
     }
   }
-  function addRings(n){ const b = ui.bat; if(!b || n<=0) return; b.rings = (b.rings||0) + n;
+  function addRings(n){ const b = ui.bat; if(!b || n<=0) return; const r0 = b.rings||0; b.rings = r0 + n;
+    try{ const t = Math.floor(b.rings/10) - Math.floor(r0/10); if(t > 0 && window.QL_ULT_GAIN) QL_ULT_GAIN(t, `💍x${t*10}`); }catch(e){}
     floatText(`💍 +${n}`, HERO_X-30, FLOOR_Y-190, '#ffe14a', 20); try{ sfx.coin ? sfx.coin() : 0; }catch(e){} ringHud(); }
 
   evalWord = (f => function(){

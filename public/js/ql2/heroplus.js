@@ -30,7 +30,7 @@
     guard: { n:7, cw:32, ax:16, dur:.55, th:'ตั้งโล่' } }, { attacks:['spin'], extra:['guard'] });
 
   // which pose each hero strikes when guarding
-  const GUARD_POSE = { pip:'guard', luffy:'balloon', sonic:'spin', mao:'flip', elon:'aim' };
+  const GUARD_POSE = { pip:'guard', puff:'guard', luffy:'balloon', sonic:'spin', mao:'flip', elon:'roll' };
   function guardPose(){
     const k = save.eq && save.eq.char, c = sprOf(k), n = GUARD_POSE[k];
     if(!c || !n || !c.anims[n]) return;
