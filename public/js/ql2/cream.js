@@ -2,7 +2,8 @@
    LETTERⁿ v73 — CREAM (ครีม) · สารวัตรหญิงหมัดเพลิงแดง
    --------------------------------------------------------------------------
    Sprites: "Meshy AI · character action spritesheet" + "fx sprite sheet (red)"
-   (supplied by the developer) — cut into heroes/cream/*.png. Every pose is
+   (supplied by the developer) — cut into heroes/cream/*.png. v75: remodelled from the
+   "Character Skirt" + "Attack Effects" pixel sheets. Every pose is
    anchored on one floor / one foot position; idle = fighting stance breathing.
 
    SPLIT ATTACK BUTTON (like X): top half 🔥 ชาร์จ · bottom half โจมตี/ปล่อย
@@ -22,26 +23,27 @@
 (function(){
   const CR = BALANCE.CREAM, K = 'cream', SVGNS = 'http://www.w3.org/2000/svg';
   const pc = x => `+${BALANCE.pct(x)}%`;
-  const S = .63;   // sheet is drawn ~197 px tall → same height as Mia / ELON
-  HERO_SPRITE.cream = { dir:'heroes/cream/', ch:240, scale:S, face:'-12 -128 40 40',
+  const S = .72;   // v75 sheet is drawn ~170 px tall → same height as Mia / ELON
+  // v75: "Meshy AI · Character Skirt Pixel Sprite Sheet" — clean pixel art; every frame on one floor,
+  // idle/attacks anchored on the feet, walk anchored on the hips (no wobble)
+  HERO_SPRITE.cream = { dir:'heroes/cream/', ch:200, scale:S, face:'-14 -118 36 36',
     anims:{
-      idle:   { n:12, cw:200, ax:90,  dur:1.7, loop:true },
-      walk:   { n:8,  cw:200, ax:90,  dur:.7,  loop:true, th:'ก้าวเท้า' },
-      hurt:   { n:3,  cw:220, ax:100, dur:.5 },
-      dead:   { n:7,  cw:360, ax:140, dur:1.4 },
+      idle:   { n:6,  cw:180, ax:80,  dur:1.2, loop:true },
+      walk:   { n:8,  cw:180, ax:80,  dur:.8,  loop:true, th:'เดิน' },
+      hurt:   { n:3,  cw:220, ax:100, dur:.45 },
+      dead:   { n:6,  cw:360, ax:110, dur:1.3 },
       guard:  { n:2,  cw:220, ax:90,  dur:.25, th:'🔥 ชาร์จ (การ์ด)' },
-      jab:    { n:2,  cw:240, ax:90,  dur:.2,  th:'แย็บ' },
-      cross:  { n:3,  cw:240, ax:90,  dur:.28, th:'หมัดตรง' },
-      kick:   { n:2,  cw:260, ax:90,  dur:.24, th:'เตะสูง' },
-      recover:{ n:3,  cw:220, ax:90,  dur:.4,  th:'ตั้งการ์ด' },
-      salute: { n:4,  cw:180, ax:80,  dur:.6,  th:'ทำความเคารพ' } },
-    attacks:['jab','cross','kick'], extra:['guard','recover','salute','walk'], demoOnly:true, finMin:99,
+      jab:    { n:2,  cw:240, ax:90,  dur:.16, th:'แย็บ' },
+      cross:  { n:3,  cw:240, ax:90,  dur:.27, th:'หมัดตรง' },
+      kick:   { n:3,  cw:280, ax:90,  dur:.3,  th:'เตะสูง' },
+      recover:{ n:2,  cw:220, ax:90,  dur:.3,  th:'ตั้งการ์ด' } },
+    attacks:['jab','cross','kick'], extra:['guard','recover','walk'], demoOnly:true, finMin:99,
     finNote:`ปุ่มโจมตีแบ่งครึ่ง: <b>🔥 ชาร์จ</b> เก็บดาเมจ + HEAT · <b>ปล่อย</b> = (ดาเมจที่เก็บ + คำนี้) × สูงสุด ×${CR.relMax} · HEAT 3+ CRIMSON RUSH · HEAT 5 RED MOON BREAKER · ไม่ชาร์จ: 3–4 ตัว แย็บ · 5–6 ตัว วันทู ${pc(CR.cross)} · 7+ / Critical เตะสูง ${pc(CR.kick)}` };
-  const FIST = { x: Math.round((160-90)*S), y: Math.round((237-79)*S) };
-  const FOOT = { x: Math.round((206-90)*S), y: Math.round((237-70)*S) };
-  // red FX sheet strips (w × h per frame, n frames) — the slash waves are drawn travelling LEFT on the sheet, so they are mirrored (flipX) to fly at the enemy
-  const FXS = { aurac:{ w:110, h:130, n:15 }, auras:{ w:112, h:108, n:14 }, slashh:{ w:160, h:92, n:12 }, slashv:{ w:150, h:133, n:11 },
-                burst:{ w:150, h:130, n:13 }, impact:{ w:160, h:100, n:12 }, dissipate:{ w:140, h:124, n:12 } };
+  const FIST = { x: Math.round((183-90)*S), y: Math.round((197-81)*S) };
+  const FOOT = { x: Math.round((226-90)*S), y: Math.round((197-64)*S) };
+  // effects: the attack-effects sheet (fist burst · kick crescent · ground blast) + the red aura sheet (charge · sustain · burst · dissipate)
+  const FXS = { fist:{ w:250, h:250, n:6 }, kick:{ w:250, h:227, n:6 }, ground:{ w:210, h:240, n:8 },
+                aurac:{ w:110, h:130, n:15 }, auras:{ w:112, h:108, n:14 }, burst:{ w:150, h:130, n:13 }, dissipate:{ w:140, h:124, n:12 } };
   Object.keys(FXS).forEach(k => { const i = new Image(); i.src = `heroes/cream/fx_${k}.png?v=${HERO_IMG_VER}`; });
   const fxAt = (k, o) => { const F = FXS[k]; try{ return window.QL_STRIP_FX ? QL_STRIP_FX(`heroes/cream/fx_${k}.png`, F.w, F.h, F.n, o) : null; }catch(e){ return null; } };
   // a looping strip glued to the hero (moves with her when she dashes)
@@ -75,7 +77,7 @@
     const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     Object.keys(c.anims).forEach(n => { const i = new Image(); i.src = `${c.dir}${n}.png?v=${HERO_IMG_VER}`; });
   })();
-  try{ HERO_PORTRAIT.cream = { src:'heroes/cream/portrait.png', w:56, h:56, vb:'0 0 56 56' }; }catch(e){}
+  try{ HERO_PORTRAIT.cream = { src:'heroes/cream/portrait.png', w:48, h:48, vb:'0 0 48 48' }; }catch(e){}
 
   CHARACTERS.push({ id:K, name:'Cream', th:'ครีม สารวัตรหญิงหมัดเพลิงแดง', price:7000, role:'ชาร์จ · ศิลปะการต่อสู้', skill:'หมัดเพลิงแดง',
     desc:`ปุ่มโจมตีแบ่งครึ่ง 🔥ชาร์จ / ปล่อย · ชาร์จ = เก็บดาเมจของคำ + HEAT 1 ขั้น (ศัตรูยังตีกลับ) ระหว่างมีออร่ารับดาเมจ -${BALANCE.pct(1-CR.guard)}% · ปล่อย = (ดาเมจที่เก็บ + คำนี้) × (1 + ${BALANCE.pct(CR.relStep)}% ต่อ HEAT สูงสุด ×${CR.relMax}) · HEAT 3+ CRIMSON RUSH ฟันรัวตาม HEAT ปิดด้วยเตะสูง · HEAT 5 RED MOON BREAKER ฟ้าแดง ฟันยักษ์ ทำลายท่าที่ศัตรูเตรียมไว้ · ไม่ชาร์จ: 3–4 ตัว แย็บ · 5–6 ตัว วันทู ${pc(CR.cross)} · 7 ตัวขึ้นไปหรือ Critical เตะสูง ${pc(CR.kick)}`,
@@ -192,15 +194,15 @@
   /* ------------------------------ moves ------------------------------ */
   const g0 = () => $('#heroG');
   function slashH(scale, ms, fromX){
-    const x1 = fromX || HERO_X + FIST.x, y = FLOOR_Y - FIST.y, x2 = EN_X - 30;
-    const s = fxAt('slashh', { flipX:true, x:x1, y, scale, loop:true, from:2, loopFrom:3, to:7, ms:40 });
+    const x1 = fromX || HERO_X + FIST.x, y = FLOOR_Y - FIST.y, x2 = EN_X - 40;
+    const s = fxAt('fist', { x:x1, y, scale:scale*.55, loop:true, from:0, loopFrom:1, to:3, ms:45 });
     if(!s) return sleep(ms||260);
-    return anim(s, [{transform:tr(x1,y)},{transform:tr(x2,y)}], { duration:ms||260, easing:'ease-in', fill:'forwards' }).then(() => s._stop());
+    return anim(s, [{transform:tr(x1,y)},{transform:tr(x2,y)}], { duration:ms||260, easing:'ease-in', fill:'forwards' }).then(() => { s._stop(); fxAt('fist', { x:x2, y, scale:scale*.6, from:3, to:5, ms:50 }); });
   }
   function hit(scale, big){
     const e = curEnemy(), y = enY(e);
     fxAt('burst', { x:EN_X-20, y, scale:(scale||1)*.9, ms:32 });
-    if(big) fxAt('impact', { x:EN_X-10, y:FLOOR_Y+8, anchor:'b', scale:big, ms:42 });
+    if(big) fxAt('ground', { x:EN_X-10, y:FLOOR_Y+14, anchor:'b', scale:big*.75, ms:48 });
     shake(!!big); try{ sfx.hit(!!big); }catch(err){}
   }
   async function dash(to, ms){ const g = g0(); return anim(g, [{transform:tr(HERO_X,FLOOR_Y)},{transform:tr(to,FLOOR_Y)}], { duration:ms||180, easing:'ease-out', fill:'forwards' }); }
@@ -241,7 +243,7 @@
       floatText('HIGH KICK!!', HERO_X+40, FLOOR_Y-185, '#ff6a7a', 28, true);
       heroPose('pose-kick', 560); whoosh();
       await dash(near, 170);
-      fxAt('slashv', { flipX:true, x:EN_X-40, y:enY(curEnemy())-10, scale:1.1, ms:36 });
+      fxAt('kick', { x:EN_X-60, y:enY(curEnemy())-10, scale:.7, ms:45 });
       await sleep(120); hit(1.1, .9);
       heroPose('pose-recover', 500); await back(near, 260); return;
     }
@@ -258,13 +260,13 @@
     for(let k=0;k<hits;k++){
       heroPose(k%2 ? 'pose-cross' : 'pose-jab', 260); whoosh();
       const y = enY(curEnemy()) + (k%3-1)*18;
-      fxAt('slashh', { flipX:true, x:EN_X-50, y, scale:.9 + (big?.3:0), ms:26, from:2, to:9 });
+      fxAt('fist', { x:EN_X-60, y, scale:.5 + (big?.15:0), ms:34 });
       await sleep(60); hit(.7 + k*.05);
       await sleep(mv==='strike' ? 140 : 90);
     }
     if(mv!=='strike'){
       heroPose('pose-kick', 600); whoosh();
-      fxAt('slashv', { flipX:true, x:EN_X-30, y:enY(curEnemy())-(big?30:10), scale: big ? 2.3 : 1.4, ms:34 });
+      fxAt('kick', { x:EN_X-50, y:enY(curEnemy())-(big?30:10), scale: big ? 1.4 : .9, ms:42 });
       await sleep(130);
       hit(1.4, big ? 1.7 : 1.1);
       if(big){ fxAt('burst', { x:EN_X-10, y:enY(curEnemy())-20, scale:2.2, ms:30 }); shake(true); try{ const fl = document.createElementNS(SVGNS,'rect'); ['x','y','width','height'].forEach((k2,i) => fl.setAttribute(k2, [-400,-300,1700,1100][i])); fl.setAttribute('fill','#ffd0d6'); $('#fx').appendChild(fl); anim(fl, [{opacity:.7},{opacity:0}], { duration:380 }).then(() => fl.remove()); }catch(err){} }
@@ -299,7 +301,7 @@
     const out = await f.apply(this, arguments);
     const b = ui.bat; if(!b || b.over) return out;
     b.busy = true;
-    heroPose('pose-salute', 1100);
+    heroPose('pose-guard', 1100);
     floatText('พร้อมปฏิบัติหน้าที่ค่ะ!', HERO_X+40, FLOOR_Y-165, '#ffd0d6', 22, true);
     await sleep(700);
     heroPose('pose-guard', 600);
@@ -309,7 +311,7 @@
     return out;
   })(intro);
   stageClear = (f => async function(){
-    if(isCream()){ const b = ui.bat; if(b){ b.crHeat = 0; b.crBank = 0; } dissipate(); heroPose('pose-salute', 1600); floatText('ภารกิจสำเร็จค่ะ!', HERO_X+30, FLOOR_Y-165, '#ffd0d6', 22, true); }
+    if(isCream()){ const b = ui.bat; if(b){ b.crHeat = 0; b.crBank = 0; } dissipate(); heroPose('pose-guard', 1600); floatText('ภารกิจสำเร็จค่ะ!', HERO_X+30, FLOOR_Y-165, '#ffd0d6', 22, true); }
     return f.apply(this, arguments);
   })(stageClear);
   // HEAT resets with a new stage
