@@ -68,6 +68,8 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - เอฟเฟกต์ (แถบหลายเฟรม): `muzzle` แสงปากกระบอก · `lemon` ไม่ชาร์จ · `ring` x1 · `pink` x2 · `xfire` x3 · `lvl4` x4+ (ใหญ่ขึ้นเรื่อยๆ) · `burstB/burstP` ระเบิดตอนโดน · `aura` ประกายชาร์จรอบตัว · `bubble` วงแหวนตอนแพ้ · `mug.png` ไอคอน HP
 
 ## YOTA — โฟลเดอร์ `heroes/yota/`
-- ตัดจาก "Meshy AI · sprite sheet with walk cycle" (ชีตที่ผู้พัฒนาให้มา แต่ละเฟรมอยู่ในกรอบ) — ลบพื้นดำและเส้นกรอบ จัดเท้าชิดขอบล่าง ช่องสูง `ch:112` ขยาย `scale:2` (ภาพเรียบ ใช้ `image-rendering:auto`)
-- ท่า: idle 12 · walk 12 · hurt 12 · dead 10 (ล้มลงนอน) · push 9 (ดันมือก่อนสู้) · palm 5 · charge 6 · fire 12 (ยื่นแขนดัน วนซ้ำระหว่างยิง) · recover 15
-- VFX (ช่องสี่เหลี่ยม): `fx_orb` 12 (ลูกพลังโตขึ้น) · `fx_ring` 5 · `fx_dissolve` 24 (ร่างสลาย) · ลำแสงยาว/ลูกโป่งคำพูดวาดด้วย SVG ใน `yota.js` · `portrait.png` = หน้าในไอคอน HP
+- ตัดจาก "Meshy AI · sprite sheet (no grid lines)" (ชีตที่ผู้พัฒนาให้มา) — ลบพื้นดำ แยกเฟรมตามชิ้นภาพ แล้ว **จัดเฟรมให้ตรงกัน (registration)**: ท่ายืน/เดินเทียบหัว+ลำตัว ท่าโจมตี/โดนตีเทียบขา เท้าอยู่บนพื้นเดียวกันทุกเฟรม
+- ท่ายืนเรียงลำดับตามความสูงหัวให้เป็นการหายใจขึ้น-ลงจังหวะเดียว (ภาพ AI แต่ละเฟรมสูงไม่เท่ากัน ถ้าเรียงตามชีตจะดูกระตุก)
+- ช่องสูง `ch:100` ขยาย `scale:1.4` (ขนาดเท่า Mia) · ภาพเรียบ ใช้ `image-rendering:auto` · เก็บเป็น PNG สีเต็ม
+- ท่า: idle 12 · walk 12 · hurt 12 · dead 7 (ล้มแล้วร่างนิ่งอยู่กับที่) · push 9 · palm 5 · charge 6 · fire 12 (วนระหว่างยิง) · recover 15
+- VFX: `fx_orb` 12 · `fx_ring` 5 · `fx_dissolve` 12 · `fx_bits` 12 · ลำแสงยาว/ลูกโป่งคำพูดวาดด้วย SVG ใน `yota.js` · `portrait.png` = หน้าในไอคอน HP

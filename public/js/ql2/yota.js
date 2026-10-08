@@ -21,25 +21,26 @@
    ========================================================================== */
 (function(){
   const YT = BALANCE.YOTA, pc = x => `+${BALANCE.pct(x)}%`, K = 'yota', SVGNS = 'http://www.w3.org/2000/svg';
-  const S = 2;   // sprite scale (also used for the hand / palm positions below)
-  // v69b: re-cut from "Meshy AI · sprite sheet with walk cycle" (boxed frames, clean poses, isolated VFX)
-  HERO_SPRITE.yota = { dir:'heroes/yota/', ch:112, scale:S, face:'-32 -178 68 68',
+  const S = 1.4;   // sprite scale — sized to stand beside Mia / ELON (also used for the hand / palm positions below)
+  // v71: re-cut from "Meshy AI · sprite sheet (no grid lines)" — every pose is REGISTERED (frames
+  // aligned to each other by image correlation) so nothing wobbles; idle re-ordered into one smooth breath
+  HERO_SPRITE.yota = { dir:'heroes/yota/', ch:100, scale:S, face:'-24 -120 48 48',
     anims:{
-      idle:   { n:12, cw:80,  ax:38, dur:1.6, loop:true },
-      walk:   { n:12, cw:80,  ax:38, dur:1.0, loop:true, th:'เดิน' },
-      hurt:   { n:12, cw:96,  ax:42, dur:.8 },
-      dead:   { n:10, cw:120, ax:60, dur:1.5 },
-      push:   { n:9,  cw:96,  ax:38, dur:.7,  th:'ส่งค่าเช่าบ้านยัง!!!' },
-      palm:   { n:5,  cw:96,  ax:38, dur:.45, th:'ฝ่ามือทวงหนี้' },
-      charge: { n:6,  cw:96,  ax:38, dur:.6,  th:'ชาร์จลำแสง' },
-      fire:   { n:12, cw:96,  ax:38, dur:1.0, loop:true, th:'ลำแสงค่าเช่า' },
-      recover:{ n:15, cw:96,  ax:38, dur:1.0, th:'ปัดฝุ่น' } },
+      idle:   { n:12, cw:80,  ax:40, dur:1.8, loop:true },
+      walk:   { n:12, cw:80,  ax:40, dur:1.0, loop:true, th:'เดิน' },
+      hurt:   { n:12, cw:96,  ax:44, dur:.8 },
+      dead:   { n:7,  cw:160, ax:60, dur:1.3 },
+      push:   { n:9,  cw:100, ax:40, dur:.7,  th:'ส่งค่าเช่าบ้านยัง!!!' },
+      palm:   { n:5,  cw:100, ax:40, dur:.45, th:'ฝ่ามือทวงหนี้' },
+      charge: { n:6,  cw:100, ax:40, dur:.6,  th:'ชาร์จลำแสง' },
+      fire:   { n:12, cw:100, ax:40, dur:1.0, loop:true, th:'ลำแสงค่าเช่า' },
+      recover:{ n:15, cw:100, ax:40, dur:1.0, th:'ปัดฝุ่น' } },
     attacks:['palm','charge'], extra:['push','recover','walk'], demoOnly:true, finisher:'fire', finMin:99,
     finNote:`ท่าเปลี่ยนตามความยาวคำ: <b>3–4 ตัว</b> ฝ่ามือทวงหนี้ · <b>5–6 ตัว</b> ลำแสงค่าเช่า ${pc(YT.beam)} · <b>7 ตัวขึ้นไป / Critical</b> ไฮเปอร์บีมยึดบ้าน ${pc(YT.hyper)} ทะลุศัตรูที่รอคิว · ศัตรูรอดแต่ละเทิร์นค้างหนี้ 📄 เพิ่ม` };
-  const HAND = { x: (72-38)*S, y: (109-54)*S };    // arm stretched (fire frames)
-  const PALM = { x: (66-38)*S, y: (109-60)*S };    // the palm while charging / shoving
+  const HAND = { x: (73-40)*S, y: (97-45)*S };    // arm stretched (fire frames)
+  const PALM = { x: (69-40)*S, y: (97-50)*S };    // the palm while charging / shoving
   // isolated effects from the sheet (square cells)
-  const FXS = { orb:{ w:44, n:12 }, ring:{ w:64, n:5 }, dissolve:{ w:66, n:24 } };
+  const FXS = { orb:{ w:44, n:12 }, ring:{ w:60, n:5 }, dissolve:{ w:68, n:12 }, bits:{ w:68, n:12 } };
   Object.keys(FXS).forEach(k => { const i = new Image(); i.src = `heroes/yota/fx_${k}.png?v=${HERO_IMG_VER}`; });
   const sfxStrip = (k, o) => { const F = FXS[k]; try{ return window.QL_STRIP_FX ? QL_STRIP_FX(`heroes/yota/fx_${k}.png`, F.w, F.w, F.n, o) : null; }catch(e){ return null; } };
   // the same visibility rules the engine builds for its own sprite heroes (index.html sprCSS)
@@ -59,7 +60,7 @@
     const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     Object.keys(c.anims).forEach(n => { const i = new Image(); i.src = `${c.dir}${n}.png?v=${HERO_IMG_VER}`; });
   })();
-  try{ HERO_PORTRAIT.yota = { src:'heroes/yota/portrait.png', w:34, h:34, vb:'0 0 34 34' }; }catch(e){}
+  try{ HERO_PORTRAIT.yota = { src:'heroes/yota/portrait.png', w:36, h:36, vb:'0 0 36 36' }; }catch(e){}
 
   CHARACTERS.push({ id:K, devOnly:true, name:'YOTA', th:'โยตะ ผู้กองทวงค่าเช่า', price:5500, role:'ลำแสง · ทวงหนี้', skill:'ลำแสงทวงค่าเช่า',
     desc:`ก่อนสู้ทุกด่านยื่นมือทวง "ส่งค่าเช่าบ้านยัง!!!" · 3–4 ตัว ฝ่ามือทวงหนี้ · 5–6 ตัว ลำแสงค่าเช่า ${pc(YT.beam)} · 7 ตัวขึ้นไปหรือ Critical ไฮเปอร์บีมยึดบ้าน ${pc(YT.hyper)} ทะลุศัตรูที่รอคิว ${BALANCE.pct(YT.pierce)}% · ดอกเบี้ยค้างจ่าย: ศัตรูรอดแต่ละเทิร์นค้างหนี้ 📄 +1 (สูงสุด ${YT.debtMax}) ใบละ ${pc(YT.debtPer)} · ลำแสง (5 ตัวขึ้นไป) เก็บค่าเช่า ล้างหนี้ + ฟื้น HP ${BALANCE.pct(YT.healPer)}% ต่อใบ`,
@@ -135,7 +136,7 @@
     const W = w + 34, H = size + 22;
     box.setAttribute('x', -W/2); box.setAttribute('y', -H/2); box.setAttribute('width', W); box.setAttribute('height', H);
     // sits beside her head, the tail points back at her mouth
-    const x = opts.x || HERO_X + 30 + W/2, y = opts.y || FLOOR_Y - 138;
+    const x = opts.x || HERO_X + 30 + W/2, y = opts.y || FLOOR_Y - 112;
     tail.setAttribute('transform', `translate(${-W/2 + 6},4)`);
     g.appendChild(tail); g.appendChild(box); g.appendChild(t);   // tail behind the box
     g.insertBefore(tail, box);
@@ -409,7 +410,8 @@
     if(a){ a.classList.add('dead'); sprRestart('dead'); }
     try{ sfx.hurt(); }catch(err){}
     await sleep(sprMs('dead', 1500) + 150);
-    const d = sfxStrip('dissolve', { x:HERO_X, y:FLOOR_Y + 10, anchor:'b', scale:2.6, ms:55 });
+    const d = sfxStrip('dissolve', { x:HERO_X, y:FLOOR_Y + 8, anchor:'b', scale:2.6, ms:60 });
+    setTimeout(() => sfxStrip('bits', { x:HERO_X, y:FLOOR_Y + 8, anchor:'b', scale:2.6, ms:70 }), 700);
     try{ tone2(900, 200, 1.1, 'triangle', .07); noise(.6, .08); }catch(err){}
     if(a) anim(a, [{opacity:1},{opacity:1,offset:.25},{opacity:0}], { duration:900, easing:'ease-in', fill:'forwards' });
     if(!d) bits(HERO_X, FLOOR_Y - 30, 26, 120);
