@@ -68,7 +68,6 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - เอฟเฟกต์ (แถบหลายเฟรม): `muzzle` แสงปากกระบอก · `lemon` ไม่ชาร์จ · `ring` x1 · `pink` x2 · `xfire` x3 · `lvl4` x4+ (ใหญ่ขึ้นเรื่อยๆ) · `burstB/burstP` ระเบิดตอนโดน · `aura` ประกายชาร์จรอบตัว · `bubble` วงแหวนตอนแพ้ · `mug.png` ไอคอน HP
 
 ## YOTA — โฟลเดอร์ `heroes/yota/`
-- ตัดจาก "Meshy AI · Detailed Smooth Boss Sprite Sheet" (ชีตที่ผู้พัฒนาให้มา) — ลบพื้นดำ จัดเท้าชิดขอบล่าง ช่องสูง `ch:140` ขยาย `scale:1.7` (ภาพเรียบ ใช้ `image-rendering:auto`)
-- ชีตต้นฉบับเลขกำกับไม่ตรงกับรูปทุกแถว (เช่นแถวโดนตีมี 10 รูปแต่มีเลข 12) จึงตัดตามตำแหน่งตัวละครจริง
-- ท่า: idle 12 · walk (= idle เร็วขึ้น) · hurt 10 · dead 10 (ล้มลงนอน) · push 9 (ดันมือก่อนสู้) · palm 4 (ลูกพลังในมือ) · charge 12 (ชาร์จจนเป็นลูกโลก) · fire 1 (ยื่นแขน ลำแสงวาดด้วยโค้ด) · recover 6
-- ลำแสง / วงแหวน / พิกเซลสีฟ้า / ลูกโป่งคำพูด วาดด้วย SVG ใน `yota.js` · `portrait.png` = หน้าในไอคอน HP
+- ตัดจาก "Meshy AI · sprite sheet with walk cycle" (ชีตที่ผู้พัฒนาให้มา แต่ละเฟรมอยู่ในกรอบ) — ลบพื้นดำและเส้นกรอบ จัดเท้าชิดขอบล่าง ช่องสูง `ch:112` ขยาย `scale:2` (ภาพเรียบ ใช้ `image-rendering:auto`)
+- ท่า: idle 12 · walk 12 · hurt 12 · dead 10 (ล้มลงนอน) · push 9 (ดันมือก่อนสู้) · palm 5 · charge 6 · fire 12 (ยื่นแขนดัน วนซ้ำระหว่างยิง) · recover 15
+- VFX (ช่องสี่เหลี่ยม): `fx_orb` 12 (ลูกพลังโตขึ้น) · `fx_ring` 5 · `fx_dissolve` 24 (ร่างสลาย) · ลำแสงยาว/ลูกโป่งคำพูดวาดด้วย SVG ใน `yota.js` · `portrait.png` = หน้าในไอคอน HP
