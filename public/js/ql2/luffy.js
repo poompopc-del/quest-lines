@@ -16,7 +16,7 @@
      bounce off: -40% damage, 25% bounced back to the enemy (Fusen balloon).
    ULTIMATE (tactical) — Gomu Gomu no FUSEN: a balloon shield that sends the
      next hit straight back. Damage Ultimate = a full Gatling flurry.
-   Starts as devOnly (dev mode only) until the developer releases him.
+   v73: released to every player (was devOnly).
    ========================================================================== */
 (function(){
   const LF = BALANCE.LUFFY, pc = x => `+${BALANCE.pct(x)}%`;
@@ -50,7 +50,7 @@
     Object.keys(c.anims).forEach(n => { const i = new Image(); i.src = `${c.dir}${n}.png?v=${HERO_IMG_VER}`; });
   })();
 
-  CHARACTERS.push({ id:'luffy', devOnly:true, name:'Luffy', th:'ลูฟี่ หมวกฟาง', price:4000, role:'ยางยืด · หมัดยาว', skill:'โกมุโกมุ',
+  CHARACTERS.push({ id:'luffy', name:'Luffy', th:'ลูฟี่ หมวกฟาง', price:4000, role:'ยางยืด · หมัดยาว', skill:'โกมุโกมุ',
     desc:`ท่าเปลี่ยนตามความยาวคำ · 3–4 ตัว พิสทอล หมัดยืดข้ามจอ · 5 ตัว โอโนะ ${pc(LF.axe)} ${BALANCE.pct(LF.axeStun)}% ทำศัตรูมึนงง · 6–7 ตัว แกตลิ่ง ${pc(LF.gatling)} หมัดรัว · 8 ตัวขึ้นไปหรือ Critical บาซูก้า ${pc(LF.bazooka)} ผลักศัตรูจนท่าที่เตรียมไว้พัง · ร่างยาง: การโจมตีหนัก (ชาร์จ/เวท/เลียนแบบ) เบาลง ${BALANCE.pct(LF.rubber)}% และเด้งกลับ ${BALANCE.pct(LF.reflect)}%`,
     hpMul:1.05, dmgTaken:1 });
   CHAR_TIP.luffy = 120;

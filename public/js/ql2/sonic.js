@@ -15,7 +15,7 @@
      7+ / CRIT    HOMING ATTACK springs up and homes in from above (+30%)
    ULTIMATE (tactical) — SUPER SONIC: spends the rings, turns gold —
      immune to damage and +30% damage for 1 + rings/20 enemy turns (max 3).
-   Starts as devOnly (dev mode only) until the developer releases him.
+   v73: released to every player (was devOnly).
    ========================================================================== */
 (function(){
   const SN = BALANCE.SONIC, pc = x => `+${BALANCE.pct(x)}%`;
@@ -68,7 +68,7 @@
   }
   try{ HERO_PORTRAIT.sonic = { src:'heroes/sonic/portrait.png', w:174, h:134, vb:'18 0 92 92', px:true }; }catch(e){}
 
-  CHARACTERS.push({ id:'sonic', devOnly:true, name:'Sonic', th:'โซนิค เดอะเฮดจ์ฮ็อก', price:5000, role:'ความเร็ว · แหวน', skill:'สปินแดช',
+  CHARACTERS.push({ id:'sonic', name:'Sonic', th:'โซนิค เดอะเฮดจ์ฮ็อก', price:5000, role:'ความเร็ว · แหวน', skill:'สปินแดช',
     desc:`ทุกตัวอักษรที่สะกดได้ = 1 แหวน 💍 (ล้มศัตรู +${SN.killRings}) · ถ้าโดนโจมตีตอนมีแหวน แหวนกระจายและรับความเสียหายแทน ${BALANCE.pct(SN.ringCut)}% · 3–4 ตัว สปินแอทแท็ก · 5–6 ตัว สปินแดช ${pc(SN.dash)} · 7 ตัวขึ้นไปหรือ Critical โฮมมิ่งแอทแท็ก ${pc(SN.homing)}`,
     hpMul:.9, dmgTaken:1 });
   CHAR_TIP.sonic = 100;

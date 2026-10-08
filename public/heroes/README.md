@@ -72,3 +72,9 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - ทุกเฟรมวางบนพื้นเดียวกันและตำแหน่งเท้าเดียวกัน · ช่องสูง `ch:200` ภาพวาดใหญ่ (~185 px) จึงย่อ `scale:.68` ให้เท่า Mia · ลดสีเหลือ 256 สี (พิกเซลอาร์ต ไม่เสียคุณภาพ)
 - ท่า: idle 12 (ท่าตั้งการ์ด + หายใจ สร้างจากเฟรมเดียว) · walk 8 · push 4 (ชี้นิ้วก่อนสู้) · palm 2 (หมัด) · charge 2 · fire 1 (หมัดตรง ยิงลำแสง) · kick 2 · recover 2 · hurt 2 · dead 7
 - เอฟเฟกต์: `fx_orb` 11 (ลูกโลกชาร์จ) · `fx_muzzle` 4 · `fx_impact` 10 · `fx_dissolve` 9 · ลำแสงยาว/ลูกโป่งคำพูดวาดด้วย SVG ใน `yota.js` · `portrait.png` = หน้าในไอคอน HP
+
+## Cream — โฟลเดอร์ `heroes/cream/`
+- ตัวละคร: "Meshy AI · character action spritesheet" (พื้นเทา + เงาใต้เท้าเทา → โปร่งใส) · เอฟเฟกต์: "Meshy AI · fx sprite sheet (red)" (พื้นดำ → ความโปร่งใสจากความสว่าง)
+- ทุกเฟรมวางบนพื้นเดียวกันและตำแหน่งเท้าเดียวกัน · ช่องสูง `ch:240` ย่อ `scale:.63` ให้เท่าฮีโร่ตัวอื่น · 256 สี
+- ท่า: idle 12 (ท่าการ์ด + หายใจ) · walk 8 (ก้าวเท้าแบบนักมวย สร้างจากท่าการ์ด — ชีตไม่มีแถวเดิน) · guard 2 · jab 2 · cross 3 · kick 2 · recover 3 · salute 4 · hurt 3 · dead 7
+- เอฟเฟกต์: `fx_aurac` 15 · `fx_auras` 14 (วนรอบตัวตอนมี HEAT) · `fx_slashh` 12 · `fx_slashv` 11 · `fx_burst` 13 · `fx_impact` 12 · `fx_dissipate` 12 · `portrait.png` = หน้าในไอคอน HP

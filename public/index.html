@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="LETTERⁿ">
 <meta name="theme-color" content="#08070f">
 <meta name="description" content="LETTERⁿ — เกมสะกดคำภาษาอังกฤษสู้มอนสเตอร์">
-<link rel="manifest" href="manifest.json?v=72">
-<link rel="icon" href="icons/icon-192.png?v=72">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=72">
+<link rel="manifest" href="manifest.json?v=73">
+<link rel="icon" href="icons/icon-192.png?v=73">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=73">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>LETTERⁿ — Word Battle RPG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1333,20 +1333,20 @@ button,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .modal-box,.sheet{max-height:92vh;overflow-y:auto}
 }
 </style>
-<link rel="stylesheet" href="css/ql2.css?v=72">
-<link rel="stylesheet" href="css/endgame.css?v=72">
-<link rel="stylesheet" href="css/battle.css?v=72">
-<link rel="stylesheet" href="css/ui26.css?v=72">
-<link rel="stylesheet" href="css/boss.css?v=72">
-<link rel="stylesheet" href="css/tactics.css?v=72">
-<link rel="stylesheet" href="css/ecl.css?v=72">
+<link rel="stylesheet" href="css/ql2.css?v=73">
+<link rel="stylesheet" href="css/endgame.css?v=73">
+<link rel="stylesheet" href="css/battle.css?v=73">
+<link rel="stylesheet" href="css/ui26.css?v=73">
+<link rel="stylesheet" href="css/boss.css?v=73">
+<link rel="stylesheet" href="css/tactics.css?v=73">
+<link rel="stylesheet" href="css/ecl.css?v=73">
 </head>
 <body>
 <div id="app"></div>
-<script src="js/ql2/balance.js?v=72"></script>
-<script src="data/lexicon.js?v=72"></script>
-<script src="data/vocabulary.js?v=72"></script>
-<script src="js/ql2/vocab.js?v=72"></script>
+<script src="js/ql2/balance.js?v=73"></script>
+<script src="data/lexicon.js?v=73"></script>
+<script src="data/vocabulary.js?v=73"></script>
+<script src="js/ql2/vocab.js?v=73"></script>
 <script>window.__QL2 = 1; setTimeout(function(){ if(!window.__QL2_READY && typeof render==='function'){ window.__QL2 = 0; render(); } }, 5000);</script>
 <div class="toasts" id="toasts"></div>
 <div id="overlay"></div>
@@ -1794,7 +1794,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 25; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 26; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -6076,7 +6076,7 @@ render();
 setMusic(save.settings.music);
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('service-worker.js', { updateViaCache:'none' }).then(r=>{ window.__swReg = r; }).catch(()=>{});
 /* v66: never run a half-updated game — if the server has a newer version, reload once (not in the middle of a battle / exam) */
-const APP_VERSION = 72;
+const APP_VERSION = 73;
 (function(){
   let busy = false;
   async function check(){
@@ -7069,40 +7069,41 @@ document.documentElement.classList.add('v16');
 if(ui.screen!=='battle') render();
 </script>
 <!-- Quest Lines 2.0 — World & Progression (loaded after the game; wraps it, never replaces the battle) -->
-<script src="js/ql2/core.js?v=72"></script>
-<script src="js/ql2/quests.js?v=72"></script>
-<script src="js/ql2/shell.js?v=72"></script>
-<script src="js/ql2/settings.js?v=72"></script>
-<script src="js/ql2/hub.js?v=72"></script>
-<script src="js/ql2/world.js?v=72"></script>
-<script src="js/ql2/questboard.js?v=72"></script>
-<script src="js/ql2/heroes.js?v=72"></script>
-<script src="js/ql2/inventory.js?v=72"></script>
-<script src="js/ql2/codex.js?v=72"></script>
-<script src="js/ql2/profile.js?v=72"></script>
-<script src="js/ql2/endgame-core.js?v=72"></script>
-<script src="js/ql2/endgame-modes.js?v=72"></script>
-<script src="js/ql2/endgame-ui.js?v=72"></script>
-<script src="js/ql2/armory.js?v=72"></script>
-<script src="js/ql2/items.js?v=72"></script>
-<script src="js/ql2/more.js?v=72"></script>
-<script src="js/ql2/wordfx.js?v=72"></script>
-<script src="js/ql2/boss-encounter.js?v=72"></script>
-<script src="js/ql2/zombies.js?v=72"></script>
-<script src="js/ql2/bestiary.js?v=72"></script>
-<script src="js/ql2/kirby.js?v=72"></script>
-<script src="js/ql2/knight.js?v=72"></script>
-<script src="js/ql2/unlocks.js?v=72"></script>
-<script src="js/ql2/tactics.js?v=72"></script>
-<script src="js/ql2/events.js?v=72"></script>
-<script src="js/ql2/ecl.js?v=72"></script>
-<script src="js/ql2/luffy.js?v=72"></script>
-<script src="js/ql2/sonic.js?v=72"></script>
-<script src="js/ql2/heroplus.js?v=72"></script>
-<script src="js/ql2/heroup.js?v=72"></script>
-<script src="js/ql2/ultcharge.js?v=72"></script>
-<script src="js/ql2/yota.js?v=72"></script>
-<script src="js/ql2/title.js?v=72"></script>
-<script src="js/ql2/dev.js?v=72"></script>
-<script src="js/ql2/boot.js?v=72"></script>
+<script src="js/ql2/core.js?v=73"></script>
+<script src="js/ql2/quests.js?v=73"></script>
+<script src="js/ql2/shell.js?v=73"></script>
+<script src="js/ql2/settings.js?v=73"></script>
+<script src="js/ql2/hub.js?v=73"></script>
+<script src="js/ql2/world.js?v=73"></script>
+<script src="js/ql2/questboard.js?v=73"></script>
+<script src="js/ql2/heroes.js?v=73"></script>
+<script src="js/ql2/inventory.js?v=73"></script>
+<script src="js/ql2/codex.js?v=73"></script>
+<script src="js/ql2/profile.js?v=73"></script>
+<script src="js/ql2/endgame-core.js?v=73"></script>
+<script src="js/ql2/endgame-modes.js?v=73"></script>
+<script src="js/ql2/endgame-ui.js?v=73"></script>
+<script src="js/ql2/armory.js?v=73"></script>
+<script src="js/ql2/items.js?v=73"></script>
+<script src="js/ql2/more.js?v=73"></script>
+<script src="js/ql2/wordfx.js?v=73"></script>
+<script src="js/ql2/boss-encounter.js?v=73"></script>
+<script src="js/ql2/zombies.js?v=73"></script>
+<script src="js/ql2/bestiary.js?v=73"></script>
+<script src="js/ql2/kirby.js?v=73"></script>
+<script src="js/ql2/knight.js?v=73"></script>
+<script src="js/ql2/unlocks.js?v=73"></script>
+<script src="js/ql2/tactics.js?v=73"></script>
+<script src="js/ql2/events.js?v=73"></script>
+<script src="js/ql2/ecl.js?v=73"></script>
+<script src="js/ql2/luffy.js?v=73"></script>
+<script src="js/ql2/sonic.js?v=73"></script>
+<script src="js/ql2/heroplus.js?v=73"></script>
+<script src="js/ql2/heroup.js?v=73"></script>
+<script src="js/ql2/ultcharge.js?v=73"></script>
+<script src="js/ql2/yota.js?v=73"></script>
+<script src="js/ql2/cream.js?v=73"></script>
+<script src="js/ql2/title.js?v=73"></script>
+<script src="js/ql2/dev.js?v=73"></script>
+<script src="js/ql2/boot.js?v=73"></script>
 </body></html>

@@ -108,6 +108,8 @@ const BALANCE = {
   LUFFY:  { axeLen: 5, axe: .15, axeStun: .25, gatLen: 6, gatling: .22, bazLen: 8, bazooka: .35, rubber: .40, reflect: .25 },         // every 10 letters +50% (max ×3); a swallowed enemy adds 50% of its HP (was 100%)
   // v69 YOTA — core: palm → beam → hyper beam by word length (hyper pierces the queue) · passive: 📄 rent debt per surviving enemy turn, a beam collects it (heal)
   YOTA:   { beamLen: 5, beam: .20, hyperLen: 7, hyper: .35, pierce: .25, pierceN: 2, debtPer: .06, debtMax: 5, healPer: .03 },
+  // v73 CREAM — core: split button charge (store + HEAT) → release ×(1+25%/HEAT, max ×2.25) · passive: aura guard −20% while HEAT > 0
+  CREAM:  { relStep: .25, relMax: 2.25, guard: .80, crossLen: 5, cross: .15, kickLen: 7, kick: .30, rushHeat: 3, moonHeat: 5 },
 
   /* ----------------------------- v64 TACTICS ---------------------- */
   // Enemy intent · word roles · guard · chain · perfect · objectives · events · tactical Ultimates (js/ql2/tactics.js, events.js)

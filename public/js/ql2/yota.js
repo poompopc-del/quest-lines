@@ -17,7 +17,7 @@
    ULTIMATE ⚔️ — GIGA RENT CANNON (ค่าเช่า! ค่าน้ำ! ค่าไฟ!!!)
    ULTIMATE (tactical) — หมายศาลยึดบ้าน: 📄 maxed, the enemy is stunned
      for a turn and its prepared move is interrupted.
-   Starts as devOnly (dev mode only) until the developer releases her.
+   v73: released to every player (was devOnly).
    ========================================================================== */
 (function(){
   const YT = BALANCE.YOTA, pc = x => `+${BALANCE.pct(x)}%`, K = 'yota', SVGNS = 'http://www.w3.org/2000/svg';
@@ -63,7 +63,7 @@
   })();
   try{ HERO_PORTRAIT.yota = { src:'heroes/yota/portrait.png', w:80, h:80, vb:'0 0 80 80' }; }catch(e){}
 
-  CHARACTERS.push({ id:K, devOnly:true, name:'YOTA', th:'โยตะ ผู้กองทวงค่าเช่า', price:5500, role:'ลำแสง · ทวงหนี้', skill:'ลำแสงทวงค่าเช่า',
+  CHARACTERS.push({ id:K, name:'YOTA', th:'โยตะ ผู้กองทวงค่าเช่า', price:5500, role:'ลำแสง · ทวงหนี้', skill:'ลำแสงทวงค่าเช่า',
     desc:`ก่อนสู้ทุกด่านยื่นมือทวง "ส่งค่าเช่าบ้านยัง!!!" · 3–4 ตัว หมัดทวงหนี้ · 5–6 ตัว ลำแสงค่าเช่า ${pc(YT.beam)} · 7 ตัวขึ้นไปหรือ Critical ไฮเปอร์บีมยึดบ้าน ${pc(YT.hyper)} ทะลุศัตรูที่รอคิว ${BALANCE.pct(YT.pierce)}% · ดอกเบี้ยค้างจ่าย: ศัตรูรอดแต่ละเทิร์นค้างหนี้ 📄 +1 (สูงสุด ${YT.debtMax}) ใบละ ${pc(YT.debtPer)} · ลำแสง (5 ตัวขึ้นไป) เก็บค่าเช่า ล้างหนี้ + ฟื้น HP ${BALANCE.pct(YT.healPer)}% ต่อใบ`,
     hpMul:1.1, dmgTaken:1 });
   CHAR_TIP.yota = HAND.y;
