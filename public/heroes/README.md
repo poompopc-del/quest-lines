@@ -66,3 +66,9 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - ภาพจากชีตรวมสไปรต์ Mega Man X (compilation: Capcom · DarkSamus993 · Random Talking Bush · The Spriters Resource และผู้ร่วมทำตามรายชื่อในชีต)
 - ท่า: intro เทเลพอร์ต · idle · walk · hurt · dead · atk1 บัสเตอร์ · atk2 วิ่งยิง · atk3 แดชยิง · charge · shot ชาร์จช็อต · fin ชาร์จเต็มพลัง
 - เอฟเฟกต์ (แถบหลายเฟรม): `muzzle` แสงปากกระบอก · `lemon` ไม่ชาร์จ · `ring` x1 · `pink` x2 · `xfire` x3 · `lvl4` x4+ (ใหญ่ขึ้นเรื่อยๆ) · `burstB/burstP` ระเบิดตอนโดน · `aura` ประกายชาร์จรอบตัว · `bubble` วงแหวนตอนแพ้ · `mug.png` ไอคอน HP
+
+## YOTA — โฟลเดอร์ `heroes/yota/`
+- ตัดจาก "Meshy AI · Detailed Smooth Boss Sprite Sheet" (ชีตที่ผู้พัฒนาให้มา) — ลบพื้นดำ จัดเท้าชิดขอบล่าง ช่องสูง `ch:140` ขยาย `scale:1.7` (ภาพเรียบ ใช้ `image-rendering:auto`)
+- ชีตต้นฉบับเลขกำกับไม่ตรงกับรูปทุกแถว (เช่นแถวโดนตีมี 10 รูปแต่มีเลข 12) จึงตัดตามตำแหน่งตัวละครจริง
+- ท่า: idle 12 · walk (= idle เร็วขึ้น) · hurt 10 · dead 10 (ล้มลงนอน) · push 9 (ดันมือก่อนสู้) · palm 4 (ลูกพลังในมือ) · charge 12 (ชาร์จจนเป็นลูกโลก) · fire 1 (ยื่นแขน ลำแสงวาดด้วยโค้ด) · recover 6
+- ลำแสง / วงแหวน / พิกเซลสีฟ้า / ลูกโป่งคำพูด วาดด้วย SVG ใน `yota.js` · `portrait.png` = หน้าในไอคอน HP
