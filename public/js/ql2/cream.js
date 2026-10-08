@@ -39,7 +39,7 @@
     finNote:`ปุ่มโจมตีแบ่งครึ่ง: <b>🔥 ชาร์จ</b> เก็บดาเมจ + HEAT · <b>ปล่อย</b> = (ดาเมจที่เก็บ + คำนี้) × สูงสุด ×${CR.relMax} · HEAT 3+ CRIMSON RUSH · HEAT 5 RED MOON BREAKER · ไม่ชาร์จ: 3–4 ตัว แย็บ · 5–6 ตัว วันทู ${pc(CR.cross)} · 7+ / Critical เตะสูง ${pc(CR.kick)}` };
   const FIST = { x: Math.round((160-90)*S), y: Math.round((237-79)*S) };
   const FOOT = { x: Math.round((206-90)*S), y: Math.round((237-70)*S) };
-  // red FX sheet strips (w × h per frame, n frames)
+  // red FX sheet strips (w × h per frame, n frames) — the slash waves are drawn travelling LEFT on the sheet, so they are mirrored (flipX) to fly at the enemy
   const FXS = { aurac:{ w:110, h:130, n:15 }, auras:{ w:112, h:108, n:14 }, slashh:{ w:160, h:92, n:12 }, slashv:{ w:150, h:133, n:11 },
                 burst:{ w:150, h:130, n:13 }, impact:{ w:160, h:100, n:12 }, dissipate:{ w:140, h:124, n:12 } };
   Object.keys(FXS).forEach(k => { const i = new Image(); i.src = `heroes/cream/fx_${k}.png?v=${HERO_IMG_VER}`; });
@@ -193,7 +193,7 @@
   const g0 = () => $('#heroG');
   function slashH(scale, ms, fromX){
     const x1 = fromX || HERO_X + FIST.x, y = FLOOR_Y - FIST.y, x2 = EN_X - 30;
-    const s = fxAt('slashh', { x:x1, y, scale, loop:true, from:2, loopFrom:3, to:7, ms:40 });
+    const s = fxAt('slashh', { flipX:true, x:x1, y, scale, loop:true, from:2, loopFrom:3, to:7, ms:40 });
     if(!s) return sleep(ms||260);
     return anim(s, [{transform:tr(x1,y)},{transform:tr(x2,y)}], { duration:ms||260, easing:'ease-in', fill:'forwards' }).then(() => s._stop());
   }
@@ -241,7 +241,7 @@
       floatText('HIGH KICK!!', HERO_X+40, FLOOR_Y-185, '#ff6a7a', 28, true);
       heroPose('pose-kick', 560); whoosh();
       await dash(near, 170);
-      fxAt('slashv', { x:EN_X-40, y:enY(curEnemy())-10, scale:1.1, ms:36 });
+      fxAt('slashv', { flipX:true, x:EN_X-40, y:enY(curEnemy())-10, scale:1.1, ms:36 });
       await sleep(120); hit(1.1, .9);
       heroPose('pose-recover', 500); await back(near, 260); return;
     }
@@ -258,13 +258,13 @@
     for(let k=0;k<hits;k++){
       heroPose(k%2 ? 'pose-cross' : 'pose-jab', 260); whoosh();
       const y = enY(curEnemy()) + (k%3-1)*18;
-      fxAt('slashh', { x:EN_X-50, y, scale:.9 + (big?.3:0), ms:26, from:2, to:9 });
+      fxAt('slashh', { flipX:true, x:EN_X-50, y, scale:.9 + (big?.3:0), ms:26, from:2, to:9 });
       await sleep(60); hit(.7 + k*.05);
       await sleep(mv==='strike' ? 140 : 90);
     }
     if(mv!=='strike'){
       heroPose('pose-kick', 600); whoosh();
-      fxAt('slashv', { x:EN_X-30, y:enY(curEnemy())-(big?30:10), scale: big ? 2.3 : 1.4, ms:34 });
+      fxAt('slashv', { flipX:true, x:EN_X-30, y:enY(curEnemy())-(big?30:10), scale: big ? 2.3 : 1.4, ms:34 });
       await sleep(130);
       hit(1.4, big ? 1.7 : 1.1);
       if(big){ fxAt('burst', { x:EN_X-10, y:enY(curEnemy())-20, scale:2.2, ms:30 }); shake(true); try{ const fl = document.createElementNS(SVGNS,'rect'); ['x','y','width','height'].forEach((k2,i) => fl.setAttribute(k2, [-400,-300,1700,1100][i])); fl.setAttribute('fill','#ffd0d6'); $('#fx').appendChild(fl); anim(fl, [{opacity:.7},{opacity:0}], { duration:380 }).then(() => fl.remove()); }catch(err){} }
