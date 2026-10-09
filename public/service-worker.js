@@ -1,5 +1,5 @@
-const CACHE_NAME = 'quest-lines-v81';
-const V = '?v=81';
+const CACHE_NAME = 'quest-lines-v82';
+const V = '?v=82';
 const MODULES = ['balance','vocab','core','quests','shell','settings','hub','world','questboard','heroes','inventory','codex','profile','endgame-core','endgame-modes','endgame-ui','armory','items','more','wordfx','boss-encounter','zombies','bestiary','kirby','knight','unlocks','tactics','events','ecl','luffy','sonic','heroplus','heroup','ultcharge','yota','cream','freeheroes','goldbulb','title','dev','boot'];
 const APP_SHELL = ['./', './index.html', './manifest.json', './scenes/hub/cave.png', './title/logo.webp', './npc/merchant.png', './icons/icon-192.png', './icons/icon-512.png', './css/ql2.css' + V, './css/endgame.css' + V, './css/battle.css' + V, './css/ui26.css' + V, './css/boss.css' + V, './css/tactics.css' + V, './css/ecl.css' + V,
   './data/lexicon.js' + V, './data/vocabulary.js' + V,
