@@ -69,14 +69,15 @@
   CHAR_TIP.yota = HAND.y;
   FIGHTER.yota = { c:'#3d8bff', atk:5, def:3, spd:2, diff:2 };
   HERO_EXTRA.yota = { el:'thunder', elNote:'พลังงาน — ลำแสงสีฟ้าจากฝ่ามือ ยิงทะลุทุกข้ออ้าง (ใช้คำธาตุได้ทุกชนิด)',
-    ult:`หมัดทวงหนี้ → ลำแสงค่าเช่า ${pc(YT.beam)} → ไฮเปอร์บีมยึดบ้าน ${pc(YT.hyper)} (ทะลุคิว) · ดอกเบี้ยค้างจ่าย 📄 ${pc(YT.debtPer)}/ใบ · ⚔️ GIGA RENT CANNON · Ultimate แท็กติก: หมายศาลยึดบ้าน`,
+    ult:`หมัดทวงหนี้ → ลำแสงค่าเช่า ${pc(YT.beam)} → ไฮเปอร์บีมยึดบ้าน ${pc(YT.hyper)} (ทะลุคิว) · ดอกเบี้ยค้างจ่าย 📄 ${pc(YT.debtPer)}/ใบ · ⚔️ GIGA RENT CANNON · Ultimate ที่ 2: FINAL EVICTION ดาเมจ ×${YT.finalMul} ทะลุทั้งคิว`,
     lore:'ผู้กองหญิงเหล็กแห่งกองทวงค่าเช่า ไม่มีมอนสเตอร์ตัวไหนค้างค่าเช่าเธอได้เกินหนึ่งเทิร์น — ทุกวันที่ห้าของเดือน เธอจะยื่นมือมาตรงหน้าคุณ…แล้วยิงลำแสงใส่' };
   try{
     const R = window.UNLOCK_REQ;
     if(window.HERO_UNLOCK && R) window.HERO_UNLOCK.yota = { tier:4, price:5500, reqs:[ R.clear(3) ], pick:2, opts:[ R.long(25), R.ult(10), R.flawless(3) ],
       quote:'"ส่งค่าเช่าบ้านยัง!!!" — YOTA มาเคาะประตูทีมแล้ว' };
   }catch(e){}
-  try{ if(window.QL_TAC) QL_TAC.UTIL.yota = { ic:'📜', en:'EVICTION NOTICE', th:`หมายศาลยึดบ้าน: หนี้ 📄 เต็ม ${YT.debtMax} ใบ · ศัตรูมึนงง 1 เทิร์น · ขัดท่าที่เตรียมไว้` }; }catch(e){}
+  try{ if(window.QL_TAC) QL_TAC.UTIL.yota = { ic:'📜', en:'FINAL EVICTION', get th(){ let d = ''; try{ const b = ui.bat; if(b) d = `ดาเมจ ~${fmt(Math.round(BALANCE.ultDamage(b) * YT.finalMul * (1 + YT.debtMax*YT.debtPer)))} · `; }catch(e){}
+    return `${d}หมายศาลยึดบ้านขั้นสุดท้าย ×${YT.finalMul} + ดอกเบี้ยเต็ม · ทะลุทั้งคิว ${BALANCE.pct(YT.finalPierce)}% · ศัตรูที่รอดมึนงง`; } }; }catch(e){}
   try{ if(window.QL_ULTX) QL_ULTX.yota = { ic:'💸', en:'RENT DUE', th:'ถึงกำหนดชำระ', how:['เก็บค่าเช่าได้ 📄 3 ใบขึ้นไป <b>+30%</b>','ไฮเปอร์บีมยึดบ้าน <b>+10%</b>'] }; }catch(e){}
 
   const isYota = () => save.eq && save.eq.char===K;
@@ -225,6 +226,7 @@
     if(mv==='hyper') dmgMod(r, 'bonus', YT.hyper, `🏠 ไฮเปอร์บีมยึดบ้าน ${pc(YT.hyper)}`);
     const d = debtOf(curEnemy());
     if(d) dmgMod(r, 'bonus', d*YT.debtPer, `📄 ดอกเบี้ย ×${d} ${pc(d*YT.debtPer)}`);
+    if(YT.power) dmgMod(r, 'burst', YT.power, `👮‍♀️ พลังผู้กอง ${pc(YT.power)}`);
     r.ytMove = mv; r.ytDebt = d;
     return r;
   })(evalWord);
@@ -339,30 +341,46 @@
     return out;
   })(enemyTurn);
 
-  /* ------------------------------ tactical Ultimate: EVICTION NOTICE ------------------------------ */
+  /* ------------------------------ tactical Ultimate → FINAL EVICTION (a damage finisher) ------------------------------ */
   if(typeof window.tacUltUtil==='function'){
     window.tacUltUtil = (f => async function(b, e){
       if(!isYota()) return f.apply(this, arguments);
-      floatText('📜 หมายศาลยึดบ้าน!', HERO_X+40, FLOOR_Y-235, '#ffe14a', 30, true);
+      const d = YT.debtMax, dmg = Math.max(1, Math.round(BALANCE.ultDamage(b) * YT.finalMul * (1 + d*YT.debtPer)));
+      floatText('📜 FINAL EVICTION!!!', HERO_X+60, FLOOR_Y-245, '#ffe14a', 32, true);
+      floatText('หมายศาลยึดบ้านขั้นสุดท้าย', HERO_X+60, FLOOR_Y-210, '#fff', 18, true);
       heroPose('pose-push', sprMs('push', 700)+500);
       try{ sfx.power(); }catch(err){}
-      // the notice flies over and gets STAMPED
+      // the court order flies over and gets STAMPED … then the whole street is evicted
       const g = el('g', {});
       el('rect', { x:-34, y:-44, width:68, height:88, rx:4, fill:'#fffdf2', stroke:'#2a1a10', 'stroke-width':3 }, g);
       for(let k=0;k<5;k++) el('rect', { x:-24, y:-30+k*12, width:k===0?48:36-(k%2)*10, height:4, fill:'#b9ab90' }, g);
       const ty = enY(e);
-      await anim(g, [{transform:tr(HERO_X+60, FLOOR_Y-120)+' rotate(-30deg) scale(.4)'},{transform:tr(EN_X, ty-30)+' rotate(8deg) scale(1.1)'}], { duration:520, easing:'ease-out', fill:'forwards' });
+      await anim(g, [{transform:tr(HERO_X+60, FLOOR_Y-120)+' rotate(-30deg) scale(.4)'},{transform:tr(EN_X, ty-30)+' rotate(8deg) scale(1.3)'}], { duration:480, easing:'ease-out', fill:'forwards' });
       const stamp = el('g', {}, g);
-      el('rect', { x:-30, y:-14, width:60, height:28, rx:5, fill:'none', stroke:'#e0102a', 'stroke-width':4 }, stamp);
-      const t = el('text', { 'text-anchor':'middle', y:8, 'font-size':20, 'font-weight':800, fill:'#e0102a', 'font-family':"Kanit, sans-serif" }, stamp); t.textContent = 'ยึด!';
+      el('rect', { x:-34, y:-15, width:68, height:30, rx:5, fill:'none', stroke:'#e0102a', 'stroke-width':4 }, stamp);
+      const t = el('text', { 'text-anchor':'middle', y:8, 'font-size':20, 'font-weight':800, fill:'#e0102a', 'font-family':"Kanit, sans-serif" }, stamp); t.textContent = 'ยึดหมด!';
       anim(stamp, [{transform:'rotate(-14deg) scale(3)',opacity:0},{transform:'rotate(-14deg) scale(1)',opacity:1}], { duration:180, easing:'ease-in', fill:'forwards' });
       await sleep(170); shake(true); try{ sfx.stone(); }catch(err){}
-      e.ytDebt = YT.debtMax; e.stun = true;
-      if(e.intent && e.intent.k!=='atk'){ if(e.intent.k==='cast2') e.tacCast = false; e.intent = { k:'stagger' }; floatText('⛔ INTERRUPT!', EN_X, FLOOR_Y - e.h*e.sc - 80, '#ffe14a', 26, true); }
-      floatText(`💫 มึนงง · 📄×${YT.debtMax}`, EN_X, FLOOR_Y - e.h*e.sc - 40, '#fff', 24, true);
-      setTimeout(() => anim(g, [{opacity:1},{opacity:0}], { duration:300 }).then(()=>g.remove()), 500);
-      updateHud(); renderEnemyPanel(); persist();
-      await sleep(900);
+      e.ytDebt = d; renderEnemyPanel();
+      floatText(`📄×${d} ดอกเบี้ยเต็ม!`, EN_X, FLOOR_Y - e.h*e.sc - 40, '#ff7a7a', 22, true);
+      setTimeout(() => anim(g, [{opacity:1},{opacity:0}], { duration:300 }).then(()=>g.remove()), 400);
+      await sleep(350);
+      // GIGA RENT CANNON — the biggest beam she has, through the whole queue
+      ui.ytHit = null;
+      await heroAttack(5, false);
+      const queue = (b.stage && b.stage.enemies ? b.stage.enemies.slice(b.idx+1) : []).filter(q => q.hp > 0);
+      const pd = Math.max(1, Math.round(dmg * YT.finalPierce));
+      queue.forEach(q => { q.hp -= pd; if(q.hp < 1 && (q.boss || q.mini)) q.hp = 1; if(q.hp < 0) q.hp = 0; });
+      if(queue.length) floatText(`🏠 ยึดทั้งซอย ${fmt(pd)} ×${queue.length}`, Q_X-20, FLOOR_Y-205, '#8fe6ff', 24, true);
+      e.ytDebt = 0;
+      e.hp -= dmg; b.score += dmg;
+      floatText(`${fmt(dmg)}`, EN_X, FLOOR_Y - e.h*e.sc - 90, '#ffe14a', 46, true);
+      try{ sfx.hit(true); }catch(err){} enemyHurt(dmg, true);
+      try{ if(typeof bossPhase2Check==='function') bossPhase2Check(e); }catch(err){}
+      if(e.hp <= 0){ await enemyDies(); return; }
+      e.stun = true; floatText('💫 มึนงง!', EN_X, FLOOR_Y - e.h*e.sc - 40, '#fff', 22, true);
+      updateEnemyHp(); updateHud(); renderEnemyPanel(); persist();
+      await sleep(450);
       await enemyTurn();
     })(window.tacUltUtil);
   }

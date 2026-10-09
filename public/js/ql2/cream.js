@@ -85,14 +85,15 @@
   CHAR_TIP.cream = FIST.y;
   FIGHTER.cream = { c:'#ff3b4e', atk:5, def:3, spd:4, diff:3 };
   HERO_EXTRA.cream = { el:'fire', elNote:'เพลิงแดง — ออร่าสีเลือดลุกท่วมตัวทุกครั้งที่ชาร์จ (ใช้คำธาตุได้ทุกชนิด)',
-    ult:`ชาร์จเก็บดาเมจ + HEAT แล้วปล่อยทีเดียว (สูงสุด ×${CR.relMax}) · HEAT 3 CRIMSON RUSH · HEAT 5 RED MOON BREAKER · ⚔️ CRIMSON ULTIMATE · Ultimate แท็กติก: BLOOD AURA`,
+    ult:`ชาร์จเก็บดาเมจ + HEAT แล้วปล่อยทีเดียว (สูงสุด ×${CR.relMax}) · HEAT 3 CRIMSON RUSH · HEAT 5 RED MOON BREAKER · ⚔️ CRIMSON ULTIMATE · Ultimate ที่ 2: BLOOD MOON ฟันรัว 9 ครั้ง ดาเมจ ×${CR.finalMul}`,
     lore:'สารวัตรหญิงแชมป์ศิลปะการต่อสู้ประจำกองปราบ สุภาพเรียบร้อยจนกว่าจะมีคนสะกดผิดต่อหน้าเธอ — แล้วออร่าสีแดงก็ลุกขึ้นมา' };
   try{
     const R = window.UNLOCK_REQ;
     if(window.HERO_UNLOCK && R) window.HERO_UNLOCK.cream = { tier:5, price:7000, reqs:[ R.clear(4) ], pick:2, opts:[ R.combo(12), R.ult(12), R.flawless(4) ],
       quote:'"ขออนุญาตจับกุมค่ะ!" — ครีมพร้อมปฏิบัติหน้าที่' };
   }catch(e){}
-  try{ if(window.QL_TAC) QL_TAC.UTIL.cream = { ic:'🩸', en:'BLOOD AURA', th:'ออร่าโลหิต: HEAT +2 ทันที · ขัดท่าที่ศัตรูเตรียมไว้' }; }catch(e){}
+  try{ if(window.QL_TAC) QL_TAC.UTIL.cream = { ic:'🩸', en:'BLOOD MOON', get th(){ let d = ''; try{ const b = ui.bat; if(b) d = `ดาเมจ ~${fmt(Math.round((BALANCE.ultDamage(b) * CR.finalMul + (b.crBank||0)) * (1 + (b.crHeat||0)*CR.relStep*.5)))} · `; }catch(e){}
+    return `${d}พระจันทร์โลหิต: ฟันรัว 9 ครั้ง + เตะพระจันทร์แดง ×${CR.finalMul} (+ HEAT ที่สะสม) · คลื่นโลหิตโดนทั้งคิว ${BALANCE.pct(CR.finalSplash)}%`; } }; }catch(e){}
   try{ if(window.QL_ULTX) QL_ULTX.cream = { ic:'🔥', en:'CRIMSON HEAT', th:'เพลิงแดงเดือด', how:['กด 🔥 ชาร์จแต่ละครั้ง <b>+20%</b>','ปล่อยตอน HEAT 3 ขึ้นไป <b>+20%</b>'] }; }catch(e){}
 
   const isCream = () => save.eq && save.eq.char===K;
@@ -157,10 +158,12 @@
     if(b.crCharging){ r.crStore = r.dmg; r.dmg = 0; r.el = null; r.crit = false; r.notes = [`🔥 ชาร์จ +${r.crStore} → HEAT ${heatOf(b)+1}`]; return r; }
     const h = heatOf(b);
     if(h > 0){ const base = r.dmg, m = relMul(h); r.dmg = Math.max(1, Math.round((base + (b.crBank||0)) * m));
-      r.notes.unshift(`🔥 ปล่อย HEAT ${h} (${b.crBank||0} + ${base}) ×${+m.toFixed(2)}`); r.crMove = h >= CR.moonHeat ? 'moon' : h >= CR.rushHeat ? 'rush' : 'strike'; return r; }
+      r.notes.unshift(`🔥 ปล่อย HEAT ${h} (${b.crBank||0} + ${base}) ×${+m.toFixed(2)}`); r.crMove = h >= CR.moonHeat ? 'moon' : h >= CR.rushHeat ? 'rush' : 'strike';
+      if(CR.power) dmgMod(r, 'burst', CR.power, `🔥 เพลิงแดง ${pc(CR.power)}`); return r; }
     const mv = moveOf(VocabularyManager.wordLength(r.w), r.crit);
     if(mv==='onetwo') dmgMod(r, 'bonus', CR.cross, `👊 วันทู ${pc(CR.cross)}`);
     if(mv==='kick') dmgMod(r, 'bonus', CR.kick, `🦵 เตะสูง ${pc(CR.kick)}`);
+    if(CR.power) dmgMod(r, 'burst', CR.power, `🔥 เพลิงแดง ${pc(CR.power)}`);
     r.crMove = mv;
     return r;
   })(evalWord);
@@ -256,7 +259,7 @@
     // dash in
     heroPose('pose-cross', 300); whoosh();
     await dash(near, 150);
-    const hits = mv==='strike' ? 1 : Math.min(7, ult ? 7 : heat);
+    const hits = mv==='strike' ? 1 : Math.min(9, ult ? Math.max(7, heat) : heat);
     for(let k=0;k<hits;k++){
       heroPose(k%2 ? 'pose-cross' : 'pose-jab', 260); whoosh();
       const y = enY(curEnemy()) + (k%3-1)*18;
@@ -278,19 +281,44 @@
     heroPose('pose-recover', 500); await back(near, 280);
   })(heroAttack);
 
-  /* ------------------------------ tactical Ultimate: BLOOD AURA ------------------------------ */
+  /* ------------------------------ tactical Ultimate → BLOOD MOON (a damage finisher) ------------------------------ */
   if(typeof window.tacUltUtil==='function'){
     window.tacUltUtil = (f => async function(b, e){
       if(!isCream()) return f.apply(this, arguments);
-      floatText('🩸 BLOOD AURA!', HERO_X+30, FLOOR_Y-215, '#ff6a7a', 30, true);
-      heroPose('pose-guard', 1200);
-      fxAt('aurac', { x:HERO_X, y:FLOOR_Y+6, anchor:'b', scale:1.8, ms:36 });
-      tn(110, .8, 'sawtooth', .07); tn(220, .6, 'square', .04, .2);
-      b.crHeat = heatOf(b) + 2; b.crBank = b.crBank || 0;
-      if(e && e.intent && e.intent.k!=='atk'){ if(e.intent.k==='cast2') e.tacCast = false; e.intent = { k:'stagger' }; floatText('⛔ INTERRUPT!', EN_X, FLOOR_Y - e.h*e.sc - 80, '#ffe14a', 26, true); }
-      floatText(`🔥 HEAT ${b.crHeat}`, HERO_X, FLOOR_Y-185, '#ffb03b', 24, true);
-      updateHud(); renderEnemyPanel(); persist();
-      await sleep(900);
+      const h = heatOf(b), dmg = Math.max(1, Math.round((BALANCE.ultDamage(b) * CR.finalMul + (b.crBank||0)) * (1 + h*CR.relStep*.5)));
+      floatText('🩸 BLOOD MOON!!!', HERO_X+60, FLOOR_Y-240, '#ff3b4e', 34, true);
+      floatText('พระจันทร์โลหิต', HERO_X+60, FLOOR_Y-205, '#ffd0d6', 18, true);
+      heroPose('pose-guard', 1400);
+      sky(true);
+      fxAt('aurac', { x:HERO_X, y:FLOOR_Y+6, anchor:'b', scale:2.2, ms:30 });
+      fxAt('auras', { x:HERO_X, y:FLOOR_Y-40, scale:2, ms:40 });
+      tn(90, 1.1, 'sawtooth', .08); tn(180, .9, 'square', .05, .25); tn(360, .7, 'square', .04, .5);
+      // a crimson moon rises behind the enemy
+      const moon = document.createElementNS(SVGNS, 'circle'); moon.setAttribute('r', 70); moon.setAttribute('fill', '#ff2a3a'); moon.setAttribute('opacity', '.0');
+      moon.style.filter = 'drop-shadow(0 0 18px #ff2a3a) drop-shadow(0 0 40px #b0001a)';
+      const act = $('#actors'); if(act && act.parentNode) act.parentNode.insertBefore(moon, act);
+      anim(moon, [{transform:tr(EN_X+40, FLOOR_Y+40)+' scale(.4)',opacity:0},{transform:tr(EN_X+40, FLOOR_Y-220)+' scale(1)',opacity:.85}], { duration:900, easing:'ease-out', fill:'forwards' });
+      await sleep(800);
+      // nine-hit flurry + red-moon kick (her ultimate choreography, bigger)
+      ui.crHit = { mv:'ult', heat:9 };
+      try{ await heroAttack(5, false); } finally { ui.crHit = null; }
+      fxAt('ground', { x:EN_X-10, y:FLOOR_Y+14, anchor:'b', scale:1.6, ms:44 });
+      fxAt('burst', { x:EN_X-10, y:enY(e)-10, scale:2.6, ms:28 });
+      shake(true);
+      const queue = (b.stage && b.stage.enemies ? b.stage.enemies.slice(b.idx+1) : []).filter(q => q.hp > 0);
+      const sd = Math.max(1, Math.round(dmg * CR.finalSplash));
+      queue.forEach(q => { q.hp -= sd; if(q.hp < 1 && (q.boss || q.mini)) q.hp = 1; if(q.hp < 0) q.hp = 0; });
+      if(queue.length){ fxAt('ground', { x:Q_X, y:FLOOR_Y+14, anchor:'b', scale:1.2, ms:44 }); floatText(`🌕 คลื่นโลหิต ${fmt(sd)} ×${queue.length}`, Q_X-20, FLOOR_Y-205, '#ff9aa6', 24, true); }
+      anim(moon, [{opacity:.85},{opacity:0}], { duration:500, fill:'forwards' }).then(() => moon.remove());
+      sky(false);
+      b.crHeat = 0; b.crBank = 0; dissipate();
+      e.hp -= dmg; b.score += dmg;
+      floatText(`${fmt(dmg)}`, EN_X, FLOOR_Y - e.h*e.sc - 90, '#ff6a7a', 46, true);
+      try{ sfx.hit(true); }catch(err){} enemyHurt(dmg, true);
+      try{ if(typeof bossPhase2Check==='function') bossPhase2Check(e); }catch(err){}
+      if(e.hp <= 0){ await enemyDies(); return; }
+      updateEnemyHp(); updateHud(); renderEnemyPanel(); persist();
+      await sleep(450);
       await enemyTurn();
     })(window.tacUltUtil);
   }
