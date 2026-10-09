@@ -29,7 +29,7 @@
   HERO_SPRITE.cream = { dir:'heroes/cream/', ch:230, scale:S, face:'-14 -122 34 34',
     anims:{
       idle:   { n:10, cw:200, ax:90,  dur:1.5, loop:true },
-      walk:   { n:8,  cw:200, ax:90,  dur:.8,  loop:true, th:'เดิน' },
+      walk:   { n:8,  cw:200, ax:90,  dur:.72, loop:true, th:'เดิน' },   // v80: real alternating cycle (tools/cream-walkgen.py)
       hurt:   { n:3,  cw:240, ax:100, dur:.45 },
       dead:   { n:7,  cw:400, ax:110, dur:1.4 },
       guard:  { n:2,  cw:240, ax:90,  dur:.25, th:'🔥 ชาร์จ (การ์ด)' },
