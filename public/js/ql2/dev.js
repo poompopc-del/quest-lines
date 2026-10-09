@@ -210,12 +210,14 @@
     setTimeout(() => { const i = $('#devCode'); if(i){ i.focus(); i.addEventListener('keydown', e => { if(e.key==='Enter') ACTS2.devCode(); }); } }, 50);
   }
 
+  const redeemBox = () => `<div class="dev-sec"><b>🎁 รหัสของรางวัล</b><div class="dev-2"><input class="dev-in" id="devRedeem" type="text" autocomplete="off" placeholder="ใส่รหัส" aria-label="รหัสของรางวัล"><button class="cbtn gold" data-act="devRedeem">รับ</button></div></div>`;
   function panel(){
     if(!ON){
       modal(`<div class="dev"><div class="dev-hd"><span>🛠 DEV MODE<small>โหมดทดสอบ · ปลดล็อกทุกอย่าง</small></span><button class="q2-x" data-act="closeModal" aria-label="ปิด">${IC2.close}</button></div>
         <p class="dev-note">เข้าโหมดนี้แล้วจะได้ฮีโร่ อาวุธ เกราะ เครื่องประดับ ทุกบท ทุกโหมด และทรัพยากรเต็ม รวมถึงของที่ซ่อนไว้ (devOnly) ที่ผู้เล่นทั่วไปยังไม่เห็น</p>
         <p class="dev-note">🔒 <b>เซฟจริงจะถูกเก็บไว้</b> และเล่นบนสำเนาแยก — กดออกเมื่อไหร่ เซฟจริงกลับมาเหมือนเดิมทุกอย่าง</p>
         <button class="cbtn gold block" data-act="devEnter">▶ เข้าโหมดทดสอบ</button>
+        ${redeemBox()}
         <button class="cbtn wood block" data-act="devLock">ล็อกเครื่องนี้ (ต้องใส่รหัสใหม่)</button></div>`, { dismiss:true });
       return;
     }
@@ -239,6 +241,7 @@
         <button class="cbtn gold block" data-act="devMax">🔓 ปลดล็อกทุกอย่าง + เติมทอง/ยา/วัตถุดิบเต็ม</button>
         <p class="dev-note">ของใหม่ที่เพิ่มเข้าเกมจะได้อัตโนมัติทุกครั้งที่เปิดเกมในโหมดนี้${hid ? ` · ของที่ซ่อนจากผู้เล่น (devOnly) ตอนนี้มี ${hid} ชิ้น` : ''}</p>
       </div>
+      ${redeemBox()}
       <button class="cbtn wood block" data-act="devExit">⏏ ออกจากโหมดทดสอบ (คืนเซฟจริง)</button></div>`, { dismiss:true });
   }
 
@@ -255,10 +258,12 @@
     devPanel: () => { authed() ? panel() : askCode(); },
     devCode: () => {
       const i = $('#devCode'); const v = i ? i.value : '';
+      if(window.QL_REDEEM && QL_REDEEM(v)){ if(i) i.value = ''; return; }      // v78: reward codes share this box
       if(hash(norm(v))===DEV_PASS_HASH){ ls.set(K_AUTH, DEV_PASS_HASH); sfx.tap && sfx.tap(3); panel(); }
       else { toast('รหัสไม่ถูกต้อง'); sfx.bad && sfx.bad(); if(i){ i.value = ''; i.focus(); } }
     },
     devLock: () => { ls.del(K_AUTH); closeModal(); toast('ล็อกแล้ว'); },
+    devRedeem: () => { const i = $('#devRedeem'); const v = i ? i.value : ''; if(!(window.QL_REDEEM && QL_REDEEM(v))){ toast('รหัสไม่ถูกต้อง'); sfx.bad && sfx.bad(); } if(i) i.value = ''; },
     devEnter: () => enterDev(),
     devExit: () => {
       modal(`<div class="dev"><div class="dev-hd"><span>ออกจากโหมดทดสอบ?</span></div><p class="dev-note">ความคืบหน้าในโหมดทดสอบจะหายไป และเซฟจริงจะกลับมาเหมือนตอนก่อนเข้า</p>
