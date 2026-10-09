@@ -74,7 +74,7 @@ pip · mira · rook · bastion · luma · bruna · kiko · boomtos · puff
 - เอฟเฟกต์: `fx_orb` 11 (ลูกโลกชาร์จ) · `fx_muzzle` 4 · `fx_impact` 10 · `fx_dissolve` 9 · ลำแสงยาว/ลูกโป่งคำพูดวาดด้วย SVG ใน `yota.js` · `portrait.png` = หน้าในไอคอน HP
 
 ## Cream — โฟลเดอร์ `heroes/cream/`
-- ตัวละคร (v75): "Meshy AI · Character Skirt Pixel Sprite Sheet" (พื้นขาว → โปร่งใส) · เอฟเฟกต์โจมตี: "Meshy AI · Attack Effects Pixel Sprite Sheet" (พื้นขาว) · ออร่า: "Meshy AI · fx sprite sheet (red)" ชุดเดิม (พื้นดำ)
-- ทุกเฟรมวางบนพื้นเดียวกัน · ท่ายืน/โจมตียึดตำแหน่งเท้า · ท่าเดินยึดสะโพก (ไม่ส่าย) · ช่องสูง `ch:200` ย่อ `scale:.72` ให้เท่าฮีโร่ตัวอื่น · 256 สี
-- ท่า: idle 6 · walk 8 · guard 2 · jab 2 · cross 3 · kick 3 · recover 2 · hurt 3 · dead 6
+- ตัวละคร (v77): "Meshy AI · Airforce Officer Sprite (with kick)" (พื้นเทา + เงาเทา → โปร่งใส) · เอฟเฟกต์โจมตี: "Meshy AI · Attack Effects Pixel Sprite Sheet" (พื้นขาว) · ออร่า: "Meshy AI · fx sprite sheet (red)" ชุดเดิม (พื้นดำ)
+- ทุกเฟรมวางบนพื้นเดียวกัน · ท่าโจมตียึดตำแหน่งเท้า · ท่าเดินยึดสะโพก (ไม่ส่าย) · ช่องสูง `ch:230` ย่อ `scale:.62` ให้เท่าฮีโร่ตัวอื่น · 256 สี
+- ท่า: idle 10 (ท่าการ์ด + หายใจ) · walk 8 · guard 2 · jab 2 (ฝ่ามือ) · cross 2 · kick 3 · recover 2 · hurt 3 · dead 7
 - เอฟเฟกต์: `fx_fist` 6 (หมัดพุ่ง → ระเบิด) · `fx_kick` 6 (เสี้ยวเตะ) · `fx_ground` 8 (พื้นระเบิด) · `fx_aurac` 15 · `fx_auras` 14 · `fx_burst` 13 · `fx_dissipate` 12 · `portrait.png` = หน้าในไอคอน HP

@@ -2,8 +2,8 @@
    LETTERⁿ v73 — CREAM (ครีม) · สารวัตรหญิงหมัดเพลิงแดง
    --------------------------------------------------------------------------
    Sprites: "Meshy AI · character action spritesheet" + "fx sprite sheet (red)"
-   (supplied by the developer) — cut into heroes/cream/*.png. v75: remodelled from the
-   "Character Skirt" + "Attack Effects" pixel sheets. Every pose is
+   (supplied by the developer) — cut into heroes/cream/*.png. v75: attack effects from the
+   "Attack Effects" pixel sheet · v77: character remodelled from "Airforce Officer Sprite (with kick)". Every pose is
    anchored on one floor / one foot position; idle = fighting stance breathing.
 
    SPLIT ATTACK BUTTON (like X): top half 🔥 ชาร์จ · bottom half โจมตี/ปล่อย
@@ -23,24 +23,24 @@
 (function(){
   const CR = BALANCE.CREAM, K = 'cream', SVGNS = 'http://www.w3.org/2000/svg';
   const pc = x => `+${BALANCE.pct(x)}%`;
-  const S = .72;   // v75 sheet is drawn ~170 px tall → same height as Mia / ELON
-  // v75: "Meshy AI · Character Skirt Pixel Sprite Sheet" — clean pixel art; every frame on one floor,
-  // idle/attacks anchored on the feet, walk anchored on the hips (no wobble)
-  HERO_SPRITE.cream = { dir:'heroes/cream/', ch:200, scale:S, face:'-14 -118 36 36',
+  const S = .62;   // v77 sheet is drawn ~204 px tall → same height as Mia / ELON
+  // v77: "Meshy AI · Airforce Officer Sprite (with kick)" — clean pixel art; every frame on one floor,
+  // attacks anchored on the feet, walk on the hips; idle = guard stance breathing (no idle row in the sheet)
+  HERO_SPRITE.cream = { dir:'heroes/cream/', ch:230, scale:S, face:'-14 -122 34 34',
     anims:{
-      idle:   { n:6,  cw:180, ax:80,  dur:1.2, loop:true },
-      walk:   { n:8,  cw:180, ax:80,  dur:.8,  loop:true, th:'เดิน' },
-      hurt:   { n:3,  cw:220, ax:100, dur:.45 },
-      dead:   { n:6,  cw:360, ax:110, dur:1.3 },
-      guard:  { n:2,  cw:220, ax:90,  dur:.25, th:'🔥 ชาร์จ (การ์ด)' },
-      jab:    { n:2,  cw:240, ax:90,  dur:.16, th:'แย็บ' },
-      cross:  { n:3,  cw:240, ax:90,  dur:.27, th:'หมัดตรง' },
-      kick:   { n:3,  cw:280, ax:90,  dur:.3,  th:'เตะสูง' },
-      recover:{ n:2,  cw:220, ax:90,  dur:.3,  th:'ตั้งการ์ด' } },
+      idle:   { n:10, cw:200, ax:90,  dur:1.5, loop:true },
+      walk:   { n:8,  cw:200, ax:90,  dur:.8,  loop:true, th:'เดิน' },
+      hurt:   { n:3,  cw:240, ax:100, dur:.45 },
+      dead:   { n:7,  cw:400, ax:110, dur:1.4 },
+      guard:  { n:2,  cw:240, ax:90,  dur:.25, th:'🔥 ชาร์จ (การ์ด)' },
+      jab:    { n:2,  cw:260, ax:90,  dur:.16, th:'ฝ่ามือกระแทก' },
+      cross:  { n:2,  cw:260, ax:90,  dur:.18, th:'หมัดตรง' },
+      kick:   { n:3,  cw:300, ax:90,  dur:.3,  th:'เตะสูง' },
+      recover:{ n:2,  cw:240, ax:90,  dur:.28, th:'ตั้งการ์ด' } },
     attacks:['jab','cross','kick'], extra:['guard','recover','walk'], demoOnly:true, finMin:99,
     finNote:`ปุ่มโจมตีแบ่งครึ่ง: <b>🔥 ชาร์จ</b> เก็บดาเมจ + HEAT · <b>ปล่อย</b> = (ดาเมจที่เก็บ + คำนี้) × สูงสุด ×${CR.relMax} · HEAT 3+ CRIMSON RUSH · HEAT 5 RED MOON BREAKER · ไม่ชาร์จ: 3–4 ตัว แย็บ · 5–6 ตัว วันทู ${pc(CR.cross)} · 7+ / Critical เตะสูง ${pc(CR.kick)}` };
-  const FIST = { x: Math.round((183-90)*S), y: Math.round((197-81)*S) };
-  const FOOT = { x: Math.round((226-90)*S), y: Math.round((197-64)*S) };
+  const FIST = { x: Math.round((180-90)*S), y: Math.round((227-86)*S) };
+  const FOOT = { x: Math.round((231-90)*S), y: Math.round((227-77)*S) };
   // effects: the attack-effects sheet (fist burst · kick crescent · ground blast) + the red aura sheet (charge · sustain · burst · dissipate)
   const FXS = { fist:{ w:250, h:250, n:6 }, kick:{ w:250, h:227, n:6 }, ground:{ w:210, h:240, n:8 },
                 aurac:{ w:110, h:130, n:15 }, auras:{ w:112, h:108, n:14 }, burst:{ w:150, h:130, n:13 }, dissipate:{ w:140, h:124, n:12 } };
@@ -77,7 +77,7 @@
     const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
     Object.keys(c.anims).forEach(n => { const i = new Image(); i.src = `${c.dir}${n}.png?v=${HERO_IMG_VER}`; });
   })();
-  try{ HERO_PORTRAIT.cream = { src:'heroes/cream/portrait.png', w:48, h:48, vb:'0 0 48 48' }; }catch(e){}
+  try{ HERO_PORTRAIT.cream = { src:'heroes/cream/portrait.png', w:54, h:54, vb:'0 0 54 54' }; }catch(e){}
 
   CHARACTERS.push({ id:K, name:'Cream', th:'ครีม สารวัตรหญิงหมัดเพลิงแดง', price:7000, role:'ชาร์จ · ศิลปะการต่อสู้', skill:'หมัดเพลิงแดง',
     desc:`ปุ่มโจมตีแบ่งครึ่ง 🔥ชาร์จ / ปล่อย · ชาร์จ = เก็บดาเมจของคำ + HEAT 1 ขั้น (ศัตรูยังตีกลับ) ระหว่างมีออร่ารับดาเมจ -${BALANCE.pct(1-CR.guard)}% · ปล่อย = (ดาเมจที่เก็บ + คำนี้) × (1 + ${BALANCE.pct(CR.relStep)}% ต่อ HEAT สูงสุด ×${CR.relMax}) · HEAT 3+ CRIMSON RUSH ฟันรัวตาม HEAT ปิดด้วยเตะสูง · HEAT 5 RED MOON BREAKER ฟ้าแดง ฟันยักษ์ ทำลายท่าที่ศัตรูเตรียมไว้ · ไม่ชาร์จ: 3–4 ตัว แย็บ · 5–6 ตัว วันทู ${pc(CR.cross)} · 7 ตัวขึ้นไปหรือ Critical เตะสูง ${pc(CR.kick)}`,
