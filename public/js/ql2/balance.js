@@ -112,6 +112,10 @@ const BALANCE = {
   // v73 CREAM — core: split button charge (store + HEAT) → release ×(1+25%/HEAT, max ×2.25) · passive: aura guard −20% while HEAT > 0
   // v81: buffed hard on request — every hit ×2 (power), release +50%/HEAT up to ×4, the tactical Ultimate is now a damage finisher (BLOOD MOON ×5 Ultimate)
   CREAM:  { power: 1.0, relStep: .50, relMax: 4.0, guard: .80, crossLen: 5, cross: .50, kickLen: 7, kick: 1.0, rushHeat: 3, moonHeat: 5, finalMul: 7, finalSplash: .50 },
+  // v83 KEA (dev mode) — core: แม่นับ 1-2-3 (every word counts up; ๓ = MOTHER'S KICK, breaks the enemy's move, heals) ·
+  // passive: แม่โกรธ — every hit she takes counts +1 and stacks anger (+dmg) · the glare cuts damage taken per count
+  KEA:    { power: 1.0, two: .60, three: 2.0, skipLen: 7, angry: .30, angerMax: 3, glare: .12, heal: .06,
+            finalMul: 8, finalSplash: .60, finalHeal: .15 },
 
   /* ----------------------------- v64 TACTICS ---------------------- */
   // Enemy intent · word roles · guard · chain · perfect · objectives · events · tactical Ultimates (js/ql2/tactics.js, events.js)
