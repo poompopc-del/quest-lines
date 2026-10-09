@@ -26,7 +26,7 @@
       if(!save || save.heroCouponSeen || !save.name || !ui || ['battle','title'].includes(ui.screen) || $('#overlay .modal')) return;
       save.heroCouponSeen = 1; persist();
       modal(`<div class="ul-cel"><div class="ul-k">🎟️ ของขวัญ</div><div class="ul-face"><span style="font-size:64px">🎟️🎟️</span></div>
-        <div class="ul-n">คูปองแลกฮีโร่ฟรี ${COUPONS} ใบ!</div><p class="ul-q">ฮีโร่ทุกตัวเปิดให้เลือกแล้ว ไม่ต้องทำเงื่อนไข — ใช้คูปองแลกฮีโร่ที่ชอบได้ฟรี ${COUPONS} ตัว</p>
+        <div class="ul-n">คูปองแลกฮีโร่ฟรี ${COUPONS} ใบ!</div><p class="ul-q">${save.couponRefund79 ? 'ขอโทษด้วย! ฮีโร่ที่แลกไว้หายเพราะบั๊ก — คืนคูปองให้ครบแล้ว ตอนนี้แลกแล้วอยู่ถาวร' : `ฮีโร่ทุกตัวเปิดให้เลือกแล้ว ไม่ต้องทำเงื่อนไข — ใช้คูปองแลกฮีโร่ที่ชอบได้ฟรี ${COUPONS} ตัว`}</p>
         <div class="btns"><button class="cbtn gold block" data-act="go" data-v="heroes">ไปเลือกฮีโร่</button><button class="cbtn wood block" data-act="closeModal">ไว้ทีหลัง</button></div></div>`, { dismiss:true });
     }catch(e){}
   }
@@ -66,6 +66,7 @@
     const c = CH(v); if(!c || save.chars.includes(v) || left() <= 0){ closeModal(); return; }
     save.heroCoupons = left() - 1;
     save.chars.push(v); save.eq.char = v;
+    (save.couponHeroes = save.couponHeroes || []).push(v);
     persist(); closeModal();
     try{ sfx.win(); }catch(e){}
     try{ ui.hsPick = v; ui.pickChar = v; }catch(e){}
@@ -79,6 +80,26 @@
     .hc-btn{margin-top:6px}
     .hc-btn small{opacity:.8;font-weight:600}`;
   document.head.appendChild(st);
+  // v79 repair — until v78 every reload wiped heroes registered by js/ql2/*.js (Luffy · Sonic · YOTA · Cream),
+  // so coupon heroes vanished. Give the used coupons back once so nobody loses a free pick.
+  (function repair(){
+    try{
+      if(!save || save.couponFix79) return;
+      save.couponFix79 = 1;
+      if(save[FLAG] && left() < COUPONS){ save.heroCoupons = COUPONS; save.heroCouponSeen = 0; save.couponRefund79 = 1; }
+      persist();
+    }catch(e){}
+  })();
+  // the equipped hero must exist and be owned (now that every hero file has loaded)
+  (function keepHero(){
+    try{
+      const ids = new Set(CHARACTERS.map(c => c.id));
+      save.chars = (save.chars||['knight']).filter(id => ids.has(id));
+      if(!save.chars.includes('knight')) save.chars.unshift('knight');
+      if(!ids.has(save.eq.char) || !save.chars.includes(save.eq.char)) save.eq.char = 'knight';
+      persist();
+    }catch(e){}
+  })();
   // first load (title / hub)
   setTimeout(grant, 800);
   window.QL_COUPON = { grant, left };
