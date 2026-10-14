@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/platform.css?v=1">
+<link rel="stylesheet" href="css/platform.css?v=2">
 </head>
 <body>
 <div id="stage">
@@ -21,7 +21,7 @@
         <div class="h-bars"><div class="hearts" id="hHearts"></div><div class="en"><b id="hEn"></b><s id="hEnMark"></s></div></div>
       </div>
       <div class="h-mid"><div class="h-lv" id="hLv"></div><div class="h-time" id="hTime">0:00.0</div></div>
-      <div class="h-right"><span>🪙 <b id="hCoins">0</b></span><span class="gems" id="hGems"></span><button class="pbtn" id="hPause" aria-label="หยุดเกม">⏸</button></div>
+      <div class="h-right"><span>🪙 <b id="hCoins">0</b></span><span class="gems" id="hGems"></span><button class="pbtn" id="hFull" aria-label="เต็มจอ">⛶</button><button class="pbtn" id="hPause" aria-label="หยุดเกม">⏸</button></div>
     </div>
     <div class="bossbar" id="hBoss"><div class="nm" id="hBossNm"></div><div class="bar"><b id="hBossBar"></b></div></div>
     <div class="abil" id="hAbil"></div>
@@ -40,6 +40,7 @@
   </div>
 </div>
 <div class="rotate" id="rotHint">📱↻ หมุนจอเป็นแนวนอนจะเล่นง่ายขึ้น</div>
+<div class="notify" id="notify"></div>
 
 <!-- screens -->
 <section class="screen" id="sTitle">
@@ -48,7 +49,8 @@
     <div class="menu">
       <button class="btn red" data-go="map">▶ เล่น · เลือกด่าน</button>
       <button class="btn" data-go="heroes">🦸 เลือกฮีโร่ <span class="chip gold" id="tHero"></span></button>
-      <button class="btn" data-go="settings">⚙️ ตั้งค่า &amp; ปุ่มควบคุม</button>
+      <button class="btn" data-go="settings">⚙️ ตั้งค่า · ปุ่มควบคุม · จอย</button>
+      <button class="btn" id="tFull">⛶ เต็มจอ</button>
       <button class="btn" data-go="main">↩ กลับเกมหลัก</button>
     </div>
     <p class="note" id="tNote" style="margin-top:14px"></p>
@@ -108,12 +110,17 @@
     <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">ตั้งค่า</h2><button class="btn" data-go="back">✕ ปิด</button></div>
     <div class="set-row"><span>🔊 เสียงเอฟเฟกต์</span><input type="range" id="setSfx" min="0" max="100" step="5"></div>
     <div class="set-row"><span>📳 จอสั่น</span><div class="seg" id="setShake"><button data-v="1">เปิด</button><button data-v="0">ปิด</button></div></div>
-    <div class="set-row"><span>👆 ปุ่มบนจอ</span><div class="seg" id="setTouch"><button data-v="auto">อัตโนมัติ</button><button data-v="on">แสดง</button><button data-v="off">ซ่อน</button></div></div>
+    <div class="set-row"><span>👆 ปุ่มบนจอ<br><small class="note">อัตโนมัติ = ซ่อนเมื่อใช้จอย/คีย์บอร์ด</small></span><div class="seg" id="setTouch"><button data-v="auto">อัตโนมัติ</button><button data-v="on">แสดง</button><button data-v="off">ซ่อน</button></div></div>
+    <div class="set-row"><span>🔘 ขนาดปุ่มบนจอ</span><div class="seg" id="setSize"><button data-v="S">เล็ก</button><button data-v="M">กลาง</button><button data-v="L">ใหญ่</button></div></div>
+    <div class="set-row"><span>📳 สั่นเมื่อโดนตี (มือถือ/จอย)</span><div class="seg" id="setVib"><button data-v="1">เปิด</button><button data-v="0">ปิด</button></div></div>
+    <h3>จอยเกม</h3>
+    <p class="keys" id="padStatus"></p>
+    <div class="padmap"><span><b>A</b>/✕ กระโดด</span><span><b>X</b>/□ โจมตี</span><span><b>Y</b>/△ สกิล</span><span><b>B</b>/○ พุ่ง</span><span><b>LB·LT</b> สกิล</span><span><b>RB·RT</b> พุ่ง</span><span><b>✚</b>/สติ๊ก เดิน</span><span><b>Start</b> หยุด</span><span class="wide">ในเมนู: ✚ เลื่อน · A เลือก · B ย้อนกลับ</span></div>
     <h3>ปุ่มควบคุม</h3>
     <div class="keys">
       <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> เดิน (กดค้าง = วิ่ง) · <kbd>Space</kbd>/<kbd>K</kbd>/<kbd>W</kbd> กระโดด (กดค้าง = สูง)<br>
       <kbd>J</kbd>/<kbd>X</kbd> โจมตี · <kbd>I</kbd>/<kbd>C</kbd> สกิล · <kbd>L</kbd>/<kbd>Shift</kbd> พุ่ง · <kbd>↓</kbd>+กระโดด ลงจากแผ่นไม้<br>
-      <kbd>Esc</kbd>/<kbd>P</kbd> หยุดเกม · จอยเกม: A กระโดด · X โจมตี · Y สกิล · B พุ่ง · Start หยุด
+      <kbd>Esc</kbd>/<kbd>P</kbd> หยุดเกม · เมนู: ลูกศรเลื่อน · <kbd>Enter</kbd> เลือก
     </div>
   </div>
 </section>
@@ -122,14 +129,14 @@
   <div style="text-align:center"><div class="kick" id="lTitle">กำลังโหลด…</div><div class="sub" id="lSub"></div><div class="loadbar"><b id="lBar"></b></div></div>
 </section>
 
-<script src="js/plat/core.js?v=1"></script>
-<script src="js/plat/world.js?v=1"></script>
-<script src="js/plat/anim.js?v=1"></script>
-<script src="js/plat/heroes.js?v=1"></script>
-<script src="js/plat/player.js?v=1"></script>
-<script src="js/plat/enemies.js?v=1"></script>
-<script src="js/plat/levels.js?v=1"></script>
-<script src="js/plat/game.js?v=1"></script>
-<script src="js/plat/ui.js?v=1"></script>
+<script src="js/plat/core.js?v=2"></script>
+<script src="js/plat/world.js?v=2"></script>
+<script src="js/plat/anim.js?v=2"></script>
+<script src="js/plat/heroes.js?v=2"></script>
+<script src="js/plat/player.js?v=2"></script>
+<script src="js/plat/enemies.js?v=2"></script>
+<script src="js/plat/levels.js?v=2"></script>
+<script src="js/plat/game.js?v=2"></script>
+<script src="js/plat/ui.js?v=2"></script>
 </body>
 </html>

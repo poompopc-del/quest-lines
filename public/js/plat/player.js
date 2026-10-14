@@ -469,7 +469,7 @@ class Player {
     this.floating = false; this.ball = false; this.mouth = null;
     const kb = this.hero.armor ? 1.5 : 2.8;
     this.vx = dir * kb; this.vy = -4.4; this.jumping = false;
-    sfx().hurt(); this.g.shake(3); this.g.hitstop(4); this.g.burst(this.cx, this.y + 16, '#ff5a6a', 10, 2.4);
+    sfx().hurt(); PLAT.haptic('hurt'); this.g.shake(3); this.g.hitstop(4); this.g.burst(this.cx, this.y + 16, '#ff5a6a', 10, 2.4);
     if (dmg > 0) this.g.text(this.cx, this.y - 6, '-' + dmg, '#ff6a7a', 40);
     this.g.stats.hits++;
     if (this.hp <= 0) this.die();

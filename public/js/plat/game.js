@@ -151,7 +151,7 @@ class Game {
     // breakable blocks
     if (!o.noBreak) for (const t of W.tilesIn(this.L, box, TL.BREAK)) this.breakTile(t.tx, t.ty);
     if (n) {
-      sfx().hit(); this.hitstop(o.pogo ? 2 : 3);
+      sfx().hit(); this.hitstop(o.pogo ? 2 : 3); PLAT.haptic(o.from === this.player ? 'hit' : '');
       if (o.shake) this.shake(o.shake);
       if (o.from === this.player) this.player.onHitLanded(n);
     }
@@ -169,7 +169,7 @@ class Game {
     for (let i = 0; i < n; i++) this.loose.push({ x: e.cx, y: e.y + e.h / 2, vx: U.rnd(-2, 2) * (d.boss ? 1.6 : 1), vy: U.rnd(-6, -2.5), kind: 'coin', t: 0 });
     if (!d.boss && Math.random() < .09) this.loose.push({ x: e.cx, y: e.y, vx: 0, vy: -5, kind: 'heart', t: 0 });
     if (d.boss) {
-      this.bossActive = false; this.emit('boss', null);
+      PLAT.haptic('boss'); this.bossActive = false; this.emit('boss', null);
       setTimeout(() => { if (this.L.exit) { this.L.exit.open = true; this.text(this.L.exit.x + T / 2, this.L.exit.y - 10, 'ประตูเปิดแล้ว!', '#8aff8a', 120, true); sfx().checkpoint(); } }, 1600);
     }
   }
@@ -266,7 +266,7 @@ class Game {
     const near = (x, y, r) => x > pb.x - r && x < pb.x + pb.w + r && y > pb.y - r && y < pb.y + pb.h + r;
     for (const c of L.coins) if (!c.got && near(c.x, c.y, 8)) { c.got = true; this.stats.coins++; sfx().coin(); this.burst(c.x, c.y, '#ffd84a', 5, 1.4); }
     for (const g of L.gems) if (!g.got && near(g.x, g.y, 10)) {
-      g.got = true; this.stats.gems.add(g.i); sfx().gem(); this.flashT = 6;
+      g.got = true; this.stats.gems.add(g.i); sfx().gem(); PLAT.haptic('gem'); this.flashT = 6;
       for (let i = 0; i < 18; i++) this.burst(g.x, g.y, i % 2 ? '#7af0ff' : '#ffffff', 1, 3);
       this.text(g.x, g.y - 14, `💎 ${this.stats.gems.size}/${L.gems.length}`, '#9af0ff', 80, true); this.emit('gem', { n: this.stats.gems.size, of: L.gems.length });
     }
@@ -335,7 +335,7 @@ class Game {
   }
 
   /* --------------------------------- effects --------------------------------- */
-  shake(n) { if (PLAT.save.data.settings.shake === false) return; this.shakeMag = Math.max(this.shakeMag, n); this.shakeT = 12; }
+  shake(n) { if (n >= 5) PLAT.haptic('big'); if (PLAT.save.data.settings.shake === false) return; this.shakeMag = Math.max(this.shakeMag, n); this.shakeT = 12; }
   hitstop(n) { this.freeze = Math.max(this.freeze, n); }
   burst(x, y, col, n, sp) { for (let i = 0; i < (n || 6); i++) { const a = Math.random() * 6.283, s = (.3 + Math.random()) * (sp || 2); this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - .6, life: 18 + Math.random() * 16, col, size: 2, grav: .1 }); } if (this.parts.length > 600) this.parts.splice(0, this.parts.length - 600); }
   dust(x, y, n, col) { for (let i = 0; i < (n || 3); i++) this.parts.push({ x: x + U.rnd(-8, 8), y: y - 2, vx: U.rnd(-1.2, 1.2), vy: U.rnd(-1.2, -.2), life: 20 + U.rnd(0, 12), col: col || 'rgba(230,220,200,.8)', size: 3, grav: -.01, fade: true }); }

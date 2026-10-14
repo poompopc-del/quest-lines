@@ -2,7 +2,7 @@
 :root{--k-red:#ff3b4e;--k-red2:#b0122e;--k-gold:#ffc83d;--k-cyan:#3ee0ff;--k-glass:rgba(12,10,24,.82);--ink:#eae6ff;--dim:#a49cc8;
   --font:'Kanit','Noto Sans Thai','Leelawadee UI',system-ui,sans-serif;--slant:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#08070f;color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+html,body{margin:0;height:100%;overscroll-behavior:none;background:#08070f;color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
 button{font-family:var(--font)}
 #stage{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#000;box-shadow:0 0 0 1px #1d1830,0 20px 60px rgba(0,0,0,.6);overflow:hidden}
 #cv{display:block;width:100%;height:100%;image-rendering:pixelated}
@@ -49,14 +49,15 @@ button{font-family:var(--font)}
 /* ---------------- touch controls ---------------- */
 #touch{position:fixed;inset:0;pointer-events:none;display:none;z-index:5}
 #touch.on{display:block}
-#dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));width:min(34vh,170px);height:min(34vh,170px);border-radius:50%;pointer-events:auto;touch-action:none;
+#touch{--tsz:1}
+#dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));width:calc(min(36vh,176px) * var(--tsz));height:calc(min(36vh,176px) * var(--tsz));border-radius:50%;pointer-events:auto;touch-action:none;
   background:radial-gradient(circle,rgba(255,255,255,.07) 0 30%,rgba(255,255,255,.04) 31% 100%);border:2px solid rgba(255,255,255,.14)}
 #dpad::before,#dpad::after{content:'';position:absolute;background:rgba(255,255,255,.1);border-radius:6px}
 #dpad::before{left:36%;right:36%;top:8%;bottom:8%}#dpad::after{top:36%;bottom:36%;left:8%;right:8%}
 #dpad .k{position:absolute;color:#fff9;font-size:min(4.4vh,22px);font-weight:800;z-index:1;pointer-events:none}
 #dpad .l{left:12%;top:50%;transform:translateY(-50%)}#dpad .r{right:12%;top:50%;transform:translateY(-50%)}#dpad .u{top:8%;left:50%;transform:translateX(-50%)}#dpad .d{bottom:8%;left:50%;transform:translateX(-50%)}
 #dpad[data-dir*="l"] .l,#dpad[data-dir*="r"] .r,#dpad[data-dir*="u"] .u,#dpad[data-dir*="d"] .d{color:var(--k-gold)}
-#btns{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));width:min(42vh,210px);height:min(38vh,190px);pointer-events:auto}
+#btns{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));width:calc(min(44vh,214px) * var(--tsz));height:calc(min(40vh,194px) * var(--tsz));pointer-events:auto}
 #btns button{position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.22);background:rgba(20,14,36,.55);color:#fff;font-weight:700;font-size:min(2.3vh,12px);line-height:1.1;touch-action:none;display:grid;place-items:center;padding:0}
 #btns button.on{background:rgba(255,200,61,.45);border-color:var(--k-gold)}
 #btns .bj{width:46%;height:52%;right:0;bottom:0;background:rgba(255,59,78,.35)}
@@ -146,3 +147,36 @@ h3::before{content:'';width:6px;height:16px;background:var(--k-red);transform:sk
 .keys kbd{font-family:var(--font);background:#1c2436;border:1px solid #33405c;border-radius:4px;padding:0 6px;color:#fff}
 .loadbar{width:min(320px,80vw);height:8px;background:#ffffff12;margin:14px auto 0;transform:skewX(-20deg)}
 .loadbar b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--k-gold),var(--k-red));transition:width .15s}
+
+/* touch buttons reflect the game: skill dims without energy, dash shows its cooldown */
+#btns button{overflow:hidden}
+#btns .bs.low{opacity:.45}
+#btns .bd::after{content:'';position:absolute;left:0;right:0;bottom:0;height:var(--cd,0%);background:rgba(0,0,0,.55);pointer-events:none}
+#btns button span,#btns button i{font-style:normal;pointer-events:none;position:relative;z-index:1}
+#btns button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* phones: HUD a bit larger, the pause/fullscreen buttons easy to hit */
+html.touchui .pbtn{width:44px;height:44px}
+.h-right .pbtn+.pbtn{margin-left:-4px}
+/* controller / keyboard focus ring in menus */
+html[data-dev=pad] .screen button:focus,html[data-dev=key] .screen button:focus,html[data-dev=pad] .screen input:focus{outline:3px solid var(--k-gold);outline-offset:2px;box-shadow:0 0 18px rgba(255,200,61,.45)}
+html[data-dev=pad] .hcard:focus,html[data-dev=pad] .lvl:focus{border-color:var(--k-gold)}
+.notify{position:fixed;left:50%;top:max(10px,env(safe-area-inset-top));transform:translate(-50%,-140%);z-index:20;background:var(--k-glass);border:1px solid #4a3a6a;border-left:4px solid var(--k-gold);padding:8px 14px;display:flex;flex-direction:column;gap:2px;font-size:14px;transition:transform .3s;pointer-events:none;max-width:90vw}
+.notify span{font-size:12px;color:var(--dim)}
+.notify.on{transform:translate(-50%,0)}
+.padmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px;font-size:13px;color:var(--dim)}
+.padmap span{background:#ffffff08;padding:4px 8px}
+.padmap b{color:var(--k-gold);margin-right:4px}
+.padmap .wide{grid-column:1/-1}
+small.note{font-size:11px}
+/* .btn uses clip-path (slanted), which clips outlines → focused buttons glow from the inside instead */
+html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:brightness(1.35);box-shadow:inset 0 0 0 3px var(--k-gold),inset 0 0 18px rgba(255,200,61,.5)}
+/* short landscape phones: compact menus so every button fits without scrolling */
+@media (max-height:440px){
+  .screen{padding-top:max(6px,env(safe-area-inset-top));padding-bottom:6px}
+  .panel{padding:10px 14px}
+  .kick{font-size:22px}
+  .menu{gap:6px;margin-top:10px}
+  .btn{min-height:36px;padding:6px 14px;font-size:14px}
+  .logo{font-size:38px}
+  .sub{margin-bottom:6px}
+}

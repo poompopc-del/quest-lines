@@ -80,9 +80,12 @@ const KEYMAP = {
 const ACTIONS = Object.keys(KEYMAP);
 const input = PLAT.input = {
   held: {}, pressed: {}, released: {}, src: {},      // src[action] = Set of sources holding it (keys / touch ids / pad)
-  attached: false, lastDevice: 'key',
+  attached: false, lastDevice: 'none',             // none · touch · key · pad (what the player used last)
+  pad: null,                                        // { id, name, index } of the connected controller, or null
+  onDevice: null, onPad: null,                      // UI callbacks: device switched / controller (dis)connected
   isHeld(a) { return !!this.held[a]; },
   wasPressed(a) { return !!this.pressed[a]; },
+  setDevice(d) { if (this.lastDevice === d) return; this.lastDevice = d; if (this.onDevice) this.onDevice(d); },
   set(a, srcId, on) {
     const s = this.src[a] || (this.src[a] = new Set());
     const was = s.size > 0;
@@ -93,49 +96,81 @@ const input = PLAT.input = {
     this.held[a] = now;
   },
   endFrame() { this.pressed = {}; this.released = {}; },
+  // release only the on-screen controls (touch pointers) — keyboard / pad presses stay intact
+  releaseTouch() { for (const a of ACTIONS) { const s = this.src[a]; if (!s) continue; for (const id of [...s]) if (/^[pd]:/.test(id)) this.set(a, id, false); } },
+  // note: _pad keeps the controller's physical state, so a button still held after clearAll() does not fire a fresh press
   clearAll() { for (const a of ACTIONS) { if (this.src[a]) this.src[a].clear(); this.held[a] = false; } this.pressed = {}; this.released = {}; },
-  _kd: null, _ku: null, _blur: null,
+  _kd: null, _ku: null, _blur: null, _gc: null, _gd: null,
   attach() {
     if (this.attached || !HAS_DOM) return; this.attached = true;
     this._kd = e => {
-      if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+      if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) && e.target.type !== 'range') return;
       let hit = false;
       for (const a of ACTIONS) if (KEYMAP[a].includes(e.code)) { this.set(a, 'k:' + e.code, true); hit = true; }
-      if (hit) { e.preventDefault(); this.lastDevice = 'key'; }
+      if (hit) { e.preventDefault(); this.setDevice('key'); }
     };
     this._ku = e => { for (const a of ACTIONS) if (KEYMAP[a].includes(e.code)) this.set(a, 'k:' + e.code, false); };
     this._blur = () => this.clearAll();
+    // a controller only shows up after its first button press on most browsers (security rule)
+    this._gc = e => { this.pad = { index: e.gamepad.index, name: e.gamepad.id, standard: e.gamepad.mapping === 'standard' }; this.setDevice('pad'); if (this.onPad) this.onPad(this.pad); };
+    this._gd = e => { if (this.pad && this.pad.index === e.gamepad.index) { this.pad = null; for (const a of ACTIONS) this.set(a, 'pad', false); this._pad = {}; if (this.lastDevice === 'pad') this.setDevice('touchless'); if (this.onPad) this.onPad(null); } };
     addEventListener('keydown', this._kd); addEventListener('keyup', this._ku);
     addEventListener('blur', this._blur); document.addEventListener('visibilitychange', this._blur);
+    addEventListener('gamepadconnected', this._gc); addEventListener('gamepaddisconnected', this._gd);
   },
   detach() {
     if (!this.attached) return; this.attached = false;
     removeEventListener('keydown', this._kd); removeEventListener('keyup', this._ku);
     removeEventListener('blur', this._blur); document.removeEventListener('visibilitychange', this._blur);
+    removeEventListener('gamepadconnected', this._gc); removeEventListener('gamepaddisconnected', this._gd);
     this.clearAll();
   },
-  // gamepad: polled once per frame (standard mapping: A jump · X attack · Y skill · B/RB dash · start pause)
+  /* gamepad — polled once per frame. Standard mapping (Xbox / PlayStation / Switch Pro / most
+     Bluetooth pads on Android & iOS):
+       A / ✕ jump · X / □ attack · Y / △ skill · B / ○ dash · LB/LT skill · RB/RT dash
+       d-pad or left stick move · Start / Options pause · Select / Share pause
+     In menus: d-pad / stick move the focus · A confirm · B back. */
   _pad: {},
+  getPad() {
+    if (!HAS_DOM || !navigator.getGamepads) return null;
+    let pads; try { pads = navigator.getGamepads(); } catch (e) { return null; }
+    if (!pads) return null;
+    if (this.pad && pads[this.pad.index]) return pads[this.pad.index];
+    const p = [...pads].find(x => x && x.connected !== false);
+    if (p && !this.pad) { this.pad = { index: p.index, name: p.id, standard: p.mapping === 'standard' }; if (this.onPad) this.onPad(this.pad); }
+    return p || null;
+  },
   pollPad() {
-    if (!HAS_DOM || !navigator.getGamepads) return;
-    let pads; try { pads = navigator.getGamepads(); } catch (e) { return; }
-    const p = pads && [...pads].find(Boolean); if (!p) return;
-    const b = i => !!(p.buttons[i] && p.buttons[i].pressed), ax = p.axes || [];
+    const p = this.getPad(); if (!p) return;
+    const b = i => !!(p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > .5)), ax = p.axes || [];
+    const sx = Math.abs(ax[0] || 0) > .4 ? ax[0] : 0, sy = Math.abs(ax[1] || 0) > .4 ? ax[1] : 0;
+    // some non-standard Android pads report the d-pad as a hat on axes 9 or 6/7
+    let hx = 0, hy = 0;
+    if (p.mapping !== 'standard') {
+      if (ax.length > 9 && ax[9] !== undefined && Math.abs(ax[9]) <= 1.01 && ax[9] > -1.01 && Math.abs(ax[9]) > .05) { const v = Math.round((ax[9] + 1) * 3.5); hy = [0, 1, 2].includes(v) ? -1 : [4, 5, 6].includes(v) ? 1 : 0; hx = [2, 3, 4].includes(v) ? 1 : [6, 7, 0].includes(v) ? -1 : 0; }
+      else if (ax.length >= 8) { hx = Math.abs(ax[6]) > .5 ? Math.sign(ax[6]) : 0; hy = Math.abs(ax[7]) > .5 ? Math.sign(ax[7]) : 0; }
+    }
     const want = {
-      left: b(14) || ax[0] < -.45, right: b(15) || ax[0] > .45, up: b(12) || ax[1] < -.6, down: b(13) || ax[1] > .6,
-      jump: b(0), attack: b(2), skill: b(3), dash: b(1) || b(5) || b(7), pause: b(9), ok: b(0) || b(9), back: b(1),
+      left: b(14) || sx < -.4 || hx < 0, right: b(15) || sx > .4 || hx > 0, up: b(12) || sy < -.6 || hy < 0, down: b(13) || sy > .6 || hy > 0,
+      jump: b(0), attack: b(2), skill: b(3) || b(4) || b(6), dash: b(1) || b(5) || b(7), pause: b(9) || b(8), ok: b(0) || b(9), back: b(1),
     };
-    for (const a in want) if (want[a] !== !!this._pad[a]) { this._pad[a] = want[a]; this.set(a, 'pad', want[a]); if (want[a]) this.lastDevice = 'pad'; }
+    let any = false;
+    for (const a in want) if (want[a] !== !!this._pad[a]) { this._pad[a] = want[a]; this.set(a, 'pad', want[a]); if (want[a]) any = true; }
+    if (any) this.setDevice('pad');
+  },
+  rumble(strong, weak, ms) {
+    const p = this.getPad(); const v = p && p.vibrationActuator;
+    if (v && v.playEffect) v.playEffect(v.type || 'dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak }).catch(() => {});
   },
   // on-screen buttons: any element with data-act="<action>" inside `root`
   bindTouch(root) {
     if (!HAS_DOM || !root || root._platBound) return; root._platBound = true;
     const down = (e) => {
       const el = e.target.closest('[data-act]'); if (!el) return;
-      e.preventDefault(); this.lastDevice = 'touch';
+      e.preventDefault(); this.setDevice('touch');
       try { el.setPointerCapture(e.pointerId); } catch (_) {}
       el.classList.add('on'); this.set(el.dataset.act, 'p:' + e.pointerId, true);
-      el._pid = e.pointerId;
+      if (PLAT.haptic) PLAT.haptic('tap');
     };
     const up = (e) => {
       const el = e.target.closest('[data-act]'); if (!el) return;
@@ -145,22 +180,36 @@ const input = PLAT.input = {
     root.addEventListener('pointerup', up); root.addEventListener('pointercancel', up); root.addEventListener('lostpointercapture', up);
     root.addEventListener('contextmenu', e => e.preventDefault());
   },
-  // a d-pad area that turns a finger position into left / right / up / down (slide between directions)
+  // a d-pad area that turns a finger position into left / right / up / down (slide between directions).
+  // The whole pad zone is generous: a finger that drifts outside still counts (pointer capture).
   bindPad(el) {
     if (!HAS_DOM || !el || el._platBound) return; el._platBound = true;
     const dirs = ['left', 'right', 'up', 'down'];
     const apply = (e, on) => {
       const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
       const id = 'd:' + e.pointerId;
-      const want = { left: on && x < -.12, right: on && x > .12, up: on && y < -.28, down: on && y > .28 };
+      // angle-based 8-way: diagonals only when clearly diagonal, so "right" never leaks a "down" (no accidental drop-through)
+      const ang = Math.atan2(y, x) * 180 / Math.PI, far = Math.hypot(x, y) > .1;
+      const want = { left: on && far && (ang > 112.5 || ang < -112.5), right: on && far && ang > -67.5 && ang < 67.5,
+                     up: on && far && ang < -22.5 && ang > -157.5, down: on && far && ang > 22.5 && ang < 157.5 };
       for (const d of dirs) this.set(d, id, want[d]);
       el.dataset.dir = on ? (want.left ? 'l' : want.right ? 'r' : '') + (want.up ? 'u' : want.down ? 'd' : '') : '';
     };
-    el.addEventListener('pointerdown', e => { e.preventDefault(); this.lastDevice = 'touch'; try { el.setPointerCapture(e.pointerId); } catch (_) {} apply(e, true); });
+    el.addEventListener('pointerdown', e => { e.preventDefault(); this.setDevice('touch'); try { el.setPointerCapture(e.pointerId); } catch (_) {} apply(e, true); });
     el.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') apply(e, true); });
     const off = e => apply(e, false);
     el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
   },
+};
+
+/* haptics: phone vibration when playing by touch, controller rumble when playing with a pad */
+const HAPTIC = { tap: [6, 0, 0, 0], hit: [12, .2, .3, 60], hurt: [40, .7, .5, 160], big: [25, .4, .6, 120], boss: [120, 1, 1, 450], gem: [18, .1, .4, 80] };
+PLAT.haptic = function (kind) {
+  const h = HAPTIC[kind]; if (!h || !PLAT.save || PLAT.save.data.settings.vibrate === false) return;
+  try {
+    if (input.lastDevice === 'pad') { if (h[3]) input.rumble(h[1], h[2], h[3]); }
+    else if (input.lastDevice === 'touch' && navigator.vibrate) navigator.vibrate(h[0]);
+  } catch (e) {}
 };
 
 /* ------------------------------ sound effects ------------------------------ */
@@ -236,7 +285,7 @@ const ls = {
   get(k) { try { return HAS_DOM ? localStorage.getItem(k) : null; } catch (e) { return null; } },
   set(k, v) { try { if (HAS_DOM) localStorage.setItem(k, v); return true; } catch (e) { return false; } },
 };
-function defaultPSave() { return { v: 1, hero: 'knight', levels: {}, settings: { sfx: null, shake: true, touch: 'auto' }, stats: { kills: 0, deaths: 0, coins: 0, playFrames: 0 }, goldEarned: 0 }; }
+function defaultPSave() { return { v: 1, hero: 'knight', levels: {}, settings: { sfx: null, shake: true, touch: 'auto', vibrate: true, btnSize: 'M' }, stats: { kills: 0, deaths: 0, coins: 0, playFrames: 0 }, goldEarned: 0 }; }
 PLAT.save = {
   data: defaultPSave(),
   load() {

@@ -22,6 +22,17 @@ function boot() {
   PLAT.sfx.vol = S.data.settings.sfx / 100;
   if (!heroAvailable(S.data.hero)) S.data.hero = 'knight';
   input.attach(); input.bindTouch($('#btns')); input.bindPad($('#dpad'));
+  input.onDevice = d => { document.documentElement.dataset.dev = d; syncTouch(app.screen === 'game'); refreshGlyphs(); };
+  input.onPad = pad => {
+    refreshGlyphs(); syncTouch(app.screen === 'game'); refreshTitle(); renderPadStatus();
+    if (pad) notify('🎮 เชื่อมต่อจอยแล้ว', 'ปุ่มบนจอซ่อนอัตโนมัติ · แตะจอเมื่อไหร่ปุ่มจะกลับมา');
+    else notify('🎮 จอยหลุดการเชื่อมต่อ', touchWanted() ? 'กลับไปใช้ปุ่มบนจอ' : '');
+    if (!pad && app.game && app.game.mode === 'play') pause();      // a dropped controller should not get you killed
+  };
+  // touching the screen anywhere = back to touch controls (even after a pad was used)
+  document.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') input.setDevice('touch'); }, true);
+  $('#hFull').addEventListener('click', toggleFullscreen); $('#tFull').addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', () => { setTimeout(resize, 120); refreshFullBtn(); });
   $$('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
   $('#hPause').addEventListener('click', () => pause());
   document.addEventListener('pointerdown', () => PLAT.sfx.unlock(), { once: true });
@@ -29,7 +40,8 @@ function boot() {
   addEventListener('resize', resize); addEventListener('orientationchange', () => setTimeout(resize, 200));
   document.addEventListener('visibilitychange', () => { if (document.hidden && app.game && app.game.mode === 'play') pause(); });
   addEventListener('pagehide', () => { input.detach(); cancelAnimationFrame(app.raf); });
-  setupSettings();
+  setupSettings(); refreshFullBtn(); applyBtnSize(); renderPadStatus();
+  document.documentElement.dataset.dev = input.lastDevice;
   resize(); show('title'); refreshTitle();
   app.last = performance.now(); app.raf = requestAnimationFrame(tick);
 }
@@ -48,7 +60,7 @@ function show(name, push) {
   if (name === 'map') renderMap();
   if (name === 'title') refreshTitle();
   const first = id && $('#' + id + ' .btn.red, #' + id + ' .btn');
-  if (first && input.lastDevice !== 'touch') setTimeout(() => first.focus({ preventScroll: true }), 30);
+  if (first && (input.lastDevice === 'pad' || input.lastDevice === 'key')) setTimeout(() => first.focus({ preventScroll: true }), 30);
 }
 function go(where) {
   PLAT.sfx.select();
@@ -71,6 +83,72 @@ function menuKeys(e) {
 }
 function pause() { if (!app.game || app.game.mode !== 'play') return; app.game.mode = 'paused'; $('#pSub').textContent = `${app.game.levelId} ${app.game.spec.name} · ${PLAT.HEROES[app.game.heroId].name}`; show('pause'); input.clearAll(); }
 function resume() { if (!app.game) return; if (app.game.mode === 'paused') app.game.mode = 'play'; input.clearAll(); show('game'); }
+
+/* ---------------------------- menu navigation ----------------------------
+   D-pad / stick / arrow keys move the focus to the nearest button in that direction,
+   A / Enter presses it, B / Backspace goes back — every menu works without touching the screen. */
+function screenEl() { const id = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings' }[app.screen]; return id && $('#' + id); }
+function focusables(root) { return [...root.querySelectorAll('button:not([disabled]), input[type=range]')].filter(el => el.offsetParent !== null && el.getBoundingClientRect().width > 0); }
+function moveFocus(dx, dy) {
+  const root = screenEl(); if (!root) return;
+  const list = focusables(root); if (!list.length) return;
+  const cur = document.activeElement;
+  if (!list.includes(cur)) { list[0].focus({ preventScroll: false }); return; }
+  const a = cur.getBoundingClientRect(), ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+  let best = null, bs = 1e9;
+  for (const el of list) {
+    if (el === cur) continue;
+    const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, ddx = x - ax, ddy = y - ay;
+    const along = dx ? ddx * dx : ddy * dy, side = dx ? Math.abs(ddy) : Math.abs(ddx);
+    if (along <= 4) continue;
+    const score = along + side * 2.2;
+    if (score < bs) { bs = score; best = el; }
+  }
+  if (best) { best.focus(); best.scrollIntoView({ block: 'nearest', inline: 'nearest' }); PLAT.sfx.select(); }
+}
+function menuNav() {
+  if (app.screen === 'game' || app.screen === 'loading') return;
+  const P = a => input.wasPressed(a), cur = document.activeElement;
+  if (cur && cur.type === 'range' && (P('left') || P('right'))) {
+    cur.value = +cur.value + (P('right') ? 1 : -1) * (+cur.step || 1) * 2; cur.dispatchEvent(new Event('input')); cur.dispatchEvent(new Event('change')); return;
+  }
+  if (P('up')) moveFocus(0, -1); else if (P('down')) moveFocus(0, 1); else if (P('left')) moveFocus(-1, 0); else if (P('right')) moveFocus(1, 0);
+  else if (P('ok')) { const root = screenEl(); if (root && cur && root.contains(cur) && cur.tagName === 'BUTTON') cur.click(); else moveFocus(0, 1); }
+  else if (P('back') || (P('pause') && app.screen === 'pause')) {
+    if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes') go('back');
+    else if (app.screen === 'map') show('title'); else if (app.screen === 'dead') go('retryCp');
+  }
+  else return;
+  input.endFrame();              // a menu press is used up here — it must not also reach the game this frame
+}
+
+/* ------------------------------- fullscreen ------------------------------- */
+const fsOK = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+function toggleFullscreen() {
+  const d = document, el = d.documentElement;
+  if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+  const req = el.requestFullscreen || el.webkitRequestFullscreen; if (!req) return;
+  Promise.resolve(req.call(el, { navigationUI: 'hide' })).then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => {});
+}
+function refreshFullBtn() {
+  const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  [$('#hFull'), $('#tFull')].forEach(b => { if (!b) return; b.style.display = fsOK() ? '' : 'none'; b.textContent = b.id === 'tFull' ? (on ? '⛶ ออกจากเต็มจอ' : '⛶ เต็มจอ (แนะนำบนมือถือ)') : '⛶'; });
+}
+
+/* ------------------------- controls: glyphs & pad info ------------------------- */
+const GLYPH = { key: { a: 'J', s: 'I', d: 'L', j: 'Space' }, pad: { a: 'X', s: 'Y', d: 'B', j: 'A' } };
+function refreshGlyphs() {
+  const g = input.lastDevice === 'pad' || (input.pad && input.lastDevice !== 'touch' && input.lastDevice !== 'key') ? GLYPH.pad : GLYPH.key;
+  $$('#hAbil kbd').forEach((k, i) => k.textContent = [g.a, g.s, g.d][i] || k.textContent);
+}
+function renderPadStatus() {
+  const el = $('#padStatus'); if (!el) return;
+  el.innerHTML = input.pad ? `🎮 เชื่อมต่อแล้ว: <b>${String(input.pad.name).replace(/[<>&]/g, '').slice(0, 60)}</b>${input.pad.standard ? '' : ' <span class="chip">ปุ่มอาจสลับตำแหน่ง (จอยไม่ใช่แบบมาตรฐาน)</span>'}`
+    : '🎮 ยังไม่พบจอย — ต่อ Bluetooth/USB แล้ว<b>กดปุ่มใดก็ได้ 1 ครั้ง</b> เกมจะเจอเอง';
+}
+let notifyT = 0;
+function notify(a, b) { const n = $('#notify'); if (!n) return; n.innerHTML = `<b>${a}</b>${b ? `<span>${b}</span>` : ''}`; n.classList.add('on'); clearTimeout(notifyT); notifyT = setTimeout(() => n.classList.remove('on'), 3200); }
+function applyBtnSize() { const m = { S: .82, M: 1, L: 1.2 }[S.data.settings.btnSize || 'M'] || 1; document.documentElement.style.setProperty('--tsz', m); }
 
 /* ------------------------------ availability ------------------------------ */
 function heroAvailable(id) {
@@ -95,7 +173,7 @@ function refreshTitle() {
   $('#tHero').textContent = PLAT.HEROES[S.data.hero].name;
   const cleared = PLAT.LEVEL_ORDER.filter(id => S.level(id) && S.level(id).cleared).length;
   const gems = PLAT.LEVEL_ORDER.reduce((n, id) => n + ((S.level(id) || {}).gems || []).length, 0);
-  $('#tNote').textContent = `ผ่านแล้ว ${cleared}/${PLAT.LEVEL_ORDER.length} ด่าน · 💎 ${gems}/18 · ทองที่ได้เข้าเกมหลักรวม ${S.data.goldEarned || 0}` + (S.devOn() ? ' · 🛠 โหมดผู้พัฒนา: ปลดล็อกทุกอย่าง' : '');
+  $('#tNote').textContent = (input.pad ? '🎮 จอยพร้อมใช้ · ' : '') + `ผ่านแล้ว ${cleared}/${PLAT.LEVEL_ORDER.length} ด่าน · 💎 ${gems}/18 · ทองที่ได้เข้าเกมหลักรวม ${S.data.goldEarned || 0}` + (S.devOn() ? ' · 🛠 โหมดผู้พัฒนา: ปลดล็อกทุกอย่าง' : '');
 }
 
 /* ------------------------------ hero previews ------------------------------
@@ -222,7 +300,7 @@ function setupHud(g) {
   $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
   $('#tA').textContent = h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'; $('#tS').textContent = shortName(h.skill.name); $('#tD').textContent = shortName(h.dash.name);
   $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on');
-  hudCache = {};
+  hudCache = {}; refreshGlyphs();
   const fc = $('#hFace'); heroSheet(g.heroId).then(() => { const ctx = fc.getContext('2d'); ctx.clearRect(0, 0, 48, 48); const sh = sheetCache[g.heroId], f = sh.frames('idle')[0]; PLAT.viewScale = 1;
     const s = 70 / (f.by || f.sh); PLAT.drawFrame(ctx, f, 24, 48 + (f.by * s) * .32, 1, s, { smooth: !!h.smooth }); });
 }
@@ -235,7 +313,9 @@ function updateHud(d) {
   set('gems', d.gems.join(','), () => $$('#hGems i').forEach((el, i) => el.classList.toggle('on', d.gems.includes(i))));
   set('time', Math.floor(d.frames / 6), () => $('#hTime').textContent = U.fmtTime(d.frames));
   set('low', d.en < d.skillCost, v => { const el = $('#abS'); if (el) el.classList.toggle('low', v); });
-  set('cd', Math.round(d.dashCd * 10), v => { const el = $('#abD'); if (el) { el.classList.toggle('cd', v > 0); el.style.setProperty('--cd', (v * 10) + '%'); } });
+  set('cd', Math.round(d.dashCd * 10), v => { const el = $('#abD'); if (el) { el.classList.toggle('cd', v > 0); el.style.setProperty('--cd', (v * 10) + '%'); } $('#btns .bd').style.setProperty('--cd', (v * 10) + '%'); });
+  set('tlow', d.en < d.skillCost, v => $('#btns .bs').classList.toggle('low', v));
+  set('mouth', d.mouth, v => $('#tA').textContent = v ? 'พ่นดาว' : (PLAT.HEROES[app.game.heroId].attack.kind === 'shot' ? 'ยิง' : 'โจมตี'));
 }
 
 /* ------------------------------ results / save ------------------------------ */
@@ -286,16 +366,24 @@ function setupSettings() {
     $$(`#${el} button`).forEach(b => b.addEventListener('click', () => { S.data.settings[key] = map.from(b.dataset.v); S.persist(); sync(); syncTouch(app.screen === 'game'); PLAT.sfx.select(); })); sync(); };
   seg('setShake', 'shake', { to: v => v === false ? '0' : '1', from: v => v === '1' });
   seg('setTouch', 'touch', { to: v => v || 'auto', from: v => v });
+  seg('setVib', 'vibrate', { to: v => v === false ? '0' : '1', from: v => v === '1' });
+  seg('setSize', 'btnSize', { to: v => v || 'M', from: v => { setTimeout(applyBtnSize); return v; } });
 }
 function touchWanted() {
   const m = S.data.settings.touch || 'auto';
   if (m === 'on') return true; if (m === 'off') return false;
-  return (matchMedia && matchMedia('(pointer:coarse)').matches) || input.lastDevice === 'touch' || 'ontouchstart' in window && navigator.maxTouchPoints > 0;
+  // auto: a controller or a real keyboard in use → hide; touching the screen brings them back
+  if (input.lastDevice === 'pad' || input.lastDevice === 'key') return false;
+  if (input.pad && input.lastDevice !== 'touch') return false;
+  return input.lastDevice === 'touch' || (matchMedia && matchMedia('(pointer:coarse)').matches) || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
 }
+const isPhone = () => matchMedia && matchMedia('(pointer:coarse)').matches;
 function syncTouch(playing) {
   const on = playing && touchWanted();
+  if (!on) { input.releaseTouch(); $$('#btns .on').forEach(b => b.classList.remove('on')); $('#dpad').dataset.dir = ''; }   // never leave a hidden button held (keyboard/pad input untouched)
   $('#touch').classList.toggle('on', on); $('#hAbil').style.display = on ? 'none' : '';
-  $('#rotHint').classList.toggle('need', on);
+  $('#rotHint').classList.toggle('need', playing && (on || isPhone()));
+  document.documentElement.classList.toggle('touchui', on);
 }
 
 /* ---------------------------------- loop ---------------------------------- */
@@ -304,14 +392,16 @@ function resize() {
   let w = vw, h = vw / ar; if (h > vh) { h = vh; w = vh * ar; }
   w = Math.floor(w); h = Math.floor(h);
   const st = $('#stage'); st.style.width = w + 'px'; st.style.height = h + 'px';
-  const dpr = Math.min(2, window.devicePixelRatio || 1), cv = $('#cv');
-  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  // device-resolution canvas (sharp pixels) but capped at ~2.6 MP so phones keep 60 fps
+  let dpr = Math.min(2, window.devicePixelRatio || 1); const cap = 2560 / (w * dpr); if (cap < 1) dpr *= cap;
+  const cv = $('#cv'); cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
   $('#hud').style.fontSize = (h / 30) + 'px';
 }
 function tick(now) {
   app.raf = requestAnimationFrame(tick);
   const g = app.game, dt = Math.min(100, now - app.last); app.last = now;
   input.pollPad();
+  menuNav();
   if (g && g.mode !== 'loading') {
     if (app.screen === 'game' && input.wasPressed('pause') && g.mode === 'play') { pause(); input.endFrame(); }
     if (app.screen === 'game' && (g.mode === 'play' || g.mode === 'clear' || (g.mode === 'dead'))) {
