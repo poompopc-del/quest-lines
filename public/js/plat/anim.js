@@ -48,6 +48,21 @@ class Sheet {
     for (const [name, ids] of Object.entries(A.anims)) this.anims[name] = ids.map(id => { const f = A.frames[id]; const mid = (A.center || []).includes(name);
       return { src, sx: f.x, sy: f.y, sw: f.w, sh: f.h, ax: f.ax, by: mid ? f.h / 2 + (def.midBy || 14) : f.h - (def.footGap || 0) }; });
   }
+  /* alpha bounds of a frame, relative to its anchor (ax = 0, feet line by = 0; up is negative).
+     Used to put hit boxes exactly where the pixels are. Cached per frame; null if unreadable. */
+  bounds(fr) {
+    if (!fr) return null; if (fr._b !== undefined) return fr._b;
+    fr._b = null;
+    const im = PLAT.assets.img(fr.src); if (!im || typeof document === 'undefined') return null;
+    try {
+      const c = document.createElement('canvas'); c.width = fr.sw; c.height = fr.sh;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, fr.sx, fr.sy, fr.sw, fr.sh, 0, 0, fr.sw, fr.sh);
+      const d = x.getImageData(0, 0, fr.sw, fr.sh).data; let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+      for (let yy = 0; yy < fr.sh; yy++) for (let xx = 0; xx < fr.sw; xx++) if (d[(yy * fr.sw + xx) * 4 + 3] > 60) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+      if (x1 >= 0) fr._b = { x0: x0 - fr.ax, x1: x1 + 1 - fr.ax, y0: y0 - fr.by, y1: y1 + 1 - fr.by };
+    } catch (e) { fr._b = null; }
+    return fr._b;
+  }
   srcs() { const s = new Set(); for (const fr of Object.values(this.anims)) fr.forEach(f => s.add(f.src)); return [...s]; }
   usable(name) { const fr = this.anims[name]; return !!(fr && fr.length && PLAT.assets.img(fr[0].src)); }
   frames(name) { return this.anims[name]; }

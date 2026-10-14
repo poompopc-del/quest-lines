@@ -50,7 +50,9 @@ class Game {
     if (this.spec.arena) { const a = this.spec.arena; L.arena = { x0: a.x0 * T, x1: a.x1 * T, top: a.top || 2 * T }; }
     this.player = new PLAT.Player(this, this.heroId, L.start, this.heroSheet);
     this.checkpoint = { x: L.start.x, y: L.start.y };
-    this.enemies = L.spawns.map(s => PLAT.makeEnemy(this, s.type, s.x, s.y));
+    this.tokens = new Set();
+    this.measureEnemies();
+    this.enemies = L.spawns.map(s => PLAT.makeEnemy(this, s.type, s.x, s.y, s.elite));
     this.enemyTotal = this.enemies.length;
     this.boss = null; this.bossActive = false;
     this.projs = []; this.fxs = []; this.parts = []; this.texts = []; this.loose = []; this.warns = []; this.ghosts = [];
@@ -62,9 +64,20 @@ class Game {
     if (this.spec.boss) this.emit('toast', { text: this.spec.name, sub: this.spec.teach });
     this.emit('hud', this.hudState());
   }
+  /* enemy collision boxes come from the sprite's own pixels (idle frame), so what you see is what you hit */
+  measureEnemies() {
+    this.geom = this.geom || {};
+    for (const [type, sheet] of this.sheets) {
+      if (this.geom[type] || type.includes(':')) continue;
+      const d = PLAT.ENEMIES[type] || PLAT.BOSSES[type], fr = (sheet.frames('idle') || [])[0], b = fr && sheet.bounds(fr);
+      if (!b || d.box.fixed) continue;
+      const k = d.boss ? .72 : .8;
+      this.geom[type] = { w: Math.round((b.x1 - b.x0) * d.scale * k), h: Math.round((b.y1 - b.y0) * d.scale * (d.boss ? .85 : .92)), c: (b.x0 + b.x1) / 2 * d.scale };
+    }
+  }
   spawnBoss() {
     const L = this.L, s = L.bossSpawn || { x: L.pw - 4 * T, y: (L.h - 2) * T };
-    this.boss = PLAT.makeEnemy(this, this.spec.boss, s.x, s.y); this.boss.dir = -1;
+    this.boss = PLAT.makeEnemy(this, this.spec.boss, s.x, s.y); this.boss.dir = -1; this.clearHostile();
     this.enemies.push(this.boss); this.bossActive = true;
   }
 
@@ -83,6 +96,8 @@ class Game {
     this.playerHazards();
     if (this.spec.boss && !this.boss && !p.dead && p.cx > (L.arena ? L.arena.x0 + 5 * T : 6 * T)) this.spawnBoss();
     for (const e of this.enemies) e.update();
+    this.separate();
+    for (const e of this.tokens) if (e.dead || e.gone || !this.enemies.includes(e)) this.tokens.delete(e);
     this.contacts();
     this.enemies = this.enemies.filter(e => !e.gone);
     this.stepProjs(); this.stepPickups(); this.stepWarns(); this.stepParts();
@@ -103,7 +118,7 @@ class Game {
     for (const e of this.enemies) {
       if (e.dead || e.inhaled || !e.def.dmg) continue;
       if (e.boss && (e.st === 'intro' || e.alpha === 0)) continue;
-      if (e.st === 'dizzy') continue;
+      if (e.st === 'dizzy' || e.stunT > 0 || e.st === 'phase') continue;          // a reeling enemy cannot hurt you
       const eb = { x: e.x + 3, y: e.y + 3, w: e.w - 6, h: e.h - 4 };
       if (!U.overlap(eb, p)) continue;
       if (p.bodyHit || (p.act && p.act.kind === 'pogo' && p.vy > 0)) continue;       // we are the one hitting
@@ -137,25 +152,48 @@ class Game {
   }
 
   /* --------------------------------- combat --------------------------------- */
+  /* One blow (o.id) hits each target once. Feedback scales with the blow, not with every hit alike:
+       light  (1 dmg)          → 2-frame hit-stop, small spark
+       medium (2 dmg)          → 3 frames, spark + dust
+       heavy  (3+ / o.heavy)   → 5 frames, impact flash, small shake
+       finisher (last combo step) → +1 frame and a bigger burst · multi-hit ticks (o.multi) → 1 frame */
   hit(box, dmg, o) {
-    o = o || {}; let n = 0;
+    o = o || {}; let n = 0, kills = 0, cxs = 0, cys = 0;
     for (const e of this.enemies) {
       if (e.dead || e.inhaled || !U.overlap(box, e)) continue;
       if (e.takeHit(dmg, o)) {
-        n++;
-        const cx = U.clamp(e.cx, box.x, box.x + box.w), cy = U.clamp(e.y + e.h / 2, box.y, box.y + box.h);
-        this.burst(cx, cy, '#fff4c0', 6, 2.6); this.spark(cx, cy);
-        if (o.fx && this.frame % 2 === 0) this.fx(o.fx, cx, cy, {});
+        n++; if (e.dead) kills++;
+        const cx = U.clamp(e.cx, box.x, box.x + box.w), cy = U.clamp(e.y + e.h / 2, box.y, box.y + box.h); cxs = cx; cys = cy;
+        this.burst(cx, cy, '#fff4c0', o.heavy ? 10 : 5, o.heavy ? 3.2 : 2.2); this.spark(cx, cy, o.heavy ? 1.6 : 1);
+        if (o.fx) this.fx(o.fx, cx, cy, {}); else if (o.heavy && o.from === this.player) this.fx('impact', cx, cy, { scale: .7 });
       }
     }
     // breakable blocks
     if (!o.noBreak) for (const t of W.tilesIn(this.L, box, TL.BREAK)) this.breakTile(t.tx, t.ty);
     if (n) {
-      sfx().hit(); this.hitstop(o.pogo ? 2 : 3); PLAT.haptic(o.from === this.player ? 'hit' : '');
-      if (o.shake) this.shake(o.shake);
+      const heavy = o.heavy || dmg >= 3, stop = o.multi ? 1 : o.pogo ? 2 : heavy ? 5 : dmg >= 2 ? 3 : 2;
+      this.hitstop(stop + (o.finisher ? 1 : 0) + (kills ? 1 : 0));
+      if (heavy) sfx().heavy(); else sfx().hit();
+      if (o.from === this.player) PLAT.haptic(heavy ? 'big' : 'hit');
+      if (o.shake) this.shake(o.shake); else if (heavy) this.shake(2);
+      if (o.finisher) this.burst(cxs, cys, '#ffd860', 8, 3.5);
       if (o.from === this.player) this.player.onHitLanded(n);
     }
     return n;
+  }
+  /* attack tokens: at most 2 enemies may be winding up / attacking at the same moment,
+     so a crowd takes turns instead of hitting all at once */
+  takeToken(e) { if (this.tokens.has(e)) return true; if (this.tokens.size >= 2) return false; this.tokens.add(e); return true; }
+  dropToken(e) { this.tokens.delete(e); }
+  // ground enemies push each other apart instead of stacking into one sprite
+  separate() {
+    const list = this.enemies.filter(e => !e.dead && !e.boss && e.def.ai !== 'flyer' && !e.inhaled && Math.abs(e.cx - this.cam.x - C.VW / 2) < C.VW);
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const a = list[i], b = list[j];
+      if (!U.overlap(a, b) || Math.abs(a.feet - b.feet) > 12) continue;
+      const ov = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), d = (a.cx < b.cx ? -1 : 1) * Math.min(1.2, ov / 2);
+      W.moveBody(this.L, a, d, 0); W.moveBody(this.L, b, -d, 0);
+    }
   }
   breakTile(tx, ty) {
     W.setTile(this.L, tx, ty, TL.EMPTY); this.tileCache = null; sfx().break(); this.shake(2);
@@ -165,14 +203,18 @@ class Game {
     this.stats.kills++;
     const d = e.def;
     if (e.inhaled) return;
-    const n = d.boss ? 20 : (d.coins || 1);
+    if (e.fell) return;                     // fell into a pit / lava: no loot raining into the hole
+    const n = d.boss ? 20 : (d.coins || 1) * (e.elite ? 2 : 1);
+    if (e.elite) this.loose.push({ x: e.cx, y: e.y, vx: 0, vy: -5.5, kind: 'heart', t: 0 });
     for (let i = 0; i < n; i++) this.loose.push({ x: e.cx, y: e.y + e.h / 2, vx: U.rnd(-2, 2) * (d.boss ? 1.6 : 1), vy: U.rnd(-6, -2.5), kind: 'coin', t: 0 });
     if (!d.boss && Math.random() < .09) this.loose.push({ x: e.cx, y: e.y, vx: 0, vy: -5, kind: 'heart', t: 0 });
     if (d.boss) {
-      PLAT.haptic('boss'); this.bossActive = false; this.emit('boss', null);
+      PLAT.haptic('boss'); this.bossActive = false; this.clearHostile(); this.emit('boss', null);
       setTimeout(() => { if (this.L.exit) { this.L.exit.open = true; this.text(this.L.exit.x + T / 2, this.L.exit.y - 10, 'ประตูเปิดแล้ว!', '#8aff8a', 120, true); sfx().checkpoint(); } }, 1600);
     }
   }
+  // remove every enemy shot and pending hazard (boss defeated / phase change) — nothing hits you after the fight
+  clearHostile() { for (const pr of this.projs) if (pr.enemy) { pr.dead = true; this.burst(pr.x, pr.y, '#ffffff', 3, 1); } this.projs = this.projs.filter(p => !p.dead); this.warns = []; }
   bossIntro(b) { this.emit('boss', { name: b.def.name, th: b.def.th, hp: b.hp, max: b.maxHp }); }
   bossHit(b) { this.emit('bossHit', { hp: Math.max(0, b.hp), max: b.maxHp }); }
   nearestEnemy(x, y, dir, range, dyMax, homing) {
@@ -216,6 +258,7 @@ class Game {
       box() { const b = def.box; return def.ground ? { x: this.x - b[0] / 2, y: this.y - b[1], w: b[0], h: b[1] } : { x: this.x - b[0] / 2, y: this.y - b[1] / 2, w: b[0], h: b[1] }; },
     };
     if (def.ground) { pr.y = this.floorBelow(x, y - 8); }
+    if (this.projs.length > 140) this.projs.shift().dead = true;      // hard cap: never an unbounded pile of shots
     this.projs.push(pr); return pr;
   }
   stepProjs() {
@@ -302,7 +345,7 @@ class Game {
   /* ----------------------------- respawn / clear ----------------------------- */
   respawn() {
     const p = this.player; p.reset(this.checkpoint); p.hp = p.maxHp; p.inv = 90; p.en = 100;
-    this.projs = []; this.warns = [];
+    this.projs = []; this.warns = []; this.tokens.clear();
     if (this.spec.boss) { this.enemies = this.enemies.filter(e => !e.boss); this.boss = null; this.bossActive = false; this.emit('boss', null); if (this.L.exit) this.L.exit.open = false; }
     this.mode = 'play'; this.snapCam(); this.emit('hud', this.hudState());
   }
@@ -339,9 +382,10 @@ class Game {
   hitstop(n) { this.freeze = Math.max(this.freeze, n); }
   burst(x, y, col, n, sp) { for (let i = 0; i < (n || 6); i++) { const a = Math.random() * 6.283, s = (.3 + Math.random()) * (sp || 2); this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - .6, life: 18 + Math.random() * 16, col, size: 2, grav: .1 }); } if (this.parts.length > 600) this.parts.splice(0, this.parts.length - 600); }
   dust(x, y, n, col) { for (let i = 0; i < (n || 3); i++) this.parts.push({ x: x + U.rnd(-8, 8), y: y - 2, vx: U.rnd(-1.2, 1.2), vy: U.rnd(-1.2, -.2), life: 20 + U.rnd(0, 12), col: col || 'rgba(230,220,200,.8)', size: 3, grav: -.01, fade: true }); }
-  spark(x, y) { this.fxs.push({ frames: null, star: true, x, y, t: 0, rate: 1, life: 8, dead: false }); }
+  spark(x, y, s) { this.fxs.push({ frames: null, star: true, x, y, t: 0, rate: 1, life: 8, dead: false, s: s || 1 }); }
   text(x, y, str, col, life, big) { this.texts.push({ x, y, str, col: col || '#fff', life: life || 40, max: life || 40, big: !!big }); }
-  afterimage(p) { const fr = p.anim.frame(); if (fr) this.ghosts.push({ fr, x: p.cx, y: p.feet, face: p.face, scale: p.hero.scale, smooth: p.hero.smooth, life: 12 }); }
+  // motion trail for the player (hero) or an enemy (ghost swoop) — enemies' sheets face left
+  afterimage(p) { const fr = p.anim.frame(); if (!fr) return; const hero = p.hero; this.ghosts.push({ fr, x: hero ? p.cx : p.cx - (p.cOff || 0) * p.sc * -p.dir, y: p.feet, face: hero ? p.face : -p.dir, scale: hero ? hero.scale : p.sc, smooth: hero ? hero.smooth : false, life: 12 }); }
   fx(nameOrDef, x, y, o) {
     o = o || {};
     let frames, rate, scale;
@@ -582,7 +626,7 @@ class Game {
     PLAT.drawFrame(ctx, fr, pr.x, y, d.img && d.img.includes('aqua/wave') ? -dir : dir, pr.scale, o);
   }
   drawFx(ctx, f) {
-    if (f.star) { const a = Math.max(0, 1 - f.t / f.life); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#fff'; const r = 4 + f.t * 2; ctx.fillRect(f.x - r, f.y - 1, r * 2, 2); ctx.fillRect(f.x - 1, f.y - r, 2, r * 2); ctx.restore(); return; }
+    if (f.star) { const a = Math.max(0, 1 - f.t / f.life); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#fff'; const r = (4 + f.t * 2) * (f.s || 1), th = f.s > 1 ? 3 : 2; ctx.fillRect(f.x - r, f.y - th / 2, r * 2, th); ctx.fillRect(f.x - th / 2, f.y - r, th, r * 2); ctx.restore(); return; }
     if (f.follow) { const p = f.follow(); f.x = p.x; f.y = p.y; }
     let i = Math.floor(f.t / f.rate); if (f.loop) i %= f.frames.length; else i = Math.min(i, f.frames.length - 1);
     const fr = f.frames[i];

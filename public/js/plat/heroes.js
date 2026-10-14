@@ -71,9 +71,9 @@ H.knight = {
   scale: .62, box: [18, 42], hp: 6, speed: .92, jump: 1, armor: true,
   poses: { idle: { a: 'idle', fps: 5 }, walk: { a: 'walk', fps: 12 }, run: { a: 'walk', fps: 17 }, jump: { a: 'walk', f: [2] }, fall: { a: 'walk', f: [6] }, hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 6 } },
   attack: { kind: 'combo', steps: [
-    { pose: 'atk1', dur: 24, hit: [9, 18], box: [2, -36, 58, 24], dmg: 2, kb: 4, lunge: 1.5 },
-    { pose: 'atk2', dur: 24, hit: [9, 18], box: [2, -32, 64, 22], dmg: 2, kb: 4, lunge: 3.5 },
-    { pose: 'atk3', dur: 30, hit: [11, 20], box: [-12, -70, 74, 70], dmg: 3, kb: 6, lunge: 1, shake: 2 } ] },
+    { pose: 'atk1', dur: 24, on: [2, 3], hit: [9, 18], box: [2, -36, 58, 24], dmg: 2, kb: 4, lunge: 1.5 },
+    { pose: 'atk2', dur: 24, on: [2, 3], hit: [9, 18], box: [2, -32, 64, 22], dmg: 2, kb: 4, lunge: 3.5 },
+    { pose: 'atk3', dur: 30, on: [2, 3], hit: [11, 20], box: [-12, -70, 74, 70], dmg: 3, kb: 6, lunge: 1, shake: 2 } ] },
   skill: { kind: 'proj', name: 'คลื่นดาบอัศวิน', cost: 30, pose: 'fin', dur: 36, fireAt: 17, proj: 'arc', y: -30 },
   dash: { kind: 'dash', name: 'แทงพุ่ง', pose: 'atk2', f: [2, 3], speed: 6, dur: 14, cd: 40, hit: { box: [0, -32, 40, 24], dmg: 2 }, air: true },
 };
@@ -89,9 +89,9 @@ H.pip = {
     guard: { a: 'guard', f: [6] }, dashp: { a: 'atk3', f: [0] } },
   guard: { pose: 'guard' },
   attack: { kind: 'combo', steps: [
-    { pose: 'atk2', dur: 15, hit: [5, 11], box: [2, -32, 36, 14], dmg: 1, kb: 3, lunge: 1.5 },
-    { pose: 'atk1', dur: 18, hit: [5, 13], box: [-6, -60, 50, 60], dmg: 1, kb: 3 },
-    { pose: 'atk3', dur: 22, hit: [6, 15], box: [-8, -64, 46, 64], dmg: 2, kb: 5, lunge: 2.5 } ] },
+    { pose: 'atk2', dur: 15, on: [1, 2, 3], hit: [5, 11], box: [2, -32, 36, 14], dmg: 1, kb: 3, lunge: 1.5 },
+    { pose: 'atk1', dur: 18, on: [2, 3], hit: [5, 13], box: [-6, -60, 50, 60], dmg: 1, kb: 3 },
+    { pose: 'atk3', dur: 22, on: [2, 3, 4], hit: [6, 15], box: [-8, -64, 46, 64], dmg: 2, kb: 5, lunge: 2.5 } ] },
   skill: { kind: 'spin', name: 'สปินแอทแท็ก', cost: 25, pose: 'spin', dur: 30, every: 7, box: [-34, -48, 68, 50], dmg: 1, hover: true },
   dash: { kind: 'dash', name: 'ฟันพุ่ง', pose: 'dashp', speed: 6.8, dur: 12, cd: 34, hit: { box: [-4, -36, 36, 30], dmg: 1 }, air: true, trail: '#ffb04a' },
 };
@@ -141,7 +141,7 @@ H.luffy = {
   scale: 1.08, box: [16, 42], hp: 5, speed: 1, jump: 1,
   poses: { idle: { a: 'idle', fps: 8 }, walk: { a: 'walk', fps: 12 }, run: { a: 'dash', f: [2, 3, 4, 5, 6, 7], fps: 16, loopy: true }, jump: { a: 'rocket', f: [2] }, fall: { a: 'walk', f: [2] },
     hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 5 }, fly: { a: 'rocket', f: [4, 5], fps: 12, loopy: true } },
-  attack: { kind: 'combo', steps: [{ pose: 'pistol', dur: 26, hit: [11, 19], box: [6, -42, 84, 16], dmg: 2, kb: 4 }] },
+  attack: { kind: 'combo', steps: [{ pose: 'pistol', dur: 26, on: [3, 4, 5], hit: [11, 19], box: [6, -42, 30, 16], dmg: 2, kb: 4 }] },
   skill: { kind: 'spin', name: 'โกมุโกมุ แกตลิ่ง', cost: 30, pose: 'gatling', dur: 46, every: 5, box: [4, -48, 96, 36], dmg: 1, front: true, loopPose: true },
   dash: { kind: 'rocket', name: 'โกมุโกมุ ร็อกเก็ต', pose: 'fly', vx: 6.4, vy: -9.6, dur: 18, cd: 10, hit: { box: [-6, -40, 34, 40], dmg: 2 } },
 };
@@ -192,9 +192,9 @@ H.mao = {
     airjump: { a: 'flip', f: [1, 2, 3, 4, 5], fps: 18, hold: true }, hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 6 }, rollp: { a: 'roll', f: [0, 1, 2, 3, 4, 5, 6, 7], fps: 20, loopy: true } },
   airJumps: 1,
   attack: { kind: 'combo', steps: [
-    { pose: 'atk1', dur: 18, hit: [5, 13], box: [-4, -56, 44, 56], dmg: 1, kb: 3 },
-    { pose: 'atk2', dur: 20, hit: [7, 15], box: [-10, -46, 58, 40], dmg: 1, kb: 3 },
-    { pose: 'atk3', dur: 22, hit: [6, 16], box: [0, -44, 42, 30], dmg: 2, kb: 5, lunge: 5 } ] },
+    { pose: 'atk1', dur: 18, on: [1, 2, 3], hit: [5, 13], box: [-4, -56, 44, 56], dmg: 1, kb: 3 },
+    { pose: 'atk2', dur: 20, on: [1, 2, 3], hit: [7, 15], box: [-10, -46, 58, 40], dmg: 1, kb: 3 },
+    { pose: 'atk3', dur: 22, on: [2, 3, 4], hit: [6, 16], box: [0, -44, 42, 30], dmg: 2, kb: 5, lunge: 5 } ] },
   skill: { kind: 'proj', name: 'คาโชเซ็น', cost: 18, pose: 'kasen', dur: 22, fireAt: 8, proj: 'fan', y: -42, max: 1 },
   dash: { kind: 'roll', name: 'ชิโนบิบาจิ', pose: 'rollp', speed: 5.8, dur: 24, cd: 34, inv: 24, hit: { box: [-14, -34, 34, 34], dmg: 1 } },
 };
@@ -241,8 +241,8 @@ H.yota = {
   poses: { idle: { a: 'idle', fps: 7 }, walk: { a: 'walk', fps: 10 }, run: { a: 'walk', fps: 14 }, jump: { a: 'walk', f: [2] }, fall: { a: 'walk', f: [6] },
     hurt: { a: 'hurt', fps: 6 }, dead: { a: 'dead', fps: 6 }, pushp: { a: 'push', f: [2, 3], fps: 8, loopy: true } },
   attack: { kind: 'combo', steps: [
-    { pose: 'palm', dur: 18, hit: [5, 12], box: [4, -40, 34, 22], dmg: 2, kb: 5 },
-    { pose: 'kick', dur: 22, hit: [7, 15], box: [2, -36, 40, 24], dmg: 2, kb: 7 } ] },
+    { pose: 'palm', dur: 18, on: [1], hit: [5, 12], box: [4, -40, 34, 22], dmg: 2, kb: 5 },
+    { pose: 'kick', dur: 22, on: [1], hit: [7, 15], box: [2, -36, 40, 24], dmg: 2, kb: 7 } ] },
   skill: { kind: 'beam', name: 'ลำแสงค่าเช่า', cost: 40, chargePose: 'charge', firePose: 'fire', charge: 26, fire: 22, len: 330, h: 18, y: -36, dmg: 4, every: 6 },
   dash: { kind: 'dash', name: 'ส่งค่าเช่าบ้านยัง!!!', pose: 'pushp', speed: 4.4, dur: 22, cd: 40, hit: { box: [2, -44, 34, 44], dmg: 1, kb: 9 }, shout: 'ส่งค่าเช่าบ้านยัง!!!' },
 };
@@ -271,13 +271,20 @@ H.shovel = {
   scale: 1.35, box: [16, 38], hp: 5, speed: 1, jump: 1,
   poses: { idle: { a: 'idle', fps: 5 }, walk: { a: 'walk', fps: 10 }, run: { a: 'walk', fps: 15 }, jump: { a: 'jump' }, fall: { a: 'fall' }, hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 5 },
     pogo: { a: 'pogo' }, dashp: { a: 'dash', fps: 16, loopy: true }, spinp: { a: 'spin', fps: 20, loopy: true }, castp: { a: 'cast', fps: 8 } },
-  attack: { kind: 'combo', steps: [{ pose: 'attack', dur: 15, hit: [9, 15], box: [2, -32, 32, 24], dmg: 1, kb: 3 }], down: 'pogo' },
+  attack: { kind: 'combo', steps: [{ pose: 'attack', dur: 15, on: [3, 4], hit: [9, 15], box: [2, -32, 32, 24], dmg: 1, kb: 3 }], down: 'pogo' },
   skill: { kind: 'flare', name: 'ไม้เท้าไฟ / หมุนตัวฟัน', cost: 25, pose: 'castp', dur: 16, fireAt: 8, proj: 'flare', y: -24,
     air: { kind: 'spin', pose: 'spinp', dur: 26, every: 8, box: [-28, -46, 56, 54], dmg: 1, hover: true } },
   dash: { kind: 'dash', name: 'พุ่งฟัน', pose: 'dashp', speed: 5.6, dur: 14, cd: 36, hit: { box: [-4, -34, 46, 30], dmg: 1 }, air: true, inv: 14 },
 };
 
+/* Roster rule (v86): only heroes whose sheet has a COMPLETE walk cycle are playable here.
+   Kept out (definitions stay so they can return once a proper walk strip exists):
+     elon    — walk.png is 2 identical idle frames (no steps)
+     kea     — the sheet has no walk row at all
+     cream   — the 8 walk frames repeat the same stride (legs never alternate; see README v80)
+     boomtos — walk.png mixes 2 idle frames with a 4-frame run drawn at a smaller size (the body pops) */
+['elon', 'kea', 'cream', 'boomtos'].forEach(id => { H[id].disabled = 'walk'; });
 // platform-mode unlocks (in addition to heroes owned in the main game): clear these levels
-PLAT.HERO_UNLOCK = { pip: '1-3', puff: '1-3', sonic: '2-3', x: '2-3', luffy: '2-3', mao: '3-1', elon: '3-1', boomtos: '3-3', cream: '3-3', yota: '3-3' };
-PLAT.HERO_ORDER = ['knight', 'shovel', 'pip', 'puff', 'sonic', 'x', 'luffy', 'mao', 'elon', 'boomtos', 'cream', 'yota', 'kea'];
+PLAT.HERO_UNLOCK = { pip: '1-3', puff: '1-3', sonic: '2-3', x: '2-3', luffy: '2-3', mao: '3-1', yota: '3-3' };
+PLAT.HERO_ORDER = ['knight', 'shovel', 'pip', 'puff', 'sonic', 'x', 'luffy', 'mao', 'yota'];
 })(typeof window !== 'undefined' ? window : globalThis);

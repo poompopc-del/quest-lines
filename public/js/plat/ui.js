@@ -146,13 +146,19 @@ function renderPadStatus() {
   el.innerHTML = input.pad ? `🎮 เชื่อมต่อแล้ว: <b>${String(input.pad.name).replace(/[<>&]/g, '').slice(0, 60)}</b>${input.pad.standard ? '' : ' <span class="chip">ปุ่มอาจสลับตำแหน่ง (จอยไม่ใช่แบบมาตรฐาน)</span>'}`
     : '🎮 ยังไม่พบจอย — ต่อ Bluetooth/USB แล้ว<b>กดปุ่มใดก็ได้ 1 ครั้ง</b> เกมจะเจอเอง';
 }
+// sign texts name buttons as {JUMP} {ATK} {SKL} {DSH} — shown as the keys / pad buttons / touch icons in use
+function signText(t) {
+  const dev = input.lastDevice === 'pad' ? 'pad' : input.lastDevice === 'touch' || (input.lastDevice === 'none' && isPhone()) ? 'touch' : 'key';
+  const M = { key: { JUMP: 'Space', ATK: 'J', SKL: 'I', DSH: 'L' }, pad: { JUMP: 'Ⓐ', ATK: 'Ⓧ', SKL: 'Ⓨ', DSH: 'Ⓑ' }, touch: { JUMP: '⤒', ATK: '⚔', SKL: '✦', DSH: '»' } }[dev];
+  return t.replace(/\{(JUMP|ATK|SKL|DSH)\}/g, (_, k) => M[k]);
+}
 let notifyT = 0;
 function notify(a, b) { const n = $('#notify'); if (!n) return; n.innerHTML = `<b>${a}</b>${b ? `<span>${b}</span>` : ''}`; n.classList.add('on'); clearTimeout(notifyT); notifyT = setTimeout(() => n.classList.remove('on'), 3200); }
 function applyBtnSize() { const m = { S: .82, M: 1, L: 1.2 }[S.data.settings.btnSize || 'M'] || 1; document.documentElement.style.setProperty('--tsz', m); }
 
 /* ------------------------------ availability ------------------------------ */
 function heroAvailable(id) {
-  const h = PLAT.HEROES[id]; if (!h) return false;
+  const h = PLAT.HEROES[id]; if (!h || h.disabled) return false;
   if (h.devOnly && !S.devOn()) return false;
   if (h.free || S.devOn()) return true;
   if (S.ownedMain().has(id)) return true;
@@ -166,7 +172,7 @@ function levelUnlocked(id) {
   const i = PLAT.LEVEL_ORDER.indexOf(id); if (i <= 0 || S.devOn()) return true;
   const prev = S.level(PLAT.LEVEL_ORDER[i - 1]); return !!(prev && prev.cleared);
 }
-const heroList = () => PLAT.HERO_ORDER.filter(id => PLAT.HEROES[id] && !(PLAT.HEROES[id].devOnly && !S.devOn()));
+const heroList = () => PLAT.HERO_ORDER.filter(id => PLAT.HEROES[id] && !PLAT.HEROES[id].disabled && !(PLAT.HEROES[id].devOnly && !S.devOn()));
 
 /* --------------------------------- title --------------------------------- */
 function refreshTitle() {
@@ -278,7 +284,7 @@ function onGameEvent(type, d) {
   const g = app.game; if (!g) return;
   switch (type) {
     case 'hud': updateHud(d); break;
-    case 'sign': $('#hSign').classList.toggle('on', !!d); if (d) $('#hSign').textContent = d; break;
+    case 'sign': $('#hSign').classList.toggle('on', !!d); if (d) $('#hSign').textContent = signText(d); break;
     case 'boss': $('#hBoss').classList.toggle('on', !!d); if (d) { $('#hBossNm').textContent = `${d.name} · ${d.th}`; $('#hBossBar').style.width = '100%'; toast(d.name, d.th); } break;
     case 'bossHit': $('#hBossBar').style.width = (d.hp / d.max * 100) + '%'; break;
     case 'toast': toast(d.text, d.sub); break;

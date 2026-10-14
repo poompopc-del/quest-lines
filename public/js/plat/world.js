@@ -43,6 +43,7 @@ function buildLevel(spec) {
         default:
           if (ch >= '1' && ch <= '9') L.signs.push({ x: cx, y: by, text: (spec.signs || {})[ch] || '' });
           else if (PLAT.ENEMY_CODES && PLAT.ENEMY_CODES[ch]) L.spawns.push({ type: PLAT.ENEMY_CODES[ch], x: cx, y: by });
+          else if (PLAT.ELITE_CODES && PLAT.ELITE_CODES[ch]) L.spawns.push({ type: PLAT.ELITE_CODES[ch], x: cx, y: by, elite: true });
       }
     }
   }

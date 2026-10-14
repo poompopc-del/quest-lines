@@ -58,7 +58,7 @@ class Player {
     if (this.onGround) { this.coyote = C.COYOTE; this.airJumps = h.airJumps || 0; this.airDash = true; this.rocketUsed = false; this.floating = false; }
     else if (this.coyote > 0) this.coyote--;
 
-    if (this.hurtT > 0) { this.hurtT--; }
+    if (this.hurtT > 0) { this.hurtT--; if (this.onGround) this.vx *= .86; }
     else {
       this.startActions(inp, ax);
       if (h.attack.charge && this.charge > 0) {            // X: hold attack to charge the buster
@@ -179,12 +179,15 @@ class Player {
   startActions(inp, ax) {
     const h = this.hero;
     const busy = this.act && !this.act.cancellable;
+    // input buffer: a dash / skill pressed while busy is remembered for 10 frames and fires the moment the move can be cancelled
+    if (inp.wasPressed('dash')) this.dashBuf = 10; else if (this.dashBuf > 0) this.dashBuf--;
+    if (inp.wasPressed('skill')) this.skillBuf = 10; else if (this.skillBuf > 0) this.skillBuf--;
     // guard (Plink): hold ↓ on the ground
     if (h.guard && !this.act && this.onGround && inp.isHeld('down') && !ax) { this.guarding = true; this.vx *= .6; }
     // DASH
-    if (inp.wasPressed('dash') && !busy && this.cd.dash <= 0) this.startDash();
+    if (this.dashBuf > 0 && !busy && this.cd.dash <= 0) { this.dashBuf = 0; if (this.act) this.endAct(); this.startDash(); }
     // SKILL
-    else if (inp.wasPressed('skill') && !busy) this.startSkill(inp);
+    else if (this.skillBuf > 0 && !busy) { this.skillBuf = 0; if (this.act) this.endAct(); this.startSkill(inp); }
     // ATTACK
     if (inp.wasPressed('attack')) {
       if (!this.act || this.act.cancellable) this.startAttack(inp);
@@ -212,31 +215,70 @@ class Player {
       this.cd.shot = A.rate; if (A.charge) this.charge = 1;
       return;
     }
-    // melee combo
-    const steps = A.steps, i = this.comboWin > 0 ? this.combo % steps.length : 0;
+    // melee combo: continue from a step in its recovery, or within the combo window after it
+    const steps = A.steps, cur = this.act && this.act.kind === 'step' && this.act.idx != null ? this.act.idx + 1 : null;
+    const i = cur != null ? cur % steps.length : this.comboWin > 0 ? this.combo % steps.length : 0;
+    if (this.act) this.endAct();
     this.startStep(steps[i], i);
     this.combo = i + 1; this.comboWin = 0;
     if (A.count) g.text(this.cx + this.face * 18, this.y - 4, A.count[i], i === 2 ? '#ff4a6a' : '#ffd84a', 34, true);
   }
+  /* Where does this attack actually hurt? Read it from the pixels of the attack frames:
+     a frame is ACTIVE when the drawing reaches clearly further forward than the idle pose
+     (blade / fist / leg / effect out), and its hit box covers what is drawn in front of the body.
+     So the damage window is the frames you see the weapon in, and the reach is the reach you see.
+     Steps that move the whole body (slides, rolls) keep their hand-set window from heroes.js. */
+  frameHits(s) {
+    const key = s.pose + '|' + s.dur; this._fh = this._fh || {};
+    if (this._fh[key] !== undefined) return this._fh[key];
+    let out = null;
+    const sheet = this.anim.sheet, r = this.anim.resolve(s.pose), idle = this.anim.resolve('idle');
+    const ib = idle && sheet.bounds(idle.frames[0]);
+    if (r && ib && !s.slide && s.auto !== false && r.name === s.pose) {
+      const sc = this.hero.scale, fx = Math.max(0, ib.x1 * .35) * sc;
+      // the part of a frame that is drawn in front of the body, in world units (forward, top, w, h)
+      const pix = fr => { const b = sheet.bounds(fr); if (!b) return null; return [fx, b.y0 * sc - 2, Math.max(10, b.x1 * sc - fx + 2), Math.max(12, (b.y1 - b.y0) * sc + 4)]; };
+      const union = (a, b) => { if (!a) return b; if (!b) return a; const x0 = Math.min(a[0], b[0]), y0 = Math.min(a[1], b[1]); return [x0, y0, Math.max(a[0] + a[2], b[0] + b[2]) - x0, Math.max(a[1] + a[3], b[1] + b[3]) - y0]; };
+      if (s.on) {
+        // the frames where the blow lands are listed per move (checked by eye against the sheets);
+        // the reach comes from the pixels of those frames, never smaller than the move's base box
+        out = r.frames.map((fr, i) => s.on.includes(i) ? { box: union(pix(fr), s.box) } : null);
+      } else {
+        // automatic: a frame is active when its drawing reaches clearly further than the least-extended
+        // frame of the same animation (the wind-up / recovery pose)
+        const bs = r.frames.map(fr => sheet.bounds(fr)).filter(Boolean);
+        const front = Math.max(ib.x1 * .6, Math.min(...bs.map(b => b.x1))), bodyW = Math.max(8, ib.x1 - ib.x0), need = front + Math.max(6, bodyW * .3);
+        const frames = r.frames.map(fr => { const b = sheet.bounds(fr); return b && b.x1 >= need ? { box: pix(fr) } : null; });
+        if (frames.some(Boolean)) {
+          for (let i = 0; i < frames.length - 1; i++) if (frames[i] && !frames[i + 1] && !(i > 0 && frames[i - 1])) frames[i + 1] = { box: frames[i].box, follow: true };
+          out = frames;
+        }
+      }
+    }
+    return (this._fh[key] = out);
+  }
   startStep(s, idx) {
-    const swing = newSwing(), self = this;
+    const swing = newSwing(), self = this, fh = this.frameHits(s), n = fh ? fh.length : 0;
     this.anim.play(s.pose, s.dur, true);
-    if (s.lunge) this.vx = this.face * Math.max(Math.abs(this.vx), s.lunge) * (s.slide ? 1 : 1);
+    if (s.lunge && (this.onGround || s.slide)) this.vx = this.face * Math.max(Math.abs(this.vx) * .5, s.lunge);
     sfx().swing();
-    this.act = { kind: 'step', t: 0, s, swing, pose: s.pose, slow: s.slide ? 1 : .3, canTurn: false, idx,
-      ownsMove: !!s.slide,
+    // the frame index → time: anim.index() maps t ∈ [0, dur) onto the frames
+    const lastActive = fh ? Math.floor((Math.max(...fh.map((f, i) => f ? i : -1)) + 1) * s.dur / n) : s.hit[1];
+    this.act = { kind: 'step', t: 0, s, swing, pose: s.pose, slow: s.slide ? 1 : .3, canTurn: false, idx, cancellable: false,
+      ownsMove: !!s.slide, lastActive,
       update() {
         const t = ++this.t;
         if (s.slide) { self.vx *= .94; }
-        if (t >= s.hit[0] && t <= s.hit[1]) {
-          const n = self.g.hit(self.box(s.box), s.dmg, { id: swing, kb: s.kb, dir: self.face, from: self, shake: s.shake, fx: s.fx });
-          if (n && s.fx && !this.fxDone) { this.fxDone = true; }
+        let box = null;
+        if (fh) { const f = fh[self.anim.index()]; if (f && t < s.dur) box = f.box; }
+        else if (t >= s.hit[0] && t <= s.hit[1]) box = s.box;
+        if (box) self.g.hit(self.box(box), s.dmg, { id: swing, kb: s.kb, dir: self.face, from: self, shake: s.shake, fx: s.fx, heavy: s.dmg >= 3 || !!s.shake, finisher: idx != null && idx === (self.hero.attack.steps || []).length - 1 && idx > 0 });
+        // recovery: once the blow is over the move can be cancelled into the next hit, a dash, a skill or a jump
+        if (t > this.lastActive && !this.cancellable) {
+          this.cancellable = true;
+          if (self.queued) { self.queued = false; self.startAttack(self.g.input); return; }
         }
-        if (t >= s.dur) {
-          self.endAct();
-          self.comboWin = 14;
-          if (self.queued) { self.queued = false; self.startAttack(self.g.input); }
-        }
+        if (t >= s.dur) { self.endAct(); self.comboWin = 16; }
       } };
     this.queued = false;
   }

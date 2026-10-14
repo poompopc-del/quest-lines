@@ -227,19 +227,22 @@ function ac() {
   if (AC.state === 'suspended') AC.resume().catch(() => {});
   return AC;
 }
+// a hard cap on simultaneous voices: busy fights never stack into a wall of noise (or leak audio nodes)
+let VOICES = 0; const MAX_VOICES = 18;
+const voice = (node, dur) => { VOICES++; node.onended = () => { VOICES--; }; };
 function tone(type, f0, f1, dur, vol, delay = 0) {
-  const a = ac(); if (!a || PLAT.sfx.vol <= 0) return;
+  const a = ac(); if (!a || PLAT.sfx.vol <= 0 || VOICES >= MAX_VOICES) return;
   const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
   o.type = type; o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
   g.gain.setValueAtTime(vol * PLAT.sfx.vol, t); g.gain.exponentialRampToValueAtTime(.0008, t + dur);
-  o.connect(g); g.connect(MASTER); o.start(t); o.stop(t + dur + .02);
+  o.connect(g); g.connect(MASTER); voice(o); o.start(t); o.stop(t + dur + .02);
 }
 function noise(dur, vol, f0 = 1800, f1 = 300, delay = 0, q = 1) {
-  const a = ac(); if (!a || !NOISE || PLAT.sfx.vol <= 0) return;
+  const a = ac(); if (!a || !NOISE || PLAT.sfx.vol <= 0 || VOICES >= MAX_VOICES) return;
   const t = a.currentTime + delay, s = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain();
   s.buffer = NOISE; fl.type = 'bandpass'; fl.Q.value = q; fl.frequency.setValueAtTime(f0, t); fl.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
   g.gain.setValueAtTime(vol * PLAT.sfx.vol, t); g.gain.exponentialRampToValueAtTime(.0008, t + dur);
-  s.connect(fl); fl.connect(g); g.connect(MASTER); s.start(t); s.stop(t + dur + .02);
+  s.connect(fl); fl.connect(g); g.connect(MASTER); voice(s); s.start(t); s.stop(t + dur + .02);
 }
 let lastPlay = {};
 function limit(name, ms) { const n = performance.now(); if (lastPlay[name] && n - lastPlay[name] < ms) return false; lastPlay[name] = n; return true; }
@@ -250,16 +253,16 @@ PLAT.sfx = {
   airjump() { tone('square', 380, 760, .12, .1); },
   land() { if (limit('land', 90)) noise(.06, .12, 500, 120); },
   swing() { if (limit('swing', 50)) noise(.09, .2, 2600, 700, 0, 2); },
-  heavy() { noise(.18, .3, 900, 120, 0, 1.5); tone('sawtooth', 140, 60, .18, .12); },
+  heavy() { if (!limit('heavy', 60)) return; noise(.18, .3, 900, 120, 0, 1.5); tone('sawtooth', 140, 60, .18, .12); },
   hit() { if (!limit('hit', 35)) return; noise(.08, .32, 1400, 200); tone('square', 180, 70, .09, .14); },
   clang() { if (!limit('clang', 60)) return; tone('triangle', 1250, 900, .14, .16); tone('square', 2100, 1600, .08, .06); },
-  kill() { tone('square', 520, 120, .18, .13); noise(.16, .2, 1600, 200); },
-  hurt() { tone('sawtooth', 300, 90, .25, .2); noise(.15, .2, 800, 150); },
+  kill() { if (!limit('kill', 50)) return; tone('square', 520, 120, .18, .13); noise(.16, .2, 1600, 200); tone('triangle', 880, 1320, .08, .06, .05); },
+  hurt() { if (!limit('hurt', 80)) return; tone('sawtooth', 300, 90, .25, .2); noise(.15, .2, 800, 150); },
   die() { tone('square', 440, 60, .7, .2); tone('triangle', 220, 50, .9, .15, .1); },
   coin() { if (!limit('coin', 40)) return; tone('square', 988, 988, .05, .1); tone('square', 1319, 1319, .14, .1, .05); },
   gem() { [784, 988, 1175, 1568].forEach((f, i) => tone('triangle', f, f, .16, .14, i * .07)); },
   heart() { tone('sine', 523, 1046, .25, .2); },
-  shoot() { if (limit('shoot', 40)) tone('square', 900, 300, .1, .09); },
+  shoot() { if (limit('shoot', 45)) tone('square', 900, 300, .1, .08); },
   big() { tone('sawtooth', 200, 900, .25, .16); noise(.3, .2, 3000, 400); },
   charge() { if (limit('charge', 120)) tone('sine', 300, 600, .12, .05); },
   boom() { noise(.45, .42, 700, 60, 0, .8); tone('sine', 110, 40, .4, .3); },
