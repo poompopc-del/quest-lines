@@ -1,36 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#081830"/>
-      <stop offset=".5" stop-color="#184080"/>
-      <stop offset="1" stop-color="#50a0c0"/>
+      <stop offset="0" stop-color="#061428"/>
+      <stop offset=".4" stop-color="#143870"/>
+      <stop offset="1" stop-color="#48a0c0"/>
     </linearGradient>
     <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#40ff80" stop-opacity=".5"/>
-      <stop offset=".5" stop-color="#80c0ff" stop-opacity=".6"/>
-      <stop offset="1" stop-color="#c080ff" stop-opacity=".4"/>
+      <stop offset="0" stop-color="#40ff80" stop-opacity=".55"/>
+      <stop offset=".4" stop-color="#80c0ff" stop-opacity=".65"/>
+      <stop offset=".7" stop-color="#c080ff" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#40e0ff" stop-opacity=".4"/>
     </linearGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="10"/></filter>
   </defs>
-  <rect width="1600" height="900" fill="url(#sky)"/>
-  <path d="M0,60 Q300,20 600,100 Q900,10 1200,80 Q1400,40 1600,70 L1600,220 Q1200,180 800,220 Q400,140 0,200 Z" fill="url(#aurora)" filter="url(#glow)"/>
-  <path d="M200,180 Q800,40 1400,180 L1400,900 L200,900 Z" fill="#061020"/>
-  <path d="M280,220 Q800,100 1320,220 L1320,900 L280,900 Z" fill="#0a2040"/>
-  <path d="M500,320 L650,140 L800,320 Z" fill="#c0d8e8"/>
-  <path d="M700,340 L880,120 L1060,340 Z" fill="#d0e8f0"/>
-  <path d="M950,330 L1100,160 L1250,330 Z" fill="#b0c8d8"/>
-  <g fill="#70d0ff" opacity=".9">
-    <path d="M160,480 L200,280 L240,480 Z"/>
-    <path d="M120,520 L170,300 L210,520 Z"/>
-    <path d="M1360,460 L1420,260 L1480,460 Z"/>
-    <path d="M1400,500 L1460,280 L1500,500 Z"/>
-    <path d="M350,540 L390,360 L430,540 Z"/>
-    <path d="M1180,520 L1230,340 L1280,520 Z"/>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <path d="M0,40 Q400,0 800,90 Q1200,-10 1600,70 Q1760,40 1920,60 L1920,240 Q1400,190 900,240 Q400,150 0,210 Z" fill="url(#aurora)" filter="url(#glow)"/>
+  <path d="M180,200 Q960,30 1740,200 L1740,1080 L180,1080 Z" fill="#051018"/>
+  <path d="M300,250 Q960,100 1620,250 L1620,1080 L300,1080 Z" fill="#0a2040"/>
+  <path d="M550,360 L720,140 L890,360 Z" fill="#c0d8e8"/>
+  <path d="M780,380 L980,100 L1180,380 Z" fill="#d0e8f0"/>
+  <path d="M1050,370 L1220,150 L1390,370 Z" fill="#b0c8d8"/>
+  <g fill="#60d0ff" opacity=".92">
+    <path d="M140,560 L200,280 L260,560 Z"/>
+    <path d="M80,600 L160,300 L220,600 Z"/>
+    <path d="M1640,540 L1720,260 L1800,540 Z"/>
+    <path d="M1700,580 L1780,280 L1840,580 Z"/>
+    <path d="M380,620 L440,380 L500,620 Z"/>
+    <path d="M1400,600 L1480,360 L1560,600 Z"/>
   </g>
-  <path d="M200,620 Q500,570 800,600 Q1100,560 1400,610 L1400,900 L200,900 Z" fill="#102840"/>
-  <path d="M300,680 Q650,630 1000,660 Q1200,640 1300,680 L1300,900 L300,900 Z" fill="#183050"/>
-  <g fill="#fff" opacity=".75">
-    <circle cx="450" cy="650" r="2.5"/><circle cx="700" cy="680" r="2"/>
-    <circle cx="950" cy="640" r="3"/><circle cx="600" cy="710" r="2.2"/>
+  <path d="M200,720 Q600,660 1000,700 Q1400,650 1720,710 L1720,1080 L200,1080 Z" fill="#102840"/>
+  <path d="M350,800 Q750,740 1150,780 Q1450,750 1570,800 L1570,1080 L350,1080 Z" fill="#183050"/>
+  <g fill="#fff" opacity=".8">
+    <circle cx="500" cy="760" r="3"/><circle cx="800" cy="800" r="2.5"/>
+    <circle cx="1100" cy="750" r="3.5"/><circle cx="700" cy="840" r="2.8"/>
   </g>
 </svg>
