@@ -1794,7 +1794,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 37; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 38; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1825,14 +1825,14 @@ const HERO_SPRITE = {
   // The sheet's armour-break defeat frames are not used; 'dead' is an armoured fall built from a hurt frame.
   knight: { dir:'heroes/knight/', ch:112, scale:2, face:'-16 -150 50 50',
     anims:{
-      idle:{ n:4, cw:216, ax:70,  dur:1.6, loop:true },
-      walk:{ n:8, cw:216, ax:70,  dur:.8,  loop:true },
-      hurt:{ n:3, cw:216, ax:70,  dur:.6 },
-      dead:{ n:4, cw:216, ax:110, dur:1.0 },
-      atk1:{ n:5, cw:216, ax:70,  dur:.7, th:'แทงดาบยักษ์' },
-      atk2:{ n:5, cw:216, ax:70,  dur:.7, th:'วิ่งพุ่งแทง' },
-      atk3:{ n:5, cw:216, ax:70,  dur:.75, th:'ฟันคลื่นแสง' },
-      fin: { n:7, cw:216, ax:70,  dur:1.1, th:'คลื่นดาบอัศวิน' } },
+      idle:{ n:4, cw:216, ax:108, dur:1.6, loop:true },
+      walk:{ n:8, cw:216, ax:108, dur:.8,  loop:true },
+      hurt:{ n:3, cw:216, ax:108, dur:.6 },
+      dead:{ n:4, cw:216, ax:108, dur:1.0 },
+      atk1:{ n:5, cw:216, ax:108, dur:.7, th:'แทงดาบยักษ์' },
+      atk2:{ n:5, cw:216, ax:108, dur:.7, th:'วิ่งพุ่งแทง' },
+      atk3:{ n:5, cw:216, ax:108, dur:.75, th:'ฟันคลื่นแสง' },
+      fin: { n:7, cw:216, ax:108, dur:1.1, th:'คลื่นดาบอัศวิน' } },
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5,
     finNote:'สะกดคำ <b>5 ตัวอักษรขึ้นไป</b> = ท่าไม้ตาย <b>คลื่นดาบอัศวิน</b> แรง +20%' },
   // Kirby (id stays 'puff' so old saves keep the fighter) — pixel strips from Kirby Super Star Ultra.
