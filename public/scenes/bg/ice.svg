@@ -1,37 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" preserveAspectRatio="xMidYMid slice">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0a1830"/>
-      <stop offset=".5" stop-color="#204080"/>
-      <stop offset="1" stop-color="#60a0c0"/>
+      <stop offset="0" stop-color="#081830"/>
+      <stop offset=".5" stop-color="#184080"/>
+      <stop offset="1" stop-color="#50a0c0"/>
     </linearGradient>
     <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#40ff80" stop-opacity=".4"/>
-      <stop offset=".5" stop-color="#80c0ff" stop-opacity=".5"/>
-      <stop offset="1" stop-color="#c080ff" stop-opacity=".3"/>
+      <stop offset="0" stop-color="#40ff80" stop-opacity=".5"/>
+      <stop offset=".5" stop-color="#80c0ff" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#c080ff" stop-opacity=".4"/>
     </linearGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="8"/></filter>
   </defs>
-  <rect width="1200" height="675" fill="url(#sky)"/>
-  <path d="M0,80 Q200,40 400,100 Q600,30 800,90 Q1000,50 1200,80 L1200,200 Q900,160 600,200 Q300,140 0,180 Z" fill="url(#aurora)" filter="url(#glow)"/>
-  <path d="M200,200 Q600,80 1000,200 L1000,675 L200,675 Z" fill="#081828"/>
-  <path d="M240,220 Q600,120 960,220 L960,675 L240,675 Z" fill="#0a2040"/>
-  <path d="M400,280 L500,160 L600,280 Z" fill="#c0d8e8"/>
-  <path d="M550,300 L680,140 L800,300 Z" fill="#d0e8f0"/>
-  <path d="M700,290 L820,180 L940,290 Z" fill="#b0c8d8"/>
-  <g fill="#80d0ff" opacity=".85">
-    <path d="M180,400 L200,280 L220,400 Z"/>
-    <path d="M160,420 L190,300 L210,420 Z"/>
-    <path d="M980,380 L1010,260 L1040,380 Z"/>
-    <path d="M1000,400 L1030,280 L1050,400 Z"/>
-    <path d="M300,450 L320,340 L340,450 Z"/>
-    <path d="M850,430 L875,320 L900,430 Z"/>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <path d="M0,60 Q300,20 600,100 Q900,10 1200,80 Q1400,40 1600,70 L1600,220 Q1200,180 800,220 Q400,140 0,200 Z" fill="url(#aurora)" filter="url(#glow)"/>
+  <path d="M200,180 Q800,40 1400,180 L1400,900 L200,900 Z" fill="#061020"/>
+  <path d="M280,220 Q800,100 1320,220 L1320,900 L280,900 Z" fill="#0a2040"/>
+  <path d="M500,320 L650,140 L800,320 Z" fill="#c0d8e8"/>
+  <path d="M700,340 L880,120 L1060,340 Z" fill="#d0e8f0"/>
+  <path d="M950,330 L1100,160 L1250,330 Z" fill="#b0c8d8"/>
+  <g fill="#70d0ff" opacity=".9">
+    <path d="M160,480 L200,280 L240,480 Z"/>
+    <path d="M120,520 L170,300 L210,520 Z"/>
+    <path d="M1360,460 L1420,260 L1480,460 Z"/>
+    <path d="M1400,500 L1460,280 L1500,500 Z"/>
+    <path d="M350,540 L390,360 L430,540 Z"/>
+    <path d="M1180,520 L1230,340 L1280,520 Z"/>
   </g>
-  <path d="M200,500 Q400,470 600,490 Q800,460 1000,500 L1000,675 L200,675 Z" fill="#102840"/>
-  <path d="M250,540 Q500,510 750,530 Q900,515 950,540 L950,675 L250,675 Z" fill="#183050"/>
-  <g fill="#fff" opacity=".7">
-    <circle cx="400" cy="520" r="2"/><circle cx="600" cy="540" r="1.5"/>
-    <circle cx="800" cy="510" r="2.5"/><circle cx="500" cy="560" r="1.8"/>
-    <circle cx="700" cy="530" r="1.2"/><circle cx="350" cy="550" r="2"/>
+  <path d="M200,620 Q500,570 800,600 Q1100,560 1400,610 L1400,900 L200,900 Z" fill="#102840"/>
+  <path d="M300,680 Q650,630 1000,660 Q1200,640 1300,680 L1300,900 L300,900 Z" fill="#183050"/>
+  <g fill="#fff" opacity=".75">
+    <circle cx="450" cy="650" r="2.5"/><circle cx="700" cy="680" r="2"/>
+    <circle cx="950" cy="640" r="3"/><circle cx="600" cy="710" r="2.2"/>
   </g>
 </svg>
