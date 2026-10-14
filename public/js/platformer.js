@@ -12,7 +12,7 @@ ctx.imageSmoothingEnabled = false;
 /* ---------------------------------- input ---------------------------------- */
 const keys = {}, pressed = {};
 const K = { left:['ArrowLeft','KeyA'], right:['ArrowRight','KeyD'], down:['ArrowDown','KeyS'],
-            jump:['Space','ArrowUp','KeyW','KeyK'], atk:['KeyJ','KeyX','KeyZ'], restart:['KeyR'], ok:['Enter'] };
+            jump:['Space','ArrowUp','KeyW','KeyK'], atk:['KeyJ','KeyX','KeyZ'], dash:['ShiftLeft','ShiftRight','KeyL'], spin:['KeyU','KeyC'], wand:['KeyI','KeyV'], restart:['KeyR'], ok:['Enter'] };
 addEventListener('keydown', e => {
   if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
   if (!keys[e.code]) pressed[e.code] = true; keys[e.code] = true;
@@ -43,7 +43,7 @@ Promise.all([ fetch('heroes/shovel/atlas.json').then(r => r.json()), load('heroe
   .catch(err => { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#f66'; ctx.font = '12px monospace'; ctx.fillText(String(err.message), 10, 20); });
 
 /* ---------------------------------- state ---------------------------------- */
-let L, G, P, enemies, coins, parts, cam, mode, lvl = 0, bank = 0, time = 0, swingId = 0;
+let L, G, P, enemies, coins, parts, shots, fxs, cam, mode, lvl = 0, bank = 0, time = 0, swingId = 0;
 
 function build(spec) {
   const g = Array.from({ length: ROWS }, () => new Array(spec.w).fill(0));
@@ -56,9 +56,10 @@ function load_level(n) {
   lvl = n % LEVELS.length; L = build(LEVELS[lvl]);
   enemies = L.spec.slimes.map(([c, r]) => ({ x: c * T + 4, y: r * T - 12, w: 16, h: 12, vx: Math.random() < .5 ? -.4 : .4, vy: 0, hp: 2, flash: 0, kb: 0, swing: -1, t: Math.random() * 50 }));
   coins = L.spec.coins.map(([c, r]) => ({ x: c * T + T / 2, y: r * T + T / 2, got: false }));
-  parts = []; cam = 0; time = 0; G = { got: 0, kills: 0 };
+  parts = []; shots = []; fxs = []; cam = 0; time = 0; G = { got: 0, kills: 0 };
   P = { x: 2 * T, y: 5 * T, w: 14, h: 28, vx: 0, vy: 0, face: 1, onGround: false, hp: 4, inv: 0, hurtT: 0, atkT: -1, pogo: false, pogoGrace: 0,
-        coyote: 0, buf: 0, jumping: false, dead: false, deadT: 0 };
+        coyote: 0, buf: 0, jumping: false, dead: false, deadT: 0,
+        mp: 100, dashT: 0, dashCd: 0, dashId: 0, airDash: true, spinT: 0, castT: 0 };
   mode = 'play';
 }
 function start() { load_level(0); last = performance.now(); requestAnimationFrame(loop); }
@@ -115,11 +116,32 @@ function stepPlayer() {
       if (!p.onGround && held('down')) p.pogo = true;
       else if (p.atkT < 0) { p.atkT = 0; swingId++; }
     }
+    const busy = p.dashT > 0 || p.spinT > 0 || p.castT > 0;
+    if (tap('dash') && !busy && p.dashCd <= 0 && (p.onGround || p.airDash)) {      // DASH SLASH
+      p.dashT = 14; p.dashCd = 36; p.dashId = ++swingId; p.atkT = -1; p.pogo = false; p.inv = Math.max(p.inv, 14); if (!p.onGround) p.airDash = false;
+    } else if (tap('spin') && !busy && p.mp >= 25) {                                // WHIRLWIND SPIN
+      p.mp -= 25; p.spinT = 26; p.atkT = -1; p.pogo = false;
+    } else if (tap('wand') && !busy && p.mp >= 30) {                                // FLARE WAND
+      p.mp -= 30; p.castT = 14; p.atkT = -1; p.pogo = false;
+    }
   }
+  if (p.onGround) p.airDash = true;
+  p.mp = Math.min(100, p.mp + .12); if (p.dashCd > 0) p.dashCd--;
+  if (p.castT > 0) { p.castT--; if (p.castT === 7) shots.push({ x: p.x + p.w / 2 + p.face * 14, y: p.y + 10, vx: p.face * 3.6, t: 0 }); }
   if (p.atkT >= 0 && ++p.atkT >= ATK_STEP * ATK_FRAMES) p.atkT = -1;
   if (p.inv > 0) p.inv--; if (p.pogoGrace > 0) p.pogoGrace--;
-  p.vy = Math.min(p.vy + GRAV, MAXFALL);
+  if (p.dashT > 0) { p.dashT--; p.vx = p.face * 4.6; p.vy = 0; }
+  else if (p.spinT > 0) { p.spinT--; p.vx *= .7; p.vy = Math.min(p.vy + GRAV * .3, 1.2); }
+  else { if (p.castT > 0) p.vx *= .5; p.vy = Math.min(p.vy + GRAV, MAXFALL); }
   moveX(p, p.vx); moveY(p, p.vy);
+  if (p.dashT > 0) {
+    const box = { x: p.face > 0 ? p.x + p.w - 2 : p.x - 46, y: p.y, w: 48, h: p.h };
+    for (const e of enemies) if (e.hp > 0 && e.swing !== p.dashId && overlap(box, e)) { e.swing = p.dashId; damage(e, p.face); }
+  }
+  if (p.spinT > 0 && p.spinT % 8 === 0) {
+    swingId++; const box = { x: p.x - 26, y: p.y - 6, w: p.w + 52, h: p.h + 12 };
+    for (const e of enemies) if (e.hp > 0 && overlap(box, e)) { e.swing = swingId; damage(e, e.x < p.x ? -1 : 1); }
+  }
   if (p.onGround && p.pogo) p.pogo = false;
   // swing hitbox
   if (p.atkT >= ATK_STEP * (ATK_FRAMES - 2)) {
@@ -158,13 +180,28 @@ function stepEnemies() {
   }
 }
 
+/* ------------------------------- flare wand shots ------------------------------- */
+function boom(x, y, dir) {
+  fxs.push({ x, y, t: 0 }); burst(x, y, '#ffb347', 10, 2.6);
+  const box = { x: x - 24, y: y - 24, w: 48, h: 48 };
+  for (const e of enemies) if (e.hp > 0 && overlap(box, e)) { damage(e, dir); if (e.hp > 0) damage(e, dir); }
+}
+function stepShots() {
+  for (const s of shots) {
+    s.x += s.vx; s.t++;
+    const hitE = enemies.find(e => e.hp > 0 && overlap({ x: s.x - 7, y: s.y - 7, w: 14, h: 14 }, e));
+    if (hitE || solid(Math.floor(s.x / T), Math.floor(s.y / T)) || s.t > 90) { s.dead = true; boom(s.x, s.y, Math.sign(s.vx)); }
+  }
+  shots = shots.filter(s => !s.dead); fxs.forEach(f => f.t++); fxs = fxs.filter(f => f.t < 16);
+}
+
 /* ----------------------------------- loop ----------------------------------- */
 let last = 0, acc = 0;
 function step() {
   time++;
   if (tap('restart') || ((mode === 'dead') && tap('ok') && P.deadT > 45)) { if (mode === 'dead') bank -= G.got; load_level(lvl); return; }
   if (mode === 'clear') { if (tap('ok')) { load_level(lvl + 1); } return; }
-  stepPlayer(); stepEnemies();
+  stepPlayer(); stepEnemies(); stepShots();
   for (const c of coins) if (!c.got && Math.abs(c.x - (P.x + P.w / 2)) < 14 && Math.abs(c.y - (P.y + P.h / 2)) < 18 && !P.dead) { c.got = true; G.got++; bank++; burst(c.x, c.y, '#ffd84a', 6, 1.6); }
   const goalX = L.spec.goal * T;
   if (!P.dead && P.x + P.w > goalX && mode === 'play') mode = 'clear';
@@ -182,6 +219,9 @@ function animFrame() {
   const p = P, A = ATLAS.anims;
   if (p.dead) return A.dead[Math.min(A.dead.length - 1, Math.floor(p.deadT / 8))];
   if (p.hurtT > 0) return A.hurt[Math.floor(p.hurtT / 5) % A.hurt.length];
+  if (p.dashT > 0) return A.dash[Math.floor(time / 3) % A.dash.length];
+  if (p.spinT > 0) return A.spin[Math.floor((26 - p.spinT) / 3.25) % A.spin.length];
+  if (p.castT > 0) return A.cast[p.castT > 7 ? 0 : 1];
   if (p.atkT >= 0) return A.attack[Math.min(A.attack.length - 1, Math.floor(p.atkT / ATK_STEP))];
   if (p.pogo) return A.pogo[0];
   if (!p.onGround) return p.vy < 0 ? A.jump[0] : A.fall[0];
@@ -189,8 +229,10 @@ function animFrame() {
   return A.idle[Math.floor(time / 14) % A.idle.length];
 }
 function drawHero() {
-  const f = ATLAS.frames[animFrame()], cx = Math.round(P.x + P.w / 2 - cam), by = Math.round(P.y + P.h + 1 - f.h);
-  if (P.inv > 0 && !P.dead && Math.floor(P.inv / 4) % 2) return;
+  const id = animFrame(), f = ATLAS.frames[id], cx = Math.round(P.x + P.w / 2 - cam);
+  const mid = ATLAS.center.some(n => ATLAS.anims[n].includes(id)),
+        by = mid ? Math.round(P.y + P.h / 2 - f.h / 2) : Math.round(P.y + P.h + 1 - f.h);
+  if (P.inv > 0 && !P.dead && P.dashT <= 0 && Math.floor(P.inv / 4) % 2) return;
   ctx.save(); ctx.translate(cx, 0); if (P.face < 0) ctx.scale(-1, 1);
   ctx.drawImage(ATIMG, f.x, f.y, f.w, f.h, -Math.round(f.ax), by, f.w, f.h); ctx.restore();
 }
@@ -223,11 +265,17 @@ function draw() {
     ctx.drawImage(SLIME, fr * 69, 0, 64, 50, Math.round(e.x + e.w / 2 - dw / 2 + ox), Math.round(e.y + e.h - dh + 1), dw, dh); ctx.restore();
   }
   drawHero();
+  for (const sh of shots) { const id = ATLAS.anims.fireball[Math.floor(sh.t / 3) % 4], f = ATLAS.frames[id];
+    ctx.drawImage(ATIMG, f.x, f.y, f.w, f.h, Math.round(sh.x + ox - f.w), Math.round(sh.y - f.h), f.w * 2, f.h * 2); }
+  for (const fx of fxs) { const id = ATLAS.anims.boom[Math.min(3, Math.floor(fx.t / 4))], f = ATLAS.frames[id];
+    ctx.drawImage(ATIMG, f.x, f.y, f.w, f.h, Math.round(fx.x + ox - f.w), Math.round(fx.y - f.h), f.w * 2, f.h * 2); }
   for (const q of parts) { ctx.fillStyle = q.col; ctx.fillRect(Math.round(q.x + ox), Math.round(q.y), 2, 2); }
   // HUD
   for (let i = 0; i < 4; i++) { ctx.fillStyle = i < P.hp ? '#ff4d6a' : '#3a2230'; ctx.fillRect(8 + i * 14, 8, 10, 10); ctx.fillStyle = 'rgba(255,255,255,.35)'; if (i < P.hp) ctx.fillRect(10 + i * 14, 10, 3, 3); }
+  ctx.fillStyle = '#12203a'; ctx.fillRect(7, 40, 62, 8); ctx.fillStyle = P.mp >= 30 ? '#4db8ff' : '#2a6ea0'; ctx.fillRect(8, 41, Math.floor(60 * P.mp / 100), 6);
+  ctx.fillStyle = '#ffffff55'; ctx.fillRect(30 * .6 + 8 - 1, 40, 1, 8);
   ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#fff'; ctx.strokeStyle = '#0008'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
-  const hud = `COINS ${bank}   STAGE ${L.spec.name}`; ctx.strokeText(hud, 8, 34); ctx.fillText(hud, 8, 34);
+  const hud = `COINS ${bank}   STAGE ${L.spec.name}`; ctx.strokeText(hud, 8, 62); ctx.fillText(hud, 8, 62);
   if (mode !== 'play') {
     ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(0, 76, W, 64); ctx.textAlign = 'center'; ctx.font = 'bold 22px monospace';
     ctx.fillStyle = mode === 'clear' ? '#ffe36a' : '#ff7a7a'; ctx.fillText(mode === 'clear' ? 'STAGE CLEAR!' : 'DEFEATED', W / 2, 108);
