@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quest Lines — Platformer</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b0d14;color:#cfd6e6;font-family:system-ui,"Noto Sans Thai",sans-serif}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  canvas{width:min(100vw,calc((100vh - 70px)*16/9));aspect-ratio:16/9;image-rendering:pixelated;background:#000;border:2px solid #263046;border-radius:4px}
+  .help{font-size:13px;line-height:1.6;text-align:center;opacity:.85;padding:0 12px}
+  kbd{background:#1c2436;border:1px solid #33405c;border-radius:4px;padding:0 6px}
+  a{color:#8fb4ff}
+</style>
+</head>
+<body>
+<canvas id="c" width="384" height="216"></canvas>
+<div class="help">
+  <kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> เดิน · <kbd>Space</kbd> / <kbd>W</kbd> / <kbd>K</kbd> กระโดด · <kbd>J</kbd> / <kbd>X</kbd> ฟันพลั่ว ·
+  กลางอากาศกด <kbd>↓</kbd> + <kbd>J</kbd> = กดพลั่วลงเหยียบมอนสเตอร์ (เด้งต่อเนื่องได้) · <kbd>R</kbd> เริ่มด่านใหม่ · <a href="./">กลับเกมหลัก</a>
+</div>
+<script src="js/platformer.js"></script>
+</body>
+</html>
