@@ -6,7 +6,7 @@
    ========================================================================== */
 const WM_POS = [ [30,86], [70,70], [31,53], [70,36], [34,19] ];   // % of the map (x, y)
 const WM_TOWER = [76,6];
-const LOC_BG = { crypt:'scenes/bg/cave.png', woods:'scenes/meadow/sky.png', ice:'scenes/bg/snow.png', lava:'scenes/bg/castlenight.png', necro:'scenes/bg/ghostnight.png' };
+const LOC_BG = { crypt:'scenes/bg/crypt.svg', woods:'scenes/bg/woods.svg', ice:'scenes/bg/ice.svg', lava:'scenes/bg/lava.svg', necro:'scenes/bg/necro.svg' };
 
 const WORLD_BG = ()=>{
   const r = mulberry(99), R = (a,b)=>a+r()*(b-a), f = v=>v.toFixed(1);
@@ -50,8 +50,8 @@ function renderWorld(){
     const [x,y] = WM_POS[ci];
     const ready = QUESTS.some(q=>q.loc===ci && qStatus(q)==='ready');
     return `<button class="wm-node ${open?'':'locked'} ${done?'done':''} ${here?'here':''} ${x>50?'r':'l'}" style="left:${x}%;top:${y}%;--lc:${L.col}" data-act="openCh" data-v="${ci}" aria-label="${esc(L.name)}">
-      <span class="wm-pin">${open ? monsterIcon(CHAPTERS[ci].boss) : ICON.lock}${here?`<span class="wm-you">${heroFaceSvg(save.eq)}</span>`:''}${questAt(ci)?`<em class="wm-q ${ready?'ready':''}">${ready?'✔':'!'}</em>`:''}</span>
-      <span class="wm-plate"><small>บทที่ ${ci+1}${done?' · ✔':''}</small><b>${esc(L.name)}</b><span class="wm-prog"><i style="width:${cl/STAGES_PER*100}%"></i></span><span class="wm-meta">${open?`${cl}/${STAGES_PER} · ★${stars}`:`🔒 ผ่าน ${ci}-8`}</span></span>
+      <span class="wm-pin">${open ? monsterIcon(CHAPTERS[ci].boss) : ICON.lock}${here?`<span class="wm-you">${heroFaceSvg(save.eq)}</span>`:''}${questAt(ci)?`<em class="wm-q ${ready?'ready':''}">${ready?'\u2714':'!'}</em>`:''}</span>
+      <span class="wm-plate"><small>บทที่ ${ci+1}${done?' · \u2714':''}</small><b>${esc(L.name)}</b><span class="wm-prog"><i style="width:${cl/STAGES_PER*100}%"></i></span><span class="wm-meta">${open?`${cl}/${STAGES_PER} · ★${stars}`:`🔒 ผ่าน ${ci}-8`}</span></span>
     </button>`;
   }).join('');
   const [tx,ty] = WM_TOWER, tOpen = true;
@@ -82,7 +82,7 @@ function renderChapter(){
       ${lock?ICON.lock:boss?ICON.skull:''}<span>${lock?'':boss?'BOSS':`${ci+1}-${n}`}</span>${!lock&&st?`<span class="stars">${starsHtml(st)}</span>`:''}</button>`;
   }
   const foe = (k, tag)=>{ const seen = V.seen.mon[k], kills = V.kills[k]||0, M = MON[k];
-    return `<div class="lc-foe ${seen?'':'unseen'} ${tag||''}"><span class="lc-art">${monsterIcon(k)}</span><span class="lc-ft"><small>${tag==='boss'?'BOSS':tag==='mini'?'MINI BOSS':''}</small><b>${seen?esc(M.name):'???'}</b><em>${seen?esc(M.th):'ยังไม่พบ'}</em>${kills?`<i class="lc-kill">✔ ปราบแล้ว ${kills}</i>`:''}</span></div>`; };
+    return `<div class="lc-foe ${seen?'':'unseen'} ${tag||''}"><span class="lc-art">${monsterIcon(k)}</span><span class="lc-ft"><small>${tag==='boss'?'BOSS':tag==='mini'?'MINI BOSS':''}</small><b>${seen?esc(M.name):'???'}</b><em>${seen?esc(M.th):'ยังไม่พบ'}</em>${kills?`<i class="lc-kill">\u2714 ปราบแล้ว ${kills}</i>`:''}</span></div>`; };
   const qs = QUESTS.filter(q=>q.loc===ci && (q.type!=='chain' || chainStep(q.chain)===q)).map(q=>({ q, st:qStatus(q) })).filter(x=>x.st!=='claimed' || x.q.type==='main');
   const play = nextN ? `<button class="cbtn gold block lc-play" data-act="stage" data-ch="${ci}" data-n="${nextN}">${IC2.play} ${cl?'ลุยต่อ':'เริ่ม'} ด่าน ${ci+1}-${nextN}${nextN===STAGES_PER?' · BOSS':''}</button>`
     : `<button class="cbtn wood block lc-play" data-act="stage" data-ch="${ci}" data-n="${STAGES_PER}">${IC2.play} ท้าทายบอสอีกครั้ง</button>`;
