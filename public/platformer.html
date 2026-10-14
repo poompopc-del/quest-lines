@@ -2,24 +2,134 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quest Lines — Platformer</title>
-<style>
-  html,body{margin:0;height:100%;background:#0b0d14;color:#cfd6e6;font-family:system-ui,"Noto Sans Thai",sans-serif}
-  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
-  canvas{width:min(100vw,calc((100vh - 70px)*16/9));aspect-ratio:16/9;image-rendering:pixelated;background:#000;border:2px solid #263046;border-radius:4px}
-  .help{font-size:13px;line-height:1.6;text-align:center;opacity:.85;padding:0 12px}
-  kbd{background:#1c2436;border:1px solid #33405c;border-radius:4px;padding:0 6px}
-  a{color:#8fb4ff}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#08070f">
+<title>Quest Lines — Platform Mode</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/platform.css?v=1">
 </head>
 <body>
-<canvas id="c" width="384" height="216"></canvas>
-<div class="help">
-  <kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> เดิน · <kbd>Space</kbd> / <kbd>W</kbd> / <kbd>K</kbd> กระโดด · <kbd>J</kbd> / <kbd>X</kbd> ฟันพลั่ว ·
-  กลางอากาศกด <kbd>↓</kbd> + <kbd>J</kbd> = กดพลั่วลงเหยียบ (เด้งต่อเนื่องได้)<br>
-  <kbd>Shift</kbd> / <kbd>L</kbd> พุ่งฟัน · <kbd>U</kbd> / <kbd>C</kbd> หมุนตัวฟัน (ใช้มานา 25) · <kbd>I</kbd> / <kbd>V</kbd> ไม้เท้าไฟ ยิงลูกไฟ (ใช้มานา 30) · <kbd>R</kbd> เริ่มด่านใหม่ · <a href="./">กลับเกมหลัก</a>
+<div id="stage">
+  <canvas id="cv" aria-label="Platform Mode"></canvas>
+  <div id="hud">
+    <div class="h-top">
+      <div class="h-left">
+        <div class="h-face"><canvas id="hFace" width="48" height="48"></canvas></div>
+        <div class="h-bars"><div class="hearts" id="hHearts"></div><div class="en"><b id="hEn"></b><s id="hEnMark"></s></div></div>
+      </div>
+      <div class="h-mid"><div class="h-lv" id="hLv"></div><div class="h-time" id="hTime">0:00.0</div></div>
+      <div class="h-right"><span>🪙 <b id="hCoins">0</b></span><span class="gems" id="hGems"></span><button class="pbtn" id="hPause" aria-label="หยุดเกม">⏸</button></div>
+    </div>
+    <div class="bossbar" id="hBoss"><div class="nm" id="hBossNm"></div><div class="bar"><b id="hBossBar"></b></div></div>
+    <div class="abil" id="hAbil"></div>
+    <div class="signbox" id="hSign"></div>
+    <div class="toast" id="hToast"><div class="t1" id="hToast1"></div><div class="t2" id="hToast2"></div></div>
+  </div>
 </div>
-<script src="js/platformer.js"></script>
+
+<div id="touch">
+  <div id="dpad"><span class="k l">◀</span><span class="k r">▶</span><span class="k u">▲</span><span class="k d">▼</span></div>
+  <div id="btns">
+    <button class="bj" data-act="jump"><span><b>⤒</b>กระโดด</span></button>
+    <button class="ba" data-act="attack"><span><b>⚔</b><i id="tA">โจมตี</i></span></button>
+    <button class="bs" data-act="skill"><span><b>✦</b><i id="tS">สกิล</i></span></button>
+    <button class="bd" data-act="dash"><span><b>»</b><i id="tD">พุ่ง</i></span></button>
+  </div>
+</div>
+<div class="rotate" id="rotHint">📱↻ หมุนจอเป็นแนวนอนจะเล่นง่ายขึ้น</div>
+
+<!-- screens -->
+<section class="screen" id="sTitle">
+  <div class="title-wrap">
+    <h1 class="logo">PLATFORM MODE<small>QUEST LINES · ACTION PLATFORMER</small></h1>
+    <div class="menu">
+      <button class="btn red" data-go="map">▶ เล่น · เลือกด่าน</button>
+      <button class="btn" data-go="heroes">🦸 เลือกฮีโร่ <span class="chip gold" id="tHero"></span></button>
+      <button class="btn" data-go="settings">⚙️ ตั้งค่า &amp; ปุ่มควบคุม</button>
+      <button class="btn" data-go="main">↩ กลับเกมหลัก</button>
+    </div>
+    <p class="note" id="tNote" style="margin-top:14px"></p>
+  </div>
+</section>
+
+<section class="screen" id="sHeroes">
+  <div class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">เลือกฮีโร่</h2><button class="btn" data-go="back">✕ ปิด</button></div>
+    <p class="sub">ฮีโร่ทุกตัวมาจากเกมหลัก — ที่มีในเกมหลักแล้วเล่นได้ทันที · ตัวอื่นปลดล็อกได้ด้วยการผ่านด่านในโหมดนี้</p>
+    <div class="hero-grid" id="heroGrid"></div>
+    <div class="hero-info" id="heroInfo"></div>
+  </div>
+</section>
+
+<section class="screen" id="sMap">
+  <div class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">แผนที่</h2>
+      <div class="row"><button class="btn" data-go="heroes">🦸 <span id="mHero"></span></button><button class="btn" data-go="title">✕</button></div></div>
+    <p class="sub" id="mSub"></p>
+    <div class="worlds" id="worlds"></div>
+  </div>
+</section>
+
+<section class="screen dim" id="sPause">
+  <div class="panel sm">
+    <h2 class="kick">หยุดเกม</h2>
+    <p class="sub" id="pSub"></p>
+    <div class="menu" style="margin-top:6px">
+      <button class="btn red" data-go="resume">▶ เล่นต่อ</button>
+      <button class="btn" data-go="retryCp">↺ เริ่มจากเช็กพอยต์</button>
+      <button class="btn" data-go="restart">⟲ เริ่มด่านใหม่</button>
+      <button class="btn" data-go="settings">⚙️ ตั้งค่า</button>
+      <button class="btn" data-go="map">🗺 ออกไปแผนที่</button>
+    </div>
+  </div>
+</section>
+
+<section class="screen dim" id="sDead">
+  <div class="panel sm" style="text-align:center">
+    <h2 class="kick" style="color:#ff8a8a">พ่ายแพ้…</h2>
+    <p class="sub" id="dSub">ไม่เป็นไร! เหรียญและ 💎 ที่เก็บไว้ยังอยู่ครบ</p>
+    <div class="menu" style="margin-top:6px">
+      <button class="btn red" data-go="retryCp" id="dRetry">↺ เกิดใหม่ที่เช็กพอยต์</button>
+      <button class="btn" data-go="restart">⟲ เริ่มด่านใหม่</button>
+      <button class="btn" data-go="map">🗺 ออกไปแผนที่</button>
+    </div>
+  </div>
+</section>
+
+<section class="screen dim" id="sClear">
+  <div class="panel sm" id="clearBox"></div>
+</section>
+
+<section class="screen" id="sSettings">
+  <div class="panel sm">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">ตั้งค่า</h2><button class="btn" data-go="back">✕ ปิด</button></div>
+    <div class="set-row"><span>🔊 เสียงเอฟเฟกต์</span><input type="range" id="setSfx" min="0" max="100" step="5"></div>
+    <div class="set-row"><span>📳 จอสั่น</span><div class="seg" id="setShake"><button data-v="1">เปิด</button><button data-v="0">ปิด</button></div></div>
+    <div class="set-row"><span>👆 ปุ่มบนจอ</span><div class="seg" id="setTouch"><button data-v="auto">อัตโนมัติ</button><button data-v="on">แสดง</button><button data-v="off">ซ่อน</button></div></div>
+    <h3>ปุ่มควบคุม</h3>
+    <div class="keys">
+      <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> เดิน (กดค้าง = วิ่ง) · <kbd>Space</kbd>/<kbd>K</kbd>/<kbd>W</kbd> กระโดด (กดค้าง = สูง)<br>
+      <kbd>J</kbd>/<kbd>X</kbd> โจมตี · <kbd>I</kbd>/<kbd>C</kbd> สกิล · <kbd>L</kbd>/<kbd>Shift</kbd> พุ่ง · <kbd>↓</kbd>+กระโดด ลงจากแผ่นไม้<br>
+      <kbd>Esc</kbd>/<kbd>P</kbd> หยุดเกม · จอยเกม: A กระโดด · X โจมตี · Y สกิล · B พุ่ง · Start หยุด
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="sLoading">
+  <div style="text-align:center"><div class="kick" id="lTitle">กำลังโหลด…</div><div class="sub" id="lSub"></div><div class="loadbar"><b id="lBar"></b></div></div>
+</section>
+
+<script src="js/plat/core.js?v=1"></script>
+<script src="js/plat/world.js?v=1"></script>
+<script src="js/plat/anim.js?v=1"></script>
+<script src="js/plat/heroes.js?v=1"></script>
+<script src="js/plat/player.js?v=1"></script>
+<script src="js/plat/enemies.js?v=1"></script>
+<script src="js/plat/levels.js?v=1"></script>
+<script src="js/plat/game.js?v=1"></script>
+<script src="js/plat/ui.js?v=1"></script>
 </body>
 </html>
