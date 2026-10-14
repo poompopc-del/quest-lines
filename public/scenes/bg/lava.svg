@@ -1,32 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" preserveAspectRatio="xMidYMid slice">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1a0808"/>
+      <stop offset="0" stop-color="#180808"/>
       <stop offset=".4" stop-color="#4a1010"/>
       <stop offset="1" stop-color="#8a2010"/>
     </linearGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   </defs>
-  <rect width="1200" height="675" fill="url(#sky)"/>
-  <ellipse cx="300" cy="80" rx="200" ry="40" fill="#2a1010" opacity=".6"/>
-  <ellipse cx="800" cy="60" rx="250" ry="50" fill="#3a1810" opacity=".5"/>
-  <path d="M0,350 L200,180 L350,350 Z" fill="#2a1810"/>
-  <path d="M150,350 L280,120 L400,350 Z" fill="#3a2018"/>
-  <path d="M250,200 Q280,280 240,350 Q300,400 260,480 Q340,540 280,620" fill="none" stroke="#ff4010" stroke-width="12" filter="url(#glow)"/>
-  <path d="M250,200 Q280,280 240,350 Q300,400 260,480 Q340,540 280,620" fill="none" stroke="#ff8040" stroke-width="6"/>
-  <g transform="translate(550,180)">
-    <rect x="0" y="80" width="180" height="200" fill="#2a2028"/>
-    <rect x="20" y="40" width="40" height="80" fill="#3a2830"/>
-    <rect x="120" y="30" width="40" height="90" fill="#3a2830"/>
-    <path d="M-10,80 L30,20 L70,80 Z" fill="#4a3038"/>
-    <path d="M110,80 L150,10 L190,80 Z" fill="#4a3038"/>
-    <rect x="70" y="140" width="40" height="60" fill="#1a1018"/>
-    <path d="M30,50 L30,90 L50,80 L30,70" fill="#c02020"/>
-    <path d="M130,40 L130,85 L155,75 L130,65" fill="#c02020"/>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <ellipse cx="400" cy="80" rx="280" ry="50" fill="#2a1010" opacity=".6"/>
+  <ellipse cx="1100" cy="60" rx="320" ry="60" fill="#3a1810" opacity=".5"/>
+  <path d="M0,420 L250,180 L450,420 Z" fill="#2a1810"/>
+  <path d="M180,420 L350,100 L500,420 Z" fill="#3a2018"/>
+  <path d="M300,220 Q340,340 290,440 Q380,520 320,640 Q420,740 340,820" fill="none" stroke="#ff4010" stroke-width="16" filter="url(#glow)"/>
+  <path d="M300,220 Q340,340 290,440 Q380,520 320,640 Q420,740 340,820" fill="none" stroke="#ff8040" stroke-width="8"/>
+  <g transform="translate(700,200)">
+    <rect x="0" y="100" width="240" height="280" fill="#2a2028"/>
+    <rect x="30" y="40" width="50" height="120" fill="#3a2830"/>
+    <rect x="160" y="30" width="50" height="130" fill="#3a2830"/>
+    <path d="M-10,100 L40,10 L90,100 Z" fill="#4a3038"/>
+    <path d="M140,100 L185,0 L230,100 Z" fill="#4a3038"/>
+    <rect x="90" y="180" width="60" height="90" fill="#1a1018"/>
+    <path d="M40,60 L40,120 L70,105 L40,90" fill="#c02020"/>
+    <path d="M170,50 L170,115 L205,100 L170,85" fill="#c02020"/>
+    <rect x="50" y="160" width="12" height="20" fill="#ff6020" filter="url(#glow)"/>
+    <rect x="180" y="150" width="12" height="24" fill="#ff8040" filter="url(#glow)"/>
   </g>
-  <path d="M0,520 Q200,480 400,510 Q600,460 800,500 Q1000,470 1200,510 L1200,675 L0,675 Z" fill="#1a0808"/>
-  <path d="M0,550 Q300,500 600,540 Q900,490 1200,530 L1200,675 L0,675 Z" fill="#ff3010" opacity=".7" filter="url(#glow)"/>
-  <path d="M0,560 Q300,520 600,550 Q900,510 1200,545 L1200,675 L0,675 Z" fill="#ff6020" opacity=".5"/>
-  <ellipse cx="150" cy="580" rx="60" ry="30" fill="#2a1810"/>
-  <ellipse cx="1000" cy="570" rx="80" ry="35" fill="#3a2018"/>
+  <path d="M0,680 Q300,620 600,660 Q900,590 1200,650 Q1400,610 1600,660 L1600,900 L0,900 Z" fill="#1a0808"/>
+  <path d="M0,720 Q400,650 800,700 Q1200,630 1600,690 L1600,900 L0,900 Z" fill="#ff3010" opacity=".7" filter="url(#glow)"/>
+  <path d="M0,740 Q400,680 800,720 Q1200,660 1600,710 L1600,900 L0,900 Z" fill="#ff6020" opacity=".5"/>
+  <ellipse cx="180" cy="780" rx="80" ry="40" fill="#2a1810"/>
+  <ellipse cx="1350" cy="760" rx="100" ry="45" fill="#3a2018"/>
 </svg>
