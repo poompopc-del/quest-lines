@@ -1794,7 +1794,7 @@ const ARMOR_OV = {
 */
 const HERO_IMG = {
 };
-const HERO_IMG_VER = 32; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
+const HERO_IMG_VER = 33; // เปลี่ยนภาพแล้วภาพเก่ายังค้าง → เพิ่มเลขนี้ทีละ 1
 function heroImgSVG(cfg){
   const h = cfg.h || 160, w = h, x = -w/2 + (cfg.dx||0), y = -h + (cfg.dy||0);
   const src = cfg.src + (cfg.src.includes('?') ? '&' : '?') + 'v=' + HERO_IMG_VER;
@@ -1823,16 +1823,16 @@ const HERO_SPRITE = {
     finNote:'สะกดคำ <b>6 ตัวอักษรขึ้นไป</b> = ท่าไม้ตาย <b>คลื่นดาบเพลิง</b> x1.5 · HP เต็มยิง <b>ลำแสงดาบ</b> +30%' },
   // Elite Knight (v36 starter) — frames from "Dungeon Maker · Hero · Elite Knight", mirrored to face right.
   // The sheet's armour-break defeat frames are not used; 'dead' is an armoured fall built from a hurt frame.
-  knight: { dir:'heroes/knight/', ch:100, scale:2.2, face:'-16 -150 50 50',
+  knight: { dir:'heroes/knight/', ch:400, scale:0.55, face:'-16 -150 50 50',
     anims:{
-      idle:{ n:4, cw:149, ax:50,  dur:1.6, loop:true },
-      walk:{ n:6, cw:149, ax:50,  dur:.8,  loop:true },
-      hurt:{ n:4, cw:149, ax:50,  dur:.6 },
-      dead:{ n:6, cw:149, ax:70,  dur:1.0 },
-      atk1:{ n:5, cw:149, ax:50,  dur:.7, th:'แทงดาบยักษ์' },
-      atk2:{ n:4, cw:149, ax:50,  dur:.7, th:'วิ่งพุ่งแทง' },
-      atk3:{ n:4, cw:149, ax:50,  dur:.75, th:'ฟันคลื่นแสง' },
-      fin: { n:6, cw:149, ax:50,  dur:1.1, th:'คลื่นดาบอัศวิน' } },
+      idle:{ n:4, cw:149, ax:75,  dur:1.6, loop:true },
+      walk:{ n:4, cw:149, ax:75,  dur:.8,  loop:true },
+      hurt:{ n:4, cw:149, ax:75,  dur:.6 },
+      dead:{ n:4, cw:149, ax:75,  dur:1.0 },
+      atk1:{ n:4, cw:149, ax:75,  dur:.7, th:'แทงดาบยักษ์' },
+      atk2:{ n:4, cw:149, ax:75,  dur:.7, th:'วิ่งพุ่งแทง' },
+      atk3:{ n:4, cw:149, ax:75,  dur:.75, th:'ฟันคลื่นแสง' },
+      fin: { n:4, cw:149, ax:75,  dur:1.1, th:'คลื่นดาบอัศวิน' } },
     attacks:['atk1','atk2','atk3'], finisher:'fin', finMin:5,
     finNote:'สะกดคำ <b>5 ตัวอักษรขึ้นไป</b> = ท่าไม้ตาย <b>คลื่นดาบอัศวิน</b> แรง +20%' },
   // Kirby (id stays 'puff' so old saves keep the fighter) — pixel strips from Kirby Super Star Ultra.
