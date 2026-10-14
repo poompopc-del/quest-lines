@@ -22,6 +22,8 @@
   // renaming from settings updates the top bar
   document.addEventListener('input', e=>{ if(e.target.dataset && e.target.dataset.input==='rename') setTimeout(refreshChrome, 0); });
   if(ui.screen==='map' || ui.screen==='shop' || ui.screen==='hero' || ui.screen==='settings') ui.screen = ALIAS[ui.screen];
+  // Show all chapter backgrounds now that SVG scenes exist
+  if (typeof SCENE_HIDDEN !== 'undefined') SCENE_HIDDEN.clear();
   if(ui.screen!=='battle') render();
   if(globalResetInfo) setTimeout(showGlobalResetNotice, 400);   // v46: one-time global progress reset notice
 })();
