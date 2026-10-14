@@ -75,7 +75,7 @@ PLAT.assets = {
 const KEYMAP = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
   jump: ['Space', 'KeyK', 'ArrowUp', 'KeyW'], attack: ['KeyJ', 'KeyX'], skill: ['KeyI', 'KeyC'], dash: ['KeyL', 'ShiftLeft', 'ShiftRight'],
-  pause: ['Escape', 'KeyP'], ok: ['Enter', 'NumpadEnter'], back: ['Backspace'],
+  pause: ['Escape', 'KeyP'], ok: ['Enter', 'NumpadEnter'], back: ['Backspace'], ult: [],
 };
 const ACTIONS = Object.keys(KEYMAP);
 const input = PLAT.input = {

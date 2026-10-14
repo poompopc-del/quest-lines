@@ -38,6 +38,7 @@ const PROJ = PLAT.PROJ = {
   rocket: { img: 'heroes/elon/rocket.png', fw: 67, fh: 10, n: 1, scale: .55, speed: 3, accel: .35, maxSpeed: 9, dmg: 4, life: 70, box: [30, 8], explode: { r: 54, dmg: 5 }, trail: '#ffb04a' },
   fan:    { img: 'heroes/mia/fireshuriken.png', fw: 34, fh: 34, n: 11, rate: 2, scale: .8, speed: 6.5, dmg: 2, pierce: 99, life: 70, box: [24, 24], boomerang: true, glow: '#ff8a3a' },
   flare:  { atlasAnim: 'fireball', scale: 2, speed: 3.8, dmg: 2, life: 80, box: [14, 14], explode: { r: 30, dmg: 2, atlasAnim: 'boom' } },
+  flareBig: { atlasAnim: 'fireball', scale: 3, speed: 4.5, dmg: 4, life: 90, box: [22, 22], explode: { r: 44, dmg: 4, atlasAnim: 'boom' } },
   fist:   { img: 'heroes/cream/fx_fist.png', fw: 250, fh: 250, n: 6, rate: 4, scale: .26, speed: 7, dmg: 2, pierce: 2, life: 34, box: [40, 40], glow: '#ff3a3a' },
   // enemy shots
   fireball:  { img: 'bosses/dragon/fireball.png', fw: 56, fh: 32, n: 6, rate: 4, loopFrom: 3, scale: .55, speed: 3.2, dmg: 1, life: 140, box: [14, 12], enemy: true, explode: { r: 0 } },
@@ -56,6 +57,8 @@ const FX = PLAT.FXDEF = {
   aura:   { img: 'heroes/kea/fx_aura.png', fw: 129, fh: 178, n: 8, rate: 3, scale: .42 },
   craura: { img: 'heroes/cream/fx_auras.png', fw: 112, fh: 108, n: 14, rate: 3, scale: .55 },
   ground: { img: 'heroes/cream/fx_ground.png', fw: 210, fh: 240, n: 8, rate: 3, scale: .3 },
+  pillar: { img: 'heroes/mia/fx/pillar.png', fw: 73, fh: 106, n: 26, rate: 2, scale: .9 },
+  mburst: { img: 'heroes/mia/fx/burst.png', fw: 110, fh: 82, n: 24, rate: 2, scale: 1.1 },
   kick:   { img: 'heroes/cream/fx_kick.png', fw: 250, fh: 227, n: 6, rate: 3, scale: .28 },
 };
 
@@ -64,102 +67,136 @@ const H = PLAT.HEROES = {};
 
 H.knight = {
   name: 'Elite Knight', th: 'อัศวินเหล็กผมแดง', role: 'ดาบใหญ่ · ทนทาน', color: '#ff5a4a',
-  desc: 'ฟันดาบยักษ์ 3 จังหวะ ระยะไกลที่สุด · สกิลปล่อยคลื่นดาบทะลุศัตรู · เกราะหนา กระเด็นน้อย',
+  desc: 'ดาบยักษ์ระยะไกลที่สุด ช้าแต่หนัก · เกราะหนากระเด็นน้อย · ↑+โจมตีเสยลอย วิ่ง+โจมตีพุ่งแทง',
   sprite: strip('heroes/knight/', 112, {
     idle: { n: 4, cw: 216, ax: 70 }, walk: { n: 8, cw: 216, ax: 70 }, hurt: { n: 3, cw: 216, ax: 70 }, dead: { n: 4, cw: 216, ax: 110 },
     atk1: { n: 5, cw: 216, ax: 70 }, atk2: { n: 5, cw: 216, ax: 70 }, atk3: { n: 5, cw: 216, ax: 70 }, fin: { n: 7, cw: 216, ax: 70 } }, { by: 109 }),
   scale: .62, box: [18, 42], hp: 6, speed: .92, jump: 1, armor: true,
   poses: { idle: { a: 'idle', fps: 5 }, walk: { a: 'walk', fps: 12 }, run: { a: 'walk', fps: 17 }, jump: { a: 'walk', f: [2] }, fall: { a: 'walk', f: [6] }, hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 6 } },
-  attack: { kind: 'combo', steps: [
+  attack: { kind: 'combo', name: 'ฟันดาบยักษ์ 3 จังหวะ', steps: [
     { pose: 'atk1', dur: 24, on: [2, 3], hit: [9, 18], box: [2, -36, 58, 24], dmg: 2, kb: 4, lunge: 1.5 },
     { pose: 'atk2', dur: 24, on: [2, 3], hit: [9, 18], box: [2, -32, 64, 22], dmg: 2, kb: 4, lunge: 3.5 },
     { pose: 'atk3', dur: 30, on: [2, 3], hit: [11, 20], box: [-12, -70, 74, 70], dmg: 3, kb: 6, lunge: 1, shake: 2 } ] },
+  moves: {
+    up:  { name: 'เสยดาบจันทร์เสี้ยว (ลอยศัตรู)', pose: 'atk3', dur: 28, on: [2, 3], hit: [10, 19], box: [-14, -84, 70, 84], dmg: 2, kb: 3, up: true },
+    run: { name: 'พุ่งแทงทะลวง', pose: 'atk2', dur: 26, on: [2, 3], hit: [9, 18], box: [2, -32, 70, 22], dmg: 3, kb: 8, lunge: 6.5, heavy: true },
+  },
   skill: { kind: 'proj', name: 'คลื่นดาบอัศวิน', cost: 30, pose: 'fin', dur: 36, fireAt: 17, proj: 'arc', y: -30 },
   dash: { kind: 'dash', name: 'แทงพุ่ง', pose: 'atk2', f: [2, 3], speed: 6, dur: 14, cd: 40, hit: { box: [0, -32, 40, 24], dmg: 2 }, air: true },
+  ult: { input: 'du+A', name: 'ARC TRINITY · คลื่นดาบสามจันทร์', kind: 'arcs', pose: 'fin', dur: 46, fireAt: [16, 22, 28], proj: 'arc', scale: .58, dmg: 7 },
 };
 
 H.pip = {
   name: 'Plink', th: 'พลิงค์ นักดาบหมวกเขียว', role: 'นักดาบ · โล่', color: '#5ad06a',
-  desc: 'ฟันเร็ว 3 ท่า · กด ↓ ค้างบนพื้น = ตั้งโล่กันการโจมตีด้านหน้า · สกิลหมุนดาบรอบตัว · พุ่งฟันกลางอากาศได้',
+  desc: 'ฟันเร็ว · กด ↓ ค้าง = ตั้งโล่ · กดโจมตีค้างแล้วปล่อย = สปินแอทแท็ก · สกิลพุ่งโล่กระแทก สะท้อนกระสุน',
   sprite: strip('heroes/plink/', 73, {
     idle: { n: 2, cw: 24, ax: 13 }, walk: { n: 10, cw: 42, ax: 21 }, hurt: { n: 3, cw: 46, ax: 25 }, dead: { n: 2, cw: 50, ax: 25 },
-    atk1: { n: 5, cw: 68, ax: 45 }, atk2: { n: 4, cw: 47, ax: 17 }, atk3: { n: 5, cw: 57, ax: 35 }, spin: { n: 6, cw: 45, ax: 16 }, guard: { n: 7, cw: 32, ax: 16 } }),
+    atk1: { n: 5, cw: 68, ax: 45 }, atk2: { n: 4, cw: 47, ax: 17 }, atk3: { n: 5, cw: 57, ax: 35 }, spin: { n: 6, cw: 45, ax: 16 }, guard: { n: 7, cw: 32, ax: 16 },
+    fin: { n: 10, cw: 118, ax: 45 } }),
   scale: 1, box: [16, 42], hp: 5, speed: 1.02, jump: 1,
   poses: { idle: { a: 'idle', fps: 3 }, walk: { a: 'walk', fps: 14 }, run: { a: 'walk', fps: 20 }, jump: { a: 'walk', f: [3] }, fall: { a: 'walk', f: [8] }, hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 5 },
-    guard: { a: 'guard', f: [6] }, dashp: { a: 'atk3', f: [0] } },
+    guard: { a: 'guard', f: [6] }, dashp: { a: 'atk3', f: [0] }, bash: { a: 'guard', f: [5, 6], fps: 10, loopy: true } },
   guard: { pose: 'guard' },
-  attack: { kind: 'combo', steps: [
+  attack: { kind: 'combo', name: 'ฟันดาบ 3 จังหวะ', steps: [
     { pose: 'atk2', dur: 15, on: [1, 2, 3], hit: [5, 11], box: [2, -32, 36, 14], dmg: 1, kb: 3, lunge: 1.5 },
-    { pose: 'atk1', dur: 18, on: [2, 3], hit: [5, 13], box: [-6, -60, 50, 60], dmg: 1, kb: 3 },
-    { pose: 'atk3', dur: 22, on: [2, 3, 4], hit: [6, 15], box: [-8, -64, 46, 64], dmg: 2, kb: 5, lunge: 2.5 } ] },
-  skill: { kind: 'spin', name: 'สปินแอทแท็ก', cost: 25, pose: 'spin', dur: 30, every: 7, box: [-34, -48, 68, 50], dmg: 1, hover: true },
+    { pose: 'atk2', dur: 14, on: [1, 2, 3], hit: [5, 11], box: [2, -32, 36, 14], dmg: 1, kb: 3, lunge: 1 },
+    { pose: 'atk1', dur: 20, on: [2, 3], hit: [5, 13], box: [-6, -60, 50, 60], dmg: 2, kb: 5 } ] },
+  moves: {
+    up:   { name: 'ฟันเสยขึ้นฟ้า (ลอยศัตรู)', pose: 'atk3', dur: 22, on: [2, 3, 4], hit: [6, 15], box: [-8, -66, 46, 66], dmg: 2, kb: 3, up: true },
+    air:  { name: 'ฟันลงกลางอากาศ', pose: 'atk1', dur: 18, on: [2, 3], hit: [5, 13], box: [-6, -60, 50, 64], dmg: 1, kb: 3 },
+    hold: { name: 'สปินแอทแท็ก (กดค้างแล้วปล่อย)', t: 40, kind: 'spin', cost: 0, pose: 'spin', dur: 26, every: 9, box: [-36, -46, 72, 48], dmg: 2 },
+  },
+  skill: { kind: 'bash', name: 'โล่กระแทก (สะท้อนกระสุน)', cost: 20, pose: 'bash', speed: 5.2, dur: 20, hit: { box: [2, -40, 24, 40], dmg: 2, kb: 11 } },
   dash: { kind: 'dash', name: 'ฟันพุ่ง', pose: 'dashp', speed: 6.8, dur: 12, cd: 34, hit: { box: [-4, -36, 36, 30], dmg: 1 }, air: true, trail: '#ffb04a' },
+  ult: { input: 'S+A', name: 'FLAME SWORD · คลื่นดาบเพลิง', kind: 'step', step: { pose: 'fin', dur: 56, on: [5, 6, 7, 8], hit: [28, 48], box: [6, -48, 70, 52], dmg: 8, kb: 10, heavy: true, shake: 6, multi: true } },
 };
 
 H.puff = {
   name: 'Kirby', th: 'เคอร์บี้ ก้อนชมพูจอมดูด', role: 'ลอยตัว · ดูดแล้วพ่น', color: '#ff8ac8',
-  desc: 'กดกระโดดกลางอากาศ = ลอยได้ 5 ครั้ง · สกิลค้าง = ดูดศัตรูตัวเล็ก/กระสุน แล้วกดโจมตีพ่นดาวแรง ×6 · ปกติเตะสไลด์',
+  desc: 'กดกระโดดกลางอากาศ = ลอย 5 ครั้ง · สกิลค้าง = ดูดศัตรู/กระสุน แล้วโจมตีพ่นดาว · กลางอากาศโจมตี = ตีลังกา · ↓+โจมตีกลางอากาศ = กลิ้งทิ่มลง · ↓ ค้าง = ตั้งการ์ด',
   sprite: strip('heroes/kirby/', 34, {
     idle: { n: 10, cw: 26, ax: 13 }, walk: { n: 7, cw: 28, ax: 14 }, hurt: { n: 4, cw: 26, ax: 13 }, dead: { n: 4, cw: 36, ax: 18 },
     atk1: { n: 5, cw: 32, ax: 16 }, atk2: { n: 8, cw: 30, ax: 15 }, atk3: { n: 7, cw: 34, ax: 17 }, inhale: { n: 8, cw: 31, ax: 15 },
-    fspit: { n: 6, cw: 33, ax: 16 }, fidle: { n: 4, cw: 33, ax: 16 }, fwalk: { n: 6, cw: 35, ax: 17 }, fhurt: { n: 4, cw: 34, ax: 17 } }, { by: 33 }),
+    fspit: { n: 6, cw: 33, ax: 16 }, fidle: { n: 4, cw: 33, ax: 16 }, fwalk: { n: 6, cw: 35, ax: 17 }, fhurt: { n: 4, cw: 34, ax: 17 }, guard: { n: 5, cw: 30, ax: 15 } }, { by: 33 }),
   scale: 1.45, box: [20, 30], hp: 5, speed: .9, jump: 1,
   poses: { idle: { a: 'idle', fps: 4 }, walk: { a: 'walk', fps: 12 }, run: { a: 'walk', fps: 18 }, jump: { a: 'atk3', f: [0, 1, 2, 3], fps: 16, hold: true }, fall: { a: 'idle', f: [0] },
-    float: { a: 'fidle', fps: 8, loopy: true }, hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 5 },
-    // mouthful set (an enemy is held in Kirby's mouth)
+    float: { a: 'fidle', fps: 8, loopy: true }, hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 5 }, guard: { a: 'guard', f: [2] },
     m_idle: { a: 'fidle', fps: 5, loopy: true }, m_walk: { a: 'fwalk', fps: 10, loopy: true }, m_hurt: { a: 'fhurt', fps: 10 }, m_jump: { a: 'fidle', f: [1] }, m_fall: { a: 'fidle', f: [2] },
     inhaling: { a: 'inhale', f: [3, 4, 5, 6, 7], fps: 12, loopy: true }, roll: { a: 'atk2', fps: 18, loopy: true } },
-  airJumps: 5, float: { vy: -4.6, maxFall: 1.4, pose: 'float', puff: 'puff' },
-  attack: { kind: 'combo', steps: [{ pose: 'atk1', dur: 22, hit: [3, 17], box: [-6, -16, 32, 16], dmg: 2, kb: 4, lunge: 5.5, slide: true }],
+  airJumps: 5, float: { vy: -4.6, maxFall: 1.4, pose: 'float', puff: 'puff' }, guard: { pose: 'guard' },
+  attack: { kind: 'combo', name: 'เตะสไลด์', steps: [{ pose: 'atk1', dur: 22, hit: [3, 17], box: [-6, -16, 32, 16], dmg: 2, kb: 4, lunge: 5.5, slide: true }],
     mouthful: { pose: 'fspit', dur: 18, fireAt: 6, proj: 'star', y: -18 } },
-  skill: { kind: 'inhale', name: 'ดูด!', cost: 0, pose: 'inhaling', range: 104, height: 44, pull: 2.6 },
+  moves: {
+    air:     { name: 'ตีลังกากลางอากาศ', pose: 'atk3', dur: 22, auto: false, hit: [3, 18], box: [-16, -32, 34, 34], dmg: 2, kb: 4 },
+    downAir: { name: 'กลิ้งทิ่มลง', kind: 'dive', pose: 'roll', vy: 8.5, dmg: 2, bounce: 7.5 },
+  },
+  skill: { kind: 'inhale', name: 'ดูด! (แล้วโจมตี = พ่นดาว · สกิลอีกครั้ง = กลืน +พลัง)', cost: 0, pose: 'inhaling', range: 104, height: 44, pull: 2.6 },
   dash: { kind: 'dash', name: 'กลิ้งพุ่ง', pose: 'roll', speed: 5.6, dur: 20, cd: 36, hit: { box: [-14, -26, 30, 26], dmg: 1 }, air: false },
+  ult: { input: 'u+S', name: 'STAR STORM · พายุดาวเคอร์บี้', kind: 'stars', pose: 'fspit', dur: 50, at: [10, 16, 22, 28, 34], rise: -5, proj: 'star', scale: 1.8, dmg: 7 },
 };
 
 H.sonic = {
   name: 'Sonic', th: 'โซนิค เดอะเฮดจ์ฮ็อก', role: 'ความเร็ว · ลูกบอลหมุน', color: '#4a8aff',
-  desc: 'เร็วที่สุด กระโดดเป็นลูกบอล ชนศัตรูแล้วเด้ง · กลางอากาศกดพุ่ง = โฮมมิ่งแอทแท็ก · สกิลค้าง = สปินแดชทะลุทุกอย่าง',
+  desc: 'เร็วที่สุด กระโดดเป็นลูกบอลชนแล้วเด้ง · กลางอากาศโจมตี = โฮมมิ่งแอทแท็ก · ↓ + กดโจมตีค้างแล้วปล่อย = สปินแดช · สกิลบูสต์ทะลุทุกอย่าง',
   sprite: strip('heroes/sonic/', 45, {
     idle: { n: 9, cw: 32, ax: 17 }, walk: { n: 6, cw: 39, ax: 19 }, hurt: { n: 2, cw: 39, ax: 22 }, dead: { n: 2, cw: 34, ax: 18 },
-    run: { n: 4, cw: 31, ax: 14 }, spin: { n: 9, cw: 31, ax: 15 }, dash: { n: 10, cw: 31, ax: 15 }, spring: { n: 1, cw: 24, ax: 13 }, skid: { n: 2, cw: 34, ax: 16 } }),
+    run: { n: 4, cw: 31, ax: 14 }, spin: { n: 9, cw: 31, ax: 15 }, dash: { n: 10, cw: 31, ax: 15 }, spring: { n: 1, cw: 24, ax: 13 }, skid: { n: 2, cw: 34, ax: 16 },
+    super_idle: { n: 9, cw: 32, ax: 17 }, super_run: { n: 4, cw: 31, ax: 14 }, super_spin: { n: 9, cw: 31, ax: 15 }, super_dash: { n: 10, cw: 31, ax: 15 } }),
   scale: 1.15, box: [16, 38], hp: 4, speed: 1.3, jump: 1.06, accel: 1.4,
   poses: { idle: { a: 'idle', fps: 4 }, walk: { a: 'walk', fps: 12 }, run: { a: 'run', fps: 20 }, jump: { a: 'spin', f: [2, 3, 4, 5, 6, 7, 8], fps: 30, loopy: true }, fall: { a: 'walk', f: [1] },
     hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 4 }, skid: { a: 'skid', fps: 10 }, spring: { a: 'spring' },
-    ball: { a: 'spin', f: [2, 3, 4, 5, 6, 7, 8], fps: 30, loopy: true }, rev: { a: 'dash', f: [0, 1, 2, 3], fps: 24, loopy: true } },
+    ball: { a: 'spin', f: [2, 3, 4, 5, 6, 7, 8], fps: 30, loopy: true }, rev: { a: 'dash', f: [0, 1, 2, 3], fps: 24, loopy: true }, boost: { a: 'dash', f: [4, 5, 6, 7, 8, 9], fps: 30, loopy: true },
+    // SUPER SONIC — the golden strips from the same sheet set
+    s_idle: { a: 'super_idle', fps: 6 }, s_walk: { a: 'super_run', fps: 14, loopy: true }, s_run: { a: 'super_run', fps: 24, loopy: true }, s_jump: { a: 'super_spin', f: [2, 3, 4, 5, 6, 7, 8], fps: 30, loopy: true },
+    s_fall: { a: 'super_idle', f: [0] }, s_ball: { a: 'super_spin', f: [2, 3, 4, 5, 6, 7, 8], fps: 30, loopy: true }, s_boost: { a: 'super_dash', f: [4, 5, 6, 7, 8, 9], fps: 30, loopy: true } },
   ballJump: true,
-  attack: { kind: 'combo', steps: [{ pose: 'ball', dur: 22, hit: [0, 22], box: [-12, -30, 30, 30], dmg: 1, kb: 4, lunge: 5, slide: true }] },
-  skill: { kind: 'spindash', name: 'สปินแดช', cost: 20, rev: 'rev', pose: 'ball', speed: 9.5, dur: 34, dmg: 2 },
-  dash: { kind: 'homing', name: 'โฮมมิ่งแอทแท็ก', pose: 'ball', speed: 8, dur: 16, cd: 20, range: 190, hit: { box: [-14, -32, 30, 32], dmg: 2 } },
+  attack: { kind: 'combo', name: 'สปินแอทแท็ก (กลิ้งชน)', steps: [{ pose: 'ball', dur: 22, hit: [0, 22], box: [-12, -30, 30, 30], dmg: 1, kb: 4, lunge: 5, slide: true }] },
+  moves: {
+    air:  { name: 'โฮมมิ่งแอทแท็ก', kind: 'homing', pose: 'ball', speed: 8, cd: 0, range: 190, hit: { box: [-14, -32, 30, 32], dmg: 2 } },
+    down: { name: 'สปินแดช (↓ + กดค้างแล้วปล่อย)', kind: 'spindash', btn: 'attack', cost: 0, rev: 'rev', pose: 'ball', speed: 9.5, dur: 34, dmg: 2 },
+  },
+  skill: { kind: 'boost', name: 'ไลต์สปีดบูสต์ (ทะลุทุกอย่าง)', cost: 30, pose: 'boost', speed: 9, dur: 30, inv: 30, hit: { box: [-8, -36, 36, 36], dmg: 2, multi: 10 } },
+  dash: { kind: 'dash', name: 'แอร์แดช / บูสต์สั้น', pose: 'ball', speed: 7, dur: 12, cd: 22, air: true, hit: { box: [-12, -32, 28, 32], dmg: 1 } },
+  ult: { input: 'SS', name: 'SUPER SONIC · ซูเปอร์โซนิค', kind: 'super', dur: 600, speed: 1.35, dmg: 3 },
 };
 
 H.luffy = {
   name: 'Luffy', th: 'ลูฟี่ หมวกฟาง', role: 'แขนยาง · ระยะกลาง', color: '#ff4a3a',
-  desc: 'กำปั้นยางยืดตีไกลมาก · สกิลแกตลิ่งรัวหมัด · พุ่งร็อกเก็ตเฉียงขึ้นข้ามเหวได้ (ทุกครั้งที่ลอยตัว)',
+  desc: 'กำปั้นยางยืดตีไกล · ↑+โจมตี = ขวานยางยืด (เตะเสยแล้วสับลง) · สกิลแกตลิ่ง · ↓+สกิล = ลูกโป่งสะท้อนกระสุน · พุ่งร็อกเก็ตข้ามเหว',
   sprite: strip('heroes/luffy/', 127, {
     idle: { n: 7, cw: 33, ax: 14 }, walk: { n: 6, cw: 40, ax: 18 }, hurt: { n: 3, cw: 51, ax: 34 }, dead: { n: 4, cw: 62, ax: 23 },
-    pistol: { n: 7, cw: 94, ax: 21 }, gatling: { n: 9, cw: 125, ax: 52 }, rocket: { n: 6, cw: 66, ax: 46 }, dash: { n: 8, cw: 61, ax: 26 } }),
+    pistol: { n: 7, cw: 94, ax: 21 }, gatling: { n: 9, cw: 125, ax: 52 }, rocket: { n: 6, cw: 66, ax: 46 }, dash: { n: 8, cw: 61, ax: 26 },
+    axe: { n: 11, cw: 68, ax: 19 }, bazooka: { n: 8, cw: 110, ax: 18 }, balloon: { n: 11, cw: 49, ax: 24 } }),
   scale: 1.08, box: [16, 42], hp: 5, speed: 1, jump: 1,
   poses: { idle: { a: 'idle', fps: 8 }, walk: { a: 'walk', fps: 12 }, run: { a: 'dash', f: [2, 3, 4, 5, 6, 7], fps: 16, loopy: true }, jump: { a: 'rocket', f: [2] }, fall: { a: 'walk', f: [2] },
     hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 5 }, fly: { a: 'rocket', f: [4, 5], fps: 12, loopy: true } },
-  attack: { kind: 'combo', steps: [{ pose: 'pistol', dur: 26, on: [3, 4, 5], hit: [11, 19], box: [6, -42, 30, 16], dmg: 2, kb: 4 }] },
+  attack: { kind: 'combo', name: 'โกมุโกมุโนะ พิสทอล', steps: [{ pose: 'pistol', dur: 26, on: [3, 4, 5], hit: [11, 19], box: [6, -42, 30, 16], dmg: 2, kb: 4 }] },
+  moves: { up: { name: 'โกมุโกมุโนะ โอโนะ (ขวาน)', pose: 'axe', dur: 40, on: [4, 5, 6, 7, 8, 9], hit: [14, 34], box: [0, -96, 44, 96], dmg: 3, kb: 6, up: true, heavy: true } },
   skill: { kind: 'spin', name: 'โกมุโกมุ แกตลิ่ง', cost: 30, pose: 'gatling', dur: 46, every: 5, box: [4, -48, 96, 36], dmg: 1, front: true, loopPose: true },
+  skills: { down: { kind: 'balloon', name: 'โกมุโกมุ ฟูเซ็น (↓+สกิล สะท้อนกระสุน)', cost: 20, pose: 'balloon', dur: 56, on: [3, 8] } },
   dash: { kind: 'rocket', name: 'โกมุโกมุ ร็อกเก็ต', pose: 'fly', vx: 6.4, vy: -9.6, dur: 18, cd: 10, hit: { box: [-6, -40, 34, 40], dmg: 2 } },
+  ult: { input: 'D+A', name: 'GOMU GOMU BAZOOKA · บาซูก้า', kind: 'step', step: { pose: 'bazooka', dur: 44, on: [3, 4, 5, 6], hit: [16, 36], box: [6, -46, 96, 30], dmg: 10, kb: 16, heavy: true, shake: 8 } },
 };
 
 H.x = {
-  name: 'X', th: 'เอ็กซ์ นักรบบัสเตอร์', role: 'ยิง · ชาร์จ · ไต่กำแพง', color: '#3aa8ff',
-  desc: 'ยิงบัสเตอร์รัว · กดโจมตีค้างเพื่อชาร์จ ปล่อยเป็นกระสุนใหญ่ · ไต่/ถีบกำแพงได้ · สกิล GIGA BUSTER ทะลุทั้งจอ',
+  name: 'X', th: 'เอ็กซ์ นักรบบัสเตอร์', role: 'ยิง · ชาร์จ · Z-เซเบอร์', color: '#3aa8ff',
+  desc: 'ยิงบัสเตอร์ · กดโจมตีค้างเพื่อชาร์จ · ↑+โจมตี ยิงเฉียงขึ้น · ไต่/ถีบกำแพง · สกิล Z-เซเบอร์ฟันระยะประชิด',
   sprite: strip('heroes/x/', 80, {
     idle: { n: 9, cw: 37, ax: 18 }, walk: { n: 14, cw: 50, ax: 28 }, hurt: { n: 6, cw: 44, ax: 21 }, dead: { n: 5, cw: 53, ax: 29 },
-    atk1: { n: 7, cw: 43, ax: 19 }, atk3: { n: 6, cw: 68, ax: 33 }, charge: { n: 4, cw: 43, ax: 19 }, fin: { n: 8, cw: 43, ax: 19 } }),
+    atk1: { n: 7, cw: 43, ax: 19 }, atk3: { n: 6, cw: 68, ax: 33 }, charge: { n: 4, cw: 43, ax: 19 }, fin: { n: 8, cw: 43, ax: 19 },
+    saber: { n: 11, cw: 82, ax: 40 }, saber2: { n: 13, cw: 102, ax: 48 } }),
   scale: 1.02, box: [16, 42], hp: 4, speed: 1.05, jump: 1.02,
   poses: { idle: { a: 'idle', fps: 6 }, walk: { a: 'walk', f: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], fps: 18 }, run: { a: 'walk', f: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], fps: 24 },
-    jump: { a: 'walk', f: [4] }, fall: { a: 'walk', f: [10] }, wall: { a: 'hurt', f: [0] }, hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 6 }, dashp: { a: 'atk3', f: [2, 3, 4, 5], fps: 14, loopy: true } },
+    jump: { a: 'walk', f: [4] }, fall: { a: 'walk', f: [10] }, wall: { a: 'hurt', f: [0] }, hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 6 }, dashp: { a: 'atk3', f: [2, 3, 4, 5], fps: 14, loopy: true },
+    ucharge: { a: 'charge', fps: 14, loopy: true } },
   wallJump: true,
-  attack: { kind: 'shot', pose: 'atk1', dur: 14, fireAt: 2, proj: 'lemon', y: -27, rate: 8, max: 3,
+  attack: { kind: 'shot', name: 'บัสเตอร์ (ค้าง = ชาร์จ)', pose: 'atk1', dur: 14, fireAt: 2, proj: 'lemon', y: -27, rate: 8, max: 3,
     charge: [{ t: 26, proj: 'shotB', col: '#6ad8ff' }, { t: 66, proj: 'shotP', col: '#ff7af0' }] },
-  skill: { kind: 'proj', name: 'GIGA BUSTER', cost: 45, pose: 'fin', dur: 40, fireAt: 22, proj: 'lvl4', y: -26, recoil: 2 },
+  moves: { up: { name: 'ยิงเฉียงขึ้น', kind: 'shotUp', pose: 'atk1', dur: 14, fireAt: 2, proj: 'lemon', angle: .8, y: -36, rate: 8 } },
+  skill: { kind: 'step', name: 'Z-เซเบอร์', cost: 15, pose: 'saber', dur: 30, on: [3, 4, 5, 6, 7], hit: [8, 20], box: [0, -50, 48, 50], dmg: 3, kb: 6, heavy: true },
+  skills: { up: { kind: 'step', name: 'Z-เซเบอร์ จันทร์เสี้ยว (↑+สกิล)', cost: 25, pose: 'saber2', dur: 36, on: [1, 2, 3, 4, 5], hit: [4, 16], box: [-10, -66, 70, 66], dmg: 4, kb: 7, up: true, heavy: true } },
   dash: { kind: 'dash', name: 'แดช', pose: 'dashp', speed: 6.2, dur: 18, cd: 22, air: true },
+  ult: { input: 'holdS', name: 'GIGA BUSTER · ชาร์จสกิลค้างแล้วปล่อย', kind: 'giga', pose: 'fin', dur: 44, fireAt: 22, proj: 'lvl4', scale: .72, dmg: 14, chargePose: 'ucharge', hold: 50 },
 };
 
 H.elon = {
@@ -182,21 +219,28 @@ H.elon = {
 
 H.mao = {
   name: 'Mia', th: 'มีอา นินจาพัดไฟ', role: 'คล่องตัว · กระโดด 2 ชั้น', color: '#ff6a4a',
-  desc: 'กระโดดสองชั้นด้วยตีลังกา · ฟาดพัด 3 จังหวะ · สกิลขว้างพัดไฟวนกลับ · ม้วนตัวพุ่งชนอมตะ',
+  desc: 'กระโดดสองชั้น · ↑+โจมตี = พัดเสยลอย · กลางอากาศโจมตี = เตะตีลังกา · สกิลขว้างพัดไฟวนกลับ · ↑+สกิล = เสาเพลิง',
   sprite: strip('heroes/mia/', 182, {
     idle: { n: 11, cw: 95, ax: 41 }, walk: { n: 11, cw: 118, ax: 55 }, hurt: { n: 4, cw: 112, ax: 43 }, dead: { n: 5, cw: 173, ax: 79 },
     atk1: { n: 5, cw: 122, ax: 62 }, atk2: { n: 5, cw: 181, ax: 73 }, atk3: { n: 7, cw: 157, ax: 64 }, kasen: { n: 5, cw: 151, ax: 60 },
-    roll: { n: 11, cw: 164, ax: 71 }, flip: { n: 6, cw: 134, ax: 56 } }, { by: 181 }),
+    roll: { n: 11, cw: 164, ax: 71 }, flip: { n: 6, cw: 134, ax: 56 }, fin: { n: 12, cw: 137, ax: 76 } }, { by: 181 }),
   scale: .44, smooth: true, box: [16, 44], hp: 4, speed: 1.08, jump: 1,
   poses: { idle: { a: 'idle', fps: 8 }, walk: { a: 'walk', fps: 14 }, run: { a: 'walk', fps: 20 }, jump: { a: 'walk', f: [6] }, fall: { a: 'walk', f: [2] },
-    airjump: { a: 'flip', f: [1, 2, 3, 4, 5], fps: 18, hold: true }, hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 6 }, rollp: { a: 'roll', f: [0, 1, 2, 3, 4, 5, 6, 7], fps: 20, loopy: true } },
+    airjump: { a: 'flip', f: [1, 2, 3, 4, 5], fps: 18, hold: true }, hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 6 }, rollp: { a: 'roll', f: [0, 1, 2, 3, 4, 5, 6, 7], fps: 20, loopy: true },
+    flipk: { a: 'flip', f: [1, 2, 3, 4, 5] }, u_rise: { a: 'fin', f: [1, 2, 3, 4], fps: 12, hold: true }, u_dive: { a: 'fin', f: [5, 6, 7, 8, 9], fps: 14, loopy: true }, u_land: { a: 'fin', f: [10, 11], fps: 8 } },
   airJumps: 1,
-  attack: { kind: 'combo', steps: [
+  attack: { kind: 'combo', name: 'พัด-เตะ-ศอก 3 จังหวะ', steps: [
     { pose: 'atk1', dur: 18, on: [1, 2, 3], hit: [5, 13], box: [-4, -56, 44, 56], dmg: 1, kb: 3 },
     { pose: 'atk2', dur: 20, on: [1, 2, 3], hit: [7, 15], box: [-10, -46, 58, 40], dmg: 1, kb: 3 },
     { pose: 'atk3', dur: 22, on: [2, 3, 4], hit: [6, 16], box: [0, -44, 42, 30], dmg: 2, kb: 5, lunge: 5 } ] },
-  skill: { kind: 'proj', name: 'คาโชเซ็น', cost: 18, pose: 'kasen', dur: 22, fireAt: 8, proj: 'fan', y: -42, max: 1 },
+  moves: {
+    up:  { name: 'พัดเสยลอย', pose: 'atk1', dur: 20, on: [1, 2, 3], hit: [5, 14], box: [-6, -70, 48, 70], dmg: 2, kb: 3, up: true },
+    air: { name: 'เตะตีลังกา', pose: 'flipk', dur: 22, auto: false, hit: [4, 18], box: [-20, -50, 44, 50], dmg: 2, kb: 4 },
+  },
+  skill: { kind: 'proj', name: 'คาโชเซ็น (พัดบูมเมอแรง)', cost: 18, pose: 'kasen', dur: 22, fireAt: 8, proj: 'fan', y: -42, max: 1 },
+  skills: { up: { kind: 'pillar', name: 'คาเงโรโนะไม (↑+สกิล เสาเพลิง)', cost: 30, pose: 'kasen', dur: 26, at: 10, dist: 64, every: 8, hits: 5, dmg: 1, box: [26, 96] } },
   dash: { kind: 'roll', name: 'ชิโนบิบาจิ', pose: 'rollp', speed: 5.8, dur: 24, cd: 34, inv: 24, hit: { box: [-14, -34, 34, 34], dmg: 1 } },
+  ult: { input: 'dS_air', name: 'MUSASABI NO MAI · กลางอากาศ ↓+สกิล', kind: 'dive', pose: 'u_dive', rise: 'u_rise', land: 'u_land', riseT: 16, riseVy: -5, vx: 5.5, vy: 6.5, dmg: 6, boom: { r: 96, dmg: 6 } },
 };
 
 H.boomtos = {
@@ -233,18 +277,24 @@ H.cream = {
 
 H.yota = {
   name: 'YOTA', th: 'โยตะ ผู้กองทวงค่าเช่า', role: 'หนัก · ลำแสง', color: '#6a8aff',
-  desc: 'หมัดทวงหนี้ + เตะยึดบ้าน · สกิลลำแสงค่าเช่ายิงทะลุทั้งแถว · พุ่งดัน "ส่งค่าเช่าบ้านยัง!!!" ผลักศัตรูกระเด็น',
+  desc: 'หมัดทวงหนี้ 3 จังหวะ · ↑+โจมตี = เตะเสยลอย · ↓+โจมตี = ผลักกระเด็น · สกิลลำแสงค่าเช่าทะลุทั้งแถว · พุ่งดัน "ส่งค่าเช่าบ้านยัง!!!"',
   sprite: strip('heroes/yota/', 200, {
     idle: { n: 12, cw: 200, ax: 90 }, walk: { n: 8, cw: 200, ax: 90 }, hurt: { n: 2, cw: 260, ax: 130 }, dead: { n: 7, cw: 380, ax: 170 },
     push: { n: 4, cw: 240, ax: 90 }, palm: { n: 2, cw: 240, ax: 90 }, charge: { n: 2, cw: 240, ax: 90 }, fire: { n: 1, cw: 240, ax: 90 }, kick: { n: 2, cw: 240, ax: 90 } }, { by: 199 }),
   scale: .25, smooth: true, box: [22, 44], hp: 6, speed: .86, jump: 1, armor: true,
   poses: { idle: { a: 'idle', fps: 7 }, walk: { a: 'walk', fps: 10 }, run: { a: 'walk', fps: 14 }, jump: { a: 'walk', f: [2] }, fall: { a: 'walk', f: [6] },
     hurt: { a: 'hurt', fps: 6 }, dead: { a: 'dead', fps: 6 }, pushp: { a: 'push', f: [2, 3], fps: 8, loopy: true } },
-  attack: { kind: 'combo', steps: [
-    { pose: 'palm', dur: 18, on: [1], hit: [5, 12], box: [4, -40, 34, 22], dmg: 2, kb: 5 },
-    { pose: 'kick', dur: 22, on: [1], hit: [7, 15], box: [2, -36, 40, 24], dmg: 2, kb: 7 } ] },
+  attack: { kind: 'combo', name: 'หมัดทวงหนี้ 3 จังหวะ', steps: [
+    { pose: 'palm', dur: 16, on: [1], hit: [5, 12], box: [4, -40, 34, 22], dmg: 1, kb: 3 },
+    { pose: 'palm', dur: 16, on: [1], hit: [5, 12], box: [4, -40, 34, 22], dmg: 2, kb: 4 },
+    { pose: 'kick', dur: 22, on: [1], hit: [7, 15], box: [2, -36, 40, 24], dmg: 3, kb: 8, heavy: true } ] },
+  moves: {
+    up:   { name: 'เตะเสยยึดบ้าน', pose: 'kick', dur: 22, on: [1], hit: [7, 15], box: [-4, -64, 44, 64], dmg: 2, kb: 3, up: true },
+    down: { name: 'ผลักกระเด็น', pose: 'push', dur: 26, on: [2, 3], hit: [10, 20], box: [2, -44, 38, 44], dmg: 1, kb: 14 },
+  },
   skill: { kind: 'beam', name: 'ลำแสงค่าเช่า', cost: 40, chargePose: 'charge', firePose: 'fire', charge: 26, fire: 22, len: 330, h: 18, y: -36, dmg: 4, every: 6 },
   dash: { kind: 'dash', name: 'ส่งค่าเช่าบ้านยัง!!!', pose: 'pushp', speed: 4.4, dur: 22, cd: 40, hit: { box: [2, -44, 34, 44], dmg: 1, kb: 9 }, shout: 'ส่งค่าเช่าบ้านยัง!!!' },
+  ult: { input: 'S+D', name: 'FINAL EVICTION · ยึดหมด!!!', kind: 'beam', beam: { chargePose: 'charge', firePose: 'fire', charge: 40, fire: 60, len: 640, h: 46, y: -34, dmg: 3, every: 4 } },
 };
 
 H.kea = {
@@ -266,15 +316,17 @@ H.kea = {
 
 H.shovel = {
   name: 'Shovel Knight', th: 'อัศวินพลั่ว (ตัวดั้งเดิมของโหมดนี้)', role: 'กระโดดพลั่ว · ไม้เท้าไฟ', color: '#6ab8ff', free: true,
-  desc: 'กลางอากาศกด ↓ + โจมตี = กดพลั่วลงเหยียบเด้งได้ต่อเนื่อง (เด้งบนหนามได้) · สกิลบนพื้นยิงลูกไฟ กลางอากาศหมุนตัวฟัน · พุ่งฟัน',
+  desc: 'กลางอากาศ ↓+โจมตี = กดพลั่วเหยียบเด้งต่อเนื่อง (เด้งบนหนามได้) · สกิลบนพื้นยิงลูกไฟ กลางอากาศหมุนตัวฟัน',
   sprite: { kind: 'atlas', atlasSrc: 'heroes/shovel/atlas.json', img: 'heroes/shovel/atlas.png', footGap: 0, midBy: 16 },
   scale: 1.35, box: [16, 38], hp: 5, speed: 1, jump: 1,
   poses: { idle: { a: 'idle', fps: 5 }, walk: { a: 'walk', fps: 10 }, run: { a: 'walk', fps: 15 }, jump: { a: 'jump' }, fall: { a: 'fall' }, hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 5 },
     pogo: { a: 'pogo' }, dashp: { a: 'dash', fps: 16, loopy: true }, spinp: { a: 'spin', fps: 20, loopy: true }, castp: { a: 'cast', fps: 8 } },
-  attack: { kind: 'combo', steps: [{ pose: 'attack', dur: 15, on: [3, 4], hit: [9, 15], box: [2, -32, 32, 24], dmg: 1, kb: 3 }], down: 'pogo' },
-  skill: { kind: 'flare', name: 'ไม้เท้าไฟ / หมุนตัวฟัน', cost: 25, pose: 'castp', dur: 16, fireAt: 8, proj: 'flare', y: -24,
-    air: { kind: 'spin', pose: 'spinp', dur: 26, every: 8, box: [-28, -46, 56, 54], dmg: 1, hover: true } },
+  attack: { kind: 'combo', name: 'ฟาดพลั่ว', steps: [{ pose: 'attack', dur: 15, on: [3, 4], hit: [9, 15], box: [2, -32, 32, 24], dmg: 1, kb: 3 }] },
+  moves: { downAir: { name: 'กดพลั่วเหยียบ (Pogo)', kind: 'pogo' } },
+  skill: { kind: 'flare', name: 'ไม้เท้าไฟ', cost: 25, pose: 'castp', dur: 16, fireAt: 8, proj: 'flare', y: -24,
+    air: { kind: 'spin', name: 'หมุนตัวฟัน', cost: 25, pose: 'spinp', dur: 26, every: 8, box: [-28, -46, 56, 54], dmg: 1, hover: true } },
   dash: { kind: 'dash', name: 'พุ่งฟัน', pose: 'dashp', speed: 5.6, dur: 14, cd: 36, hit: { box: [-4, -34, 46, 30], dmg: 1 }, air: true, inv: 14 },
+  ult: { input: 'dd+A', name: 'SHOVEL METEOR · พลั่วอุกกาบาต', kind: 'meteor', leap: 12, fall: 15, rise: 'jump', drop: 'pogo', wave: { r: 130, h: 48, dmg: 6 }, booms: 6 },
 };
 
 /* Roster rule (v86): only heroes whose sheet has a COMPLETE walk cycle are playable here.

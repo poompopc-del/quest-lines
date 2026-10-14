@@ -122,7 +122,8 @@ class Game {
       const eb = { x: e.x + 3, y: e.y + 3, w: e.w - 6, h: e.h - 4 };
       if (!U.overlap(eb, p)) continue;
       if (p.bodyHit || (p.act && p.act.kind === 'pogo' && p.vy > 0)) continue;       // we are the one hitting
-      if (p.act && (p.act.kind === 'roll' || p.act.kind === 'spindash')) continue;
+      if (p.act && (p.act.kind === 'roll' || p.act.kind === 'spindash' || p.act.kind === 'ult')) continue;
+      if (p.act && p.act.reflect) { if (!e.boss && !e.def.heavy) { e.kbT = 14; e.vx = (e.cx < p.cx ? -1 : 1) * 5; e.vy = -3; e.interrupt && e.interrupt(); } continue; }
       p.hurt(e.def.dmg, e.cx);
     }
   }
@@ -215,6 +216,8 @@ class Game {
   }
   // remove every enemy shot and pending hazard (boss defeated / phase change) — nothing hits you after the fight
   clearHostile() { for (const pr of this.projs) if (pr.enemy) { pr.dead = true; this.burst(pr.x, pr.y, '#ffffff', 3, 1); } this.projs = this.projs.filter(p => !p.dead); this.warns = []; }
+  // ultimate cut-in: the world freezes for a beat, the screen darkens, the move's name slams in
+  ultCut(p, name) { this.cut = { t: 0, name, col: p.hero.color || '#ffd84a' }; this.hitstop(16); this.shake(4); PLAT.sfx.big(); PLAT.haptic('boss'); this.emit('ult', { name }); }
   bossIntro(b) { this.emit('boss', { name: b.def.name, th: b.def.th, hp: b.hp, max: b.maxHp }); }
   bossHit(b) { this.emit('bossHit', { hp: Math.max(0, b.hp), max: b.maxHp }); }
   nearestEnemy(x, y, dir, range, dyMax, homing) {
@@ -275,6 +278,11 @@ class Game {
       if (d.ground) { if (W.solidAt(L, Math.floor((pr.x + pr.dir * b.w / 2) / T), Math.floor((pr.y - 4) / T)) || !W.solidAt(L, Math.floor(pr.x / T), Math.floor((pr.y + 4) / T))) { this.killProj(pr); continue; } if (pr.t % 4 === 0) this.dust(pr.x, pr.y, 1, d.proc === 'shock' ? '#ffd060' : '#bfe8ff'); }
       else if (!d.boomerang && W.solidAt(L, Math.floor(pr.x / T), Math.floor(pr.y / T))) { if (!pr.enemy) for (const t of W.tilesIn(L, b, TL.BREAK)) this.breakTile(t.tx, t.ty); this.killProj(pr); continue; }
       if (pr.enemy) {
+        if (!p.dead && p.act && p.act.reflect && !d.ground && U.overlap(b, { x: p.x - 10, y: p.y - 6, w: p.w + 20, h: p.h + 8 })) {
+          // reflected: the shot now belongs to the player and flies back
+          pr.enemy = false; pr.owner = p; pr.vx = -pr.vx * 1.3 || p.face * 5; pr.vy = -pr.vy * .5; pr.dir = U.sign(pr.vx); pr.id = PLAT.newSwing(); pr.life = 90; pr.pierce = 1;
+          sfx().clang(); this.burst(pr.x, pr.y, '#cfe8ff', 8, 2); this.text(pr.x, pr.y - 10, 'สะท้อน!', '#bfe8ff', 30); continue;
+        }
         if (!p.dead && U.overlap(b, { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 2 })) { const r = p.hurt(d.dmg, pr.x); if (r !== 'ignored' || !d.ground) { if (r !== 'ignored') this.killProj(pr); } }
       } else {
         const n = this.hit(b, d.dmg, { id: pr.id, dir: U.sign(pr.vx) || pr.dir, kb: 3, from: pr.owner, fx: d.explode ? null : null });
@@ -374,7 +382,7 @@ class Game {
   hudState() {
     const p = this.player, L = this.L, h = p.hero;
     return { hp: p.hp, maxHp: p.maxHp, en: p.en, coins: this.stats.coins, gems: [...this.stats.gems], gemTotal: L.gems.length, frames: this.stats.frames,
-      dashCd: h.dash && h.dash.cd ? p.cd.dash / h.dash.cd : 0, skillCost: h.skill ? (h.skill.cost || 0) : 0, mouth: !!p.mouth, heat: p.heat, streak: p.streak, charge: p.charge };
+      dashCd: h.dash && h.dash.cd ? p.cd.dash / h.dash.cd : 0, skillCost: h.skill ? (h.skill.cost || 0) : 0, ult: p.ult, superT: p.superT, mouth: !!p.mouth, heat: p.heat, streak: p.streak, charge: p.charge };
   }
 
   /* --------------------------------- effects --------------------------------- */
@@ -451,6 +459,14 @@ class Game {
     ctx.restore();
     if (th.embers) this.drawEmbers(ctx);
     if (this.flashT > 0) { ctx.fillStyle = `rgba(255,255,255,${this.flashT / 30})`; ctx.fillRect(0, 0, VW, VH); }
+    if (this.cut) {
+      const c = this.cut, a = c.t < 8 ? c.t / 8 : Math.max(0, 1 - (c.t - 40) / 20);
+      if (++c.t > 60) this.cut = null;
+      ctx.fillStyle = `rgba(6,4,14,${.55 * a})`; ctx.fillRect(0, 0, VW, VH);
+      ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = c.col; ctx.fillRect(0, VH * .36, VW, 3); ctx.fillRect(0, VH * .36 + 46, VW, 3);
+      ctx.font = 'italic 900 26px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6; ctx.strokeStyle = '#000';
+      const x = VW / 2 + Math.max(0, 30 - c.t * 4); ctx.strokeText(c.name, x, VH * .36 + 34); ctx.fillStyle = '#fff'; ctx.fillText(c.name, x, VH * .36 + 34); ctx.restore();
+    }
     if (this.mode === 'clear') { const a = Math.min(1, this.clearT / 60); ctx.fillStyle = `rgba(8,7,15,${a * .6})`; ctx.fillRect(0, 0, VW, VH); }
   }
   drawBackground(ctx, cx, cy) {

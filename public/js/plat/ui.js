@@ -152,6 +152,13 @@ function signText(t) {
   const M = { key: { JUMP: 'Space', ATK: 'J', SKL: 'I', DSH: 'L' }, pad: { JUMP: 'Ⓐ', ATK: 'Ⓧ', SKL: 'Ⓨ', DSH: 'Ⓑ' }, touch: { JUMP: '⤒', ATK: '⚔', SKL: '✦', DSH: '»' } }[dev];
   return t.replace(/\{(JUMP|ATK|SKL|DSH)\}/g, (_, k) => M[k]);
 }
+// how to fire each hero's ultimate, written for the device in use
+function ultHint(input) {
+  const dev = PLAT.input.lastDevice === 'pad' ? 'pad' : 'key';
+  const K = dev === 'pad' ? { A: 'Ⓧ', S: 'Ⓨ', D: 'Ⓑ' } : { A: 'J', S: 'I', D: 'L' };
+  return { 'du+A': `↓ ↑ + ${K.A}`, 'dd+A': `↓ ↓ + ${K.A}`, 'S+A': `${K.S} + ${K.A} พร้อมกัน`, 'D+A': `${K.D} + ${K.A} พร้อมกัน`, 'S+D': `${K.S} + ${K.D} พร้อมกัน`,
+    'u+S': `↑ + ${K.S}`, 'dS_air': `กลางอากาศ ↓ + ${K.S}`, 'SS': `${K.S} ${K.S} (กดสองครั้งเร็ว ๆ)`, 'holdS': `กด ${K.S} ค้าง แล้วปล่อย` }[input] || '';
+}
 let notifyT = 0;
 function notify(a, b) { const n = $('#notify'); if (!n) return; n.innerHTML = `<b>${a}</b>${b ? `<span>${b}</span>` : ''}`; n.classList.add('on'); clearTimeout(notifyT); notifyT = setTimeout(() => n.classList.remove('on'), 3200); }
 function applyBtnSize() { const m = { S: .82, M: 1, L: 1.2 }[S.data.settings.btnSize || 'M'] || 1; document.documentElement.style.setProperty('--tsz', m); }
@@ -228,17 +235,33 @@ function renderHeroInfo(id) {
   const bar = (v, max) => `<span class="bar"><b style="width:${Math.round(U.clamp(v / max, 0, 1) * 100)}%"></b></span>`;
   const A = h.attack, Sk = h.skill, D = h.dash;
   const atkName = A.kind === 'shot' ? 'ยิง' + (A.charge ? ' · กดค้างเพื่อชาร์จ' : '') + (A.combo ? ` · คอมโบ ${A.combo.at}+ เปลี่ยนอาวุธ` : '') : `ฟัน/ต่อย ${A.steps.length} จังหวะ`;
-  const extra = [h.airJumps ? (h.float ? `ลอยตัวได้ ${h.airJumps} ครั้ง` : `กระโดด ${h.airJumps + 1} ชั้น`) : '', h.wallJump ? 'ถีบกำแพง' : '', h.ballJump ? 'กระโดดเป็นลูกบอลชนศัตรู' : '', h.guard ? '↓ ค้าง = ตั้งโล่' : '', h.armor ? 'เกราะหนา' : '', A.down ? (A.down === 'pogo' ? 'กลางอากาศ ↓+โจมตี = กดพลั่วเด้ง' : 'กลางอากาศ ↓+โจมตี = ทุบพื้น') : ''].filter(Boolean);
+  const extra = [h.airJumps ? (h.float ? `ลอยตัวได้ ${h.airJumps} ครั้ง` : `กระโดด ${h.airJumps + 1} ชั้น`) : '', h.wallJump ? 'ถีบกำแพง' : '', h.ballJump ? 'กระโดดเป็นลูกบอลชนศัตรู' : '', h.armor ? 'เกราะหนา' : ''].filter(Boolean);
   box.innerHTML = `<canvas width="300" height="300"></canvas>
     <div><div class="nm" style="color:${h.color}">${h.name}</div><div class="th">${h.th} · <span class="chip">${h.role}</span></div>
       <p style="font-size:13px;margin:6px 0">${h.desc}</p>
-      <div class="moves"><div><kbd>J</kbd>${atkName}</div><div><kbd>I</kbd>${Sk.name}${Sk.cost ? ` <span class="chip">พลัง ${Sk.cost}</span>` : ''}</div><div><kbd>L</kbd>${D.name}</div>${extra.length ? `<div><kbd>★</kbd>${extra.join(' · ')}</div>` : ''}</div>
+      <div class="moves">${moveList(h).map(m => `<div class="${m.cls || ''}"><kbd>${m.k}</kbd>${m.n}${m.c ? ` <span class="chip">พลัง ${m.c}</span>` : ''}</div>`).join('')}${extra.length ? `<div><kbd>★</kbd>${extra.join(' · ')}</div>` : ''}</div>
       <div class="stat">HP ${h.hp} ${bar(h.hp, 6)}</div><div class="stat">ความเร็ว ${bar(h.speed || 1, 1.3)}</div>
       <div class="row" style="margin-top:10px">${ok ? `<button class="btn red" id="hPick">${id === S.data.hero ? '✓ ใช้อยู่' : 'ใช้ฮีโร่นี้'}</button>` : `<button class="btn" disabled>🔒 ${heroLockText(id)}</button>`}</div></div>`;
   const cv = box.querySelector('canvas'); heroSheet(id).then(() => app.previews.push({ cv, id, off: 0, big: true }));
   const pick = $('#hPick'); if (pick) pick.addEventListener('click', () => { S.data.hero = id; S.persist(); PLAT.sfx.checkpoint(); renderHeroes(); refreshTitle(); });
 }
 
+// every input of a hero, in the order a player learns them
+function moveList(h) {
+  const M = h.moves || {}, A = h.attack, L = [];
+  L.push({ k: 'J', n: A.name || (A.kind === 'shot' ? 'ยิง' : 'โจมตี') });
+  if (M.up) L.push({ k: '↑+J', n: M.up.name }); if (M.down) L.push({ k: '↓+J', n: M.down.name });
+  if (M.air) L.push({ k: 'อากาศ J', n: M.air.name }); if (M.downAir) L.push({ k: 'อากาศ ↓+J', n: M.downAir.name });
+  if (M.run) L.push({ k: 'วิ่ง+J', n: M.run.name }); if (M.hold) L.push({ k: 'ค้าง J', n: M.hold.name });
+  if (h.guard) L.push({ k: '↓ ค้าง', n: 'ตั้งการ์ด' });
+  L.push({ k: 'I', n: h.skill.name, c: h.skill.cost });
+  if (h.skill.air) L.push({ k: 'อากาศ I', n: h.skill.air.name, c: h.skill.air.cost });
+  if (h.skills && h.skills.up) L.push({ k: '↑+I', n: h.skills.up.name, c: h.skills.up.cost });
+  if (h.skills && h.skills.down) L.push({ k: '↓+I', n: h.skills.down.name, c: h.skills.down.cost });
+  L.push({ k: 'L', n: h.dash.name });
+  if (h.ult) L.push({ k: 'ULT', n: `${h.ult.name} — ${ultHint(h.ult.input)}`, cls: 'hd' });
+  return L;
+}
 /* ---------------------------------- map ---------------------------------- */
 function renderMap() {
   $('#mHero').textContent = PLAT.HEROES[S.data.hero].name;
@@ -305,7 +328,7 @@ function setupHud(g) {
   $('#hEnMark').style.left = (h.skill.cost || 0) + '%'; $('#hEnMark').style.display = h.skill.cost ? '' : 'none';
   $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
   $('#tA').textContent = h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'; $('#tS').textContent = shortName(h.skill.name); $('#tD').textContent = shortName(h.dash.name);
-  $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on');
+  $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on'); $('#hUltHint').classList.remove('on'); $('#tU').classList.remove('ready');
   hudCache = {}; refreshGlyphs();
   const fc = $('#hFace'); heroSheet(g.heroId).then(() => { const ctx = fc.getContext('2d'); ctx.clearRect(0, 0, 48, 48); const sh = sheetCache[g.heroId], f = sh.frames('idle')[0]; PLAT.viewScale = 1;
     const s = 70 / (f.by || f.sh); PLAT.drawFrame(ctx, f, 24, 48 + (f.by * s) * .32, 1, s, { smooth: !!h.smooth }); });
@@ -321,6 +344,15 @@ function updateHud(d) {
   set('low', d.en < d.skillCost, v => { const el = $('#abS'); if (el) el.classList.toggle('low', v); });
   set('cd', Math.round(d.dashCd * 10), v => { const el = $('#abD'); if (el) { el.classList.toggle('cd', v > 0); el.style.setProperty('--cd', (v * 10) + '%'); } $('#btns .bd').style.setProperty('--cd', (v * 10) + '%'); });
   set('tlow', d.en < d.skillCost, v => $('#btns .bs').classList.toggle('low', v));
+  set('ult', Math.round(d.ult), v => { $('#hUlt').style.width = v + '%'; $('#hUltB').classList.toggle('full', v >= 100); });
+  const h = app.game && PLAT.HEROES[app.game.heroId], ready = d.ult >= 100 && !(d.superT > 0);
+  set('ultReady', ready + '|' + input.lastDevice, () => {
+    const touch = document.documentElement.classList.contains('touchui');
+    $('#tU').classList.toggle('ready', ready && touch);
+    $('#hUltHint').classList.toggle('on', ready && !touch);
+    if (ready && h && h.ult) $('#hUltHint').textContent = `★ ULT พร้อม: ${ultHint(h.ult.input)} — ${h.ult.name.split('·')[0].trim()}`;
+  });
+  set('super', d.superT > 0 ? Math.ceil(d.superT / 60) : 0, v => { if (v) { $('#hUltHint').classList.add('on'); $('#hUltHint').textContent = `SUPER ${v}s`; } });
   set('mouth', d.mouth, v => $('#tA').textContent = v ? 'พ่นดาว' : (PLAT.HEROES[app.game.heroId].attack.kind === 'shot' ? 'ยิง' : 'โจมตี'));
 }
 

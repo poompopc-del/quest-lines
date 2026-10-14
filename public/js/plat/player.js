@@ -31,6 +31,7 @@ class Player {
     this.ball = false; this.mouth = null; this.charge = 0; this.airDash = true; this.rocketUsed = false; this.heat = 0;
     this.mover = null; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
     this.t = 0; this.airT = 0; this.landT = 0; this.lastSafe = { x: spawn.x, y: spawn.y };
+    this.ult = this.ult || 0; this.superT = 0; this.pend = null; this.holdS = null; this.holdA = null; this.pressAt = {};
     this.anim.play('idle', null, true);
   }
   get cx() { return this.x + this.w / 2; }
@@ -51,6 +52,12 @@ class Player {
     this.sq.x += (1 - this.sq.x) * .2; this.sq.y += (1 - this.sq.y) * .2;
     this.bodyHit = null; this.guarding = false;
 
+    if (this.superT > 0) {                 // SUPER SONIC: invincible, faster, burns through enemies
+      if (--this.superT === 0) { this.g.text(this.cx, this.y - 8, 'หมดแรงซูเปอร์', '#ffe36a', 40); }
+      this.inv = Math.max(this.inv, 2);
+      if (this.t % 18 === 0) this.superId = newSwing();
+      if (this.t % 3 === 0) g.burst(this.cx + U.rnd(-10, 10), this.y + U.rnd(0, this.h), '#ffe36a', 1, .8);
+    }
     if (this.dead) { this.deadT++; this.vy = Math.min(this.vy + C.GRAV, C.MAX_FALL); this.vx *= .9; W.moveBody(g.L, this, this.vx, this.vy); this.pose(); this.anim.update(); return; }
 
     const ax = (inp.isHeld('right') ? 1 : 0) - (inp.isHeld('left') ? 1 : 0);
@@ -85,11 +92,13 @@ class Player {
     if (this.jumping && this.vy >= 0) this.jumping = false;
     this.physics(inp);
     if (this.act && this.act.afterMove) this.act.afterMove();
+    if (this.superT > 0 && !this.bodyHit) this.bodyHit = { dmg: this.hero.ult.dmg, id: this.superId || (this.superId = newSwing()), kb: 6 };
     if (this.ball && !this.onGround && !this.bodyHit) { if (!this.ballId) this.ballId = newSwing(); this.bodyHit = { dmg: 1, id: this.ballId, kb: 3, ball: true }; }
     if (!this.ball) this.ballId = 0;
     if (this.bodyHit) {
       const n = this.g.hit(this.bodyBox(), this.bodyHit.dmg, { id: this.bodyHit.id, kb: this.bodyHit.kb || 3, dir: this.face, from: this, body: true });
       if (n && this.bodyHit.ball) { this.vy = Math.min(this.vy, -7.5); this.jumping = false; this.ballId = newSwing(); this.airDash = true; }
+      if (n && this.bodyHit.dive && this.act) { this.endAct(); this.vy = -(this.hero.moves.downAir.bounce || 7); this.jumping = false; this.airJumps = this.hero.airJumps || 0; }
     }
     this.pose(); this.anim.update();
   }
@@ -99,7 +108,7 @@ class Player {
     const h = this.hero, spd = h.speed || 1, accMul = h.accel || 1;
     if (this.wallLock > 0) ax = 0;
     if (ax && this.onGround) this.runT = (Math.sign(this.vx) === ax || Math.abs(this.vx) < .5) ? this.runT + 1 : 0; else if (this.onGround) this.runT = 0;
-    let top = (this.runT >= C.RUN_AFTER ? C.RUN : C.WALK) * spd;
+    let top = (this.runT >= C.RUN_AFTER ? C.RUN : C.WALK) * spd * (this.superT > 0 ? h.ult.speed : 1);
     if (!this.onGround) top = Math.max(C.WALK * spd, this.airTop || 0);
     if (this.act && this.act.slow) top *= this.onGround ? this.act.slow : 1;
     if (this.mouth) top *= .85;
@@ -176,23 +185,91 @@ class Player {
   bodyBox() { return { x: this.x - 2, y: this.y - 2, w: this.w + 4, h: this.h + 4 }; }
 
   /* ------------------------------- abilities ------------------------------- */
-  startActions(inp, ax) {
-    const h = this.hero;
-    const busy = this.act && !this.act.cancellable;
-    // input buffer: a dash / skill pressed while busy is remembered for 10 frames and fires the moment the move can be cancelled
-    if (inp.wasPressed('dash')) this.dashBuf = 10; else if (this.dashBuf > 0) this.dashBuf--;
-    if (inp.wasPressed('skill')) this.skillBuf = 10; else if (this.skillBuf > 0) this.skillBuf--;
-    // guard (Plink): hold ↓ on the ground
-    if (h.guard && !this.act && this.onGround && inp.isHeld('down') && !ax) { this.guarding = true; this.vx *= .6; }
-    // DASH
-    if (this.dashBuf > 0 && !busy && this.cd.dash <= 0) { this.dashBuf = 0; if (this.act) this.endAct(); this.startDash(); }
-    // SKILL
-    else if (this.skillBuf > 0 && !busy) { this.skillBuf = 0; if (this.act) this.endAct(); this.startSkill(inp); }
-    // ATTACK
-    if (inp.wasPressed('attack')) {
-      if (!this.act || this.act.cancellable) this.startAttack(inp);
-      else if (this.act.kind === 'step') this.queued = true;      // buffer the next combo step
+  /* ------------------------------ command inputs ------------------------------
+     Every hero has: J = free normal moves (combo · ↑+J · ↓+J · air J · running J · hold J),
+     I = moves that cost mana (+ ↑/↓ variants), L = mobility, and ONE ultimate with its own input
+     (needs a full ULT gauge, filled by landing hits and taking damage):
+       du+A  ↓ then ↑ then attack       S+A  skill + attack together     D+A  dash + attack together
+       S+D   skill + dash together      u+S  ↑ + skill                    dS_air  in the air ↓ + skill
+       SS    double-tap skill           holdS hold skill, then release    dd+A ↓ ↓ + attack            */
+  trackInputs(inp) {
+    const P = this.pressAt || (this.pressAt = {});
+    for (const a of ['attack', 'skill', 'dash', 'down', 'up']) if (inp.wasPressed(a)) { P[a + '2'] = P[a]; P[a] = this.t; }
+  }
+  since(a) { const v = this.pressAt && this.pressAt[a]; return v == null ? 1e9 : this.t - v; }
+  get ultReady() { return this.ult >= 100 && !(this.superT > 0) && !!this.hero.ult; }
+  ultMatch(b, inp) {
+    const I = this.hero.ult && this.hero.ult.input;
+    switch (I) {
+      case 'du+A': return b === 'attack' && this.since('up') <= 16 && this.since('down') <= 30 && this.pressAt.down < this.pressAt.up;
+      case 'dd+A': return b === 'attack' && this.since('down') <= 18 && this.since('down2') <= 34;
+      case 'S+A': return (b === 'attack' && this.since('skill') <= 6) || (b === 'skill' && this.since('attack') <= 6);
+      case 'D+A': return (b === 'attack' && this.since('dash') <= 6) || (b === 'dash' && this.since('attack') <= 6);
+      case 'S+D': return (b === 'skill' && this.since('dash') <= 6) || (b === 'dash' && this.since('skill') <= 6);
+      case 'u+S': return b === 'skill' && inp.isHeld('up');
+      case 'dS_air': return b === 'skill' && !this.onGround && inp.isHeld('down');
+      case 'SS': return b === 'skill' && this.since('skill2') <= 16;
     }
+    return false;
+  }
+  startActions(inp, ax) {
+    const h = this.hero, I = h.ult && h.ult.input;
+    this.trackInputs(inp);
+    // guard (Plink / Kirby): hold ↓ on the ground
+    if (h.guard && !this.act && this.onGround && inp.isHeld('down') && !ax && !this.holdA) { this.guarding = true; this.vx *= .6; }
+    if (inp.wasPressed('ult') && this.ultReady) return this.startUlt();            // touch ULT button
+    // the first button of a chord / double tap waits a few frames for its partner
+    if (this.pend) {
+      const P = this.pend;
+      if ((P.partner && inp.wasPressed(P.partner)) || (I === 'SS' && P.btn === 'skill' && inp.wasPressed('skill'))) { this.pend = null; if (this.ultReady) return this.startUlt(); }
+      else if (this.t - P.t < P.wait) return;
+      else { this.pend = null; this.press(P.btn, inp); }
+    }
+    // X: hold skill to charge the ultimate; a short press is the normal skill
+    if (this.holdS != null) {
+      if (inp.isHeld('skill')) {
+        this.holdS++; this.anim.play(h.ult.chargePose || 'idle'); this.vx *= .8;
+        if (this.t % 3 === 0) this.g.burst(this.cx + U.rnd(-16, 16), this.feet - U.rnd(0, 44), this.holdS >= h.ult.hold ? '#ffffff' : '#9fe8ff', 1, .6);
+        if (this.holdS === h.ult.hold) { sfx().charge(); this.g.text(this.cx, this.y - 8, 'ปล่อย!', '#9fe8ff', 30); }
+        return;
+      }
+      const t = this.holdS; this.holdS = null;
+      if (t >= h.ult.hold && this.ultReady) return this.startUlt();
+      this.skillBuf = 10;
+    }
+    for (const b of ['dash', 'skill', 'attack']) {
+      if (!inp.wasPressed(b)) continue;
+      if (this.ultReady && I) {
+        if (this.ultMatch(b, inp)) return this.startUlt();
+        const CH = { 'S+A': ['skill', 'attack'], 'D+A': ['dash', 'attack'], 'S+D': ['skill', 'dash'] }[I];
+        if (CH && CH.includes(b)) { this.pend = { btn: b, t: this.t, wait: 6, partner: CH.find(x => x !== b) }; return; }
+        if (I === 'SS' && b === 'skill') { this.pend = { btn: b, t: this.t, wait: 14 }; return; }
+        if (I === 'holdS' && b === 'skill') { this.holdS = 0; return; }
+      }
+      this.press(b, inp);
+    }
+    // hold attack, then release (Plink's spin attack)
+    const HM = h.moves && h.moves.hold;
+    if (HM) {
+      if (inp.wasPressed('attack')) this.holdA = 0;
+      if (this.holdA != null) {
+        if (inp.isHeld('attack')) { this.holdA++; if (this.holdA === HM.t) { sfx().charge(); this.g.burst(this.cx, this.y + 8, '#ffffff', 10, 2); } if (this.holdA > HM.t && this.t % 4 === 0) this.g.burst(this.cx + U.rnd(-12, 12), this.y + U.rnd(0, this.h), '#ffe36a', 1, .4); }
+        else { const t = this.holdA; this.holdA = null; if (t >= HM.t) { if (this.act) this.endAct(); this.doMove(HM); } }
+      }
+    }
+    this.runBuffers(inp);
+  }
+  press(b, inp) {
+    if (b === 'dash') this.dashBuf = 10;
+    else if (b === 'skill') this.skillBuf = 10;
+    else if (b === 'attack') { if (!this.act || this.act.cancellable) this.startAttack(inp); else if (this.act.kind === 'step') this.queued = true; }
+  }
+  // input buffer: a dash / skill pressed while busy fires the moment the current move can be cancelled
+  runBuffers(inp) {
+    const busy = this.act && !this.act.cancellable;
+    if (this.dashBuf > 0) this.dashBuf--; if (this.skillBuf > 0) this.skillBuf--;
+    if (this.dashBuf > 0 && !busy && this.cd.dash <= 0) { this.dashBuf = 0; if (this.act) this.endAct(); this.startDash(); }
+    else if (this.skillBuf > 0 && !busy) { this.skillBuf = 0; if (this.act) this.endAct(); this.startSkill(inp); }
   }
   endAct() { const a = this.act; this.act = null; if (a && a.onEnd) a.onEnd(); }
   spend(cost) {
@@ -205,7 +282,14 @@ class Player {
     const h = this.hero, A = h.attack, g = this.g;
     if (this.mouth && A.mouthful) return this.shoot(A.mouthful, { mouth: true });
     if (this.floating && h.float.puff) { this.floating = false; this.airJumps = 0; g.spawnProj(h.float.puff, this.cx + this.face * 14, this.feet - 16, this.face, { owner: this }); sfx().shoot(); return; }
-    if (!this.onGround && inp.isHeld('down') && A.down) { if (A.down === 'pogo') return this.startPogo(); if (A.down === 'slam') return this.startSlam(true); }
+    const M = h.moves || {}, run = this.onGround && Math.abs(this.vx) > C.RUN * (h.speed || 1) * .8;
+    let mv = null;
+    if (!this.onGround && inp.isHeld('down') && M.downAir) mv = M.downAir;
+    else if (this.onGround && inp.isHeld('down') && M.down) mv = M.down;
+    else if (inp.isHeld('up') && M.up) mv = M.up;
+    else if (!this.onGround && M.air) mv = M.air;
+    else if (run && M.run) mv = M.run;
+    if (mv) { if (this.act) this.endAct(); return this.doMove(mv); }
     if (A.kind === 'shot') {
       if (A.melee) { const e = g.nearestEnemy(this.cx, this.feet - this.h / 2, this.face, A.melee.range + this.w / 2, 30); if (e) return this.startStep(A.melee); }
       if (this.cd.shot > 0) return;
@@ -269,10 +353,11 @@ class Player {
       update() {
         const t = ++this.t;
         if (s.slide) { self.vx *= .94; }
-        let box = null;
-        if (fh) { const f = fh[self.anim.index()]; if (f && t < s.dur) box = f.box; }
+        let box = null, fi = self.anim.index();
+        if (fh) { const f = fh[fi]; if (f && t < s.dur) box = f.box; }
         else if (t >= s.hit[0] && t <= s.hit[1]) box = s.box;
-        if (box) self.g.hit(self.box(box), s.dmg, { id: swing, kb: s.kb, dir: self.face, from: self, shake: s.shake, fx: s.fx, heavy: s.dmg >= 3 || !!s.shake, finisher: idx != null && idx === (self.hero.attack.steps || []).length - 1 && idx > 0 });
+        if (s.multi && fi !== this.lastFi) { this.lastFi = fi; this.mid = newSwing(); }        // multi-hit moves: a new blow on every active frame
+        if (box) self.g.hit(self.box(box), s.dmg, { id: s.multi ? this.mid : swing, kb: s.kb, dir: self.face, from: self, shake: s.shake, fx: s.fx, up: s.up, heavy: s.heavy || s.dmg >= 3 || !!s.shake, finisher: idx != null && idx === (self.hero.attack.steps || []).length - 1 && idx > 0 });
         // recovery: once the blow is over the move can be cancelled into the next hit, a dash, a skill or a jump
         if (t > this.lastActive && !this.cancellable) {
           this.cancellable = true;
@@ -307,8 +392,8 @@ class Player {
     }
   }
 
-  startDash() {
-    const h = this.hero, D = h.dash, g = this.g, self = this;
+  startDash(D0) {
+    const h = this.hero, D = D0 || h.dash, g = this.g, self = this;
     if (!D) return;
     if (D.kind === 'homing') return this.startHoming(D);
     if (D.kind === 'rocket') {
@@ -320,7 +405,7 @@ class Player {
       return;
     }
     if (!this.onGround) { if (!D.air || !this.airDash) return; this.airDash = false; }
-    this.cd.dash = D.cd; this.floating = false;
+    if (!D.isSkill) this.cd.dash = D.cd; this.floating = false;
     const sw = newSwing(); let multi = 0;
     this.anim.play(D.pose, null, true); sfx().dash();
     if (D.shout) g.text(this.cx + this.face * 10, this.y - 10, D.shout, '#ff5a6a', 70, true);
@@ -345,7 +430,7 @@ class Player {
     if (this.onGround) {           // on the ground: a quick boost into a full-speed run
       this.vx = this.face * 7; this.runT = C.RUN_AFTER; this.cd.dash = 16; sfx().dash(); g.dust(this.cx, this.feet, 5); return;
     }
-    if (!this.airDash) return; this.airDash = false; this.cd.dash = D.cd;
+    if (!this.airDash) return; this.airDash = false; if (D.cd) this.cd.dash = D.cd;
     const tgt = g.nearestEnemy(this.cx, this.feet - 16, this.face, D.range, 140, true);
     const sw = newSwing(); this.ball = true; sfx().dash();
     let vx, vy;
@@ -359,11 +444,74 @@ class Player {
       } };
   }
   startSkill(inp) {
-    const h = this.hero, g = this.g, self = this;
+    const h = this.hero, g = this.g;
     let S = h.skill; if (!S) return;
-    if (S.air && !this.onGround) S = S.air;
+    if (h.skills && inp.isHeld('up') && h.skills.up) S = h.skills.up;
+    else if (h.skills && inp.isHeld('down') && h.skills.down) S = h.skills.down;
+    else if (S.air && !this.onGround) S = S.air;
     if (this.mouth) { this.mouth = null; this.en = Math.min(100, this.en + 30); g.text(this.cx, this.y - 6, 'กลืน! +30 พลัง', '#ffb0e0', 50); sfx().heart(); return; }
+    this.useSkill(S, inp);
+  }
+  // free normal moves share the skill machinery (cost 0) — see heroes.js moves{}
+  doMove(m) {
+    switch (m.kind || 'step') {
+      case 'step': this.startStep(m, null); break;
+      case 'pogo': this.startPogo(); break;
+      case 'homing': if (this.onGround) return; this.startHoming(m); break;
+      default: this.useSkill(Object.assign({ cost: 0 }, m), this.g.input);
+    }
+  }
+  useSkill(S, inp) {
+    const h = this.hero, g = this.g, self = this;
     switch (S.kind) {
+      case 'step': if (!this.spend(S.cost)) return; this.startStep(S, null); sfx().big(); break;
+      case 'shotUp': {
+        if (this.cd.shot > 0) return; this.cd.shot = S.rate || 8;
+        this.anim.play(S.pose, S.dur, true);
+        this.act = { kind: 'shot', t: 0, pose: S.pose, slow: .55, canTurn: true, cancellable: false,
+          update() { if (++this.t === S.fireAt) { const sp = PLAT.PROJ[S.proj].speed; g.spawnProj(S.proj, self.cx + self.face * 12, self.feet + S.y, self.face, { owner: self, vx: self.face * Math.cos(S.angle) * sp, vy: -Math.sin(S.angle) * sp }); sfx().shoot(); }
+            if (this.t >= S.dur) self.endAct(); else if (this.t > S.fireAt + 3) this.cancellable = true; } };
+        break;
+      }
+      case 'dive': {                                   // Kirby roll-dive: fall fast, bounce off what you hit
+        if (this.onGround) return; const sw = newSwing();
+        this.anim.play(S.pose, null, true); sfx().dash(); this.vy = Math.max(this.vy, 2);
+        this.act = { kind: 'dive', t: 0, pose: S.pose, ownsY: true, canTurn: true,
+          update() { this.t++; self.vy = S.vy; self.bodyHit = { dmg: S.dmg, id: this.sw || sw, kb: 4, dive: true }; },
+          afterMove() {}, onLand() { self.endAct(); g.dust(self.cx, self.feet, 6); sfx().land(); } };
+        this.act.bounce = S.bounce;
+        break;
+      }
+      case 'boost': {                                  // Sonic: invincible speed burst through everything
+        if (!this.spend(S.cost)) return;
+        this.startDash(Object.assign({ kind: 'dash', air: true, isSkill: true }, S)); this.airDash = true;
+        break;
+      }
+      case 'bash': {                                   // Plink: shield bash — reflects shots, shoves enemies
+        if (!this.spend(S.cost)) return; const sw = newSwing();
+        this.anim.play(S.pose, null, true); sfx().dash();
+        this.act = { kind: 'bash', t: 0, pose: S.pose, ownsMove: true, reflect: true, stopOnWall: true,
+          update() { this.t++; self.vx = self.face * S.speed * (this.t > S.dur - 5 ? .6 : 1); g.hit(self.box(S.hit.box), S.hit.dmg, { id: sw, kb: S.hit.kb, dir: self.face, from: self, heavy: true }); if (this.t % 3 === 0) g.burst(self.cx + self.face * 14, self.y + 18, '#cfe8ff', 1, .6); if (this.t >= S.dur) self.endAct(); } };
+        break;
+      }
+      case 'balloon': {                                // Luffy: Fusen — bounces shots back, pushes enemies away
+        if (!this.spend(S.cost)) return;
+        this.anim.play(S.pose, S.dur, true); sfx().spring();
+        this.act = { kind: 'balloon', t: 0, pose: S.pose, slow: 0, reflect: false,
+          update() { this.t++; const fi = self.anim.index(); this.reflect = fi >= S.on[0] && fi <= S.on[1]; if (this.t >= S.dur) self.endAct(); } };
+        break;
+      }
+      case 'pillar': {                                 // Mia: fire pillar in front, several ticks
+        if (!this.spend(S.cost)) return;
+        this.anim.play(S.pose, S.dur, true); sfx().big();
+        const x = this.cx + this.face * S.dist, fl = g.floorBelow(x, this.feet - 30);
+        this.act = { kind: 'skill', t: 0, pose: S.pose, slow: 0,
+          update() { this.t++; if (this.t === S.at) { g.fx('pillar', x, fl - 48, { scale: 1 }); g.shake(3); sfx().boom(); }
+            if (this.t >= S.at && (this.t - S.at) % S.every === 0 && (this.t - S.at) / S.every < S.hits) g.hit({ x: x - S.box[0] / 2, y: fl - S.box[1], w: S.box[0], h: S.box[1] }, S.dmg, { id: newSwing(), kb: 2, dir: self.face, from: self, up: true, multi: true });
+            if (this.t >= S.dur) self.endAct(); } };
+        this.act.cancellable = false;
+        break;
+      }
       case 'proj': case 'flare': {
         if (S.max && g.countProj(this, S.proj) >= S.max) return;
         if (!this.spend(S.cost)) return;
@@ -405,7 +553,8 @@ class Player {
             const ft = this.t - S.charge, x0 = self.cx + self.face * 22, y = self.feet + S.y;
             let len = S.len; for (let d = 8; d < S.len; d += 8) if (W.solidAt(g.L, Math.floor((x0 + self.face * d) / C.T), Math.floor(y / C.T))) { len = d; break; }
             this.beam = { x0, y, len, t: ft };
-            if (ft % S.every === 0) g.hit({ x: self.face > 0 ? x0 : x0 - len, y: y - S.h / 2, w: len, h: S.h }, S.dmg, { id: newSwing(), kb: 2, dir: self.face, from: self, fx: 'impact' });
+            if (ft % S.every === 0) g.hit({ x: self.face > 0 ? x0 : x0 - len, y: y - S.h / 2, w: len, h: S.h }, S.dmg, { id: newSwing(), kb: 2, dir: self.face, from: self, fx: 'impact', multi: true });
+            if (S.ult && ft % 6 === 0) g.shake(3);
             if (ft >= S.fire) self.endAct();
           }, onEnd() { fx.dead = true; } };
         this.act.draw = (ctx) => { const b = self.act && self.act.beam; if (b) g.drawBeam(ctx, b, self.face, S.h); };
@@ -444,7 +593,7 @@ class Player {
         this.act = { kind: 'rev', t: 0, pose: S.rev, slow: 0, ownsMove: true, noJump: true, canTurn: true,
           update() {
             this.t++; self.vx *= .8; if (this.t % 8 === 0) { sfx().charge(); g.dust(self.cx - self.face * 10, self.feet, 2); }
-            if (!g.input.isHeld('skill') || this.t > 60) {
+            if (!g.input.isHeld(S.btn || 'skill') || this.t > 60) {
               const pow = U.clamp(this.t / 40, .5, 1), sw = newSwing();
               self.ball = true; sfx().dash(); self.anim.play(S.pose, null, true); self.inv = Math.max(self.inv, S.dur);
               self.act = { kind: 'spindash', t: 0, pose: S.pose, ownsMove: true, noJump: false, cancelOnJump: false,
@@ -469,23 +618,25 @@ class Player {
         }
       }, onLand() { self.endAct(); } };
   }
-  startSlam(free) {
-    const self = this, g = this.g, S = this.hero.skill;
-    if (this.onGround) { this.vy = -S.leap; this.onGround = false; this.coyote = 0; }
-    this.anim.play('jump', null, true); sfx().jump();
+  startSlam(free, S0) {
+    const self = this, g = this.g, S = S0 || this.hero.skill;
+    this.vy = -S.leap; this.onGround = false; this.coyote = 0;
+    this.anim.play(S.rise || 'jump', null, true); sfx().jump();
     const sw = newSwing();
     this.act = { kind: 'slam', t: 0, pose: 'jump', ownsMove: true, ownsY: true, noJump: true, phase: 'rise',
       update() {
         this.t++; self.vx *= .9;
-        if (this.phase === 'rise') { self.vy += C.GRAV; if (self.vy >= -1) { this.phase = 'fall'; self.anim.play('slamDown', null, true); sfx().dash(); } }
+        if (this.phase === 'rise') { self.vy += C.GRAV; if (self.vy >= -1) { this.phase = 'fall'; this.pose = S.drop || 'slamDown'; self.anim.play(this.pose, null, true); sfx().dash(); } }
         else if (this.phase === 'fall') { self.vy = S.fall; self.vx = 0; self.bodyHit = { dmg: 2, id: sw, kb: 3 }; if (this.t % 2 === 0) g.burst(self.cx, self.y, '#ff8a3a', 1, .5); }
         else if (this.phase === 'land') { self.vy += C.GRAV; if (++this.lt >= 24) self.endAct(); }
+        if (this.t > 160) self.endAct();
       },
       onLand() {
         if (this.phase !== 'fall') return;
-        this.phase = 'land'; this.lt = 0; self.anim.play('slamLand', 24, true);
+        this.phase = 'land'; this.lt = 0; this.pose = S.drop ? 'idle' : 'slamLand'; self.anim.play(this.pose, 24, true);
+        if (S.booms) for (let i = 0; i < S.booms; i++) { const x = self.cx + (i - (S.booms - 1) / 2) * 44; g.fx({ frames: self.anim.sheet.frames('boom') || PLAT.fxSheet(PLAT.FXDEF.boom), rate: 3, scale: 2 }, x, self.feet - 20, {}); }
         const w = S.wave; g.shake(6); g.hitstop(3); sfx().boom();
-        g.hit({ x: self.cx - w.r, y: self.feet - w.h, w: w.r * 2, h: w.h + 6 }, w.dmg, { id: newSwing(), kb: 7, dir: 0, from: self, up: true });
+        g.hit({ x: self.cx - w.r, y: self.feet - w.h, w: w.r * 2, h: w.h + 6 }, w.dmg, { id: newSwing(), kb: 7, dir: 0, from: self, up: true, heavy: true });
         g.fx('ground', self.cx - 30, self.feet - 34, { scale: .32 }); g.fx('ground', self.cx + 30, self.feet - 34, { scale: .32, flip: true });
         for (let i = 0; i < 18; i++) g.burst(self.cx + U.rnd(-w.r, w.r), self.feet - 2, i % 2 ? '#ff6a2a' : '#ffd060', 1, 2.5);
       } };
@@ -494,6 +645,64 @@ class Player {
     const a = this.act;
     // X: charge while holding attack
     a.update && a.update();
+  }
+
+  /* ------------------------------- ULTIMATE ------------------------------- */
+  gainUlt(n) {
+    if (this.superT > 0 || !this.hero.ult) return;
+    const was = this.ult >= 100; this.ult = Math.min(100, this.ult + n);
+    if (!was && this.ult >= 100) { this.g.text(this.cx, this.y - 14, 'ULT พร้อม!', '#ffd84a', 70, true); sfx().gem(); }
+  }
+  startUlt() {
+    const h = this.hero, U_ = h.ult, g = this.g, self = this;
+    if (!U_ || this.ult < 100) return;
+    this.ult = 0; this.pend = null; this.holdS = null; this.holdA = null; this.skillBuf = 0; this.dashBuf = 0; this.queued = false;
+    if (this.act) this.endAct();
+    this.inv = Math.max(this.inv, U_.inv || 70); this.floating = false;
+    g.ultCut(this, U_.name);
+    switch (U_.kind) {
+      case 'arcs': {                                   // Knight: three huge crescents (up · straight · down)
+        this.anim.play(U_.pose, U_.dur, true); const ang = [-.22, 0, .22];
+        this.act = { kind: 'ult', t: 0, pose: U_.pose, slow: 0,
+          update() { const i = U_.fireAt.indexOf(++this.t); if (i >= 0) { const pd = Object.assign({}, PLAT.PROJ[U_.proj], { dmg: U_.dmg, scale: U_.scale, box: [70, 64] }); const sp = pd.speed; g.spawnProj(pd, self.cx + self.face * 22, self.feet - 34, self.face, { owner: self, vx: self.face * Math.cos(ang[i]) * sp, vy: Math.sin(ang[i]) * sp }); sfx().big(); g.shake(4); }
+            if (this.t >= U_.dur) self.endAct(); } };
+        break;
+      }
+      case 'step': this.startStep(Object.assign({ ult: true }, U_.step), null); break;
+      case 'stars': {                                  // Kirby: rise and spit a fan of giant stars
+        this.vy = U_.rise; this.anim.play(U_.pose, U_.dur, true); let k = 0;
+        this.act = { kind: 'ult', t: 0, pose: U_.pose, slow: 0, hover: true,
+          update() { if (U_.at.includes(++this.t)) { const a = (k++ - 2) * .2, pd = Object.assign({}, PLAT.PROJ[U_.proj], { dmg: U_.dmg, scale: U_.scale, box: [40, 40], pierce: 99 }); g.spawnProj(pd, self.cx + self.face * 16, self.feet - 18, self.face, { owner: self, vx: self.face * Math.cos(a) * 7, vy: Math.sin(a) * 7 }); sfx().shoot(); }
+            if (self.vy > .5) self.vy = .5; if (this.t >= U_.dur) self.endAct(); } };
+        break;
+      }
+      case 'super': this.superT = U_.dur; this.superId = newSwing(); sfx().gem(); g.flashT = 14; break;
+      case 'giga': {                                   // X: Giga Buster
+        this.anim.play(U_.pose, U_.dur, true);
+        this.act = { kind: 'ult', t: 0, pose: U_.pose, slow: 0,
+          update() { if (++this.t === U_.fireAt) { const pd = Object.assign({}, PLAT.PROJ[U_.proj], { dmg: U_.dmg, scale: U_.scale, box: [110, 90], speed: 7 }); g.spawnProj(pd, self.cx + self.face * 30, self.feet - 28, self.face, { owner: self }); self.vx = -self.face * 3; g.shake(7); sfx().boom(); }
+            if (this.t >= U_.dur) self.endAct(); } };
+        break;
+      }
+      case 'dive': {                                   // Mia: Musasabi no Mai — rise, then a burning dive
+        const sw = newSwing(); this.anim.play(U_.rise, null, true); this.vy = U_.riseVy;
+        this.act = { kind: 'ult', t: 0, pose: U_.rise, ownsMove: true, ownsY: true, phase: 'rise',
+          update() {
+            this.t++;
+            if (this.phase === 'rise') { self.vx = 0; self.vy += .35; if (this.t >= U_.riseT) { this.phase = 'dive'; this.pose = U_.pose; self.anim.play(U_.pose, null, true); sfx().dash(); } }
+            else if (this.phase === 'dive') { self.vx = self.face * U_.vx; self.vy = U_.vy; self.bodyHit = { dmg: U_.dmg, id: sw, kb: 6 }; if (this.t % 2 === 0) g.fx('mburst', self.cx - self.face * 10, self.y + 20, { scale: .35 }); if (self.wall || this.t > 120) this.onLand(); }
+            else if (++this.lt > 20) self.endAct();
+          },
+          onLand() {
+            if (this.phase !== 'dive') return; this.phase = 'land'; this.lt = 0; this.pose = U_.land; self.anim.play(U_.land, null, true); self.vx = 0;
+            g.fx('mburst', self.cx, self.feet - 30, { scale: 1.4 }); g.fx('pillar', self.cx - 40, self.feet - 48, {}); g.fx('pillar', self.cx + 40, self.feet - 48, {});
+            g.hit({ x: self.cx - U_.boom.r, y: self.feet - U_.boom.r, w: U_.boom.r * 2, h: U_.boom.r + 8 }, U_.boom.dmg, { id: newSwing(), kb: 8, dir: 0, from: self, up: true, heavy: true }); g.shake(7); sfx().boom();
+          } };
+        break;
+      }
+      case 'beam': this.useSkill(Object.assign({ kind: 'beam', cost: 0, ult: true }, U_.beam)); this.g.text(this.cx, this.y - 20, 'ยึดหมด!!!', '#ff5a6a', 80, true); break;
+      case 'meteor': this.startSlam(true, U_); break;
+    }
   }
 
   /* -------------------------------- damage -------------------------------- */
@@ -513,7 +722,7 @@ class Player {
     this.vx = dir * kb; this.vy = -4.4; this.jumping = false;
     sfx().hurt(); PLAT.haptic('hurt'); this.g.shake(3); this.g.hitstop(4); this.g.burst(this.cx, this.y + 16, '#ff5a6a', 10, 2.4);
     if (dmg > 0) this.g.text(this.cx, this.y - 6, '-' + dmg, '#ff6a7a', 40);
-    this.g.stats.hits++;
+    this.g.stats.hits++; this.gainUlt(8);
     if (this.hp <= 0) this.die();
     return 'hit';
   }
@@ -524,6 +733,7 @@ class Player {
   heal(n) { this.hp = Math.min(this.maxHp, this.hp + n); }
   onHitLanded(n) {
     this.en = Math.min(100, this.en + 3 * n);
+    this.gainUlt(4 * n);
     this.streak += n; this.streakT = 180;
     const A = this.hero.attack;
     if (A.combo && this.streak === A.combo.at) this.g.text(this.cx, this.y - 10, 'คอมโบ ' + A.combo.at + '! หน้าไม้ทะลุ', '#ffe08a', 50);
@@ -531,21 +741,21 @@ class Player {
 
   /* -------------------------------- anim pose -------------------------------- */
   pose() {
-    const a = this.anim, m = this.mouth ? 'm_' : '';
+    const a = this.anim, m = this.mouth ? 'm_' : this.superT > 0 ? 's_' : '';
     const has = n => !!a.resolve(n) && (a.resolve(n).name === n);
     const pick = n => (m && has(m + n)) ? m + n : n;
     let want;
     if (this.dead) want = 'dead';
     else if (this.hurtT > 0) want = pick('hurt');
-    else if (this.act && this.act.pose) { if (a.pose !== this.act.pose) a.play(this.act.pose, null, true); return; }
+    else if (this.act && this.act.pose) { const ap = m && has(m + this.act.pose) ? m + this.act.pose : this.act.pose; if (a.pose !== ap && a.pose !== this.act.pose) a.play(ap, null, true); return; }
     else if (this.guarding) want = 'guard';
     else if (this.wallDir) want = 'wall';
     else if (this.floating) want = 'float';
     else if (!this.onGround) {
-      if (this.ball) want = 'ball';
+      if (this.ball) want = pick('ball');
       else if (this.springT > 0 && has('spring')) want = 'spring';
       else if (a.pose === 'airjump' && !a.done) return;
-      else want = this.mouth ? (this.vy < 0 ? 'm_jump' : 'm_fall') : (this.vy < 0 ? 'jump' : 'fall');
+      else want = pick(this.vy < 0 ? 'jump' : 'fall');
     } else {
       const sp = Math.abs(this.vx), top = C.RUN * (this.hero.speed || 1);
       const ax = (this.g.input.isHeld('right') ? 1 : 0) - (this.g.input.isHeld('left') ? 1 : 0);
