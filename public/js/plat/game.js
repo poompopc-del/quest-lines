@@ -445,7 +445,7 @@ class Game {
   hudState() {
     const p = this.player, L = this.L, h = p.hero;
     return { hp: p.hp, maxHp: p.maxHp, en: p.en, coins: this.stats.coins, gems: [...this.stats.gems], gemTotal: L.gems.length, frames: this.stats.frames,
-      dashCd: h.dash && h.dash.cd ? p.cd.dash / h.dash.cd : 0, skillCost: h.skill ? (h.skill.cost || 0) : 0, ult: p.ult, superT: p.superT, mouth: !!p.mouth, heat: p.heat, streak: p.streak, charge: p.charge };
+      dashCd: h.dash && h.dash.cd ? p.cd.dash / h.dash.cd : 0, skillCost: h.skill ? (h.skill.cost || 0) : 0, ult: h.chargeBar ? h.chargeBar(p).pct : p.ult, ultLv: h.chargeBar ? h.chargeBar(p).lv : 0, chargeBar: !!h.chargeBar, superT: p.superT, mouth: !!p.mouth, heat: p.heat, streak: p.streak, charge: p.charge };
   }
 
   /* --------------------------------- effects --------------------------------- */

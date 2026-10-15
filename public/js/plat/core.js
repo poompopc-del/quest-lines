@@ -99,12 +99,12 @@ PLAT.assets = {
 
 /* ---------------------------------- input ---------------------------------- */
 // Everything reads ACTIONS, never keys — touch buttons and gamepads just set the same actions.
-const KEYMAP = {
+const KEYMAP = {                          // ↑ / W are aim only — they never jump
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
-  jump: ['Space', 'KeyK', 'ArrowUp', 'KeyW'], attack: ['KeyJ', 'KeyX'], skill: ['KeyI', 'KeyC'], dash: ['KeyL', 'ShiftLeft', 'ShiftRight'], swap: ['KeyQ', 'KeyU'],
+  jump: ['Space', 'KeyK'], attack: ['KeyJ', 'KeyX'], skill: ['KeyI', 'KeyC'], dash: ['KeyL', 'ShiftLeft', 'ShiftRight'], swap: ['KeyQ', 'KeyU'],
   pause: ['Escape', 'KeyP'], ok: ['Enter', 'NumpadEnter'], back: ['Backspace'], ult: [],
 };
-const ACTIONS = Object.keys(KEYMAP);
+const ACTIONS = Object.keys(KEYMAP); PLAT.KEYMAP = KEYMAP;
 const input = PLAT.input = {
   held: {}, pressed: {}, released: {}, src: {},      // src[action] = Set of sources holding it (keys / touch ids / pad)
   attached: false, lastDevice: 'none',             // none · touch · key · pad (what the player used last)

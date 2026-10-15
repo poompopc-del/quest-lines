@@ -1,6 +1,6 @@
 // Platform Mode COMBAT REGRESSION TESTS — real browser (Playwright + Chromium), real game code.
 // usage: npm run test:combat        (starts the local server itself on a free port)
-//        node tools/plat-combat-test.mjs [filter]   — only tests whose name contains <filter>
+//        node tools/plat-combat-test.mjs [filter]   — only tests whose name contains <filter> (a|b = either)
 // Needs the `playwright` package (npm i -D playwright, or a global install) and a Chromium build.
 // Every test steps the game frame by frame with scripted input and checks HP / armour / state —
 // nothing here is mocked except the enemy AI in "dummy" tests (frozen so only the attack is measured).
@@ -38,7 +38,7 @@ const results = await page.evaluate(async (filter) => {
   const { P, I, T, GY, setup, step, press, rel, sum, shield, game } = QT;
   const out = [];
   const t = async (name, fn) => {
-    if (filter && !name.includes(filter)) return;
+    if (filter && !filter.split('|').some(f => name.includes(f))) return;
     try { const r = await fn(); out.push({ name, ok: r === true || (r && r.ok), detail: r && r.detail || '' }); }
     catch (e) { out.push({ name, ok: false, detail: 'THREW ' + (e && e.stack || e) }); }
   };
@@ -252,9 +252,9 @@ const results = await page.evaluate(async (filter) => {
     for (let k = 0; k < 3; k++) { press('swap'); step(g, 1); rel('swap'); step(g, 40); seen.push(P.X_FORMS[p.xs.form].id); }
     return { ok: seen.join() === 'force,ult,x', detail: seen.join() };
   });
-  await t('X4: armoured ULT = Nova Strike, rushes forward and hits', async () => {
-    const { g, p, log } = await setup('x', 'tyrant', 110, 1, { hp: 99 }); xf(p, 2); p.ult = 100;
-    const x0 = p.cx; press('ult'); step(g, 1); rel('ult'); let k = null; step(g, 70, () => { if (p.act && !k) k = p.act.kind; });
+  await t('X4: Force Armor ↓+skill = Nova Strike, rushes forward and hits', async () => {
+    const { g, p, log } = await setup('x', 'tyrant', 110, 1, { hp: 99 }); xf(p, 1); p.en = 100;
+    const x0 = p.cx; press('down'); press('skill'); step(g, 1); rel('skill'); rel('down'); let k = null; step(g, 70, () => { if (p.act && !k) k = p.act.kind; });
     return { ok: sum(log).hits >= 1 && p.cx - x0 > 60, detail: `act ${k} hits ${sum(log).hits} moved ${(p.cx - x0).toFixed(0)}` };
   });
   await t('X4: Ultimate armour ↓+skill Nova costs 40 energy', async () => {
@@ -273,6 +273,30 @@ const results = await page.evaluate(async (filter) => {
     const { g, p } = await setup('x', null, 0, 1); P.skipIntro = false; p.reset({ x: 20 * T, y: GY }); P.skipIntro = true;
     const k = p.act && p.act.kind; step(g, 40);
     return { ok: k === 'beam' && !p.act, detail: `act ${k} after ${p.act && p.act.kind}` };
+  });
+  await t('↑ / W never jump (aim only)', async () => {
+    const m = P.KEYMAP || {}; const j = (m.jump || []);
+    const keys = ['attack', 'skill', 'dash', 'swap'].every(k => (m[k] || []).length >= 2);
+    return { ok: !j.includes('ArrowUp') && !j.includes('KeyW') && j.includes('Space') && (m.up || []).includes('ArrowUp') && keys, detail: `jump ${j} · attack ${m.attack}` };
+  });
+  await t('X4: dash-jump, then press back — reverses at full dash speed at once', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 0);
+    press('right'); press('dash'); step(g, 6, () => shield(p)); press('jump'); step(g, 1); step(g, 4, () => shield(p));
+    const v0 = p.vx; rel('right'); press('left'); step(g, 1); const v1 = p.vx; rel('left'); step(g, 1); const v2 = p.vx; rel('jump'); rel('dash'); step(g, 60);
+    return { ok: v0 > 5 && v1 < -5 && Math.abs(v2) < .01, detail: `fwd ${v0.toFixed(2)} back ${v1.toFixed(2)} released ${v2.toFixed(2)}` };
+  });
+  await t('X4: releasing jump stops the rise at once (short hop)', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 0);
+    const y0 = p.feet; press('jump'); step(g, 5); rel('jump'); let top = p.feet; step(g, 40, () => { top = Math.min(top, p.feet); });
+    const r2 = await setup('x', null, 0, 1); press('jump'); let top2 = r2.p.feet; step(r2.g, 40, () => { top2 = Math.min(top2, r2.p.feet); }); rel('jump'); step(r2.g, 40);
+    return { ok: y0 - top < 60 && GY - top2 > 100, detail: `hop ${(y0 - top).toFixed(0)} full ${(GY - top2).toFixed(0)}` };
+  });
+  for (const [lv, hold, pn, en] of [[3, 130, 'x4c3', 100], [4, 190, 'x4c4', 100], [3, 190, 'x4c3', 10]]) await t(`X4: charge ${hold}f (energy ${en}) fires level ${lv} (${pn})`, async () => {
+    const { g, p, log } = await setup('x', 'tyrant', 160, 1, { hp: 99 }); xf(p, 0);
+    let bar = 0; step(g, hold, i => { shield(p); press('attack'); p.en = Math.max(p.en, en); if (en < 50) p.en = en; bar = Math.max(bar, g.hudData ? 0 : 0); });
+    const cb = P.HEROES.x.chargeBar(p); rel('attack'); step(g, 2);
+    const pr = g.projs.find(q => q.def === P.PROJ[pn]); step(g, 60, () => shield(p));
+    return { ok: !!pr && cb.lv === lv && sum(log).hits >= 1, detail: `bar lv ${cb.lv} ${cb.pct.toFixed(0)}% proj ${!!pr} hits ${sum(log).hits} dmg ${sum(log).dmg}` };
   });
   await t('X4: death spawns the bubble burst', async () => {
     const { g, p } = await setup('x', null, 0, 1); p.inv = 0; p.hp = 1; p.hurt(1, p.cx + 10); step(g, 2);

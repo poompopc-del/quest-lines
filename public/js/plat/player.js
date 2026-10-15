@@ -83,11 +83,12 @@ class Player {
     // gravity
     const ownsY = this.act && this.act.ownsY;
     // variable jump height: letting go early cuts the rise (springs / bounces are never cut)
-    if (this.jumping && this.cutOK && !inp.isHeld('jump') && this.airT >= C.MIN_JUMP && this.vy < -C.JUMP_CUT) { this.vy = -C.JUMP_CUT; this.cutOK = false; }
+    const PH = h.phys || {}, cut = PH.cut != null ? PH.cut : C.JUMP_CUT;        // per-hero jump feel (X: X4 physics)
+    if (this.jumping && this.cutOK && !inp.isHeld('jump') && this.airT >= (PH.minJump || C.MIN_JUMP) && this.vy < -cut) { this.vy = -cut; this.cutOK = false; }
     if (!ownsY) {
       const up = this.jumping && inp.isHeld('jump') && this.vy < 0;
-      this.vy += up ? C.GRAV_UP : C.GRAV;
-      let maxFall = C.MAX_FALL;
+      this.vy += up ? (PH.gravUp || C.GRAV_UP) : (PH.grav || C.GRAV);
+      let maxFall = PH.maxFall || C.MAX_FALL;
       if (this.floating) maxFall = h.float.maxFall;
       if (this.wallDir && this.vy > 0) maxFall = 2.2;
       if (this.act && this.act.hover) maxFall = 1.6;
@@ -120,6 +121,8 @@ class Player {
     const target = ax * top;
     let k;
     if (this.onGround) k = ax ? C.ACC_GROUND * accMul : C.DEC_GROUND; else k = C.ACC_AIR * accMul;
+    const PH = h.phys; if (PH && (this.onGround ? PH.instantGround : PH.instantAir)) k = 99;   // X4: no momentum — full speed / stop / reverse at once
+    if (k === 99 && this.wallLock > 0) return;                                   // …except the wall-kick push
     if (ax && Math.sign(target) !== Math.sign(this.vx) && this.onGround) k *= 1.6;   // snappy turn
     const d = target - this.vx; this.vx += U.clamp(d, -k, k);
     if (ax && (!this.act || this.act.canTurn)) this.face = ax;
@@ -822,6 +825,7 @@ class Player {
     if (!PLAT.drawFrame(ctx, fr, x, y, this.face, h.scale, o)) {      // image missing → coloured stand-in, never a crash
       ctx.fillStyle = h.color || '#fff'; ctx.fillRect(this.x, this.y, this.w, this.h);
     }
+    if (h.mod && h.mod.drawFront) h.mod.drawFront(ctx, this);
   }
 }
 PLAT.Player = Player;

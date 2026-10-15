@@ -186,6 +186,15 @@ html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:
 .ultb b{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#ffb020,#ffe36a)}
 .ultb span{position:absolute;right:-30px;top:-5px;font-size:9px;color:#ffd84a;transform:skewX(20deg);letter-spacing:1px}
 .ultb.full b{animation:ultpulse .5s infinite alternate;background:linear-gradient(90deg,#fff2a0,#ffd84a,#fff)}
+/* X: the ULT bar is a 4-level buster charge bar (ticks at levels 1-3 · colour per level) */
+.ultb.charge{height:7px;background:#0a1a2a}
+.ultb.charge span{right:-46px;color:#9fe8ff}
+.ultb.charge::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 14%,#000 14%,#000 15%,transparent 15%,transparent 36%,#000 36%,#000 37%,transparent 37%,transparent 66%,#000 66%,#000 67%,transparent 67%)}
+.ultb.charge b{background:#3a6a8a}
+.ultb.charge[data-lv="1"] b{background:linear-gradient(90deg,#3a8aff,#8ad8ff)}
+.ultb.charge[data-lv="2"] b{background:linear-gradient(90deg,#3aff8a,#ff8ae8)}
+.ultb.charge[data-lv="3"] b{background:linear-gradient(90deg,#3a8aff,#ffffff,#9fe8ff)}
+.ultb.charge[data-lv="4"] b{background:linear-gradient(90deg,#ff9a3a,#ffe36a,#fff);animation:ultpulse .25s infinite alternate}
 @keyframes ultpulse{from{filter:brightness(1)}to{filter:brightness(1.6)}}
 .ulthint{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);display:none;background:rgba(40,26,4,.85);border:1px solid #ffd84a;color:#ffe9a0;padding:3px 12px;font-size:clamp(10px,1.5vw,13px);clip-path:var(--slant);white-space:nowrap}
 .ulthint.on{display:block;animation:ultpulse .6s infinite alternate}

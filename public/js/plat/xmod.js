@@ -43,25 +43,33 @@ const shotDef = (k, o) => Object.assign({ img: X4.fx[k].img, fw: X4.fx[k].fw, fh
 PLAT.PROJ.x4lemon = shotDef('lemon', { speed: 7.5, dmg: 1, life: 55, box: [12, 8], hitFx: FXN.lemonHit });
 PLAT.PROJ.x4c1 = shotDef('c1Shot', { speed: 7.5, dmg: 3, pierce: 1, life: 60, box: [30, 18], hitFx: FXN.c1Hit });
 PLAT.PROJ.x4c2 = shotDef('c2Shot', { speed: 8, dmg: 5, pierce: 3, life: 60, box: [44, 26], hitFx: FXN.c2Hit, shake: 2 });
-PLAT.PROJ.x4plasma = Object.assign({}, PLAT.PROJ.x4c2, { pierce: 99, dmg: 6 });          // armour: fully charged shot pierces everything
-H.preload = Object.values(X4.fx).map(v => v.img);
+PLAT.PROJ.x4plasma = shotDef('plasmaShot', { speed: 8, dmg: 6, pierce: 99, life: 60, box: [48, 40], hitFx: FXN.plasmaHit, shake: 2 });   // armour lv2: Ultimate Armor plasma, pierces
+// charge level 3 (X-Fire sphere) and level 4 (LVL 4 buster shot) — the old ULT, now reached by holding the buster
+PLAT.PROJ.x4c3 = shotDef('c3Shot', { speed: 7, dmg: 8, pierce: 99, life: 70, box: [62, 62], hitFx: FXN.c2Hit, shake: 3 });
+PLAT.PROJ.x4c4 = { img: 'heroes/x/lvl4.png', fw: 196, fh: 136, n: 4, rate: 5, scale: .82, pixel: true, speed: 6.5, dmg: 14, pierce: 99, life: 80, box: [120, 96], hitFx: FXN.c2Hit, shake: 5 };
+H.preload = Object.values(X4.fx).map(v => v.img).concat(['heroes/x/lvl4.png']);
+const LV4_COST = 50;                                                    // energy for a level-4 shot (else the charge stops at level 3)
 
-H.desc = 'บัสเตอร์ยิงได้ทุกท่า (วิ่ง · กระโดด · แดช · เกาะกำแพง) · ค้างเพื่อชาร์จ 2 ระดับ · แดชค้างได้ กระโดดออกจากแดชพาความเร็วไป · ไต่/ถีบกำแพง · สกิล Z-เซเบอร์ · Q / ⟳ เปลี่ยนเกราะ (Force · Ultimate: แดชกลางอากาศ · ลอยตัว · Nova Strike)';
-H.attack = Object.assign({}, H.attack, { proj: 'x4lemon', rate: 8, max: 3, charge: [{ t: 26, proj: 'x4c1', col: '#6ad8ff' }, { t: 66, proj: 'x4c2', col: '#7aff8a' }] });
+H.desc = 'บัสเตอร์ยิงได้ทุกท่า (วิ่ง · กระโดด · แดช · เกาะกำแพง) · กดยิงค้าง = ชาร์จ 4 ระดับ (หลอด CHARGE · ระดับ 4 = ลูกใหญ่สุด ใช้พลัง 50) · แดชค้างได้ กระโดดออกจากแดชพาความเร็วไป กลับทิศได้ทันที · ไต่/ถีบกำแพง · สกิล Z-เซเบอร์ · Q / ⟳ เปลี่ยนเกราะ (Force · Ultimate: แดชกลางอากาศ · ลอยตัว · ↓+สกิล Nova Strike)';
+H.jump = 1.15;
+H.phys = { gravUp: .5, grav: .66, maxFall: 9, cut: 1, minJump: 5, instantAir: true, instantGround: true };   // X4: snappy rise, release = stop rising, no air momentum
+H.attack = Object.assign({}, H.attack, { proj: 'x4lemon', rate: 8, max: 3, charge: [{ t: 26, proj: 'x4c1', col: '#6ad8ff' }, { t: 66, proj: 'x4c2', col: '#7aff8a' }, { t: 120, proj: 'x4c3', col: '#9fe8ff' }, { t: 180, proj: 'x4c4', col: '#ffe36a' }] });
 if (H.moves && H.moves.up) H.moves.up = Object.assign({}, H.moves.up, { pose: 'shoot', proj: 'x4lemon' });
 H.skill = { kind: 'step', name: 'Z-เซเบอร์', cost: 15, pose: 'saber', dur: 32, on: [2, 3, 4, 5, 6, 7], hit: [6, 18], box: [0, -50, 48, 50], dmg: 3, kb: 6, heavy: true,
   air: { kind: 'step', name: 'Z-เซเบอร์ กลางอากาศ', cost: 15, pose: 'jumpSaber', dur: 24, on: [1, 2, 3, 4, 5], hit: [3, 14], box: [-10, -56, 60, 62], dmg: 3, kb: 6, heavy: true } };
 const WALL_SABER = { kind: 'step', name: 'Z-เซเบอร์ กำแพง', cost: 15, pose: 'wallSaber', dur: 26, on: [2, 3, 4, 5, 6], hit: [4, 16], box: [0, -50, 60, 54], dmg: 3, kb: 6, heavy: true };
 H.skills = { up: { kind: 'step', name: 'Z-เซเบอร์ จันทร์เสี้ยว (↑+สกิล)', cost: 25, pose: 'jumpSaber', dur: 26, on: [1, 2, 3, 4, 5], hit: [4, 16], box: [-10, -66, 70, 66], dmg: 4, kb: 7, up: true, heavy: true } };
 H.dash = { kind: 'dash', name: 'แดช', pose: 'dash', speed: 5.6, dur: 30, cd: 12, air: true };
-H.ult = Object.assign({}, H.ult, { pose: 'shootC', chargePose: 'ucharge' });
+H.ult = null;                                                           // X's ULT is the charge bar (level 4 shot)
+const chargeLv = p => { const C4 = H.attack.charge; let lv = 0; for (let i = 0; i < C4.length; i++) if (p.charge >= C4[i].t) lv = i + 1; return lv; };
+H.chargeBar = p => ({ pct: Math.min(100, (p.charge || 0) / H.attack.charge[3].t * 100), lv: chargeLv(p) });
 
 /* ----------------------------------------------------------------- palettes */
 const PAL = {};
 for (const k of Object.keys(X4.pal)) PAL[k] = { key: 'x4' + k, from: X4.pal.default.slice(1), to: X4.pal[k].slice(1) };
 const FORMS = PLAT.X_FORMS = [
   { id: 'x', name: 'X', th: 'ร่างปกติ', pal: null },
-  { id: 'force', name: 'FORCE ARMOR', th: 'ฟอร์ซอาร์เมอร์', pal: 'force', armor: true, nova: 'novaBlue', flame: FXN.novaFlameBlue },
+  { id: 'force', name: 'FORCE ARMOR', th: 'ฟอร์ซอาร์เมอร์', pal: 'force', armor: true, nova: 'novaBlue', flame: FXN.novaFlameBlue, novaSkill: true },
   { id: 'ult', name: 'ULTIMATE ARMOR', th: 'อัลติเมทอาร์เมอร์', pal: 'ult', armor: true, nova: 'novaGold', flame: FXN.novaFlameGold, novaSkill: true },
 ];
 H.forms = FORMS;
@@ -105,7 +113,7 @@ function startTransform(p) {
       if (this.t === 20) {
         s.form = (s.form + 1) % FORMS.length; const f = form(p);
         g.flashT = 10; g.shake(3); sfx().gem(); g.text(p.cx, p.y - 14, f.name, f.armor ? '#ffe36a' : '#9fe8ff', 70, true);
-        g.emit('toast', { text: f.name, sub: f.armor ? f.th + ' · แดชกลางอากาศ · ลอยตัว (กดกระโดดซ้ำ) · ULT = NOVA STRIKE' + (f.novaSkill ? ' · ↓+สกิล = Nova Strike' : '') : f.th });
+        g.emit('toast', { text: f.name, sub: f.armor ? f.th + ' · แดชกลางอากาศ · ลอยตัว (กดกระโดดซ้ำ) · ชาร์จ 2 = พลาสม่า · ↓+สกิล = NOVA STRIKE' : f.th });
       }
       if (this.t >= 36) p.endAct();
     } };
@@ -113,7 +121,7 @@ function startTransform(p) {
 }
 function startNova(p, isUlt) {
   const s = st(p), g = p.g, f = form(p);
-  if (isUlt) g.ultCut(p, 'NOVA STRIKE'); else if (!p.spend(40)) return false;
+  if (isUlt) g.ultCut(p, 'NOVA STRIKE'); else { if (!p.spend(40)) return false; g.text(p.cx, p.y - 14, 'NOVA STRIKE', '#ffe36a', 50, true); }
   p.inv = Math.max(p.inv, 60); let id = PLAT.newSwing();
   p.act = { kind: 'nova', t: 0, ownsMove: true, ownsY: true, noJump: true, stopOnWall: true,
     update() {
@@ -127,6 +135,14 @@ function startNova(p, isUlt) {
       if (this.t >= 14 + 36) { p.endAct(); p.vx = p.face * 2; }
     } };
   return true;
+}
+
+// level-4 shot: X plants his feet and the recoil pushes him back (in the air he hangs for a moment)
+function bigShot(p) {
+  if (p.act) p.endAct();
+  const air = !p.onGround;
+  p.act = { kind: 'bigshot', t: 0, ownsMove: true, ownsY: air, noJump: true,
+    update() { this.t++; p.vx = this.t < 10 ? -p.face * 2.2 * (1 - this.t / 10) : 0; if (air) p.vy = 0; if (this.t >= (air ? 14 : 22)) p.endAct(); } };
 }
 
 /* ------------------------------------------------------------------ module */
@@ -147,7 +163,11 @@ H.mod = {
     if (p.dead || p.hurtT > 0) return false;
     // ARMOUR swap (on the ground, not in a move)
     if (inp.wasPressed('swap') && p.onGround && !p.act) { startTransform(p); return true; }
-    // Ultimate: ↓ + skill = Nova Strike for energy
+    // charge level 4 needs the energy for it — without it the charge waits at level 3
+    if (p.charge >= H.attack.charge[3].t && p.en < LV4_COST) p.charge = H.attack.charge[3].t - 2;
+    if (p.charge === H.attack.charge[2].t) { sfx().charge(); g.text(p.cx, p.y - 10, 'LV3', '#9fe8ff', 26); }
+    if (p.charge === H.attack.charge[3].t) { sfx().gem(); g.flashT = 4; g.text(p.cx, p.y - 10, 'LV4 MAX!', '#ffe36a', 34, true); }
+    // armour: ↓ + skill = Nova Strike for energy
     if (f.novaSkill && !p.act && inp.wasPressed('skill') && inp.isHeld('down')) { if (startNova(p, false)) return true; }
     // wall Z-saber
     if (p.wallDir && !p.act && inp.wasPressed('skill')) { p.useSkill(WALL_SABER, inp); if (p.act) return true; }
@@ -163,9 +183,14 @@ H.mod = {
     }
     // charging: particles gather around X (the body flash is in drawOpts)
     const A = H.attack;
-    if (p.charge >= A.charge[0].t && p.t % 2 === 0) {
-      const lv2 = p.charge >= A.charge[1].t, a = Math.random() * 6.283, r = U.rnd(22, 34);
-      g.parts.push({ x: p.cx + Math.cos(a) * r, y: p.feet - 22 + Math.sin(a) * r, vx: -Math.cos(a) * r / 10, vy: -Math.sin(a) * r / 10, life: 10, col: lv2 ? (p.t % 4 ? '#7aff8a' : '#ff8ae8') : '#8ad8ff', size: 2, grav: 0 });
+    const lv = chargeLv(p);
+    if (lv && p.t % (lv >= 3 ? 1 : 2) === 0) {
+      const COL = [null, ['#8ad8ff'], ['#7aff8a', '#ff8ae8'], ['#9fe8ff', '#ffffff', '#3a8aff'], ['#ffe36a', '#ffffff', '#ff9a3a']][lv];
+      for (let k = 0; k < (lv >= 4 ? 2 : 1); k++) {
+        const a = Math.random() * 6.283, r = U.rnd(22, 34) + lv * 5;
+        g.parts.push({ x: p.cx + Math.cos(a) * r, y: p.feet - 22 + Math.sin(a) * r, vx: -Math.cos(a) * r / 10, vy: -Math.sin(a) * r / 10, life: 10, col: COL[(p.t + k) % COL.length], size: lv >= 3 ? 3 : 2, grav: 0 });
+      }
+      if (lv >= 4 && p.t % 20 === 0) g.shake(1);
     }
     return false;
   },
@@ -174,10 +199,16 @@ H.mod = {
     let proj = o.proj || A.proj, mz = FXN.muzzle;
     if (proj === 'x4c1') mz = FXN.c1Muzzle;
     if (proj === 'x4c2') { mz = FXN.c2Muzzle; if (f.armor) proj = 'x4plasma'; g.shake(2); }
+    if (proj === 'x4c3' || proj === 'x4c4') {
+      mz = FXN.c2Muzzle;
+      if (proj === 'x4c4') { if (!p.spend(LV4_COST)) proj = 'x4c3'; else { g.flashT = 8; g.shake(5); bigShot(p); } }
+      if (proj === 'x4c3') g.shake(3);
+    }
     g.spawnProj(proj, m.x, m.y, p.face, { owner: p });
     const fx = g.fx(mz, m.x + p.face * 4, m.y, { flip: p.face < 0, pixel: true }), off = p.face * 4;
     fx.follow = () => { const q = muzzlePt(p, shotKey(p)); return { x: q.x + off, y: q.y }; };
     if (proj === 'x4lemon') sfx().shoot(); else sfx().big();
+    if (proj === 'x4c4') { g.text(p.cx, p.y - 16, 'LVL 4 BUSTER', '#ffe36a', 50, true); }
     s.aimT = 24; s.fireT = 0;
   },
   dash(p, D) {
@@ -229,6 +260,7 @@ H.mod = {
       if (act.kind === 'beam') { a.show('intro', act.t < 12 ? 0 : Math.min(9, 1 + Math.floor((act.t - 12) / 22 * 9))); return true; }
       if (act.kind === 'transform') { a.show('exit', act.t < 20 ? 1 : 0); return true; }
       if (act.kind === 'nova') { if (act.t <= 14) a.show('novaStart', Math.min(3, Math.floor(act.t / 4))); else a.show(form(p).nova || 'novaBlue', 0); return true; }
+      if (act.kind === 'bigshot') { a.show('shootC', Math.min(6, Math.floor(act.t / 3))); return true; }
       if (act.kind === 'airdash') { a.show('airDash', act.t < 4 ? 0 : 1); return true; }
       if (act.kind === 'x4dash') {
         const pre = s.aimT > 0 ? 'shotDash' : 'dash';
@@ -265,7 +297,8 @@ H.mod = {
   drawOpts(p, o) {
     const s = st(p), f = form(p), A = H.attack, act = p.act;
     let pal = f.pal ? PAL[f.pal] : null;
-    if (p.charge >= A.charge[0].t && p.t % 4 < 2) pal = p.charge >= A.charge[1].t ? (p.t % 8 < 4 ? PAL.c2 : PAL.c3) : PAL.c1;
+    const lv = chargeLv(p);
+    if (lv && p.t % (lv >= 3 ? 3 : 4) < 2) pal = [null, PAL.c1, p.t % 8 < 4 ? PAL.c2 : PAL.c3, p.t % 6 < 3 ? PAL.c3 : PAL.c4, p.t % 6 < 3 ? PAL.c4 : PAL.gold][lv];
     if (s.flashT > 0 && p.t % 4 < 2) pal = PAL.flash;
     if (act && act.kind === 'transform') pal = [PAL.c1, PAL.c2, PAL.flash, PAL.gold][Math.floor(act.t / 3) % 4];
     if (act && act.kind === 'nova' && act.t > 14) pal = null;               // the Nova frames carry their own colours
@@ -278,6 +311,18 @@ H.mod = {
     const act = p.act, g = p.g;
     if (act && act.kind === 'beam' && act.t < 12) PLAT.drawFrame(ctx, fr, p.cx, p.feet - (12 - act.t) * 22, 1, 1, { pal });
     if (g.mode === 'clear' && g.clearT >= 40) PLAT.drawFrame(ctx, fr, p.cx, p.feet - (g.clearT - 40) * 16, 1, 1, { pal });
+  },
+  drawFront(ctx, p) {
+    const g = p.g;
+    // charge level 2 → 4: an energy ball grows in X's hand (X-Fire frames: dots → orb → bright orb)
+    const C4 = H.attack.charge;
+    if (p.charge >= C4[1].t && !p.dead && g.mode === 'play') {
+      const fs = PLAT.fxSheet(PLAT.FXDEF[FXN.chargeBall]); if (!fs || !fs.length) return;
+      let i = Math.min(7, Math.floor((p.charge - C4[1].t) / (C4[3].t - C4[1].t) * 8));
+      if (p.charge >= C4[3].t) i = 7 + (Math.floor(p.t / 3) % 2);
+      const m = muzzlePt(p, shotKey(p)), sc = p.charge >= C4[3].t ? .95 + Math.sin(p.t * .5) * .06 : .8;
+      PLAT.drawFrame(ctx, fs[i], m.x - p.face * 6, m.y + (fs[i].by - fs[i].sh / 2) * sc, 1, sc, { smooth: false });
+    }
   },
 };
 })(typeof window !== 'undefined' ? window : globalThis);
