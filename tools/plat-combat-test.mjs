@@ -196,6 +196,89 @@ const results = await page.evaluate(async (filter) => {
     const big = log.filter(l => l.ok && l.dmg >= 3).length;
     return { ok: big >= 1, detail: `charged hits ${big}` };
   });
+  // X4 X (xmod.js): animation states, armour forms and their abilities
+  const xf = (p, i) => { p.xs.form = i; };
+  await t('X4: shooting while running keeps running, uses the run-shoot frames', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 0);
+    let poses = new Set(), minVx = 9;
+    step(g, 40, i => { shield(p); press('right'); if (i === 20) press('attack'); else rel('attack'); if (i > 21 && i < 30) { poses.add(p.anim.pose); minVx = Math.min(minVx, Math.abs(p.vx)); } });
+    rel('right');
+    return { ok: poses.has('shotWalk') && minVx > 1 && !p.act, detail: `poses ${[...poses]} minVx ${minVx.toFixed(2)}` };
+  });
+  await t('X4: shot leaves from the buster muzzle (in front, chest height)', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 0);
+    press('attack'); step(g, 1); rel('attack'); step(g, 1);
+    const pr = g.projs[0]; return { ok: !!pr && pr.x > p.cx + 12 && pr.y < p.feet - 20 && pr.y > p.feet - 45, detail: pr ? `dx ${(pr.x - p.cx).toFixed(1)} dy ${(pr.y - p.feet).toFixed(1)}` : 'no proj' };
+  });
+  await t('X4: charge flashes the palette, lv2 fires the big shot with a muzzle fx', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 0);
+    let palSeen = false;
+    step(g, 75, i => { press('attack'); const o = {}; P.HEROES.x.mod.drawOpts(p, o); if (o.pal && /c[123]/.test(o.pal.key)) palSeen = true; });
+    rel('attack'); step(g, 2);
+    const big = g.projs.find(q => q.def === P.PROJ.x4c2 || q.name === 'x4c2' || (q.def && q.def.dmg === 5));
+    return { ok: palSeen && !!big && g.fxs.some(f => /x4C2Muzzle/.test(f.name || f.k || f.type || '') || f.def === P.FXDEF.x4C2Muzzle), detail: `pal ${palSeen} big ${!!big} fx ${g.fxs.map(f => f.name || f.k).join(',')}` };
+  });
+  await t('X4: ground dash — hold extends, release ends early, then stand-up frames', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 0);
+    const x0 = p.cx; press('dash'); step(g, 12, () => shield(p)); rel('dash');
+    let sawEnd = false; step(g, 14, () => { shield(p); if (p.anim.pose === 'dashEnd') sawEnd = true; });
+    const short = p.cx - x0;
+    const r2 = await setup('x', null, 0, 1); const x1 = r2.p.cx; press('dash'); step(r2.g, 40, () => shield(r2.p)); rel('dash'); step(r2.g, 10);
+    const long = r2.p.cx - x1;
+    return { ok: sawEnd && long > short + 40 && !p.act, detail: `short ${short.toFixed(0)} long ${long.toFixed(0)} end ${sawEnd}` };
+  });
+  await t('X4: dash-jump keeps dash speed in the air', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 0);
+    press('dash'); press('right'); step(g, 6, () => shield(p)); press('jump'); step(g, 1); rel('jump'); step(g, 8, () => shield(p));
+    rel('dash'); rel('right');
+    return { ok: !p.onGround && Math.abs(p.vx) > 4, detail: `vx ${p.vx.toFixed(2)} ground ${p.onGround}` };
+  });
+  await t('X4: plain X cannot air dash; armour can (once per jump)', async () => {
+    const r = await setup('x', null, 0, 1); xf(r.p, 0);
+    press('jump'); step(r.g, 10); press('dash'); step(r.g, 1); rel('dash'); const plain = r.p.act && r.p.act.kind; rel('jump'); step(r.g, 60);
+    const s = await setup('x', null, 0, 1); xf(s.p, 1);
+    press('jump'); step(s.g, 10); press('dash'); step(s.g, 1); rel('dash'); const arm = s.p.act && s.p.act.kind; step(s.g, 20); press('dash'); step(s.g, 1); rel('dash'); const again = s.p.act && s.p.act.kind; rel('jump'); step(s.g, 60);
+    return { ok: !plain && arm === 'airdash' && again !== 'airdash', detail: `plain ${plain} armour ${arm} again ${again}` };
+  });
+  await t('X4: armour hover — press jump again while falling, slows the fall', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 1);
+    p.y = GY - p.h - 160; p.vy = 0; p.onGround = false; p.coyote = 0; step(g, 4);
+    press('jump'); step(g, 1); const hv = p.xs.hover; const y0 = p.y; step(g, 30); const fell = p.y - y0; rel('jump'); step(g, 80);
+    return { ok: hv > 0 && Math.abs(fell) < 12 && p.anim.pose !== 'hover', detail: `hover ${hv} fell ${fell.toFixed(1)}` };
+  });
+  await t('X4: armour swap on the ground cycles X → Force → Ultimate → X', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 0);
+    const seen = [];
+    for (let k = 0; k < 3; k++) { press('swap'); step(g, 1); rel('swap'); step(g, 40); seen.push(P.X_FORMS[p.xs.form].id); }
+    return { ok: seen.join() === 'force,ult,x', detail: seen.join() };
+  });
+  await t('X4: armoured ULT = Nova Strike, rushes forward and hits', async () => {
+    const { g, p, log } = await setup('x', 'tyrant', 110, 1, { hp: 99 }); xf(p, 2); p.ult = 100;
+    const x0 = p.cx; press('ult'); step(g, 1); rel('ult'); let k = null; step(g, 70, () => { if (p.act && !k) k = p.act.kind; });
+    return { ok: sum(log).hits >= 1 && p.cx - x0 > 60, detail: `act ${k} hits ${sum(log).hits} moved ${(p.cx - x0).toFixed(0)}` };
+  });
+  await t('X4: Ultimate armour ↓+skill Nova costs 40 energy', async () => {
+    const { g, p } = await setup('x', null, 0, 1); xf(p, 2); p.en = 100;
+    press('down'); press('skill'); step(g, 1); rel('skill'); rel('down'); const k = p.act && p.act.kind; step(g, 60);
+    return { ok: k === 'nova' && p.en < 70, detail: `act ${k} en ${p.en.toFixed(0)}` };
+  });
+  await t('X4: wall cling → slide → kick uses the cling and kick frames', async () => {
+    const { g, p } = await setup('x', null, 0, 1, { wall: 40 }); xf(p, 0);
+    press('jump'); press('right'); step(g, 8); rel('jump');
+    const poses = new Set(); step(g, 30, () => poses.add(p.anim.pose));
+    press('jump'); step(g, 1); rel('jump'); step(g, 8, () => poses.add(p.anim.pose)); rel('right'); step(g, 80);
+    return { ok: poses.has('cling') && poses.has('kick'), detail: [...poses].join(',') };
+  });
+  await t('X4: beam-in plays at level start when the intro is on', async () => {
+    const { g, p } = await setup('x', null, 0, 1); P.skipIntro = false; p.reset({ x: 20 * T, y: GY }); P.skipIntro = true;
+    const k = p.act && p.act.kind; step(g, 40);
+    return { ok: k === 'beam' && !p.act, detail: `act ${k} after ${p.act && p.act.kind}` };
+  });
+  await t('X4: death spawns the bubble burst', async () => {
+    const { g, p } = await setup('x', null, 0, 1); p.inv = 0; p.hp = 1; p.hurt(1, p.cx + 10); step(g, 2);
+    const n = g.fxs.filter(f => (f.name || f.k) === 'x4Bubble' || f.def === P.FXDEF.x4Bubble).length;
+    return { ok: p.dead && n >= 16, detail: `dead ${p.dead} bubbles ${n}` };
+  });
   await t('Kirby: inhale a slime, then spit a star that hits', async () => {
     const { g, p, e } = await setup('puff', 'slime', 50, 1);
     step(g, 60, i => { shield(p); if (i < 50) press('skill'); else rel('skill'); });

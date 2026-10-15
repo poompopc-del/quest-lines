@@ -42,6 +42,7 @@ class Game {
     (A.charge || []).forEach(c => projNames.add(c.proj));
     for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); }
     for (const k of ['boom', 'impact', 'spark', 'orb', 'craura', 'ground', 'kick', 'aura']) imgs.push(PLAT.FXDEF[k].img);
+    (hero.preload || []).forEach(s => s && imgs.push(s));
     const th = this.theme; [th.bg, th.wall, th.block, ...(th.decor || [])].forEach(s => s && imgs.push(s));
     if (PLAT.themeImages) imgs.push(...PLAT.themeImages(th));            // world art (art.js): layers, tileset, decor
     await PLAT.assets.loadAll(imgs, onProgress);
@@ -343,16 +344,17 @@ class Game {
         const sx = Math.min(b.x, b.x - (pr.x - pr.px)), sy = Math.min(b.y, b.y - (pr.y - pr.py));
         const sweep = { x: sx, y: sy, w: b.w + Math.abs(pr.x - pr.px), h: b.h + Math.abs(pr.y - pr.py) };
         const n = this.hit(sweep, d.dmg, { id: pr.id, dir: U.sign(pr.vx) || pr.dir, kb: d.kb != null ? d.kb : 3, from: pr.owner, proj: true });
-        if (n) { pr.pierce -= n; if (pr.pierce < 0) this.killProj(pr); }
+        if (n) { if (d.hitFx) { this.fx(d.hitFx, pr.x + U.sign(pr.vx || pr.dir) * b.w * .4, pr.y, { flip: (pr.vx || pr.dir) < 0 }); pr.didFx = true; } pr.pierce -= n; if (pr.pierce < 0) this.killProj(pr); }
       }
     }
     this.projs = this.projs.filter(q => !q.dead);
-    for (const f of this.fxs) { f.t++; if (f.star) { if (f.t > f.life) f.dead = true; } else if (!f.loop && f.t >= f.frames.length * f.rate) f.dead = true; }
+    for (const f of this.fxs) { f.t++; if (f.vx || f.vy) { f.x += f.vx || 0; f.y += f.vy || 0; } if (f.star) { if (f.t > f.life) f.dead = true; } else if (f.life ? f.t >= f.life : !f.loop && f.t >= f.frames.length * f.rate) f.dead = true; }
     this.fxs = this.fxs.filter(f => !f.dead);
     for (const a of this.ghosts) a.life--; this.ghosts = this.ghosts.filter(a => a.life > 0);
   }
   killProj(pr) {
     if (pr.dead) return; pr.dead = true; const d = pr.def, ex = d.explode;
+    if (d.hitFx && !pr.enemy && pr.life > 0 && !pr.didFx) { this.fx(d.hitFx, pr.x, pr.y, { flip: (pr.vx || pr.dir) < 0 }); return; }   // shot stopped by a wall
     if (ex) {
       if (ex.atlasAnim) this.fx({ frames: this.heroSheet.frames(ex.atlasAnim), rate: 3, scale: 2 }, pr.x, pr.y, {});
       else if (ex.r > 0 || pr.enemy) this.fx('boom', pr.x, pr.y, { scale: ex.r ? ex.r / 30 : .7 });
@@ -422,7 +424,10 @@ class Game {
   }
   stepClear() {
     const p = this.player; this.clearT++;
-    p.vx = 0; p.anim.play('idle'); p.anim.update();
+    p.vx = 0;
+    if (p.hero.mod && p.hero.mod.clear) p.hero.mod.clear(p, this.clearT);      // X: victory pose, then beams out
+    else p.anim.play('idle');
+    p.anim.update();
     if (this.clearT === 70) this.emit('clear', this.result());
   }
   result() {
@@ -451,13 +456,13 @@ class Game {
   spark(x, y, s) { this.fxs.push({ frames: null, star: true, x, y, t: 0, rate: 1, life: 8, dead: false, s: s || 1 }); }
   text(x, y, str, col, life, big) { this.texts.push({ x, y, str, col: col || '#fff', life: life || 40, max: life || 40, big: !!big }); }
   // motion trail for the player (hero) or an enemy (ghost swoop) — enemies' sheets face left
-  afterimage(p) { const fr = p.anim.frame(); if (!fr) return; const hero = p.hero; this.ghosts.push({ fr, x: hero ? p.cx : p.cx - (p.cOff || 0) * p.sc * -p.dir, y: p.feet, face: hero ? p.face : -p.dir, scale: hero ? hero.scale : p.sc, smooth: hero ? hero.smooth : false, life: 12 }); }
+  afterimage(p) { const fr = p.anim.frame(); if (!fr) return; const hero = p.hero; this.ghosts.push({ fr, x: hero ? p.cx : p.cx - (p.cOff || 0) * p.sc * -p.dir, y: p.feet, face: hero ? p.face : -p.dir, scale: hero ? hero.scale : p.sc, smooth: hero ? hero.smooth : false, life: 12, pal: p.ghostPal || null }); }
   fx(nameOrDef, x, y, o) {
     o = o || {};
     let frames, rate, scale;
     if (typeof nameOrDef === 'string') { const d = PLAT.FXDEF[nameOrDef]; if (!d) return { dead: true }; frames = PLAT.fxSheet(d); rate = d.rate; scale = (o.scale || 1) * d.scale; }
     else { frames = nameOrDef.frames; rate = nameOrDef.rate || 3; scale = nameOrDef.scale || 1; }
-    const f = { frames, rate, scale, x, y, t: 0, loop: !!o.loop, follow: o.follow, behind: !!o.behind, alpha: o.alpha || 1, flip: o.flip, dead: false };
+    const f = { name: typeof nameOrDef === 'string' ? nameOrDef : null, frames, rate, scale, x, y, t: 0, loop: !!o.loop, follow: o.follow, behind: !!o.behind, alpha: o.alpha || 1, flip: o.flip, dead: false, vx: o.vx, vy: o.vy, pixel: !!(o.pixel || (typeof nameOrDef === 'string' && PLAT.FXDEF[nameOrDef].pixel)), life: o.life };
     if (frames && frames.length) this.fxs.push(f); else f.dead = true;
     return f;
   }
@@ -502,7 +507,7 @@ class Game {
     this.drawTiles(ctx, cx, cy);
     this.drawObjects(ctx);
     for (const f of this.fxs) if (f.behind) this.drawFx(ctx, f);
-    for (const a of this.ghosts) PLAT.drawFrame(ctx, a.fr, a.x, a.y, a.face, a.scale, { alpha: a.life / 24, smooth: a.smooth });
+    for (const a of this.ghosts) PLAT.drawFrame(ctx, a.fr, a.x, a.y, a.face, a.scale, { alpha: a.pal ? a.life / 14 : a.life / 24, smooth: a.smooth, pal: a.pal });
     for (const e of this.enemies) if (e.x + e.w > cx - 80 && e.x < cx + VW + 80 && e.y < cy + VH + 80 && e.y + e.h > cy - 120) e.draw(ctx);
     this.player.draw(ctx);
     if (this.player.mouth && !this.player.dead) { ctx.fillStyle = '#ffb0e0'; ctx.font = '700 10px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('อมอยู่', this.player.cx, this.player.y - 6); }
@@ -793,7 +798,7 @@ class Game {
     if (f.follow) { const p = f.follow(); f.x = p.x; f.y = p.y; }
     let i = Math.floor(f.t / f.rate); if (f.loop) i %= f.frames.length; else i = Math.min(i, f.frames.length - 1);
     const fr = f.frames[i];
-    PLAT.drawFrame(ctx, fr, f.x, f.y + (fr.by - fr.sh / 2) * f.scale, f.flip ? -1 : 1, f.scale, { alpha: f.alpha, smooth: true });
+    PLAT.drawFrame(ctx, fr, f.x, f.y + (fr.by - fr.sh / 2) * f.scale, f.flip ? -1 : 1, f.scale, { alpha: f.alpha * (f.life ? Math.min(1, (f.life - f.t) / 8) : 1), smooth: !f.pixel });
   }
   drawBeam(ctx, b, face, h) {
     const x = face > 0 ? b.x0 : b.x0 - b.len, flick = 1 + Math.sin(b.t * 1.3) * .15, hh = h * flick * Math.min(1, b.t / 4);

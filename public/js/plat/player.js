@@ -34,6 +34,7 @@ class Player {
     this.t = 0; this.airT = 0; this.landT = 0; this.lastSafe = { x: spawn.x, y: spawn.y };
     this.ult = this.ult || 0; this.superT = 0; this.pend = null; this.holdS = null; this.holdA = null; this.pressAt = {};
     this.anim.play('idle', null, true);
+    if (this.hero.mod && this.hero.mod.reset) this.hero.mod.reset(this);      // hero module (e.g. X: beam-in)
   }
   get cx() { return this.x + this.w / 2; }
   get feet() { return this.y + this.h; }
@@ -66,7 +67,9 @@ class Player {
     if (this.onGround) { this.coyote = C.COYOTE; this.airJumps = h.airJumps || 0; this.airDash = true; this.rocketUsed = false; this.floating = false; }
     else if (this.coyote > 0) this.coyote--;
 
+    const md = h.mod, busy = md && md.update ? md.update(this, inp, ax) : false;   // hero module: forms, hover, beam-in …
     if (this.hurtT > 0) { this.hurtT--; if (this.onGround) this.vx *= .86; }
+    else if (busy) { if (this.act) this.stepAct(inp, ax); }
     else {
       this.startActions(inp, ax);
       if (h.attack.charge && this.charge > 0) {            // X: hold attack to charge the buster
@@ -182,6 +185,7 @@ class Player {
     this.ball = false; this.floating = false; this.jumping = false; this.springT = 0;
     if (vy > 4) { this.sq = { x: 1.14, y: .86 }; sfx().land(); this.g.dust(this.cx, this.feet, vy > 7 ? 6 : 3); }
     if (this.act && this.act.onLand) this.act.onLand(vy);
+    if (this.hero.mod && this.hero.mod.onLand) this.hero.mod.onLand(this, vy);
   }
   bodyBox() { return { x: this.x - 2, y: this.y - 2, w: this.w + 4, h: this.h + 4 }; }
   // origin for melee line-of-sight checks (chest height): a blow never reaches a target on the other side of a wall
@@ -395,6 +399,7 @@ class Player {
   }
   shoot(A, o) {
     o = o || {};
+    if (this.hero.mod && this.hero.mod.shoot) return this.hero.mod.shoot(this, A, o);
     const self = this, pose = o.pose || A.pose, dur = A.dur || 14, proj = o.proj || A.proj;
     this.anim.play(pose, dur, true);
     this.act = { kind: 'shot', t: 0, pose, slow: .55, canTurn: true, cancellable: false,
@@ -421,6 +426,7 @@ class Player {
   startDash(D0) {
     const h = this.hero, D = D0 || h.dash, g = this.g, self = this;
     if (!D) return;
+    if (!D0 && h.mod && h.mod.dash && h.mod.dash(this, D)) return;
     if (D.kind === 'homing') return this.startHoming(D);
     if (D.kind === 'rocket') {
       if (this.rocketUsed) return; this.rocketUsed = true;
@@ -685,6 +691,7 @@ class Player {
     this.ult = 0; this.pend = null; this.holdS = null; this.holdA = null; this.skillBuf = 0; this.dashBuf = 0; this.queued = false;
     if (this.act) this.endAct();
     this.inv = Math.max(this.inv, U_.inv || 70); this.floating = false;
+    if (h.mod && h.mod.ult && h.mod.ult(this)) return;
     g.ultCut(this, U_.name);
     switch (U_.kind) {
       case 'arcs': {                                   // Knight: three huge crescents (up · straight · down)
@@ -749,12 +756,14 @@ class Player {
     sfx().hurt(); PLAT.haptic('hurt'); this.g.shake(3); this.g.hitstop(4); this.g.burst(this.cx, this.y + 16, '#ff5a6a', 10, 2.4);
     if (dmg > 0) this.g.text(this.cx, this.y - 6, '-' + dmg, '#ff6a7a', 40);
     this.g.stats.hits++; this.gainUlt(8); this.g.hurtT = 18; this.g.chain = 0; this.g.chainT = 0; this.queued = false;
+    if (this.hero.mod && this.hero.mod.onHurt) this.hero.mod.onHurt(this, dmg);
     if (this.hp <= 0) this.die();
     return 'hit';
   }
   die() {
     if (this.dead) return; this.dead = true; this.deadT = 0; if (this.act) this.endAct(); this.hurtT = 0; this.vy = -6; this.vx = -this.face * 1.2;
     sfx().die(); this.anim.play('dead', null, true);
+    if (this.hero.mod && this.hero.mod.die) this.hero.mod.die(this);
   }
   heal(n) { this.hp = Math.min(this.maxHp, this.hp + n); }
   onHitLanded(n) {
@@ -767,6 +776,7 @@ class Player {
 
   /* -------------------------------- anim pose -------------------------------- */
   pose() {
+    if (this.hero.mod && this.hero.mod.pose && this.hero.mod.pose(this)) { if (this.springT > 0) this.springT--; return; }
     const a = this.anim, m = this.mouth ? 'm_' : this.superT > 0 ? 's_' : '';
     const has = n => !!a.resolve(n) && (a.resolve(n).name === n);
     const pick = n => (m && has(m + n)) ? m + n : n;
@@ -805,7 +815,10 @@ class Player {
     if (this.dead && this.anim.pose === 'dead' && !this.anim.resolve('dead')) rot = Math.min(1.4, this.deadT * .06) * -this.face;
     const o = { sx: this.sq.x, sy: this.sq.y, smooth: h.smooth, rot };
     if (this.charge > 0) { const A = h.attack; let col = null; for (const c of A.charge || []) if (this.charge >= c.t) col = c.col; if (col && this.t % 6 < 3) o.flash = .5; }
+    if (h.mod && h.mod.drawOpts) h.mod.drawOpts(this, o);
     if (this.act && this.act.draw) this.act.draw(ctx);
+    if (h.mod && h.mod.drawExtra) h.mod.drawExtra(ctx, this);
+    if (o.hide) return;
     if (!PLAT.drawFrame(ctx, fr, x, y, this.face, h.scale, o)) {      // image missing → coloured stand-in, never a crash
       ctx.fillStyle = h.color || '#fff'; ctx.fillRect(this.x, this.y, this.w, this.h);
     }

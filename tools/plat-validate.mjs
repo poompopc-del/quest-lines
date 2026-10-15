@@ -6,7 +6,7 @@
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path';
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../public/js/plat');
 const ctx = vm.createContext({ console, Math, Set, Map, Uint8Array, Array, Object, JSON, Number, String, performance: { now: () => 0 } });
-for (const f of ['core', 'world', 'anim', 'heroes', 'player', 'enemies', 'levels']) vm.runInContext(fs.readFileSync(`${root}/${f}.js`, 'utf8'), ctx, { filename: f + '.js' });
+for (const f of ['core', 'world', 'anim', 'heroes', 'x4-sheet', 'xmod', 'player', 'enemies', 'levels']) vm.runInContext(fs.readFileSync(`${root}/${f}.js`, 'utf8'), ctx, { filename: f + '.js' });
 const PLAT = ctx.globalThis ? ctx.globalThis.PLAT : ctx.PLAT;
 const { C, world: W, TILE } = PLAT, T = C.T;
 PLAT.HEROES.__test = { name: 'test', sprite: { kind: 'strip', dir: '', ch: 1, anims: {} }, poses: {}, box: [24, 44], hp: 9, speed: .86, jump: 1, attack: { kind: 'combo', steps: [] } };

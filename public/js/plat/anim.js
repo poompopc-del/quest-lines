@@ -92,7 +92,7 @@ class Anim {
   }
   play(name, dur, restart) {
     if (this.pose === name && !restart) return;
-    const r = this.resolve(name); this.pose = name; this.cur = r; this.t = 0; this.done = false;
+    const r = this.resolve(name); this.pose = name; this.cur = r; this.t = 0; this.done = false; this.manual = null;
     this.dur = dur || null;
   }
   update() {
@@ -101,8 +101,11 @@ class Anim {
     if (this.dur) { if (this.t >= this.dur) this.done = true; }
     else if (!this.cur.loop && this.t >= n * 60 / this.cur.fps) this.done = true;
   }
+  // show(name, i): hold a pose on an exact frame (frame picked by game state, e.g. X's run phase / jump height)
+  show(name, i) { if (this.pose !== name) this.play(name); this.manual = i; }
   index() {
     if (!this.cur) return 0; const n = this.cur.frames.length;
+    if (this.manual != null) return Math.max(0, Math.min(n - 1, this.manual));
     if (this.dur) return Math.min(n - 1, Math.floor(this.t / this.dur * n));
     const i = Math.floor(this.t * this.cur.fps / 60);
     return this.cur.loop ? i % n : Math.min(n - 1, i);
@@ -115,8 +118,8 @@ class Anim {
    whenever they land on ≥ 1.5 device px per source px; smaller ones are smoothed. */
 function drawFrame(ctx, fr, x, y, face, scale, o) {
   if (!fr) return false;
-  const im = PLAT.assets.img(fr.src); if (!im) return false;
   o = o || {};
+  const im = o.pal ? PLAT.assets.recolor(fr.src, o.pal) : PLAT.assets.img(fr.src); if (!im) return false;
   const dev = (PLAT.viewScale || 1) * scale;
   ctx.save();
   ctx.imageSmoothingEnabled = o.smooth || dev < 1.5;

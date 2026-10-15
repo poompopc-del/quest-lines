@@ -261,6 +261,7 @@ function moveList(h) {
   if (h.skills && h.skills.up) L.push({ k: '↑+I', n: h.skills.up.name, c: h.skills.up.cost });
   if (h.skills && h.skills.down) L.push({ k: '↓+I', n: h.skills.down.name, c: h.skills.down.cost });
   L.push({ k: 'L', n: h.dash.name });
+  if (h.forms) L.push({ k: 'Q', n: 'เปลี่ยนเกราะ (บนพื้น): ' + h.forms.map(f => f.name).join(' → '), cls: 'hd' });
   if (h.ult) L.push({ k: 'ULT', n: `${h.ult.name} — ${ultHint(h.ult.input)}`, cls: 'hd' });
   return L;
 }
@@ -330,7 +331,7 @@ function setupHud(g) {
   $('#hEnMark').style.left = (h.skill.cost || 0) + '%'; $('#hEnMark').style.display = h.skill.cost ? '' : 'none';
   $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
   $('#tA').textContent = h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'; $('#tS').textContent = shortName(h.skill.name); $('#tD').textContent = shortName(h.dash.name);
-  $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on'); $('#hUltHint').classList.remove('on'); $('#tU').classList.remove('ready');
+  $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on'); $('#hUltHint').classList.remove('on'); $('#tU').classList.remove('ready'); $('#tW').classList.toggle('on2', !!h.forms);
   hudCache = {}; refreshGlyphs();
   const fc = $('#hFace'); heroSheet(g.heroId).then(() => { const ctx = fc.getContext('2d'); ctx.clearRect(0, 0, 48, 48); const sh = sheetCache[g.heroId], f = sh.frames('idle')[0]; PLAT.viewScale = 1;
     const s = 70 / (f.by || f.sh); PLAT.drawFrame(ctx, f, 24, 48 + (f.by * s) * .32, 1, s, { smooth: !!h.smooth }); });

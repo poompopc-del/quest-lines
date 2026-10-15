@@ -3,6 +3,7 @@
    The UI loop is stopped so every frame is stepped here (deterministic, no rAF timing). */
 window.QT = (() => {
   const P = window.PLAT, I = P.input, T = P.C.T;
+  P.skipIntro = true;                        // X4 beam-in intro off for scripted tests
   cancelAnimationFrame(P.app.raf); window.requestAnimationFrame = () => 0;
   // a flat test room (80 × 12 tiles, ground at row 10), with one of every enemy so all sheets load
   const row = s => s.padEnd(80, '.');

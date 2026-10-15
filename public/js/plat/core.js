@@ -80,13 +80,28 @@ PLAT.assets = {
     return Promise.all(uniq.map(s => this.load(s).then(r => { done++; onProgress && onProgress(done, uniq.length); return r; })));
   },
   json(src) { return fetch(src).then(r => r.ok ? r.json() : null).catch(() => null); },
+  /* palette swap: the image with every pixel of colour from[i] replaced by to[i] (exact RGB match),
+     drawn once into a canvas and cached per image + palette. pal = { key, from:[[r,g,b]…], to:[[r,g,b]…] } */
+  _pal: {},
+  recolor(src, pal) {
+    const k = src + '|' + pal.key; if (this._pal[k] !== undefined) return this._pal[k] || this.img(src);
+    const im = this.img(src); if (!im || !HAS_DOM) return im;
+    try {
+      const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
+      const d = x.getImageData(0, 0, c.width, c.height), a = d.data, map = new Map();
+      pal.from.forEach((f, i) => { if (pal.to[i]) map.set((f[0] << 16) | (f[1] << 8) | f[2], pal.to[i]); });
+      for (let i = 0; i < a.length; i += 4) { if (!a[i + 3]) continue; const t = map.get((a[i] << 16) | (a[i + 1] << 8) | a[i + 2]); if (t) { a[i] = t[0]; a[i + 1] = t[1]; a[i + 2] = t[2]; } }
+      x.putImageData(d, 0, 0); this._pal[k] = c; return c;
+    } catch (e) { this._pal[k] = null; return im; }
+  },
 };
 
 /* ---------------------------------- input ---------------------------------- */
 // Everything reads ACTIONS, never keys — touch buttons and gamepads just set the same actions.
 const KEYMAP = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
-  jump: ['Space', 'KeyK', 'ArrowUp', 'KeyW'], attack: ['KeyJ', 'KeyX'], skill: ['KeyI', 'KeyC'], dash: ['KeyL', 'ShiftLeft', 'ShiftRight'],
+  jump: ['Space', 'KeyK', 'ArrowUp', 'KeyW'], attack: ['KeyJ', 'KeyX'], skill: ['KeyI', 'KeyC'], dash: ['KeyL', 'ShiftLeft', 'ShiftRight'], swap: ['KeyQ', 'KeyU'],
   pause: ['Escape', 'KeyP'], ok: ['Enter', 'NumpadEnter'], back: ['Backspace'], ult: [],
 };
 const ACTIONS = Object.keys(KEYMAP);
@@ -164,7 +179,7 @@ const input = PLAT.input = {
     }
     const want = {
       left: b(14) || sx < -.4 || hx < 0, right: b(15) || sx > .4 || hx > 0, up: b(12) || sy < -.6 || hy < 0, down: b(13) || sy > .6 || hy > 0,
-      jump: b(0), attack: b(2), skill: b(3) || b(4) || b(6), dash: b(1) || b(5) || b(7), pause: b(9) || b(8), ok: b(0) || b(9), back: b(1),
+      jump: b(0), attack: b(2), skill: b(3) || b(4) || b(6), dash: b(1) || b(5) || b(7), pause: b(9) || b(8), ok: b(0) || b(9), back: b(1), swap: b(10) || b(11),
     };
     let any = false;
     for (const a in want) if (want[a] !== !!this._pad[a]) { this._pad[a] = want[a]; this.set(a, 'pad', want[a]); if (want[a]) any = true; }

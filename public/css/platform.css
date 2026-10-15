@@ -190,5 +190,7 @@ html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:
 .ulthint{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);display:none;background:rgba(40,26,4,.85);border:1px solid #ffd84a;color:#ffe9a0;padding:3px 12px;font-size:clamp(10px,1.5vw,13px);clip-path:var(--slant);white-space:nowrap}
 .ulthint.on{display:block;animation:ultpulse .6s infinite alternate}
 #btns .bu{display:none;width:30%;height:32%;right:66%;bottom:62%;background:rgba(255,200,40,.5);border-color:#ffd84a;color:#2a1800;font-weight:900}
+#btns .bw{display:none;width:26%;height:30%;right:87%;bottom:4%;background:rgba(120,200,255,.35);border-color:#9fe8ff;font-size:.72em}
+#btns .bw.on2{display:grid}
 #btns .bu.ready{display:grid;animation:ultpulse .5s infinite alternate}
 .moves .hd{border-left-color:var(--k-gold);background:rgba(255,200,61,.08);font-weight:700}
