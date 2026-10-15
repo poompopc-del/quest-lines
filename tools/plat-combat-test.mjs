@@ -285,6 +285,28 @@ const results = await page.evaluate(async (filter) => {
     return { ok: p.hp === p.maxHp && !p.dead && !p.act && g.projs.length === 0 && g.freeze === 0 && g.mode === 'play', detail: `hp ${p.hp} dead ${p.dead} projs ${g.projs.length}` };
   });
 
+  // 11b · world-art enemy skins (art.js): only the LOOK changes — the fight is the base type's
+  for (const th of Object.keys(P.SKINS)) for (const type of Object.keys(P.SKINS[th])) await t(`skin ${th}:${type} keeps stats, is hittable both sides, has its sprite`, async () => {
+    QT.theme(th);
+    const base = P.ENEMIES[type], out = [];
+    for (const dir of [1, -1]) {
+      const { g, p, e, log } = await setup('knight', type, 0, dir);
+      const hb = e.hurtBox(), want = dir > 0 ? p.cx + 14 : p.cx - 14 - hb.w; e.x += want - hb.x; if (e.def.ai === 'flyer') e.y = QT.GY - e.h;
+      const hp0 = e.hp, ar0 = e.armor;
+      press('attack'); step(g, 1); rel('attack'); step(g, 40, () => shield(p));
+      out.push(sum(log).hits >= 1 && (e.hp < hp0 || e.armor < ar0));
+      out.push(e.def.sheet === P.SKINS[th][type].sheet && e.def.hp === base.hp && e.def.ai === base.ai && e.def.dmg === base.dmg && (e.def.armor || 0) === (base.armor || 0) && !!e.def.small === !!base.small);
+      out.push(!!P.assets.img(e.def.sheet.img) && !!e.anim.frame());
+    }
+    QT.theme('meadow');
+    return { ok: out.every(Boolean), detail: out.join(',') };
+  });
+  await t('skin: a clothed skeleton turns into a plain skeleton when its armour breaks', async () => {
+    QT.theme('night');
+    const { g, p, e } = await setup('knight', 'bucket', 300, 1);
+    e.armor = 1; e.takeHit(3, { id: P.newSwing() }); const ok = e.armor === 0 && e.anim.sheet.def.img === P.ART_SHEETS.skeleton.img;
+    QT.theme('meadow'); return { ok, detail: `armor ${e.armor} sheet ${e.anim.sheet.def.img}` };
+  });
   // 12 · every level loads and survives scripted play with every playable hero
   for (const lv of P.LEVEL_ORDER) await t(`level ${lv} loads with every hero and 900 frames of play throw no error`, async () => {
     let errs = 0;

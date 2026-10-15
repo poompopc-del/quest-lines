@@ -23,6 +23,9 @@ PLAT.THEMES = {
   night: { name: 'สุสานซอมบี้', sky: ['#0d0b24', '#3a2350'], bg: 'scenes/bg/ghostnight.png', bgAlpha: .55, moon: true, hills: ['#2a2040', '#1c1630'],
     ground: '#3a2e3e', groundDark: '#2a2030', top: '#5a8a4a', topLight: '#8ab86a', brick: '#6a6478', brickDark: '#46405a', brickLight: '#9a94ac',
     decor: [], graves: true, liquid: ['#3a6a3a', '#7ac05a'] },
+  // the bell tower (2-2) — same world as night, its own church look (art.js)
+  tower: { name: 'หอระฆัง', sky: ['#1c1828', '#2a2436'], hills: [], ground: '#3a3048', groundDark: '#2a2236', top: '#6a5a88', topLight: '#9a8ab8',
+    brick: '#5a4a78', brickDark: '#3a2e52', brickLight: '#8a7aa8', decor: [], liquid: ['#3a6a3a', '#7ac05a'] },
   lava: { name: 'ป้อมเพลิง', sky: ['#1a0606', '#802010'], bg: 'scenes/bg/lava.svg', bgFull: true, wall: 'scenes/bg/castle.png', hills: ['#401010', '#2a0a0a'],
     ground: '#4a2a22', groundDark: '#341c16', top: '#8a4a2a', topLight: '#c87a3a', brick: '#6a5048', brickDark: '#46322c', brickLight: '#9a786a',
     decor: [], embers: true, liquid: ['#ff5a1a', '#ffd04a'] },
@@ -355,7 +358,7 @@ L['2-1'] = { name: 'สุสานยามค่ำ', theme: 'night', par: 120
      '####################']),
 };
 
-L['2-2'] = { name: 'หอระฆังร้าง', theme: 'night', par: 150, vertical: true, teach: 'ปีนหอสูง: แท่นขึ้นลง บล็อกร่วง ↓+กระโดดลงจากแผ่นไม้',
+L['2-2'] = { name: 'หอระฆังร้าง', theme: 'tower', par: 150, vertical: true, teach: 'ปีนหอสูง: แท่นขึ้นลง บล็อกร่วง ↓+กระโดดลงจากแผ่นไม้',
   signs: {
     1: 'ปีนถึงยอดหอ! · ↓+กระโดด = ลงจากแผ่นไม้',
     2: 'เช็กพอยต์ · ซอมบี้ถังเกราะหนา — ใช้ท่าแรง',

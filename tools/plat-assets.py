@@ -10,8 +10,10 @@ from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public')
 dump = subprocess.run(['node', '-e', """
-for (const f of ['core','world','anim','heroes','player','enemies','levels']) require('./public/js/plat/' + f + '.js');
-console.log(JSON.stringify({ heroes: PLAT.HEROES, enemies: PLAT.ENEMIES, bosses: PLAT.BOSSES, proj: PLAT.PROJ, fx: PLAT.FXDEF }));
+for (const f of ['core','world','anim','heroes','player','enemies','art-sheets','levels','art']) require('./public/js/plat/' + f + '.js');
+const skins = {}; for (const t in PLAT.SKINS) for (const k in PLAT.SKINS[t]) skins[t + ':' + k] = PLAT.enemyDef(k, t);
+const themes = {}; for (const t in PLAT.THEMES) themes[t] = PLAT.themeImages(PLAT.THEMES[t]);
+console.log(JSON.stringify({ heroes: PLAT.HEROES, enemies: Object.assign({}, PLAT.ENEMIES, skins), bosses: PLAT.BOSSES, proj: PLAT.PROJ, fx: PLAT.FXDEF, themes, levelThemes: Object.fromEntries(PLAT.LEVEL_ORDER.map(id => [id, PLAT.LEVELS[id].theme])) }));
 """], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'))
 if dump.returncode: sys.exit(dump.stderr)
 D = json.loads(dump.stdout)
@@ -76,8 +78,16 @@ for group in ('enemies', 'bosses'):
         cells = max(max(v) for v in s['anims'].values()) + 1
         rows = -(-cells // s['cols'])
         if s['cols'] * s['fw'] > im.width + 1 or rows * s['fh'] > im.height + 1: bad(f'{s["img"]}: {cells} cells of {s["fw"]}x{s["fh"]} do not fit {im.size}')
-        for st in e.get('states', []) + ([e['after']] if e.get('after') else []):
+        for st in (e.get('states') or []) + ([e['after']] if e.get('after') else []) + ([e['afterSheet']['img']] if e.get('afterSheet') else []):
             if img(st) is None: bad('missing ' + st)
+
+# world art (art.js): every image a theme uses exists, and every level's theme exists
+for t, imgs in D['themes'].items():
+    print(f'theme {t}: {len(imgs)} art images')
+    for f in imgs:
+        if img(f) is None: bad(f'theme {t}: missing {f}')
+for lv, t in D['levelThemes'].items():
+    if t not in D['themes']: bad(f'level {lv}: unknown theme {t}')
 
 for group in ('proj', 'fx'):
     for k, p in D[group].items():

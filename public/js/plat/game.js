@@ -19,6 +19,7 @@ class Game {
     this.theme = PLAT.THEMES[this.spec.theme]; this.input = PLAT.input; this.emitFn = opt.onEvent || (() => {});
     this.sheets = new Map(); this.frame = 0; this.mode = 'loading';
   }
+  enemyDef(type) { return (PLAT.enemyDef && PLAT.enemyDef(type, this.spec.theme)) || PLAT.ENEMIES[type] || PLAT.BOSSES[type]; }
   emit(type, data) { try { this.emitFn(type, data); } catch (e) { console.error(e); } }
 
   /* --------------------------------- loading --------------------------------- */
@@ -31,8 +32,8 @@ class Game {
     const types = new Set(W.buildLevel(L).spawns.map(s => s.type)); if (L.boss) types.add(L.boss);
     const imgs = [...this.heroSheet.srcs()];
     for (const t of types) {
-      const d = PLAT.ENEMIES[t] || PLAT.BOSSES[t];
-      this.sheets.set(t, new PLAT.Sheet(d.sheet)); imgs.push(d.sheet.img); (d.states || []).forEach(s => imgs.push(s)); if (d.after) imgs.push(d.after);
+      const d = this.enemyDef(t);
+      this.sheets.set(t, new PLAT.Sheet(d.sheet)); imgs.push(d.sheet.img); (d.states || []).forEach(s => imgs.push(s)); if (d.after) imgs.push(d.after); if (d.afterSheet) imgs.push(d.afterSheet.img);
     }
     // projectiles / effects this hero and these enemies can make
     const projNames = new Set(['fireball', 'bigfire', 'wave']);
@@ -42,6 +43,7 @@ class Game {
     for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); }
     for (const k of ['boom', 'impact', 'spark', 'orb', 'craura', 'ground', 'kick', 'aura']) imgs.push(PLAT.FXDEF[k].img);
     const th = this.theme; [th.bg, th.wall, th.block, ...(th.decor || [])].forEach(s => s && imgs.push(s));
+    if (PLAT.themeImages) imgs.push(...PLAT.themeImages(th));            // world art (art.js): layers, tileset, decor
     await PLAT.assets.loadAll(imgs, onProgress);
     this.start();
   }
@@ -69,7 +71,7 @@ class Game {
     this.geom = this.geom || {};
     for (const [type, sheet] of this.sheets) {
       if (this.geom[type] || type.includes(':')) continue;
-      const d = PLAT.ENEMIES[type] || PLAT.BOSSES[type], fr = (sheet.frames('idle') || [])[0], b = fr && sheet.bounds(fr);
+      const d = this.enemyDef(type), fr = (sheet.frames('idle') || sheet.frames('move') || [])[0], b = fr && sheet.bounds(fr);
       if (!b || d.box.fixed) continue;
       const k = d.boss ? .72 : .8;
       this.geom[type] = { w: Math.round((b.x1 - b.x0) * d.scale * k), h: Math.round((b.y1 - b.y0) * d.scale * (d.boss ? .85 : .92)), c: (b.x0 + b.x1) / 2 * d.scale };
@@ -530,9 +532,25 @@ class Game {
     if (this.hurtT > 0) { const a = this.hurtT / 18 * .55, gr = ctx.createRadialGradient(VW / 2, VH / 2, VH * .35, VW / 2, VH / 2, VW * .62); gr.addColorStop(0, 'rgba(255,30,50,0)'); gr.addColorStop(1, `rgba(255,30,50,${a})`); ctx.fillStyle = gr; ctx.fillRect(0, 0, VW, VH); }
     if (this.mode === 'clear') { const a = Math.min(1, this.clearT / 60); ctx.fillStyle = `rgba(8,7,15,${a * .6})`; ctx.fillRect(0, 0, VW, VH); }
   }
+  /* world art (art.js): parallax layers back → front. Each layer repeats sideways, moves at f × the
+     camera (fy vertically), and `below` fills under a bottom-anchored layer when the camera rises. */
+  drawLayers(ctx, cx, cy, layers) {
+    const VW = C.VW, VH = C.VH, A = PLAT.assets; let drawn = 0;
+    for (const l of layers) {
+      const im = A.img(l.img); if (!im) continue; drawn++;
+      const w = Math.round(im.width * l.s), h = Math.round(im.height * l.s), gap = l.gap || 0, step = w + gap;
+      const y = Math.round(l.y - cy * (l.fy || 0)), ox = -(((cx * l.f) % step) + step) % step;
+      ctx.imageSmoothingEnabled = false;
+      if (l.tileY) { for (let yy = ((y % h) + h) % h - h; yy < VH; yy += h) for (let x = ox; x < VW; x += step) ctx.drawImage(im, Math.round(x), yy, w, h); continue; }
+      for (let x = ox - (gap ? step : 0); x < VW; x += step) ctx.drawImage(im, Math.round(x), y, w, h);
+      if (l.below && y + h < VH) { ctx.fillStyle = l.below; ctx.fillRect(0, y + h - 1, VW, VH - y - h + 1); }
+    }
+    return drawn === layers.length;
+  }
   drawBackground(ctx, cx, cy) {
     const th = this.theme, VW = C.VW, VH = C.VH, A = PLAT.assets;
     const sky = ctx.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, th.sky[0]); sky.addColorStop(1, th.sky[1]); ctx.fillStyle = sky; ctx.fillRect(0, 0, VW, VH);
+    if (th.art && th.art.layers && this.drawLayers(ctx, cx, cy, th.art.layers)) return;   // all layers loaded → the old drawn background is not needed
     const bg = th.bg && A.img(th.bg);
     if (th.bgFull && bg) {
       // an SVG background is re-rasterised on every drawImage (its blur filters cost ~20 ms) → rasterise once
@@ -564,6 +582,14 @@ class Game {
       if (t !== TL.GROUND || W.tileAt(L, tx, ty - 1) !== TL.EMPTY) continue;
       if (W.tileAt(L, tx, ty - 2) !== TL.EMPTY) continue;
       const r = rnd();
+      if (th.art && th.art.decor) {                      // world art: weighted pick, per-item scale, never on a hazard edge
+        if (r < .12 && !W.tilesIn(L, { x: tx * T - T, y: ty * T - 2 * T, w: 3 * T, h: 3 * T }, TL.SPIKE).length) {
+          const D = th.art.decor, tot = D.reduce((n, d) => n + d.w, 0); let k = rnd() * tot, d = D[0];
+          for (const it of D) { k -= it.w; if (k <= 0) { d = it; break; } }
+          out.push({ img: d.img, x: tx * T + 16, y: ty * T, sc: d.s, flip: rnd() < .5 });
+        }
+        continue;
+      }
       if (th.decor.length && r < .1) out.push({ img: th.decor[Math.floor(rnd() * th.decor.length)], x: tx * T + 16, y: ty * T, s: .5 + rnd() * .3 });
       else if (th.graves && r < .1) out.push({ grave: true, x: tx * T + 16, y: ty * T, s: .8 + rnd() * .4, cross: rnd() < .4 });
     }
@@ -573,8 +599,10 @@ class Game {
       if (d.x < cx - 200 || d.x > cx + C.VW + 200) continue;
       if (d.grave) { ctx.fillStyle = '#4a4658'; const w = 14 * d.s, h = 20 * d.s; if (d.cross) { ctx.fillRect(d.x - 2, d.y - h - 4, 4, h + 4); ctx.fillRect(d.x - 7, d.y - h + 2, 14, 4); } else { ctx.beginPath(); ctx.moveTo(d.x - w / 2, d.y); ctx.lineTo(d.x - w / 2, d.y - h + w / 2); ctx.arc(d.x, d.y - h + w / 2, w / 2, Math.PI, 0); ctx.lineTo(d.x + w / 2, d.y); ctx.fill(); ctx.fillStyle = '#5e5a70'; ctx.fillRect(d.x - w / 2 + 2, d.y - h + 4, 2, h - 6); } continue; }
       const im = PLAT.assets.img(d.img); if (!im) continue;
-      const s = d.img.includes('tree') ? d.s * .55 : d.s * .9;
-      ctx.imageSmoothingEnabled = false; ctx.drawImage(im, d.x - im.width * s / 2, d.y - im.height * s + 2, im.width * s, im.height * s);
+      const s = d.sc != null ? d.sc : d.img.includes('tree') ? d.s * .55 : d.s * .9;
+      ctx.imageSmoothingEnabled = false;
+      if (d.flip) { ctx.save(); ctx.translate(d.x, 0); ctx.scale(-1, 1); ctx.drawImage(im, -im.width * s / 2, d.y - im.height * s + 2, im.width * s, im.height * s); ctx.restore(); }
+      else ctx.drawImage(im, d.x - im.width * s / 2, d.y - im.height * s + 2, im.width * s, im.height * s);
     }
   }
   /* static tiles are drawn once into an offscreen canvas (world px) */
@@ -583,6 +611,7 @@ class Game {
     const c = document.createElement('canvas'); c.width = L.pw; c.height = L.ph;
     const g = c.getContext('2d');
     const solidish = (tx, ty) => { const t = W.tileAt(this.L, tx, ty); return t === TL.GROUND || t === TL.BRICK; };
+    if (th.art && th.art.tiles && this.tileArtReady(th.art.tiles)) { this.buildTileArt(g, th.art.tiles, solidish); this.tileCache = c; L.dirty = false; return; }
     for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
       const t = L.tiles[ty * L.w + tx], x = tx * T, y = ty * T;
       if (t === TL.GROUND) {
@@ -599,6 +628,50 @@ class Game {
     }
     this.tileCache = c; L.dirty = false;
   }
+  /* ---- world-art tiles (art.js stamps). Order: every tile body first, then the overhangs (grass that
+     reaches above a top tile) so a row below never paints over them. Same tiles, same collision. */
+  stampImg(st, t) { return PLAT.assets.img((st && !Array.isArray(st) && st.img) || t.img); }
+  tileArtReady(t) {
+    for (const v of Object.values(t)) for (const st of this.variants(v)) if (st && typeof st === 'object' && !this.stampImg(st, t)) return false;
+    return !t.img || !!PLAT.assets.img(t.img);
+  }
+  variants(v) { return v == null || typeof v !== 'object' ? [] : Array.isArray(v) && typeof v[0] !== 'number' ? v : [v]; }
+  pick(v, tx, ty) { const a = this.variants(v); return a.length ? a[((tx * 7 + ty * 13) >>> 0) % a.length] : null; }
+  stamp(g, t, st, x, y, o) {
+    if (!st) return false; o = o || {};
+    const im = this.stampImg(st, t); if (!im) return false;
+    const r = Array.isArray(st) ? st : st.r || [0, 0, im.width, im.height], k = T / t.unit, oy = (st.oy || 0) * k;
+    const dw = r[2] * k, dh = r[3] * k, dx = x + (T - dw) / 2, dy = o.bottom ? y + T - dh : y - oy;
+    g.drawImage(im, r[0], r[1], r[2], r[3], dx, dy, dw, dh); return true;
+  }
+  buildTileArt(g, t, solidish) {
+    const L = this.L, th = this.theme; g.imageSmoothingEnabled = false;
+    const tileT = (tx, ty) => W.tileAt(L, tx, ty), over = [];
+    for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
+      const tt = L.tiles[ty * L.w + tx], x = tx * T, y = ty * T;
+      if (tt === TL.GROUND || tt === TL.BRICK) {
+        const open = !solidish(tx, ty - 1), lOpen = !solidish(tx - 1, ty) && tileT(tx - 1, ty) !== TL.BREAK && tileT(tx - 1, ty) !== TL.CRUMBLE, rOpen = !solidish(tx + 1, ty) && tileT(tx + 1, ty) !== TL.BREAK && tileT(tx + 1, ty) !== TL.CRUMBLE;
+        let st;
+        if (tt === TL.BRICK) st = open ? this.pick(t.brickTop, tx, ty) || this.pick(t.brick, tx, ty) : this.pick(t.brick, tx, ty);
+        else if (open) st = (lOpen && !rOpen && t.topL) || (rOpen && !lOpen && t.topR) || this.pick(t.top, tx, ty);
+        else {
+          const deep = t.deep && solidish(tx, ty - 1) && solidish(tx, ty - 2);
+          st = deep ? this.pick(t.deep, tx, ty) : (lOpen && !rOpen && t.fillL) || (rOpen && !lOpen && t.fillR) || this.pick(t.fill, tx, ty);
+        }
+        if (st && st.oy) { over.push([st, x, y]); this.stamp(g, t, { img: st.img, r: [st.r[0], st.r[1] + st.oy, st.r[2], st.r[3] - st.oy] }, x, y); }
+        else if (!this.stamp(g, t, st, x, y)) { g.fillStyle = th.ground; g.fillRect(x, y, T, T); }
+      } else if (tt === TL.ONEWAY) {
+        const l = tileT(tx - 1, ty) !== TL.ONEWAY, r = tileT(tx + 1, ty) !== TL.ONEWAY;
+        this.stamp(g, t, (l && t.onewayL) || (r && t.onewayR) || t.oneway, x, y);
+      } else if (tt === TL.SPIKE) {
+        if (t.spike) { const n = Array.isArray(t.spike) || (t.spike.r && t.spike.r[2] * T / t.unit >= T * .9) ? 1 : 2;
+          for (let i = 0; i < n; i++) { const im = this.stampImg(t.spike, t), r = t.spike.r || [0, 0, im.width, im.height], k = T / t.unit, dw = r[2] * k, dh = r[3] * k;
+            g.drawImage(im, r[0], r[1], r[2], r[3], x + (n === 1 ? (T - dw) / 2 : i * T / 2 + (T / 2 - dw) / 2), y + T - dh, dw, dh); } }
+        else for (let i = 0; i < 4; i++) { g.fillStyle = '#d6dbe6'; g.beginPath(); g.moveTo(x + i * 8, y + T); g.lineTo(x + i * 8 + 4, y + 12); g.lineTo(x + i * 8 + 8, y + T); g.fill(); }
+      }
+    }
+    for (const [st, x, y] of over) this.stamp(g, t, { img: st.img, r: [st.r[0], st.r[1], st.r[2], st.oy], oy: st.oy }, x, y);
+  }
   drawBrick(g, x, y, th, tx, ty) {
     g.fillStyle = th.brick; g.fillRect(x, y, T, T);
     g.fillStyle = th.brickDark; g.fillRect(x, y + 15, T, 2); g.fillRect(x, y + 31, T, 1);
@@ -613,21 +686,30 @@ class Game {
     // dynamic tiles
     const tx0 = Math.floor(cx / T) - 1, tx1 = tx0 + Math.ceil(VW / T) + 2, ty0 = Math.floor(cy / T) - 1, ty1 = ty0 + Math.ceil(VH / T) + 2;
     const blockImg = th.block && PLAT.assets.img(th.block);
+    const at = th.art && th.art.tiles, lt = at && at.liquidTop && PLAT.assets.img(at.liquidTop), lf = at && at.liquid && PLAT.assets.img(at.liquid), liqArt = lt && lf ? [lt, lf] : null;
     for (let ty = Math.max(0, ty0); ty <= Math.min(L.h - 1, ty1); ty++) for (let tx = Math.max(0, tx0); tx <= Math.min(L.w - 1, tx1); tx++) {
       const t = L.tiles[ty * L.w + tx], x = tx * T, y = ty * T;
-      if (t === TL.LIQUID) {
+      if (t === TL.LIQUID && liqArt) {             // world-art lava: the pack's lava tiles, the surface bobs a little
+        const top = W.tileAt(L, tx, ty - 1) !== TL.LIQUID;
+        ctx.drawImage(top ? liqArt[0] : liqArt[1], x, top ? y + Math.round(Math.sin((this.frame + tx * 9) / 14) * 1.5) : y, T, T);
+      } else if (t === TL.LIQUID) {
         const top = W.tileAt(L, tx, ty - 1) !== TL.LIQUID, wave = Math.sin((this.frame + tx * 9) / 10) * 2;
         ctx.fillStyle = th.liquid[0]; ctx.globalAlpha = .9; ctx.fillRect(x, top ? y + 6 + wave : y, T, top ? T - 6 - wave : T); ctx.globalAlpha = 1;
         if (top) { ctx.fillStyle = th.liquid[1]; ctx.fillRect(x, y + 5 + wave, T, 3); if ((this.frame + tx * 17) % 90 < 8) { ctx.fillRect(x + 12, y + wave, 4, 4); } }
+      } else if (t === TL.BREAK && at && at.breakable && this.stamp(ctx, at, this.pick(at.breakable, tx, ty), x, y)) {
+        if (!at.breakableClean) this.drawCracks(ctx, x, y);
       } else if (t === TL.BREAK) {
         if (blockImg) ctx.drawImage(blockImg, 0, 0, 24, 32, x, y, T, T);
         else { this.drawBrick(ctx, x, y, th, tx, ty); ctx.strokeStyle = '#0006'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 6, y + 6); ctx.lineTo(x + 14, y + 16); ctx.lineTo(x + 10, y + 26); ctx.moveTo(x + 14, y + 16); ctx.lineTo(x + 26, y + 12); ctx.stroke(); }
       } else if (t === TL.CRUMBLE) {
-        const c = L.crumble.get(ty * L.w + tx); if (c && c.state === 'gone') { if (c.t < 30) { ctx.globalAlpha = .25; this.drawCrumble(ctx, x, y, blockImg); ctx.globalAlpha = 1; } continue; }
-        const j = c && c.state === 'shake' ? U.rnd(-1.5, 1.5) : 0; this.drawCrumble(ctx, x + j, y, blockImg);
+        const c = L.crumble.get(ty * L.w + tx), cr = at && at.crumble && this.pick(at.crumble, tx, ty);
+        const draw = (xx, yy) => { if (!(cr && this.stamp(ctx, at, cr, xx, yy))) this.drawCrumble(ctx, xx, yy, blockImg); else if (!at.crumbleClean) this.drawCracks(ctx, xx, yy, true); };
+        if (c && c.state === 'gone') { if (c.t < 30) { ctx.globalAlpha = .25; draw(x, y); ctx.globalAlpha = 1; } continue; }
+        const j = c && c.state === 'shake' ? U.rnd(-1.5, 1.5) : 0; draw(x + j, y);
       } else if (t === TL.FAKE) {
         const inside = U.overlap({ x: x - 40, y: y - 40, w: T + 80, h: T + 80 }, p);
-        ctx.globalAlpha = inside ? .35 : 1; this.drawBrick(ctx, x, y, th, tx, ty); ctx.globalAlpha = 1;
+        // a secret wall must look exactly like the real wall around it
+        ctx.globalAlpha = inside ? .35 : 1; if (!(at && this.stamp(ctx, at, this.pick(at.brick, tx, ty), x, y))) this.drawBrick(ctx, x, y, th, tx, ty); ctx.globalAlpha = 1;
       }
     }
     // moving platforms
@@ -635,6 +717,10 @@ class Game {
       ctx.fillStyle = '#3a2a1a'; ctx.fillRect(m.x, m.y + 2, m.w, m.h); ctx.fillStyle = '#c8a060'; ctx.fillRect(m.x, m.y, m.w, 4); ctx.fillStyle = '#8a6a3a'; ctx.fillRect(m.x, m.y + 4, m.w, 5);
       ctx.fillStyle = '#ffd060'; ctx.fillRect(m.x + 4, m.y + 5, 3, 3); ctx.fillRect(m.x + m.w - 7, m.y + 5, 3, 3);
     }
+  }
+  drawCracks(ctx, x, y, light) {
+    ctx.strokeStyle = light ? 'rgba(255,240,220,.35)' : 'rgba(0,0,0,.45)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(x + 6, y + 6); ctx.lineTo(x + 14, y + 16); ctx.lineTo(x + 10, y + 26); ctx.moveTo(x + 14, y + 16); ctx.lineTo(x + 26, y + 12); ctx.stroke();
   }
   drawCrumble(ctx, x, y, blockImg) {
     if (blockImg) { ctx.drawImage(blockImg, 27, 0, 24, 32, x, y, T, T); return; }

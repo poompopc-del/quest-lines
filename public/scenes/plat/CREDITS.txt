@@ -1,0 +1,14 @@
+Platform Mode world art (imported by tools/plat-import-art.py from the original download zips)
+
+sunnyland/  Sunny Land — artwork by Luis Zuno (@ansimuz). Public domain (CC0). Credit not required.
+            https://opengameart.org/node/74142
+cemetery/   GothicVania Cemetery — artwork by Luis Zuno (@ansimuz). Public domain (CC0). Credit not required.
+            https://opengameart.org/node/85024
+church/     GothicVania Church — artwork by Luis Zuno (@ansimuz). Public domain (CC0). Credit not required.
+            https://opengameart.org/content/gothicvania-church-pack
+volcano/    2D Platformer Volcano Pack 1.1 — Tio Aimar. CC0 1.0. Credit not required.
+            https://opengameart.org/content/2d-platformer-volcano-pack-11
+
+Each folder keeps the pack's own licence file (LICENSE.txt). The packs' music (which needs credit) is not used.
+Enemy strips (opossum, frog, skeleton, skeleton-clothed, ghost, burning-ghoul, angel) are the packs' frames
+pasted into one row; ghost frames are mirrored so every sheet faces left like the rest of the game.

@@ -58,7 +58,8 @@ const E = PLAT.ENEMIES = {
 const TELE = { bite: 1, crouch: 1, aim: 1, rev: 1, tele: 1 };
 class Enemy {
   constructor(g, type, x, y, elite) {
-    const d = this.def = E[type] || PLAT.BOSSES[type]; this.type = type; this.g = g; this.elite = !!elite && !d.boss;
+    // the theme's skin (art.js) replaces only the look; AI / HP / damage stay the type's own
+    const d = this.def = (PLAT.enemyDef ? PLAT.enemyDef(type, g.spec && g.spec.theme) : null) || E[type] || PLAT.BOSSES[type]; this.type = type; this.g = g; this.elite = !!elite && !d.boss;
     this.sc = d.scale * (this.elite ? 1.15 : 1);
     const geo = g.geom && g.geom[type], k = this.sc / d.scale;
     this.w = Math.round((geo ? geo.w : d.box[0]) * k); this.h = Math.round((geo ? geo.h : d.box[1]) * k); this.cOff = geo ? geo.c / d.scale : 0;
@@ -281,7 +282,17 @@ class Enemy {
     return true;
   }
   updateArmorSheet() {
-    const d = this.def; if (!d.states) return;
+    const d = this.def;
+    // a skin without dented states (skeleton in clothes) keeps its look until the armour breaks, then swaps once
+    if (!d.states && d.afterSheet) {
+      if (this.armor > 0 || this.armorStage === 'off') return;
+      this.armorStage = 'off'; const key = this.sheetKey();
+      if (!this.g.sheets.has(key)) this.g.sheets.set(key, new PLAT.Sheet(d.afterSheet));
+      const pose = this.anim.pose; this.anim = new PLAT.Anim(this.g.sheets.get(key), {}); this.anim.play(pose || 'move');
+      this.g.text(this.cx, this.y - 10, 'เกราะแตก!', '#ffe08a', 40); sfx().break(); this.interrupt(); this.stunT = 30;
+      return;
+    }
+    if (!d.states) return;
     const stage = this.armor <= 0 ? 'off' : Math.min(d.states.length - 1, Math.floor((1 - this.armor / d.armor) * d.states.length));
     if (stage === this.armorStage) return;
     this.armorStage = stage;

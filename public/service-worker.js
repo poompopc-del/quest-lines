@@ -5,8 +5,8 @@ const APP_SHELL = ['./', './index.html', './manifest.json', './scenes/hub/cave.p
   './data/lexicon.js' + V, './data/vocabulary.js' + V,
   ...MODULES.map((m) => `./js/ql2/${m}.js${V}`),
   // Platform Mode (offline copy; scripts/pages are network-first anyway)
-  './platformer.html', './css/platform.css?v=5',
-  ...['core', 'world', 'anim', 'heroes', 'player', 'enemies', 'levels', 'game', 'ui'].map((m) => `./js/plat/${m}.js?v=5`)];
+  './platformer.html', './css/platform.css?v=6',
+  ...['core', 'world', 'anim', 'heroes', 'player', 'enemies', 'art-sheets', 'levels', 'art', 'game', 'ui'].map((m) => `./js/plat/${m}.js?v=6`)];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)).catch(() => {}));

@@ -47,5 +47,7 @@ window.QT = (() => {
   const sum = log => ({ hits: log.filter(l => l.ok).length, dmg: log.reduce((s, l) => s + (l.dhp || 0) + (l.dar || 0), 0) });
   // keep the hero from being hurt by contact so only the attack is measured
   const shield = p => { p.inv = Math.max(p.inv, 2); };
-  return { P, I, T, GY, game, setup, step, press, rel, sum, shield, flat };
+  // switch the test room to another world theme (its art + enemy skins); hero games are rebuilt
+  function theme(t) { P.LEVELS.__t.theme = t; for (const k in games) delete games[k]; for (const k in base) delete base[k]; }
+  return { P, I, T, GY, game, setup, step, press, rel, sum, shield, flat, theme };
 })();
