@@ -56,7 +56,7 @@ class Game {
     this.enemyTotal = this.enemies.length;
     this.boss = null; this.bossActive = false;
     this.projs = []; this.fxs = []; this.parts = []; this.texts = []; this.loose = []; this.warns = []; this.ghosts = [];
-    this.stats = { coins: 0, gems: new Set(), kills: 0, hits: 0, deaths: 0, frames: 0 };
+    this.stats = { coins: 0, gems: new Set(), kills: 0, hits: 0, deaths: 0, frames: 0, maxChain: 0 };
     this.shakeT = 0; this.shakeMag = 0; this.freeze = 0; this.flashT = 0;
     this.cam = { x: 0, y: 0 }; this.snapCam();
     this.buildDecor(); this.tileCache = null;
@@ -85,9 +85,15 @@ class Game {
   update() {
     if (this.mode === 'loading' || this.mode === 'paused') return;
     this.frame++;
-    if (this.freeze > 0) { this.freeze--; this.stepParts(); return; }
+    // HIT-STOP: the world pauses for a few frames — but button presses made during the pause are
+    // kept and delivered on the first frame after it (the loop clears `pressed` every frame, so an
+    // attack / jump / dash tapped during hit-stop used to vanish and combos dropped)
+    if (this.freeze > 0) { this.freeze--; Object.assign(this.held_ || (this.held_ = {}), this.input.pressed); this.stepParts(); return; }
+    if (this.held_) { Object.assign(this.input.pressed, this.held_); this.held_ = null; }
     const L = this.L, p = this.player;
     if (this.mode === 'play') this.stats.frames++;
+    if (this.chainT > 0 && --this.chainT === 0) this.chain = 0;
+    if (PLAT.debug.on) for (const b of PLAT.debug.boxes) b.t--;
     W.stepMovers(L);
     W.stepCrumble(L, b => U.overlap(b, p) || this.enemies.some(e => !e.dead && U.overlap(b, e)));
     for (const [, c] of L.crumble) { if (c.fell) { c.fell = false; for (let i = 0; i < 8; i++) this.burst(c.tx * T + U.rnd(4, 28), c.ty * T + U.rnd(4, 28), this.theme.brick, 1, 1.6); } }
@@ -119,6 +125,7 @@ class Game {
       if (e.dead || e.inhaled || !e.def.dmg) continue;
       if (e.boss && (e.st === 'intro' || e.alpha === 0)) continue;
       if (e.st === 'dizzy' || e.stunT > 0 || e.st === 'phase') continue;          // a reeling enemy cannot hurt you
+      if (e.boss && (e.vulnerable || e.st === 'stagger')) continue;              // a boss's punish window (stuck pole / tired / stagger / rest) is safe to stand in
       const eb = { x: e.x + 3, y: e.y + 3, w: e.w - 6, h: e.h - 4 };
       if (!U.overlap(eb, p)) continue;
       if (p.bodyHit || (p.act && p.act.kind === 'pogo' && p.vy > 0)) continue;       // we are the one hitting
@@ -143,7 +150,8 @@ class Game {
       if (p.hp <= 1) { p.inv = 0; p.hurt(1, p.cx, { unblockable: true }); p.vy = -2; }
       else {
         p.hp--; this.stats.hits++; sfx().hurt(); this.flashT = 10; this.text(p.cx, p.y, '-1', '#ff6a7a', 40);
-        const s = p.lastSafe; p.x = s.x - p.w / 2; p.y = s.y - p.h; p.vx = 0; p.vy = 0; p.inv = 90; p.act = null; p.floating = false; p.ball = false;
+        p.endAct();          // not act = null: a looping skill effect (YOTA's orb, a charge aura) would follow the player forever
+        const s = p.lastSafe; p.x = s.x - p.w / 2; p.y = s.y - p.h; p.vx = 0; p.vy = 0; p.inv = 90; p.floating = false; p.ball = false; p.charge = 0;
       }
     }
   }
@@ -158,15 +166,38 @@ class Game {
        medium (2 dmg)          → 3 frames, spark + dust
        heavy  (3+ / o.heavy)   → 5 frames, impact flash, small shake
        finisher (last combo step) → +1 frame and a bigger burst · multi-hit ticks (o.multi) → 1 frame */
+  /* Collision → damage for every PLAYER attack (melee steps, skills, dashes, body hits, projectiles,
+     explosions). Boxes are world rects; enemies are tested with their HURT box (enemies.js hurtBox).
+       o.id     swing id — a swing / projectile hits each target once (multi-hit moves pass a new id per tick)
+       o.los    {x, y} origin of a melee blow: a target behind a solid tile is not hit (no hitting through walls)
+     Feedback scales with the blow, not with every hit alike:
+       light  (1 dmg)          → 2-frame hit-stop, small spark
+       medium (2 dmg)          → 3 frames, spark + dust
+       heavy  (3+ / o.heavy)   → 5 frames, impact flash, small shake
+       finisher (last combo step) → +1 frame and a bigger burst · multi-hit ticks (o.multi) → 1 frame */
   hit(box, dmg, o) {
     o = o || {}; let n = 0, kills = 0, cxs = 0, cys = 0;
+    const dbg = PLAT.debug.on;
+    if (dbg) PLAT.debug.boxes.push({ b: { x: box.x, y: box.y, w: box.w, h: box.h }, t: 6, col: o.from === this.player || (o.from && o.from.hero) ? '#ff3a3a' : '#ffa03a' });
     for (const e of this.enemies) {
-      if (e.dead || e.inhaled || !U.overlap(box, e)) continue;
+      if (e.dead || e.inhaled) continue;
+      const hb = e.hurtBox ? e.hurtBox() : e;
+      if (!U.overlap(box, hb)) continue;
+      if (o.los) {
+        const tx = U.clamp(o.los.x, hb.x, hb.x + hb.w), ty = U.clamp(o.los.y, hb.y, hb.y + hb.h);
+        if (!W.clearLine(this.L, o.los.x, o.los.y, tx, ty)) { if (dbg) this.dbgLog(e, 'wall', 0); continue; }
+      }
       if (e.takeHit(dmg, o)) {
         n++; if (e.dead) kills++;
+        if (o.from === this.player && !o.proj) this.player.lastTarget = e;      // combo step-in (player.startStep) follows this target
+        if (dbg) this.dbgLog(e, 'hit', e.lastDmg);
         const cx = U.clamp(e.cx, box.x, box.x + box.w), cy = U.clamp(e.y + e.h / 2, box.y, box.y + box.h); cxs = cx; cys = cy;
         this.burst(cx, cy, '#fff4c0', o.heavy ? 10 : 5, o.heavy ? 3.2 : 2.2); this.spark(cx, cy, o.heavy ? 1.6 : 1);
         if (o.fx) this.fx(o.fx, cx, cy, {}); else if (o.heavy && o.from === this.player) this.fx('impact', cx, cy, { scale: .7 });
+      } else {
+        if (dbg && e.reject !== 'same-swing') this.dbgLog(e, e.reject || 'rejected', 0);
+        // an IMMUNE boss tells the player (once per ~½ s), instead of silently eating the blow
+        if (e.reject === 'immune' && (this.frame - (e._immT || -99)) > 30) { e._immT = this.frame; this.text(e.cx, e.y - 4, 'ไม่มีผล!', '#b0b8c8', 30); sfx().clang(); this.burst(U.clamp(e.cx, box.x, box.x + box.w), e.y + e.h / 2, '#c8d0e0', 4, 1.6); }
       }
     }
     // breakable blocks
@@ -178,9 +209,23 @@ class Game {
       if (o.from === this.player) PLAT.haptic(heavy ? 'big' : 'hit');
       if (o.shake) this.shake(o.shake); else if (heavy) this.shake(2);
       if (o.finisher) this.burst(cxs, cys, '#ffd860', 8, 3.5);
-      if (o.from === this.player) this.player.onHitLanded(n);
+      if (o.from === this.player) { this.player.onHitLanded(n); this.chainHit(n); }
     }
     return n;
+  }
+  /* hit chain: consecutive hits that land within 1.5 s of each other — shown as "N HIT!" from 3 on,
+     so a combo that connects is visible (resets when you get hurt or stop hitting) */
+  chainHit(n) {
+    this.chain = (this.chainT > 0 ? this.chain || 0 : 0) + n; this.chainT = 90; if (this.chain > (this.stats.maxChain || 0)) this.stats.maxChain = this.chain;
+    if (this.chain >= 3) {
+      const p = this.player, col = this.chain >= 10 ? '#ff5ad8' : this.chain >= 6 ? '#ffd84a' : '#ffffff';
+      this.texts = this.texts.filter(t => !t.chain);
+      this.texts.push({ x: p.cx, y: p.y - 18, str: this.chain + ' HIT!', col, life: 50, max: 50, big: this.chain >= 6, chain: true });
+    }
+  }
+  dbgLog(e, why, dmg) {
+    const L = PLAT.debug.log; L.push({ f: this.frame, who: e.type, why, dmg, hp: Math.max(0, e.hp), st: e.st });
+    if (L.length > 8) L.shift();
   }
   /* attack tokens: at most 2 enemies may be winding up / attacking at the same moment,
      so a crowd takes turns instead of hitting all at once */
@@ -256,7 +301,7 @@ class Game {
     o = o || {};
     const def = typeof nameOrDef === 'string' ? PLAT.PROJ[nameOrDef] : nameOrDef; if (!def) return null;
     const g = this, pr = {
-      def, x, y, dir: dir || 1, t: 0, owner: o.owner || null, enemy: !!def.enemy, life: def.life, pierce: def.pierce || 0, id: PLAT.newSwing(),
+      def, x, y, px: x, py: y, y0: y, dir: dir || 1, t: 0, owner: o.owner || null, enemy: !!def.enemy, life: def.life, pierce: def.pierce || 0, id: PLAT.newSwing(),
       vx: o.vx != null ? o.vx : (dir || 0) * (o.speed || def.speed), vy: o.vy || 0, grav: o.grav != null ? o.grav : (def.grav || 0), scale: o.scale || def.scale || 1, dead: false,
       box() { const b = def.box; return def.ground ? { x: this.x - b[0] / 2, y: this.y - b[1], w: b[0], h: b[1] } : { x: this.x - b[0] / 2, y: this.y - b[1] / 2, w: b[0], h: b[1] }; },
     };
@@ -270,7 +315,13 @@ class Game {
       const d = pr.def; pr.t++;
       if (d.accel) pr.vx = U.clamp(pr.vx + pr.dir * d.accel, -d.maxSpeed, d.maxSpeed);
       if (d.decel) { pr.vx *= d.decel; }
-      if (d.boomerang && pr.t > 20 && pr.owner) { const tx = pr.owner.cx, ty = pr.owner.feet - 30; pr.vx += U.sign(tx - pr.x) * .55; pr.vy += U.sign(ty - pr.y) * .3; pr.vx = U.clamp(pr.vx, -7, 7); pr.vy = U.clamp(pr.vy, -4, 4); if (pr.t > 30 && Math.abs(tx - pr.x) < 14 && Math.abs(ty - pr.y) < 30) pr.dead = true; }
+      if (d.boomerang && pr.t > 20 && pr.owner) {
+        const tx = pr.owner.cx, ty = pr.owner.feet - 30; pr.vx += U.sign(tx - pr.x) * .55; pr.vy += U.sign(ty - pr.y) * .3; pr.vx = U.clamp(pr.vx, -7, 7); pr.vy = U.clamp(pr.vy, -4, 4);
+        // on the way BACK it is a new pass: it may hit the same enemies once more (was: one hit per throw)
+        if (!pr.back && U.sign(pr.vx) === -pr.dir) { pr.back = true; pr.id = PLAT.newSwing(); }
+        if (pr.t > 30 && Math.abs(tx - pr.x) < 14 && Math.abs(ty - pr.y) < 30) pr.dead = true;
+      } else if (d.settle != null && pr.y0 != null && pr.t < 40) pr.y += ((pr.y0 + d.settle) - pr.y) * .12;   // thrown high, levels out lower (Mia's fan)
+      pr.px = pr.x; pr.py = pr.y;
       pr.vy += pr.grav; pr.x += pr.vx; pr.y += pr.vy;
       if (d.trail && pr.t % 2 === 0) this.burst(pr.x - pr.dir * 14, pr.y, d.trail, 1, .4);
       if (--pr.life <= 0) { this.killProj(pr); continue; }
@@ -285,7 +336,11 @@ class Game {
         }
         if (!p.dead && U.overlap(b, { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 2 })) { const r = p.hurt(d.dmg, pr.x); if (r !== 'ignored' || !d.ground) { if (r !== 'ignored') this.killProj(pr); } }
       } else {
-        const n = this.hit(b, d.dmg, { id: pr.id, dir: U.sign(pr.vx) || pr.dir, kb: 3, from: pr.owner, fx: d.explode ? null : null });
+        // swept box (continuous collision): the box covers where the shot was last frame AND where it is now,
+        // so a fast shot can never step over a thin target between two frames
+        const sx = Math.min(b.x, b.x - (pr.x - pr.px)), sy = Math.min(b.y, b.y - (pr.y - pr.py));
+        const sweep = { x: sx, y: sy, w: b.w + Math.abs(pr.x - pr.px), h: b.h + Math.abs(pr.y - pr.py) };
+        const n = this.hit(sweep, d.dmg, { id: pr.id, dir: U.sign(pr.vx) || pr.dir, kb: d.kb != null ? d.kb : 3, from: pr.owner, proj: true });
         if (n) { pr.pierce -= n; if (pr.pierce < 0) this.killProj(pr); }
       }
     }
@@ -302,7 +357,7 @@ class Game {
       if (ex.r > 0) {
         const area = { x: pr.x - ex.r, y: pr.y - ex.r, w: ex.r * 2, h: ex.r * 2 };
         if (pr.enemy) { if (U.overlap(area, this.player)) this.player.hurt(ex.dmg, pr.x); }
-        else this.hit(area, ex.dmg, { id: PLAT.newSwing(), kb: 5, dir: 0, from: pr.owner });
+        else this.hit(area, ex.dmg, { id: PLAT.newSwing(), kb: 5, dir: 0, from: pr.owner, at: pr.x, heavy: ex.dmg >= 3 });
         sfx().boom(); this.shake(3);
       }
     } else if (!pr.enemy) this.burst(pr.x, pr.y, d.glow || '#fff4c0', 5, 1.6);
@@ -353,13 +408,14 @@ class Game {
   /* ----------------------------- respawn / clear ----------------------------- */
   respawn() {
     const p = this.player; p.reset(this.checkpoint); p.hp = p.maxHp; p.inv = 90; p.en = 100;
-    this.projs = []; this.warns = []; this.tokens.clear();
+    // a retry starts clean: no shots, warnings, effects, pending hit-stop or buffered presses from the run that ended
+    this.projs = []; this.warns = []; this.tokens.clear(); this.fxs = []; this.ghosts = []; this.freeze = 0; this.held_ = null; this.chain = 0; this.chainT = 0; this.shakeT = 0; this.shakeMag = 0;
     if (this.spec.boss) { this.enemies = this.enemies.filter(e => !e.boss); this.boss = null; this.bossActive = false; this.emit('boss', null); if (this.L.exit) this.L.exit.open = false; }
     this.mode = 'play'; this.snapCam(); this.emit('hud', this.hudState());
   }
   beginClear() {
     if (this.mode !== 'play') return;
-    this.mode = 'clear'; this.clearT = 0; sfx().clear(); this.player.act = null;
+    this.mode = 'clear'; this.clearT = 0; sfx().clear(); this.player.endAct();
     this.emit('hud', this.hudState());
   }
   stepClear() {
@@ -377,7 +433,7 @@ class Game {
     ];
     const n = checks.filter(c => c.ok).length, rank = n === 4 ? 'S' : n === 3 ? 'A' : n === 2 ? 'B' : 'C';
     const score = s.coins * 10 + s.kills * 50 + s.gems.size * 500 + Math.max(0, Math.round((par - s.frames) / 60)) * 10 + (s.hits === 0 ? 1000 : 0);
-    return { levelId: this.levelId, heroId: this.heroId, frames: s.frames, coins: s.coins, gems: [...s.gems], gemTotal: L.gems.length, kills: s.kills, enemyTotal: this.enemyTotal, hits: s.hits, deaths: s.deaths, checks, rank, score };
+    return { levelId: this.levelId, heroId: this.heroId, frames: s.frames, coins: s.coins, gems: [...s.gems], gemTotal: L.gems.length, kills: s.kills, enemyTotal: this.enemyTotal, hits: s.hits, deaths: s.deaths, maxChain: s.maxChain || 0, checks, rank, score };
   }
   hudState() {
     const p = this.player, L = this.L, h = p.hero;
@@ -410,6 +466,7 @@ class Game {
     this.texts = this.texts.filter(t => t.life > 0);
     if (this.shakeT > 0) { this.shakeT--; if (this.shakeT === 0) this.shakeMag = 0; }
     if (this.flashT > 0) this.flashT--;
+    if (this.hurtT > 0) this.hurtT--;
   }
 
   /* --------------------------------- camera --------------------------------- */
@@ -456,7 +513,9 @@ class Game {
     ctx.globalAlpha = 1;
     for (const w of this.warns) { const a = (w.t % 10 < 5) ? .9 : .4; ctx.fillStyle = `rgba(255,60,60,${a})`; ctx.beginPath(); ctx.ellipse(w.x, w.y - 2, 12 + w.t / w.frames * 6, 4, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = `rgba(255,220,120,${a})`; ctx.font = '700 14px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('!', w.x, w.y - 10); }
     this.drawTexts(ctx);
+    if (PLAT.debug.on) this.drawDebug(ctx);
     ctx.restore();
+    if (PLAT.debug.on) this.drawDebugLog(ctx);
     if (th.embers) this.drawEmbers(ctx);
     if (this.flashT > 0) { ctx.fillStyle = `rgba(255,255,255,${this.flashT / 30})`; ctx.fillRect(0, 0, VW, VH); }
     if (this.cut) {
@@ -467,6 +526,8 @@ class Game {
       ctx.font = 'italic 900 26px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6; ctx.strokeStyle = '#000';
       const x = VW / 2 + Math.max(0, 30 - c.t * 4); ctx.strokeText(c.name, x, VH * .36 + 34); ctx.fillStyle = '#fff'; ctx.fillText(c.name, x, VH * .36 + 34); ctx.restore();
     }
+    // getting hurt: a short red vignette at the screen edges (never covers the middle of the action)
+    if (this.hurtT > 0) { const a = this.hurtT / 18 * .55, gr = ctx.createRadialGradient(VW / 2, VH / 2, VH * .35, VW / 2, VH / 2, VW * .62); gr.addColorStop(0, 'rgba(255,30,50,0)'); gr.addColorStop(1, `rgba(255,30,50,${a})`); ctx.fillStyle = gr; ctx.fillRect(0, 0, VW, VH); }
     if (this.mode === 'clear') { const a = Math.min(1, this.clearT / 60); ctx.fillStyle = `rgba(8,7,15,${a * .6})`; ctx.fillRect(0, 0, VW, VH); }
   }
   drawBackground(ctx, cx, cy) {
@@ -666,6 +727,37 @@ class Game {
       ctx.strokeText(t.str, t.x, t.y); ctx.fillStyle = t.col; ctx.fillText(t.str, t.x, t.y);
     }
     ctx.globalAlpha = 1;
+  }
+  /* ----------------------------- debug overlay -----------------------------
+     cyan = player body · green = enemy body (walls / contact) · yellow = enemy HURT box ·
+     red = player attack boxes (last 6 frames) · orange = other damage areas · magenta = shots.
+     Text: enemy state / HP / armour / poise / flags, player move state. Top-left: last hits and
+     why a blow did nothing (same-swing · blocked · immune · wall · dead). */
+  drawDebug(ctx) {
+    const D = PLAT.debug, p = this.player, r = (b, c, f) => { ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.strokeRect(b.x + .5, b.y + .5, b.w - 1, b.h - 1); if (f) { ctx.fillStyle = f; ctx.fillRect(b.x, b.y, b.w, b.h); } };
+    ctx.save(); ctx.font = '600 7px monospace'; ctx.textAlign = 'center';
+    r(p, '#3af0ff');
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      r(e, '#3aff6a'); if (e.hurtBox) r(e.hurtBox(), '#ffe03a');
+      ctx.fillStyle = '#fff';
+      ctx.fillText(`${e.st} ${Math.max(0, e.hp)}/${e.maxHp}${e.armor ? ' 🛡' + e.armor : ''}${e.maxPoise > 1 ? ' p' + e.poise : ''}${e.vulnerable ? ' VULN' : ''}${e.blocking ? ' BLOCK' : ''}${e.stunT > 0 ? ' stun' : ''}`, e.cx, e.y - 26);
+    }
+    D.boxes = D.boxes.filter(b => b.t > 0);
+    for (const b of D.boxes) r(b.b, b.col, b.col + '33');
+    for (const pr of this.projs) r(pr.box(), pr.enemy ? '#ff7a3a' : '#ff3aff');
+    const a = p.act;
+    ctx.fillStyle = '#3af0ff';
+    ctx.fillText(`${a ? a.kind + ' t' + a.t + (a.idx != null ? ' #' + a.idx : '') + (a.cancellable ? ' C' : '') : (p.onGround ? 'ground' : 'air')}${p.queued ? ' Q' : ''}${p.inv > 0 ? ' inv' + p.inv : ''} combo${p.combo}`, p.cx, p.y - 30);
+    ctx.restore();
+  }
+  drawDebugLog(ctx) {
+    const L = PLAT.debug.log; if (!L.length) return;
+    ctx.save(); ctx.font = '600 8px monospace'; ctx.textAlign = 'left';
+    // top-left, under the HUD hearts (the bottom of the screen belongs to the ability bar / touch buttons)
+    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(4, 48, 236, L.length * 10 + 6);
+    L.forEach((l, i) => { ctx.fillStyle = l.why === 'hit' ? '#8aff8a' : '#ff9a7a'; ctx.fillText(`f${l.f} ${l.who} ${l.why}${l.why === 'hit' ? ' -' + l.dmg + ' → ' + l.hp : ''} [${l.st}]`, 8, 58 + i * 10); });
+    ctx.restore();
   }
   drawEmbers(ctx) {
     ctx.fillStyle = '#ffb04a';

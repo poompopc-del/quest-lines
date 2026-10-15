@@ -36,7 +36,8 @@ const PROJ = PLAT.PROJ = {
   bullet: { proc: 'tracer', col: '#ffe08a', speed: 11, dmg: 1, life: 40, box: [12, 4] },
   bolt:   { proc: 'bolt', col: '#d8c6a0', speed: 10, dmg: 2, pierce: 1, life: 45, box: [18, 5] },
   rocket: { img: 'heroes/elon/rocket.png', fw: 67, fh: 10, n: 1, scale: .55, speed: 3, accel: .35, maxSpeed: 9, dmg: 4, life: 70, box: [30, 8], explode: { r: 54, dmg: 5 }, trail: '#ffb04a' },
-  fan:    { img: 'heroes/mia/fireshuriken.png', fw: 34, fh: 34, n: 11, rate: 2, scale: .8, speed: 6.5, dmg: 2, pierce: 99, life: 70, box: [24, 24], boomerang: true, glow: '#ff8a3a' },
+  // fan: leaves Mia's raised hand (kasen frame 1, ~-42) and levels out 12 px lower (settle), at slime height
+  fan:    { img: 'heroes/mia/fireshuriken.png', fw: 34, fh: 34, n: 11, rate: 2, scale: .8, speed: 6.5, dmg: 2, pierce: 99, life: 70, box: [24, 24], boomerang: true, settle: 12, glow: '#ff8a3a' },
   flare:  { atlasAnim: 'fireball', scale: 2, speed: 3.8, dmg: 2, life: 80, box: [14, 14], explode: { r: 30, dmg: 2, atlasAnim: 'boom' } },
   flareBig: { atlasAnim: 'fireball', scale: 3, speed: 4.5, dmg: 4, life: 90, box: [22, 22], explode: { r: 44, dmg: 4, atlasAnim: 'boom' } },
   fist:   { img: 'heroes/cream/fx_fist.png', fw: 250, fh: 250, n: 6, rate: 4, scale: .26, speed: 7, dmg: 2, pierce: 2, life: 34, box: [40, 40], glow: '#ff3a3a' },
@@ -292,7 +293,8 @@ H.yota = {
     up:   { name: 'เตะเสยยึดบ้าน', pose: 'kick', dur: 22, on: [1], hit: [7, 15], box: [-4, -64, 44, 64], dmg: 2, kb: 3, up: true },
     down: { name: 'ผลักกระเด็น', pose: 'push', dur: 26, on: [2, 3], hit: [10, 20], box: [2, -44, 38, 44], dmg: 1, kb: 14 },
   },
-  skill: { kind: 'beam', name: 'ลำแสงค่าเช่า', cost: 40, chargePose: 'charge', firePose: 'fire', charge: 26, fire: 22, len: 330, h: 18, y: -36, dmg: 4, every: 6 },
+  // beam: y = the palm in fire.png (-33 px), h = the visible core of the drawn beam (drawBeam's bright band ≈ ±0.6·h·1.15)
+  skill: { kind: 'beam', name: 'ลำแสงค่าเช่า', cost: 40, chargePose: 'charge', firePose: 'fire', charge: 26, fire: 22, len: 330, h: 22, y: -33, dmg: 4, every: 6 },
   dash: { kind: 'dash', name: 'ส่งค่าเช่าบ้านยัง!!!', pose: 'pushp', speed: 4.4, dur: 22, cd: 40, hit: { box: [2, -44, 34, 44], dmg: 1, kb: 9 }, shout: 'ส่งค่าเช่าบ้านยัง!!!' },
   ult: { input: 'S+D', name: 'FINAL EVICTION · ยึดหมด!!!', kind: 'beam', beam: { chargePose: 'charge', firePose: 'fire', charge: 40, fire: 60, len: 640, h: 46, y: -34, dmg: 3, every: 4 } },
 };

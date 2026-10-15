@@ -1,0 +1,368 @@
+// Platform Mode COMBAT REGRESSION TESTS — real browser (Playwright + Chromium), real game code.
+// usage: npm run test:combat        (starts the local server itself on a free port)
+//        node tools/plat-combat-test.mjs [filter]   — only tests whose name contains <filter>
+// Needs the `playwright` package (npm i -D playwright, or a global install) and a Chromium build.
+// Every test steps the game frame by frame with scripted input and checks HP / armour / state —
+// nothing here is mocked except the enemy AI in "dummy" tests (frozen so only the attack is measured).
+import { spawn } from 'node:child_process';
+import fs from 'node:fs'; import path from 'node:path'; import net from 'node:net';
+
+const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+async function loadPW() {
+  for (const p of ['playwright', process.env.PLAYWRIGHT_MODULE, '/opt/npm-tools/node_modules/playwright/index.mjs'].filter(Boolean)) {
+    try { return await import(p); } catch (e) {}
+  }
+  console.error('✗ playwright is not installed — run `npm i -D playwright` (or set PLAYWRIGHT_MODULE). Combat tests NOT run.');
+  process.exit(2);
+}
+const freePort = () => new Promise(r => { const s = net.createServer(); s.listen(0, () => { const p = s.address().port; s.close(() => r(p)); }); });
+
+const { chromium } = await loadPW();
+const port = await freePort();
+const srv = spawn(process.execPath, [path.join(ROOT, 'server.mjs')], { env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+await new Promise(r => setTimeout(r, 600));
+let browser;
+const launch = [{}, { executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }];
+for (const o of launch) { try { browser = await chromium.launch(o); break; } catch (e) {} }
+if (!browser) { console.error('✗ could not start Chromium'); srv.kill(); process.exit(2); }
+const page = await browser.newPage();
+const pageErrors = [];
+page.on('pageerror', e => pageErrors.push(String(e && e.stack || e)));
+page.on('console', m => { if (m.type() === 'error' && !/ERR_TUNNEL|fonts\.g|net::ERR/.test(m.text())) pageErrors.push(m.text()); });
+await page.goto(`http://localhost:${port}/platformer.html`);
+await page.waitForFunction(() => window.PLAT && PLAT.app && PLAT.app.raf);
+await page.addScriptTag({ content: fs.readFileSync(path.join(ROOT, 'tools/plat-test-harness.js'), 'utf8') });
+
+const filter = process.argv[2] || '';
+const results = await page.evaluate(async (filter) => {
+  const { P, I, T, GY, setup, step, press, rel, sum, shield, game } = QT;
+  const out = [];
+  const t = async (name, fn) => {
+    if (filter && !name.includes(filter)) return;
+    try { const r = await fn(); out.push({ name, ok: r === true || (r && r.ok), detail: r && r.detail || '' }); }
+    catch (e) { out.push({ name, ok: false, detail: 'THREW ' + (e && e.stack || e) }); }
+  };
+  const HEROES = P.HERO_ORDER.filter(id => P.HEROES[id] && !P.HEROES[id].disabled);   // the playable roster
+  const MELEE = HEROES.filter(id => P.HEROES[id].attack.kind === 'combo');
+  const TARGETS = ['slime', 'zombie', 'licker', 'tyrant', 'ghost', 'garg'];          // small · tall · wide-low · heavy · floating · boss
+  const hurtW = async (hid, et) => { const { e } = await setup(hid, et, 400, 1); return e.hurtBox ? e.hurtBox().w : e.w; };
+
+  // 1 · in range → HP drops by exactly the step's damage, both directions, every target size
+  for (const hid of MELEE) for (const et of TARGETS) for (const dir of [1, -1]) await t(`melee hits in range · ${hid} vs ${et} ${dir > 0 ? '→' : '←'}`, async () => {
+    const w = await hurtW(hid, et);
+    const { g, p, e, log } = await setup(hid, et, P.HEROES[hid].box[0] / 2 + w / 2 + 4, dir, { hp: 99 });
+    press('attack'); step(g, 1); rel('attack'); step(g, 40, () => shield(p));
+    const s = sum(log), want = P.HEROES[hid].attack.steps[0].dmg * (e.vulnerable || e.st === 'dizzy' ? 2 : 1);
+    return { ok: s.hits === 1 && s.dmg === want, detail: `hits ${s.hits} dmg ${s.dmg} (want 1 / ${want})` };
+  });
+  // 2 · out of range → no damage
+  for (const hid of MELEE) for (const et of ['slime', 'tyrant']) await t(`melee misses out of range · ${hid} vs ${et}`, async () => {
+    const { g, p, log } = await setup(hid, et, 230, 1, { hp: 99 });
+    press('attack'); step(g, 1); rel('attack'); step(g, 40, () => shield(p));
+    const s = sum(log); return { ok: s.hits === 0, detail: `hits ${s.hits}` };
+  });
+  // 3 · a target BEHIND the hero is not hit by a forward blow
+  for (const hid of MELEE) await t(`melee does not hit behind · ${hid}`, async () => {
+    const w = await hurtW(hid, 'zombie');
+    const { g, p, log } = await setup(hid, 'zombie', -(w / 2 + 16), 1, { hp: 99 });
+    press('attack'); step(g, 1); rel('attack'); step(g, 30, () => shield(p));
+    const s = sum(log); return { ok: s.hits === 0, detail: `hits ${s.hits}` };
+  });
+  // 4 · air attacks: jumping, at the top of a jump and while falling, beside a tall target
+  for (const hid of MELEE.filter(h => !P.HEROES[h].attack.steps[0].slide)) for (const when of ['rising', 'falling']) await t(`air attack (${when}) hits · ${hid}`, async () => {
+    const w = await hurtW(hid, 'tyrant');
+    const { g, p, log } = await setup(hid, 'tyrant', P.HEROES[hid].box[0] / 2 + w / 2 + 4, 1, { hp: 99 });
+    p.y = GY - p.h - 14; p.vy = when === 'rising' ? -3 : 2; p.onGround = false;
+    press('attack'); step(g, 1); rel('attack'); step(g, 40, () => shield(p));
+    const s = sum(log); return { ok: s.hits >= 1, detail: `hits ${s.hits}` };
+  });
+  // 5 · full combo on a heavy dummy and on a light dummy: every step lands exactly once, in order, mashing or rhythmic
+  for (const hid of MELEE) for (const et of ['tyrant', 'zombie']) for (const gap of [4, 9, 13]) await t(`full combo, each step once · ${hid} vs ${et} (press every ${gap}f)`, async () => {
+    const A = P.HEROES[hid].attack, w = await hurtW(hid, et);
+    const { g, p, log } = await setup(hid, et, P.HEROES[hid].box[0] / 2 + w / 2 + 4, 1, { hp: 999 });
+    const started = []; let lastAct = null;
+    step(g, A.steps.length * 34 + 30, i => { shield(p); if (i % gap === 0 && i < A.steps.length * 30) press('attack'); else rel('attack'); if (p.act && p.act !== lastAct && p.act.kind === 'step') started.push(p.act.idx); lastAct = p.act; });
+    const okHits = log.filter(l => l.ok), ids = okHits.map(l => l.id), dup = ids.length !== new Set(ids).size;
+    const firstRound = started.slice(0, A.steps.length).join(',');
+    const expect = A.steps.map((_, i) => i).join(',');
+    return { ok: !dup && firstRound === expect && okHits.length >= A.steps.length, detail: `steps ${started.join(',')} · hits ${okHits.length} · dup ${dup}` };
+  });
+  // 5a · started from the very edge of step 1's reach, a light target is still reached by every later step
+  //      (knock-back of non-final steps is capped, and a short follow-up steps in toward the target it hit)
+  for (const hid of MELEE.filter(h => P.HEROES[h].attack.steps.length > 1)) for (const et of ['zombie', 'slime']) await t(`combo connects from max reach · ${hid} vs ${et}`, async () => {
+    let maxD = 0;
+    for (let d = 10; d < 130; d += 2) { const { g, p, log } = await setup(hid, et, d, 1, { hp: 999 }); press('attack'); step(g, 1); rel('attack'); step(g, 30, () => shield(p)); if (log.some(l => l.ok)) maxD = d; }
+    const n = P.HEROES[hid].attack.steps.length, { g, p, log } = await setup(hid, et, maxD, 1, { hp: 999 });
+    const hitIdx = new Set();
+    step(g, n * 34 + 20, i => { shield(p); if (i % 10 === 0 && i < n * 26) press('attack'); else rel('attack'); });
+    log.filter(l => l.ok).forEach(l => hitIdx.add(l.idx));
+    return { ok: hitIdx.size === n, detail: `reach ${maxD}px · steps that hit: ${[...hitIdx].join(',')} of ${n}` };
+  });
+  // 5b · ONE early press during a step's wind-up is buffered into the next step (was dropped when the blow ran to the last frame)
+  for (const hid of MELEE.filter(h => P.HEROES[h].attack.steps.length > 1)) for (const ult of [0, 100]) await t(`one early press is buffered into the next step · ${hid}${ult ? ' (ULT ready)' : ''}`, async () => {
+    const w = await hurtW(hid, 'tyrant');
+    const { g, p } = await setup(hid, 'tyrant', P.HEROES[hid].box[0] / 2 + w / 2 + 4, 1, { hp: 999 });
+    p.ult = ult;
+    press('attack'); step(g, 1); rel('attack'); step(g, 3, () => shield(p)); press('attack'); step(g, 1); rel('attack');
+    let second = false; step(g, 60, () => { shield(p); if (p.act && p.act.idx === 1) second = true; });
+    return { ok: second, detail: `2nd step ${second}` };
+  });
+  // 6 · an attack pressed DURING hit-stop is not lost
+  for (const hid of MELEE.filter(h => P.HEROES[h].attack.steps.length > 1)) await t(`press during hit-stop is kept · ${hid}`, async () => {
+    const w = await hurtW(hid, 'tyrant');
+    const { g, p } = await setup(hid, 'tyrant', P.HEROES[hid].box[0] / 2 + w / 2 + 4, 1, { hp: 999 });
+    press('attack'); step(g, 1); rel('attack');
+    let pressedInFreeze = false, second = false;
+    step(g, 80, () => { shield(p); if (!pressedInFreeze && g.freeze > 0) { press('attack'); pressedInFreeze = true; } else rel('attack'); if (p.act && p.act.idx === 1) second = true; });
+    return { ok: pressedInFreeze && second, detail: `pressed in freeze ${pressedInFreeze} · 2nd step ${second}` };
+  });
+  // 7 · no hitting through a wall
+  for (const hid of MELEE) await t(`melee blocked by wall · ${hid}`, async () => {
+    const w = await hurtW(hid, 'tyrant');
+    const { g, p, e, log } = await setup(hid, 'tyrant', 0, 1, { hp: 99 });
+    // wall tile column right in front of the hero; enemy just on the other side
+    const tx = Math.floor((p.x + p.w) / T) + 1; for (let ty = 0; ty < 10; ty++) P.world.setTile(g.L, tx, ty, P.TILE.BRICK);
+    e.x = (tx + 1) * T + 1; e.y = GY - e.h;
+    press('attack'); step(g, 1); rel('attack'); step(g, 40, () => shield(p));
+    const s = sum(log); return { ok: s.hits === 0, detail: `hits ${s.hits}` };
+  });
+
+  // 8 · every hero projectile: correct direction, hits small AND tall targets at range, once per pass
+  const shots = [];
+  for (const hid of HEROES) { const h = P.HEROES[hid], A = h.attack, S = h.skill;
+    if (A.kind === 'shot') { shots.push([hid, A.proj, A.y]); (A.charge || []).forEach(c => shots.push([hid, c.proj, A.y])); }
+    if (A.mouthful) shots.push([hid, A.mouthful.proj, A.mouthful.y]);
+    if (S && S.proj && typeof S.proj === 'string') shots.push([hid, S.proj, S.y]); }
+  for (const [hid, pn, y] of shots) for (const et of ['slime', 'licker', 'zombie', 'tyrant']) for (const dir of [1, -1]) await t(`projectile ${pn} (${hid}) hits ${et} ${dir > 0 ? '→' : '←'}`, async () => {
+    const def = P.PROJ[pn], range = Math.min(140, def.speed * (def.life || 60) * .6 + 20);
+    const { g, p, log } = await setup(hid, et, range, dir, { hp: 99 });
+    const pr = g.spawnProj(pn, p.cx + dir * 16, p.feet + (y || -24), dir, { owner: p });
+    let wrongDir = Math.sign(pr.vx) !== dir && !def.accel ? true : false;
+    step(g, 90, () => shield(p));
+    const s = sum(log); return { ok: s.hits >= 1 && !wrongDir, detail: `hits ${s.hits} dmg ${s.dmg} vx ${pr.vx.toFixed(1)}` };
+  });
+  await t('fast projectile cannot skip a thin target (swept collision)', async () => {
+    const { g, p, e, log } = await setup('x', 'ghost', 100, 1, { hp: 99 });
+    const pr = g.spawnProj({ ...P.PROJ.lemon, speed: 30, life: 30 }, p.cx + 16, e.y + e.h / 2, 1, { owner: p });
+    step(g, 10, () => shield(p));
+    return { ok: sum(log).hits === 1, detail: `hits ${sum(log).hits} (speed 30 px/f)` };
+  });
+  await t('projectile stops at a wall (does not hit what is behind it)', async () => {
+    const { g, p, e, log } = await setup('x', 'zombie', 150, 1, { hp: 99, wall: 70 });
+    g.spawnProj('lemon', p.cx + 16, p.feet - 27, 1, { owner: p }); step(g, 60, () => shield(p));
+    return { ok: sum(log).hits === 0 && g.projs.length === 0, detail: `hits ${sum(log).hits} · projs left ${g.projs.length}` };
+  });
+  await t('boomerang fan hits going out AND coming back', async () => {
+    const { g, p, log } = await setup('mao', 'tyrant', 70, 1, { hp: 99 });
+    g.spawnProj('fan', p.cx + 18, p.feet - 42, 1, { owner: p }); step(g, 90, () => shield(p));
+    return { ok: sum(log).hits === 2, detail: `hits ${sum(log).hits}` };
+  });
+  await t('expired projectiles and effects are removed', async () => {
+    const { g, p } = await setup('x', null, 0, 1);
+    for (let i = 0; i < 30; i++) { g.spawnProj('lemon', p.cx, p.feet - 27 - i, 1, { owner: p }); g.fx('impact', p.cx, p.y, {}); }
+    step(g, 200, () => shield(p));
+    return { ok: g.projs.length === 0 && g.fxs.length === 0, detail: `projs ${g.projs.length} fxs ${g.fxs.length}` };
+  });
+
+  // 9 · every hero's skill and dash do what they say, against a target where the move should land
+  const skillSetup = { step: 24, bash: 30, proj: 90, flare: 70, spin: 22, beam: 120, spindash: 80, inhale: 50, slam: 30, burst: 40, heat: 90 };
+  for (const hid of HEROES) for (const et of ['slime', 'tyrant']) await t(`skill ${P.HEROES[hid].skill.kind} hits · ${hid} vs ${et}`, async () => {
+    const S = P.HEROES[hid].skill, hold = ['inhale', 'heat', 'spindash'].includes(S.kind) ? 70 : 1;
+    const w = await hurtW(hid, et);
+    const { g, p, e, log } = await setup(hid, et, (skillSetup[S.kind] || 60) + w / 2, 1, { hp: S.kind === 'inhale' ? undefined : 99 });
+    step(g, 120, i => { shield(p); if (i < hold) press('skill'); else rel('skill'); });
+    if (S.kind === 'inhale') { const small = !!e.def.small; return { ok: small ? (e.inhaled && !!p.mouth) : !e.inhaled, detail: `inhaled ${!!e.inhaled} mouth ${!!p.mouth}` }; }
+    const s = sum(log); return { ok: s.hits >= 1, detail: `hits ${s.hits} dmg ${s.dmg}` };
+  });
+  for (const hid of HEROES.filter(h => P.HEROES[h].dash.hit && P.HEROES[h].dash.kind !== 'homing' && P.HEROES[h].dash.kind !== 'rocket')) await t(`dash hits · ${hid}`, async () => {
+    const { g, p, log } = await setup(hid, 'tyrant', 40, 1, { hp: 99 });
+    press('dash'); step(g, 1); rel('dash'); step(g, 40, () => shield(p));
+    return { ok: sum(log).hits >= 1, detail: `hits ${sum(log).hits}` };
+  });
+  await t('Sonic homing attack locks onto an enemy in the air', async () => {
+    const { g, p, e, log } = await setup('sonic', 'ghost', 90, 1, { hp: 99, ey: 40 });
+    p.y = GY - p.h - 60; p.vy = 0; p.onGround = false; p.airDash = true;
+    press('dash'); step(g, 1); rel('dash'); step(g, 40, () => shield(p));
+    return { ok: sum(log).hits >= 1, detail: `hits ${sum(log).hits}` };
+  });
+  await t('Luffy rocket dash hits on the way up', async () => {
+    const { g, p, log } = await setup('luffy', 'tyrant', 34, 1, { hp: 99 });
+    press('dash'); step(g, 1); rel('dash'); step(g, 30, () => shield(p));
+    return { ok: sum(log).hits >= 1, detail: `hits ${sum(log).hits}` };
+  });
+  await t('X charge shot: holding fires a bigger shot that hits', async () => {
+    const { g, p, log } = await setup('x', 'tyrant', 120, 1, { hp: 99 });
+    step(g, 80, i => { shield(p); if (i < 70) press('attack'); else rel('attack'); });
+    const big = log.filter(l => l.ok && l.dmg >= 3).length;
+    return { ok: big >= 1, detail: `charged hits ${big}` };
+  });
+  await t('Kirby: inhale a slime, then spit a star that hits', async () => {
+    const { g, p, e } = await setup('puff', 'slime', 50, 1);
+    step(g, 60, i => { shield(p); if (i < 50) press('skill'); else rel('skill'); });
+    if (!p.mouth) return { ok: false, detail: 'did not inhale' };
+    const t2 = P.makeEnemy(g, 'tyrant', p.cx + 90, GY); t2.think = () => {}; t2.hp = 99; g.enemies.push(t2);
+    press('attack'); step(g, 1); rel('attack'); step(g, 40, () => shield(p));
+    return { ok: t2.hp < 99, detail: `tyrant hp ${t2.hp}` };
+  });
+  await t('Shovel pogo bounces off an enemy and damages it', async () => {
+    const { g, p, e, log } = await setup('shovel', 'tyrant', 0, 1, { hp: 99 });
+    p.x = e.cx - p.w / 2; p.y = e.y - p.h - 40; p.vy = 1; p.onGround = false;
+    step(g, 30, i => { shield(p); press('down'); if (i === 0) press('attack'); else rel('attack'); });
+    rel('down');
+    return { ok: sum(log).hits >= 1, detail: `hits ${sum(log).hits}` };
+  });
+  await t('Plink guard blocks a frontal hit', async () => {
+    const { g, p } = await setup('pip', null, 0, 1);
+    press('down'); step(g, 3); const r = p.hurt(1, p.cx + 30); rel('down');
+    return { ok: r === 'blocked' && p.hp === p.maxHp, detail: `result ${r} hp ${p.hp}` };
+  });
+
+  // 10 · damage processing rules
+  await t('armour soaks hits first; HP only drops after the armour breaks', async () => {
+    const { g, p, e, log } = await setup('knight', 'bucket', 34, 1);
+    const hp0 = e.hp, ar0 = e.armor; let ok = true;
+    for (let k = 0; k < 6 && e.armor > 0; k++) { press('attack'); step(g, 1); rel('attack'); step(g, 30, () => shield(p)); if (e.armor > 0 && e.hp !== hp0) ok = false; }
+    return { ok: ok && e.armor < ar0 && log.some(l => l.dar > 0), detail: `armor ${ar0}→${e.armor} hp ${hp0}→${e.hp}` };
+  });
+  await t('an armoured zombie in lava dies (armour does not soak lava)', async () => {
+    const { g, e } = await setup('knight', 'cone', 200, 1);
+    const tx = Math.floor(e.cx / T); P.world.setTile(g.L, tx, 9, P.TILE.LIQUID); step(g, 3);
+    return { ok: e.dead, detail: `dead ${e.dead} armor ${e.armor}` };
+  });
+  await t('a dead enemy takes no more damage', async () => {
+    const { g, p, e, log } = await setup('knight', 'slime', 34, 1);
+    e.hp = 1; press('attack'); step(g, 1); rel('attack'); step(g, 30, () => shield(p));
+    const r = e.takeHit(5, { id: P.newSwing() });
+    return { ok: e.dead && r === false && e.reject === 'dead' && e.hp <= 0, detail: `dead ${e.dead} reject ${e.reject}` };
+  });
+  await t('charging chainsaw blocks frontal hits, not hits from behind', async () => {
+    const { g, p, e } = await setup('knight', 'salvador', 300, 1);
+    e.blocking = true; e.dir = -1;
+    const front = e.takeHit(2, { id: P.newSwing(), dir: 1, from: p }), back = e.takeHit(2, { id: P.newSwing(), dir: -1, from: p });
+    return { ok: !front && e.reject === null && back, detail: `front ${front} back ${back}` };
+  });
+  await t('boss: immune during intro (with feedback), hittable after, stagger on poise break', async () => {
+    const { g, p, e, log } = await setup('knight', 'garg', 300, 1);
+    e.set('intro'); const r1 = e.takeHit(2, { id: P.newSwing() }); const imm = e.reject === 'immune';
+    e.set('move'); const hp0 = e.hp; for (let k = 0; k < 20 && e.st !== 'stagger'; k++) e.takeHit(1, { id: P.newSwing() });
+    return { ok: !r1 && imm && e.hp < hp0 && e.st === 'stagger', detail: `intro→${r1}/${imm} hp ${hp0}→${e.hp} st ${e.st}` };
+  });
+  await t('boss punish window: no contact damage while vulnerable', async () => {
+    const { g, p, e } = await setup('knight', 'garg', 10, 1);
+    e.set('stuck'); e.vulnerable = true; e[e.type] = () => { e.vulnerable = true; e.vx = 0; };
+    p.inv = 0; step(g, 10);
+    return { ok: p.hp === p.maxHp, detail: `hp ${p.hp}/${p.maxHp}` };
+  });
+  await t('enemy shot hurts the hero once', async () => {
+    const { g, p } = await setup('knight', null, 0, 1);
+    p.inv = 0; g.spawnProj('fireball', p.cx + 60, p.feet - 20, -1, {}); step(g, 40);
+    return { ok: p.hp === p.maxHp - 1, detail: `hp ${p.hp}/${p.maxHp}` };
+  });
+
+  // 11 · state safety
+  await t('hero dies in the middle of an attack — no error, attack stops', async () => {
+    const { g, p } = await setup('mao', 'zombie', 30, 1, { hp: 99 });
+    press('attack'); step(g, 3); rel('attack'); p.hp = 1; p.inv = 0; p.hurt(1, p.cx + 10); step(g, 90);
+    return { ok: p.dead && !p.act, detail: `dead ${p.dead} act ${p.act && p.act.kind}` };
+  });
+  await t('enemy dies during its own wind-up — no damage after death', async () => {
+    const { g, p, e } = await setup('knight', 'zombie', 26, 1, { ai: true });
+    step(g, 60, () => { if (e.st === 'bite' && !e.dead) { e.hp = 1; e.takeHit(1, { id: P.newSwing() }); } });
+    p.inv = 0; const hp0 = p.hp; step(g, 60);
+    return { ok: e.dead && p.hp === hp0, detail: `dead ${e.dead} hp ${hp0}→${p.hp}` };
+  });
+  await t('looping skill effects are cleaned up (pit respawn / boss phase / level clear)', async () => {
+    const { g, p } = await setup('yota', null, 0, 1);
+    press('skill'); step(g, 1); rel('skill'); step(g, 5); const loops0 = g.fxs.filter(f => f.loop).length;
+    p.y = g.L.ph + 60; step(g, 2);                          // falls out of the level → respawn at last safe spot
+    const after = g.fxs.filter(f => f.loop).length;
+    return { ok: loops0 >= 1 && after === 0 && !p.act, detail: `loop fx ${loops0} → ${after}` };
+  });
+  await t('retry from checkpoint resets hero and combat state', async () => {
+    const { g, p } = await setup('knight', 'zombie', 30, 1);
+    press('attack'); step(g, 3); g.spawnProj('fireball', p.cx + 60, p.feet - 20, -1, {}); g.freeze = 5; p.hp = 0; p.die(); step(g, 80);
+    g.respawn();
+    return { ok: p.hp === p.maxHp && !p.dead && !p.act && g.projs.length === 0 && g.freeze === 0 && g.mode === 'play', detail: `hp ${p.hp} dead ${p.dead} projs ${g.projs.length}` };
+  });
+
+  // 12 · every level loads and survives scripted play with every playable hero
+  for (const lv of P.LEVEL_ORDER) await t(`level ${lv} loads with every hero and 900 frames of play throw no error`, async () => {
+    let errs = 0;
+    for (const hid of HEROES) {
+      const g = new P.Game({ levelId: lv, heroId: hid }); await g.load(); I.clearAll();
+      const acts = ['right', 'jump', 'attack', 'skill', 'dash', 'attack', 'right', 'left', 'down'];
+      for (let f = 0; f < 900; f++) {
+        if (f % 7 === 0) { const a = acts[(f / 7 | 0) % acts.length]; I.set(a, 't', true); }
+        if (f % 7 === 3) for (const a of acts) I.set(a, 't', false);
+        I.set('right', 'h', f % 120 < 90);
+        try { g.update(); } catch (e) { errs++; if (errs < 2) throw new Error(`${hid}@${lv} f${f}: ${e.message}`); }
+        if (g.mode === 'dead') g.respawn();
+        I.endFrame();
+      }
+      I.clearAll(); I.set('right', 'h', false);
+      const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; g.render(cv.getContext('2d'), 1);
+    }
+    return { ok: errs === 0, detail: `errors ${errs}` };
+  });
+  return out;
+}, filter);
+
+// 13 · save compatibility (main save is only touched by gold; an old platform save loads)
+const save = await page.evaluate(() => {
+  const S = PLAT.save, out = [];
+  const main0 = { gold: 100, chars: ['knight', 'pip'], settings: { sfx: 50 }, other: { keep: 1 } };
+  localStorage.setItem('questlines_wordbattle_v1', JSON.stringify(main0));
+  localStorage.setItem('ql_platform_v1', JSON.stringify({ v: 1, hero: 'pip', levels: { '1-1': { cleared: true, bestRank: 'A', gems: [0] } }, settings: { shake: false } }));
+  const d = S.load();
+  out.push({ name: 'old platform save loads (levels, hero, settings kept; new defaults filled)', ok: d.hero === 'pip' && d.levels['1-1'].cleared && d.settings.shake === false && d.settings.btnSize === 'M' && d.stats.kills === 0 });
+  S.addMainGold(30); const m = JSON.parse(localStorage.getItem('questlines_wordbattle_v1'));
+  out.push({ name: 'reward adds gold to the main save without touching anything else', ok: m.gold === 130 && JSON.stringify({ ...m, gold: 100 }) === JSON.stringify(main0) });
+  out.push({ name: 'save keys unchanged', ok: !!localStorage.getItem('ql_platform_v1') && !!localStorage.getItem('questlines_wordbattle_v1') });
+  return out;
+});
+results.push(...save);
+
+// 14 · UI flow with the REAL game loop: title → map → level → pause → resume → die → retry → restart → clear → results
+const ui = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+ui.on('pageerror', e => pageErrors.push('[ui] ' + String(e && e.stack || e)));
+await ui.goto(`http://localhost:${port}/platformer.html`);
+await ui.waitForFunction(() => window.PLAT && PLAT.app && PLAT.app.raf);
+const flow = [];
+const ck = async (name, fn) => { try { const ok = await fn(); flow.push({ name: 'ui · ' + name, ok: !!ok }); } catch (e) { flow.push({ name: 'ui · ' + name, ok: false, detail: String(e) }); } };
+const scr = () => ui.evaluate(() => PLAT.app.screen);
+await ck('title shows', async () => (await scr()) === 'title');
+await ui.click('#sTitle [data-go="map"]');
+await ck('map shows 9 levels', async () => (await scr()) === 'map' && (await ui.locator('#worlds .lvl').count()) === 9);
+await ui.click('#worlds .lvl >> nth=0');
+await ui.waitForFunction(() => PLAT.app.screen === 'game', null, { timeout: 15000 });
+await ck('level 1-1 starts', async () => (await ui.evaluate(() => PLAT.app.game && PLAT.app.game.mode)) === 'play');
+await ui.keyboard.down('KeyD'); await ui.waitForTimeout(500); await ui.keyboard.press('KeyJ'); await ui.waitForTimeout(200); await ui.keyboard.press('KeyJ'); await ui.keyboard.up('KeyD');
+await ck('hero moved right with the keyboard', async () => (await ui.evaluate(() => PLAT.app.game.player.cx)) > (await ui.evaluate(() => PLAT.app.game.L.start.x)) + 20);
+await ui.keyboard.press('Escape'); await ui.waitForTimeout(150);
+await ck('pause stops the game', async () => { const f0 = await ui.evaluate(() => PLAT.app.game.frame); await ui.waitForTimeout(300); return (await scr()) === 'pause' && (await ui.evaluate(() => PLAT.app.game.frame)) === f0; });
+await ui.click('#sPause [data-go="resume"]'); await ui.waitForTimeout(200);
+await ck('resume continues', async () => { const f0 = await ui.evaluate(() => PLAT.app.game.frame); await ui.waitForTimeout(300); return (await scr()) === 'game' && (await ui.evaluate(() => PLAT.app.game.frame)) > f0; });
+await ui.evaluate(() => { const p = PLAT.app.game.player; p.inv = 0; p.hp = 1; p.hurt(1, p.cx + 10); });
+await ui.waitForFunction(() => PLAT.app.screen === 'dead', null, { timeout: 5000 });
+await ck('death shows the retry screen', async () => (await scr()) === 'dead');
+await ui.click('#dRetry'); await ui.waitForTimeout(200);
+await ck('retry: full HP, playing, not dead', async () => ui.evaluate(() => { const g = PLAT.app.game, p = g.player; return PLAT.app.screen === 'game' && g.mode === 'play' && p.hp === p.maxHp && !p.dead && !p.act; }));
+await ui.keyboard.press('Escape'); await ui.waitForTimeout(100); await ui.click('#sPause [data-go="restart"]');
+await ui.waitForFunction(() => PLAT.app.screen === 'game' && PLAT.app.game.mode === 'play', null, { timeout: 15000 });
+await ck('restart reloads the level from the start', async () => ui.evaluate(() => PLAT.app.game.stats.frames < 120 && Math.abs(PLAT.app.game.player.cx - PLAT.app.game.L.start.x) < 40));
+await ui.evaluate(() => { const g = PLAT.app.game, ex = g.L.exit, p = g.player; p.x = ex.x; p.y = ex.y + ex.h - p.h; p.vx = 0; p.vy = 0; });
+await ui.waitForFunction(() => PLAT.app.screen === 'clear', null, { timeout: 8000 });
+await ck('reaching the exit shows results (rank, time, deaths, best combo)', async () => { const t = await ui.locator('#clearBox').innerText(); return /ผ่านด่าน/.test(t) && /คอมโบสูงสุด/.test(t) && /ตาย/.test(t); });
+await ck('clear is saved to the platform save', async () => ui.evaluate(() => { const d = JSON.parse(localStorage.getItem('ql_platform_v1')); return d.levels['1-1'] && d.levels['1-1'].cleared; }));
+await ui.click('#clearBox [data-go2="next"]');
+await ui.waitForFunction(() => PLAT.app.screen === 'game' && PLAT.app.game && PLAT.app.game.levelId === '1-2', null, { timeout: 15000 });
+await ck('next level (1-2) unlocked and starts', async () => true);
+await ui.screenshot({ path: path.join(process.env.SHOT_DIR || ROOT, '.combat-test-last.png') }).catch(() => {});
+results.push(...flow);
+
+await browser.close(); srv.kill();
+let fail = 0;
+for (const r of results) { if (!r.ok) fail++; if (!r.ok || process.env.VERBOSE) console.log(`${r.ok ? '✓' : '✗'} ${r.name}${r.detail ? '  — ' + r.detail : ''}`); }
+if (pageErrors.length) { console.log('\npage errors:'); pageErrors.slice(0, 10).forEach(e => console.log('  ' + e.split('\n')[0])); }
+console.log(`\n${results.length - fail}/${results.length} combat tests passed${pageErrors.length ? ` · ${pageErrors.length} page error(s)` : ''}`);
+process.exit(fail || pageErrors.length ? 1 : 0);

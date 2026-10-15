@@ -43,6 +43,32 @@ for hid, h in D['heroes'].items():
         dv = dividers(im)
         if dv: bad(f'{path}: opaque divider columns at {dv[:8]} (use explicit rects)')
 
+# poses / attack steps reference real animations and real frame indices (Anim clamps a bad index
+# silently to the last frame — that hides typos, so it is checked here)
+for hid, h in D['heroes'].items():
+    sp = h['sprite']
+    if sp['kind'] == 'atlas':
+        A = json.load(open(os.path.join(ROOT, sp['atlasSrc']))); counts = {k: len(v) for k, v in A['anims'].items()}
+    else:
+        counts = {k: (len(a['rects']) if 'rects' in a else a['n']) for k, a in sp['anims'].items()}
+    poses = h.get('poses', {})
+    for pn, pz in poses.items():
+        if pz['a'] not in counts: bad(f'hero {hid}: pose {pn} uses missing animation {pz["a"]}'); continue
+        if 'f' in pz and max(pz['f']) >= counts[pz['a']]: bad(f'hero {hid}: pose {pn} frame {max(pz["f"])} >= {counts[pz["a"]]} frames of {pz["a"]}')
+    def frames_of(pose):
+        if pose in poses: pz = poses[pose]; return len(pz['f']) if 'f' in pz else counts.get(pz['a'], 0)
+        return counts.get(pose, 0)
+    steps = list(h['attack'].get('steps', []))
+    if h['attack'].get('melee'): steps.append(h['attack']['melee'])
+    for i, st in enumerate(steps):
+        n = frames_of(st['pose'])
+        if not n: bad(f'hero {hid}: attack step {i} pose {st["pose"]} does not exist')
+        elif st.get('on') and max(st['on']) >= n: bad(f'hero {hid}: attack step {i} active frame {max(st["on"])} >= {n} frames')
+    for k in ('skill', 'dash'):
+        ab = h.get(k) or {}
+        for key in ('pose', 'chargePose', 'firePose', 'rev'):
+            if ab.get(key) and not frames_of(ab[key]): bad(f'hero {hid}: {k}.{key} {ab[key]} does not exist')
+
 for group in ('enemies', 'bosses'):
     for eid, e in D[group].items():
         s = e['sheet']; im = img(s['img']); print(f'{group[:-1]} {eid}')

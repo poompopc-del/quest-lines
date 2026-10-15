@@ -74,6 +74,14 @@ class Enemy {
   get cx() { return this.x + this.w / 2; }
   get feet() { return this.y + this.h; }
   box() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
+  /* HURT box (where the player's blows / shots land) ≠ collision body (walls, floors, contact).
+     The body is 80 % of the sprite and small enemies are only ~20 px tall, so chest-high shots
+     (X's buster, Mia's fan, YOTA's beam) flew over slimes and lickers. The hurt box covers the
+     sprite (+HURT_PAD each side) and is never shorter than HURT_MIN, growing upward from the feet. */
+  hurtBox() {
+    const pad = C.HURT_PAD, h = Math.max(this.h + pad, C.HURT_MIN);
+    return { x: this.x - pad, y: this.y + this.h - h, w: this.w + pad * 2, h };
+  }
   set(st) { this.st = st; this.stT = 0; }
   seesPlayer(range, dyMax) {
     const p = this.g.player; if (!p || p.dead) return false;
@@ -96,7 +104,8 @@ class Enemy {
       W.moveBody(g.L, this, this.vx, this.vy);
       if (this.y > g.L.ph + 64) { this.fell = true; this.kill({}); this.gone = true; return; }
       // hazards hurt enemies too (knock one into lava!)
-      if (W.tilesIn(g.L, this.box(), PLAT.TILE.LIQUID).length) { this.fell = true; this.takeHit(99, { dir: 0, id: -1 }); }
+      // (killed directly: going through takeHit let a cone / bucket zombie's ARMOUR soak the lava and survive)
+      if (W.tilesIn(g.L, this.box(), PLAT.TILE.LIQUID).length) { this.fell = true; this.kill({ dir: 0 }); return; }
       // never walk into a wall forever: no progress for a while → turn around
       if (Math.abs(this.vx) > .1 && this.onGround && Math.abs(this.x - this.lastX) < .05) { if (++this.stuckT > 40) { this.dir = -this.dir; this.stuckT = 0; } } else this.stuckT = 0;
       this.lastX = this.x;
@@ -234,25 +243,33 @@ class Enemy {
     }
   }
   // returns true if the hit counted (for hit-stop / energy)
+  /* DAMAGE PROCESSING (the only place an enemy's HP / armour changes).
+     Returns true if the blow counted. When it does not, this.reject says why
+     ('dead' · 'same-swing' · 'blocked' · 'immune') — game.hit() shows it in the debug overlay
+     and gives the player clear feedback for 'blocked' / 'immune'. */
   takeHit(dmg, o) {
-    if (this.dead || this.inhaled) return false;
-    if (o.id != null && o.id !== -1) { if (this.lastHit.has(o.id)) return false; this.lastHit.add(o.id); if (this.lastHit.size > 40) this.lastHit = new Set([...this.lastHit].slice(-20)); }
+    this.reject = null;
+    if (this.dead || this.inhaled) { this.reject = 'dead'; return false; }
+    if (o.id != null && o.id !== -1) { if (this.lastHit.has(o.id)) { this.reject = 'same-swing'; return false; } this.lastHit.add(o.id); if (this.lastHit.size > 40) this.lastHit = new Set([...this.lastHit].slice(-20)); }
     const g = this.g, d = this.def;
     // frontal block (charging chainsaw) — jump over it and hit its back, or wait for the crash
-    if (this.blocking && o.dir && U.sign(o.dir) === -this.dir && !o.pogo) { sfx().clang(); g.burst(this.cx + this.dir * 12, this.y + 14, '#ffffff', 6, 2); g.text(this.cx, this.y - 6, 'กัน!', '#d0d8e0', 26); return false; }
+    if (this.blocking && o.dir && U.sign(o.dir) === -this.dir && !o.pogo) { this.reject = 'blocked'; sfx().clang(); g.burst(this.cx + this.dir * 12, this.y + 14, '#ffffff', 6, 2); g.text(this.cx, this.y - 6, 'กัน!', '#d0d8e0', 26); return false; }
     if (this.st === 'dizzy' || this.vulnerable) dmg *= 2;
+    this.lastDmg = 0;
     if (this.armor > 0) {
       const ad = d.heavyArmor && !o.pogo && !o.body ? Math.max(1, dmg - 1) : dmg;
       this.armor = Math.max(0, this.armor - ad); sfx().clang(); g.burst(this.cx, this.y + 4, '#d8dde8', 6, 2); this.flash = 6;
-      this.updateArmorSheet();
+      g.text(this.cx, this.y - 4, '🛡' + ad, '#c8d0e0', 28);          // armour damage is shown too, so a hit never looks like it "did nothing"
+      this.lastDmg = ad; this.updateArmorSheet();
       this.kbT = 6; this.stunT = 8; this.vx = (o.dir || 0) * 1.2;
       return true;
     }
-    this.hp -= dmg; this.flash = 8;
+    this.hp -= dmg; this.flash = 8; this.lastDmg = dmg;
     g.text(this.cx, this.y - 4, String(dmg), dmg >= 4 ? '#ffd84a' : '#ffffff', 32);
     if (this.hp <= 0) { this.kill(o); return true; }
     this.poise -= dmg;
-    const dirKb = o.dir || U.sign(this.cx - (o.from ? o.from.cx : this.cx)) || 1;
+    // knock-back = away from the attacker (a spin / burst used to throw an enemy BEHIND the hero through the hero, toward where it faces)
+    const dirKb = (o.at != null ? U.sign(this.cx - o.at) : o.from && o.from.cx != null && !o.proj ? U.sign(this.cx - o.from.cx) : 0) || o.dir || 1;
     if (!d.heavy && !d.boss) {                        // light enemies: every hit interrupts and knocks back
       this.interrupt(); this.stunT = 16;
       if (o.kb) { this.kbT = 12; this.vx = dirKb * o.kb * .7; if (this.onGround || o.up) this.vy = o.up ? -5 : -2.4; }
@@ -332,7 +349,7 @@ class Boss extends Enemy {
     if (this.phase !== before) {
       // PHASE CHANGE: a readable pause — roar, blast the player back (no damage), clear the field, then new patterns
       g.text(this.cx, this.y - 20, this.phase === 2 ? 'โกรธแล้ว!!' : 'บ้าคลั่ง!!!', '#ff4a4a', 80, true); sfx().roar(); g.shake(6); g.clearHostile();
-      const p = g.player; if (p && !p.dead) { p.vx = (p.cx < this.cx ? -1 : 1) * 5; p.vy = -4; p.act = null; }
+      const p = g.player; if (p && !p.dead) { p.vx = (p.cx < this.cx ? -1 : 1) * 5; p.vy = -4; p.endAct(); }   // endAct (not act = null): a looping skill effect must be cleaned up
       this.poise = this.maxPoise; this.prevSt = null; this.set('phase'); this.vulnerable = false;
       if (this.flying) { this.passes = 0; }
     }
@@ -456,7 +473,8 @@ class Boss extends Enemy {
     }
   }
   takeHit(dmg, o) {
-    if (this.st === 'intro' || this.st === 'phase' || this.alpha === 0) return false;
+    // intro roar / phase change / fully warped out: the boss cannot be hurt — say so (game.hit shows "ไม่มีผล")
+    if (this.st === 'intro' || this.st === 'phase' || this.alpha === 0) { this.reject = 'immune'; return false; }
     const ok = super.takeHit(dmg, o);
     if (ok) {
       this.g.bossHit(this);

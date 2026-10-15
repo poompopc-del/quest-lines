@@ -78,11 +78,13 @@ function go(where) {
   }
 }
 function menuKeys(e) {
+  // ` toggles the combat debug overlay — only for developers (main game's dev mode, or ?debug=1 in the URL)
+  if (e.code === 'Backquote' && (S.devOn() || /[?&]debug=1\b/.test(location.search))) { PLAT.debug.on = !PLAT.debug.on; PLAT.debug.boxes = []; PLAT.debug.log = []; notify('🛠 Debug ' + (PLAT.debug.on ? 'ON' : 'OFF'), PLAT.debug.on ? 'กล่องโจมตี / กล่องรับดาเมจ / สถานะ / เหตุผลที่ตีไม่เข้า' : ''); return; }
   if (app.screen === 'game') return;
   if (e.code === 'Escape') { e.preventDefault(); if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes') go('back'); else if (app.screen === 'map') show('title'); }
 }
 function pause() { if (!app.game || app.game.mode !== 'play') return; app.game.mode = 'paused'; $('#pSub').textContent = `${app.game.levelId} ${app.game.spec.name} · ${PLAT.HEROES[app.game.heroId].name}`; show('pause'); input.clearAll(); }
-function resume() { if (!app.game) return; if (app.game.mode === 'paused') app.game.mode = 'play'; input.clearAll(); show('game'); }
+function resume() { if (!app.game) return; if (app.game.mode === 'paused') app.game.mode = 'play'; app.game.held_ = null; input.clearAll(); show('game'); }
 
 /* ---------------------------- menu navigation ----------------------------
    D-pad / stick / arrow keys move the focus to the nearest button in that direction,
@@ -384,7 +386,7 @@ function finishLevel(r) {
     <p class="sub" style="text-align:center;margin:0">${id} ${PLAT.LEVELS[id].name}</p>
     <div class="res-rank rk ${r.rank}">${r.rank}</div>
     <div class="checks">${r.checks.map(c => `<div><span>${c.th}</span><span class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'}</span></div>`).join('')}</div>
-    <div class="kv"><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div>${PLAT.LEVELS[id].boss ? '' : `<div>💎<b>${r.gems.length}/${r.gemTotal}</b></div>`}<div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div></div>
+    <div class="kv"><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div>${PLAT.LEVELS[id].boss ? '' : `<div>💎<b>${r.gems.length}/${r.gemTotal}</b></div>`}<div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>ตาย<b>${r.deaths}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div></div>
     ${newBest ? '<p class="note" style="text-align:center;color:#8aff8a">★ สถิติใหม่!</p>' : ''}
     <div class="reward">${paid ? `🪙 ทองเข้ากระเป๋าเกมหลัก +${gold}` : gold ? `🪙 ได้ทอง ${gold} — แต่ยังไม่มีเซฟเกมหลักในเครื่องนี้ (เริ่มเกมหลักก่อนแล้วทองจะเข้าครั้งถัดไป)` : '🪙 ทองให้เฉพาะผ่านครั้งแรก / 💎 ใหม่ / แรงก์ S ครั้งแรก'}
       <div class="note">${first ? 'ผ่านครั้งแรก' : 'เล่นซ้ำ (ได้จากเหรียญที่เก็บ)'}${newGems.length ? ` · 💎 ใหม่ ${newGems.length}` : ''}${firstS ? ' · แรงก์ S ครั้งแรก' : ''}</div></div>

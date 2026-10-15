@@ -31,7 +31,19 @@ PLAT.C = {
   BUFFER: 8,             // frames a jump press is remembered before landing
   SPRING: 14.2,
   INV_FRAMES: 70,        // invulnerability after a hit
+  // combat (v87) — see enemies.js hurtBox() / player.js startStep()
+  HURT_MIN: 28,          // an enemy's HURT box is at least this tall (slimes / lickers are ~20 px: chest-high shots used to fly over them)
+  HURT_PAD: 2,           // hurt boxes reach 2 px past the (shrunk) collision body on each side — the body box is 80 % of the sprite
+  COMBO_KB: 2.4,         // knock-back cap for a combo step that has a follow-up, so the next step can still reach (finishers keep full kb)
+  BUFFER_ATK: 14,        // frames an attack press is remembered while a move cannot be cancelled yet
 };
+
+/* --------------------------------- debug ---------------------------------
+   Combat debug overlay (hit / hurt boxes, states, damage log, why a blow did nothing).
+   Off in the normal game; turned on with ?debug=1 in the URL, or the ` key when the
+   main game's developer mode is on. When off, the game only checks one boolean. */
+PLAT.debug = { on: false, log: [], boxes: [] };
+try { if (HAS_DOM && /[?&]debug=1\b/.test(location.search)) PLAT.debug.on = true; } catch (e) {}
 
 /* --------------------------------- utils --------------------------------- */
 const U = PLAT.U = {

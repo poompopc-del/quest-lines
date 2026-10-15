@@ -24,6 +24,7 @@ class Player {
     this.reset(spawn);
   }
   reset(spawn) {
+    if (this.act) this.endAct();          // retry / respawn: a looping skill effect must not survive the reset
     this.x = spawn.x - this.w / 2; this.y = spawn.y - this.h; this.vx = 0; this.vy = 0; this.face = 1;
     this.onGround = false; this.coyote = 0; this.buffer = 0; this.jumping = false; this.airJumps = 0; this.runT = 0; this.drop = 0;
     this.inv = 0; this.hurtT = 0; this.dead = false; this.deadT = 0; this.act = null; this.cd = { dash: 0, shot: 0 };
@@ -183,6 +184,8 @@ class Player {
     if (this.act && this.act.onLand) this.act.onLand(vy);
   }
   bodyBox() { return { x: this.x - 2, y: this.y - 2, w: this.w + 4, h: this.h + 4 }; }
+  // origin for melee line-of-sight checks (chest height): a blow never reaches a target on the other side of a wall
+  losPt() { return { x: this.cx, y: this.feet - Math.min(24, this.h * .55) }; }
 
   /* ------------------------------- abilities ------------------------------- */
   /* ------------------------------ command inputs ------------------------------
@@ -222,8 +225,10 @@ class Player {
     if (this.pend) {
       const P = this.pend;
       if ((P.partner && inp.wasPressed(P.partner)) || (I === 'SS' && P.btn === 'skill' && inp.wasPressed('skill'))) { this.pend = null; if (this.ultReady) return this.startUlt(); }
-      else if (this.t - P.t < P.wait) return;
-      else { this.pend = null; this.press(P.btn, inp); }
+      // the same button again while waiting for its chord partner is a combo press, not noise: remember it
+      // (it used to be swallowed — with ULT ready, Plink / Luffy / YOTA lost their 2nd combo step)
+      else if (this.t - P.t < P.wait) { if (inp.wasPressed(P.btn)) P.again = true; return; }
+      else { this.pend = null; this.press(P.btn, inp); if (P.again) this.press(P.btn, inp); }
     }
     // X: hold skill to charge the ultimate; a short press is the normal skill
     if (this.holdS != null) {
@@ -262,11 +267,18 @@ class Player {
   press(b, inp) {
     if (b === 'dash') this.dashBuf = 10;
     else if (b === 'skill') this.skillBuf = 10;
-    else if (b === 'attack') { if (!this.act || this.act.cancellable) this.startAttack(inp); else if (this.act.kind === 'step') this.queued = true; }
+    // ATTACK (+ buffer): a press while a move cannot be cancelled yet is remembered for BUFFER_ATK frames
+    // and fires the moment the move can be cancelled (or ends) — never dropped, never doubled (runBuffers)
+    else if (b === 'attack') {
+      if (!this.act || this.act.cancellable) { this.queued = false; this.startAttack(inp); }
+      else if (/^(step|shot|skill)$/.test(this.act.kind)) { this.queued = true; this.queuedT = C.BUFFER_ATK; }
+    }
   }
   // input buffer: a dash / skill pressed while busy fires the moment the current move can be cancelled
   runBuffers(inp) {
     const busy = this.act && !this.act.cancellable;
+    if (this.queued && !inp.wasPressed('attack') && !(this.act && this.act.kind === 'step') && --this.queuedT <= 0) this.queued = false;
+    if (this.queued && !busy && !this.dead && this.hurtT === 0) { this.queued = false; this.startAttack(inp); return; }
     if (this.dashBuf > 0) this.dashBuf--; if (this.skillBuf > 0) this.skillBuf--;
     if (this.dashBuf > 0 && !busy && this.cd.dash <= 0) { this.dashBuf = 0; if (this.act) this.endAct(); this.startDash(); }
     else if (this.skillBuf > 0 && !busy) { this.skillBuf = 0; if (this.act) this.endAct(); this.startSkill(inp); }
@@ -343,8 +355,22 @@ class Player {
   }
   startStep(s, idx) {
     const swing = newSwing(), self = this, fh = this.frameHits(s), n = fh ? fh.length : 0;
+    const steps = this.hero.attack.steps || [], last = idx == null || idx === steps.length - 1;
+    // a step that has a follow-up only pushes the target a little (it must stay in reach of the next step);
+    // the finisher (and single-step attacks) keep their full knock-back
+    const kb = last ? s.kb : Math.min(s.kb || 0, C.COMBO_KB);
     this.anim.play(s.pose, s.dur, true);
     if (s.lunge && (this.onGround || s.slide)) this.vx = this.face * Math.max(Math.abs(this.vx) * .5, s.lunge);
+    // COMBO STEP-IN: a follow-up step whose reach is shorter than where the last target now stands
+    // (knock-back, or a short second swing like Plink's) steps forward just enough to connect — only
+    // toward a target that was hit by the previous step, in front, on the same level, and close
+    const tg = this.lastTarget;
+    if (idx > 0 && tg && !tg.dead && this.onGround && !s.slide && Math.abs(tg.feet - this.feet) < 24) {
+      const hb = tg.hurtBox ? tg.hurtBox() : tg, near = this.face > 0 ? hb.x - this.cx : this.cx - (hb.x + hb.w);
+      const reach = fh ? Math.max(...fh.filter(Boolean).map(f => f.box[0] + f.box[2])) : s.box[0] + s.box[2];
+      const gap = near - reach + 6;                       // +6: overlap the target by a few px, not just touch it
+      if (near > -4 && gap > 0 && gap < 34) this.vx = this.face * Math.max(Math.abs(this.vx), Math.min(5, Math.sqrt(gap * 2 * C.DEC_GROUND) + .3));
+    }
     sfx().swing();
     // the frame index → time: anim.index() maps t ∈ [0, dur) onto the frames
     const lastActive = fh ? Math.floor((Math.max(...fh.map((f, i) => f ? i : -1)) + 1) * s.dur / n) : s.hit[1];
@@ -357,7 +383,7 @@ class Player {
         if (fh) { const f = fh[fi]; if (f && t < s.dur) box = f.box; }
         else if (t >= s.hit[0] && t <= s.hit[1]) box = s.box;
         if (s.multi && fi !== this.lastFi) { this.lastFi = fi; this.mid = newSwing(); }        // multi-hit moves: a new blow on every active frame
-        if (box) self.g.hit(self.box(box), s.dmg, { id: s.multi ? this.mid : swing, kb: s.kb, dir: self.face, from: self, shake: s.shake, fx: s.fx, up: s.up, heavy: s.heavy || s.dmg >= 3 || !!s.shake, finisher: idx != null && idx === (self.hero.attack.steps || []).length - 1 && idx > 0 });
+        if (box) self.g.hit(self.box(box), s.dmg, { id: s.multi ? this.mid : swing, kb, dir: self.face, from: self, shake: s.shake, fx: s.fx, up: s.up, heavy: s.heavy || s.dmg >= 3 || !!s.shake, finisher: idx != null && last && idx > 0, los: self.losPt(), multi: !!s.multi });
         // recovery: once the blow is over the move can be cancelled into the next hit, a dash, a skill or a jump
         if (t > this.lastActive && !this.cancellable) {
           this.cancellable = true;
@@ -418,7 +444,7 @@ class Player {
         if (this.ownsY) self.vy = 0;
         if (D.hit) {
           if (D.hit.multi && this.t % D.hit.multi === 0) this.mid = newSwing();
-          self.g.hit(self.box(D.hit.box), D.hit.dmg, { id: this.mid || sw, kb: D.hit.kb || 4, dir: self.face, from: self });
+          self.g.hit(self.box(D.hit.box), D.hit.dmg, { id: this.mid || sw, kb: D.hit.kb || 4, dir: self.face, from: self, los: self.losPt(), multi: !!D.hit.multi });
         }
         if (this.t % 2 === 0) { if (D.trail) self.g.burst(self.cx - self.face * 10, self.y + self.h * .6, D.trail, 1, .5); else self.g.afterimage(self); }
         if (this.t >= D.dur) { self.endAct(); self.vx *= .5; }
@@ -525,7 +551,7 @@ class Player {
         if (!this.spend(S.cost)) return;
         this.anim.play(S.pose, S.loopPose ? null : S.dur, true); sfx().big();
         this.act = { kind: 'spin', t: 0, pose: S.pose, slow: S.front ? 0 : .6, hover: !!S.hover, canTurn: !S.front,
-          update() { this.t++; if (this.t % S.every === 1) { sfx().swing(); g.hit(S.front ? self.box(S.box) : { x: self.cx + S.box[0], y: self.feet + S.box[1], w: S.box[2], h: S.box[3] }, S.dmg, { id: newSwing(), kb: 2, dir: self.face, from: self }); }
+          update() { this.t++; if (this.t % S.every === 1) { sfx().swing(); g.hit(S.front ? self.box(S.box) : { x: self.cx + S.box[0], y: self.feet + S.box[1], w: S.box[2], h: S.box[3] }, S.dmg, { id: newSwing(), kb: 2, dir: self.face, from: self, los: self.losPt(), multi: true }); }
             if (S.hover && self.vy > 1) self.vy = 1;
             if (this.t >= S.dur) self.endAct(); } };
         break;
@@ -582,7 +608,7 @@ class Player {
         if (!this.spend(S.cost)) return;
         this.anim.play(S.pose, S.dur, true); g.text(this.cx, this.y - 10, S.name, '#ff4a6a', 60, true);
         this.act = { kind: 'burst', t: 0, pose: S.pose, slow: 0,
-          update() { if (++this.t === S.at) { g.fx(S.fx, self.cx, self.feet - 34, { scale: .7 }); g.hit({ x: self.cx - S.r, y: self.feet - S.r, w: S.r * 2, h: S.r + 10 }, S.dmg, { id: newSwing(), kb: 7, dir: 0, from: self, fx: 'spark' }); g.shake(5); sfx().boom(); }
+          update() { if (++this.t === S.at) { g.fx(S.fx, self.cx, self.feet - 34, { scale: .7 }); g.hit({ x: self.cx - S.r, y: self.feet - S.r, w: S.r * 2, h: S.r + 10 }, S.dmg, { id: newSwing(), kb: 7, dir: 0, from: self, fx: 'spark', los: self.losPt(), heavy: true }); g.shake(5); sfx().boom(); }
             if (this.t >= S.dur) self.endAct(); } };
         break;
       }
@@ -636,7 +662,7 @@ class Player {
         this.phase = 'land'; this.lt = 0; this.pose = S.drop ? 'idle' : 'slamLand'; self.anim.play(this.pose, 24, true);
         if (S.booms) for (let i = 0; i < S.booms; i++) { const x = self.cx + (i - (S.booms - 1) / 2) * 44; g.fx({ frames: self.anim.sheet.frames('boom') || PLAT.fxSheet(PLAT.FXDEF.boom), rate: 3, scale: 2 }, x, self.feet - 20, {}); }
         const w = S.wave; g.shake(6); g.hitstop(3); sfx().boom();
-        g.hit({ x: self.cx - w.r, y: self.feet - w.h, w: w.r * 2, h: w.h + 6 }, w.dmg, { id: newSwing(), kb: 7, dir: 0, from: self, up: true, heavy: true });
+        g.hit({ x: self.cx - w.r, y: self.feet - w.h, w: w.r * 2, h: w.h + 6 }, w.dmg, { id: newSwing(), kb: 7, dir: 0, from: self, up: true, los: self.losPt(), heavy: true });
         g.fx('ground', self.cx - 30, self.feet - 34, { scale: .32 }); g.fx('ground', self.cx + 30, self.feet - 34, { scale: .32, flip: true });
         for (let i = 0; i < 18; i++) g.burst(self.cx + U.rnd(-w.r, w.r), self.feet - 2, i % 2 ? '#ff6a2a' : '#ffd060', 1, 2.5);
       } };
@@ -722,12 +748,12 @@ class Player {
     this.vx = dir * kb; this.vy = -4.4; this.jumping = false;
     sfx().hurt(); PLAT.haptic('hurt'); this.g.shake(3); this.g.hitstop(4); this.g.burst(this.cx, this.y + 16, '#ff5a6a', 10, 2.4);
     if (dmg > 0) this.g.text(this.cx, this.y - 6, '-' + dmg, '#ff6a7a', 40);
-    this.g.stats.hits++; this.gainUlt(8);
+    this.g.stats.hits++; this.gainUlt(8); this.g.hurtT = 18; this.g.chain = 0; this.g.chainT = 0; this.queued = false;
     if (this.hp <= 0) this.die();
     return 'hit';
   }
   die() {
-    if (this.dead) return; this.dead = true; this.deadT = 0; this.act = null; this.hurtT = 0; this.vy = -6; this.vx = -this.face * 1.2;
+    if (this.dead) return; this.dead = true; this.deadT = 0; if (this.act) this.endAct(); this.hurtT = 0; this.vy = -6; this.vx = -this.face * 1.2;
     sfx().die(); this.anim.play('dead', null, true);
   }
   heal(n) { this.hp = Math.min(this.maxHp, this.hp + n); }

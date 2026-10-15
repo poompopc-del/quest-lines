@@ -9,6 +9,8 @@
     "dev": "node server.mjs",
     "build": "echo \"Static site - nothing to build\"",
     "validate:levels": "node tools/plat-validate.mjs",
-    "check:assets": "python3 tools/plat-assets.py"
+    "check:assets": "python3 tools/plat-assets.py",
+    "test:combat": "node tools/plat-combat-test.mjs",
+    "test:platform": "node tools/plat-validate.mjs && python3 tools/plat-assets.py && node tools/plat-combat-test.mjs"
   }
 }
