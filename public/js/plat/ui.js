@@ -13,7 +13,7 @@ const PLAT = window.PLAT, C = PLAT.C, U = PLAT.U, S = PLAT.save, input = PLAT.in
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const RANKV = { S: 4, A: 3, B: 2, C: 1 };
 
-const app = PLAT.app = { game: null, screen: 'title', prev: [], selHero: null, raf: 0, last: 0, acc: 0, previews: [] };
+const app = PLAT.app = { game: null, screen: 'title', prev: [], selHero: null, raf: 0, last: 0, acc: 0, previews: [], busy: false, lastGo: 0, cv: null, ctx: null };
 
 /* -------------------------------- boot -------------------------------- */
 function boot() {
@@ -21,7 +21,11 @@ function boot() {
   if (S.data.settings.sfx == null) S.data.settings.sfx = Math.round(S.mainVolume() * 100);
   PLAT.sfx.vol = S.data.settings.sfx / 100;
   if (!heroAvailable(S.data.hero)) S.data.hero = 'knight';
-  input.attach(); input.bindTouch($('#btns')); input.bindPad($('#dpad'));
+  input.attach(); input.bindTouch($('#btns'));
+  app.joy = input.bindJoystick($('#joy'), $('#joy .jbase'), $('#joy .jknob'), { get: () => S.data.settings.joy });
+  // every input reset (lost focus, pause, menus, restart) also drops the hero's held charge / buffered presses — nothing fires on resume
+  input.onReset = () => { if (app.game) app.game.onInputReset(); $$('#btns .on').forEach(b => b.classList.remove('on')); };
+  app.cv = $('#cv'); app.ctx = app.cv.getContext('2d');
   input.onDevice = d => { document.documentElement.dataset.dev = d; syncTouch(app.screen === 'game'); refreshGlyphs(); };
   input.onPad = pad => {
     refreshGlyphs(); syncTouch(app.screen === 'game'); refreshTitle(); renderPadStatus();
@@ -36,10 +40,15 @@ function boot() {
   $$('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
   $('#hPause').addEventListener('click', () => pause());
   document.addEventListener('pointerdown', () => PLAT.sfx.unlock(), { once: true });
+  // iOS Safari ignores user-scalable=no: block pinch / double-tap zoom so a two-finger press never zooms the game
+  document.addEventListener('gesturestart', e => e.preventDefault()); document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
   addEventListener('keydown', menuKeys);
   addEventListener('resize', resize); addEventListener('orientationchange', () => setTimeout(resize, 200));
-  document.addEventListener('visibilitychange', () => { if (document.hidden && app.game && app.game.mode === 'play') pause(); });
-  addEventListener('pagehide', () => { input.detach(); cancelAnimationFrame(app.raf); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && app.game && app.game.mode === 'play') pause(); if (!document.hidden) app.last = performance.now(); });
+  addEventListener('blur', () => { if (app.game && app.game.mode === 'play' && app.screen === 'game') pause(); });
+  addEventListener('pagehide', () => { if (app.game && app.game.endlessWorld && app.game.mode === 'play') recordEndless(app.game.result(), true); input.detach(); cancelAnimationFrame(app.raf); });
+  $('#plCancel').addEventListener('click', () => stopListen('ยกเลิกแล้ว'));
+  $('#padDefaults').addEventListener('click', () => { input.setPadMap(PLAT.PAD.copy(PLAT.PAD.DEFAULT)); S.data.settings.padMap = null; S.persist(); renderPadMap(); refreshGlyphs(); notify('🎮 คืนค่าปุ่มจอยเริ่มต้นแล้ว'); PLAT.sfx.checkpoint(); });
   setupSettings(); refreshFullBtn(); applyBtnSize(); renderPadStatus();
   document.documentElement.dataset.dev = input.lastDevice;
   resize(); show('title'); refreshTitle();
@@ -47,44 +56,62 @@ function boot() {
 }
 
 /* -------------------------------- screens -------------------------------- */
+const SCREENS = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', endless: 'sEndless', over: 'sOver', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings', loading: 'sLoading' };
 function show(name, push) {
+  if (name !== app.screen) input.reset('screen');                     // switching screens never leaves a button held
   if (push && app.screen !== name) app.prev.push(app.screen);
   app.screen = name;
   $$('.screen').forEach(s => s.classList.remove('on'));
-  const id = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings', loading: 'sLoading' }[name];
+  const id = SCREENS[name];
   if (id) $('#' + id).classList.add('on');
   const playing = name === 'game';
-  $('#hud').classList.toggle('on', !!app.game && ['game', 'pause', 'dead', 'clear'].includes(name));
+  $('#hud').classList.toggle('on', !!app.game && ['game', 'pause', 'dead', 'clear', 'over'].includes(name));
   syncTouch(playing);
   if (name === 'heroes') renderHeroes();
   if (name === 'map') renderMap();
+  if (name === 'endless') renderEndless();
   if (name === 'title') refreshTitle();
+  if (name === 'settings') { renderPadStatus(); renderPadMap(); }
+  if (name !== 'settings' && input.capture) stopListen();
   const first = id && $('#' + id + ' .btn.red, #' + id + ' .btn');
   if (first && (input.lastDevice === 'pad' || input.lastDevice === 'key')) setTimeout(() => first.focus({ preventScroll: true }), 30);
 }
 function go(where) {
+  // a double tap / double click on a menu button must not start (or restart) twice
+  const now = performance.now(); if (now - app.lastGo < 280 && where === app.lastWhere) return; app.lastGo = now; app.lastWhere = where;
   PLAT.sfx.select();
   switch (where) {
     case 'map': quitGame(); show('map'); break;
+    case 'endless': quitGame(); show('endless'); break;
+    case 'endlessAgain': if (app.game && app.game.endlessWorld) { app.game.restart(); setupHud(app.game); show('game'); toast('∞ ' + app.game.spec.name, 'รอบใหม่ · ด่านใหม่ทั้งหมด'); } break;
+    case 'endlessSeed': if (app.game && app.game.endlessWorld) { app.game.restart(app.game.seed); setupHud(app.game); show('game'); toast('∞ ' + app.game.spec.name, 'เล่นซ้ำด่านเดิม (ซีด ' + app.game.seed + ')'); } break;
     case 'heroes': show('heroes', true); break;
     case 'settings': show('settings', true); break;
     case 'title': show('title'); break;
     case 'back': show(app.prev.pop() || 'title'); break;
     case 'main': quitGame(); input.detach(); location.href = 'index.html'; break;
     case 'resume': resume(); break;
-    case 'retryCp': if (app.game) { app.game.respawn(); show('game'); } break;
-    case 'restart': if (app.game) startLevel(app.game.levelId); break;
+    case 'retryCp': if (app.game && !app.game.endlessWorld) { app.game.respawn(); show('game'); } break;
+    case 'restart': if (app.game) { if (app.game.endlessWorld) { recordEndless(app.game.result(), true); go2('endlessAgain'); } else startLevel(app.game.levelId); } break;
     case 'next': { const i = PLAT.LEVEL_ORDER.indexOf(app.game && app.game.levelId); const n = PLAT.LEVEL_ORDER[i + 1]; if (n && levelUnlocked(n)) startLevel(n); else { quitGame(); show('map'); } break; }
   }
 }
+function go2(w) { app.lastGo = 0; go(w); }
 function menuKeys(e) {
+  if (input.capture && e.code === 'Escape') { e.preventDefault(); stopListen('ยกเลิกแล้ว'); return; }
   // ` toggles the combat debug overlay — only for developers (main game's dev mode, or ?debug=1 in the URL)
   if (e.code === 'Backquote' && (S.devOn() || /[?&]debug=1\b/.test(location.search))) { PLAT.debug.on = !PLAT.debug.on; PLAT.debug.boxes = []; PLAT.debug.log = []; notify('🛠 Debug ' + (PLAT.debug.on ? 'ON' : 'OFF'), PLAT.debug.on ? 'กล่องโจมตี / กล่องรับดาเมจ / สถานะ / เหตุผลที่ตีไม่เข้า' : ''); return; }
   if (app.screen === 'game') return;
-  if (e.code === 'Escape') { e.preventDefault(); if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes') go('back'); else if (app.screen === 'map') show('title'); }
+  if (e.code === 'Escape') { e.preventDefault(); if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes') go('back'); else if (app.screen === 'map' || app.screen === 'endless') show('title'); }
 }
-function pause() { if (!app.game || app.game.mode !== 'play') return; app.game.mode = 'paused'; $('#pSub').textContent = `${app.game.levelId} ${app.game.spec.name} · ${PLAT.HEROES[app.game.heroId].name}`; show('pause'); input.clearAll(); }
-function resume() { if (!app.game) return; if (app.game.mode === 'paused') app.game.mode = 'play'; app.game.held_ = null; input.clearAll(); show('game'); }
+function pause() {
+  const g = app.game; if (!g || g.mode !== 'play') return; g.mode = 'paused';
+  $('#pSub').textContent = g.endlessWorld ? `∞ ${g.spec.name} · ${g.runner.dist} ม. · LV ${g.runner.tier} · ${PLAT.HEROES[g.heroId].name}` : `${g.levelId} ${g.spec.name} · ${PLAT.HEROES[g.heroId].name}`;
+  $('#pRetry').style.display = g.endlessWorld ? 'none' : ''; $('#pRestart').textContent = g.endlessWorld ? '⟲ เริ่มรอบใหม่ (ด่านใหม่)' : '⟲ เริ่มด่านใหม่';
+  $('#pExit').textContent = g.endlessWorld ? '∞ ออก (บันทึกสถิติรอบนี้)' : '🗺 ออกไปแผนที่'; $('#pExit').dataset.go = g.endlessWorld ? 'endless' : 'map';
+  show('pause'); input.reset('pause');
+}
+function resume() { if (!app.game) return; if (app.game.mode === 'paused') app.game.mode = 'play'; input.reset('resume'); app.acc = 0; app.last = performance.now(); show('game'); }
 
 /* ---------------------------- menu navigation ----------------------------
    D-pad / stick / arrow keys move the focus to the nearest button in that direction,
@@ -109,7 +136,7 @@ function moveFocus(dx, dy) {
   if (best) { best.focus(); best.scrollIntoView({ block: 'nearest', inline: 'nearest' }); PLAT.sfx.select(); }
 }
 function menuNav() {
-  if (app.screen === 'game' || app.screen === 'loading') return;
+  if (app.screen === 'game' || app.screen === 'loading' || input.capture) return;
   const P = a => input.wasPressed(a), cur = document.activeElement;
   if (cur && cur.type === 'range' && (P('left') || P('right'))) {
     cur.value = +cur.value + (P('right') ? 1 : -1) * (+cur.step || 1) * 2; cur.dispatchEvent(new Event('input')); cur.dispatchEvent(new Event('change')); return;
@@ -118,7 +145,7 @@ function menuNav() {
   else if (P('ok')) { const root = screenEl(); if (root && cur && root.contains(cur) && cur.tagName === 'BUTTON') cur.click(); else moveFocus(0, 1); }
   else if (P('back') || (P('pause') && app.screen === 'pause')) {
     if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes') go('back');
-    else if (app.screen === 'map') show('title'); else if (app.screen === 'dead') go('retryCp');
+    else if (app.screen === 'map' || app.screen === 'endless') show('title'); else if (app.screen === 'dead') go('retryCp');
   }
   else return;
   input.endFrame();              // a menu press is used up here — it must not also reach the game this frame
@@ -138,26 +165,68 @@ function refreshFullBtn() {
 }
 
 /* ------------------------- controls: glyphs & pad info ------------------------- */
-const GLYPH = { key: { a: 'J', s: 'I', d: 'L', j: 'Space' }, pad: { a: 'X', s: 'Y', d: 'B', j: 'A' } };
+// the pad glyphs follow the player's own button mapping (Settings → จอยเกม)
+const shortPad = a => { const b = (input.padMap[a] || [])[0]; return b == null ? '—' : PLAT.PAD.name(b, !input.pad || input.pad.standard).split(' / ')[0].split(' (')[0]; };
+const GLYPH = { key: { a: 'J', s: 'I', d: 'L', j: 'Space' }, get pad() { return { a: shortPad('attack'), s: shortPad('skill'), d: shortPad('dash'), j: shortPad('jump') }; } };
 function refreshGlyphs() {
   const g = input.lastDevice === 'pad' || (input.pad && input.lastDevice !== 'touch' && input.lastDevice !== 'key') ? GLYPH.pad : GLYPH.key;
   $$('#hAbil kbd').forEach((k, i) => k.textContent = [g.a, g.s, g.d][i] || k.textContent);
 }
 function renderPadStatus() {
   const el = $('#padStatus'); if (!el) return;
-  el.innerHTML = input.pad ? `🎮 เชื่อมต่อแล้ว: <b>${String(input.pad.name).replace(/[<>&]/g, '').slice(0, 60)}</b>${input.pad.standard ? '' : ' <span class="chip">ปุ่มอาจสลับตำแหน่ง (จอยไม่ใช่แบบมาตรฐาน)</span>'}`
-    : '🎮 ยังไม่พบจอย — ต่อ Bluetooth/USB แล้ว<b>กดปุ่มใดก็ได้ 1 ครั้ง</b> เกมจะเจอเอง';
+  if (!navigator.getGamepads) { el.innerHTML = '🎮 เบราว์เซอร์นี้ไม่รองรับจอยเกม (Gamepad API) — ใช้คีย์บอร์ดหรือปุ่มบนจอแทน'; return; }
+  const P = input.pad;
+  el.innerHTML = P ? `🎮 เชื่อมต่อแล้ว: <b>${String(P.name).replace(/[<>&]/g, '').slice(0, 60)}</b> · ${P.buttons} ปุ่ม${P.standard ? ' · แบบมาตรฐาน' : ' <span class="chip">จอยไม่ใช่แบบมาตรฐาน: ชื่อปุ่มอาจไม่ตรงกับที่เห็นบนจอย — กดดูไฟที่แถวด้านล่าง</span>'}${P.rumble ? '' : ' · <span class="chip">จอย/เบราว์เซอร์นี้ไม่รองรับการสั่น</span>'}`
+    : '🎮 ยังไม่พบจอย — ต่อ Bluetooth/USB แล้ว<b>กดปุ่มใดก็ได้ 1 ครั้ง</b> เกมจะเจอเอง (เบราว์เซอร์จะไม่บอกว่ามีจอยจนกว่าจะกดปุ่ม)';
+}
+/* ------------------------------ controller remap ------------------------------ */
+const PAD_LABEL = { jump: 'กระโดด', attack: 'โจมตี / ยิง (ค้าง = ชาร์จ)', skill: 'สกิล', dash: 'พุ่ง / แดช', swap: 'เปลี่ยนเกราะ (X)', pause: 'หยุดเกม' };
+function renderPadMap() {
+  const box = $('#padRemap'); if (!box) return;
+  const std = !input.pad || input.pad.standard;
+  box.innerHTML = PLAT.PAD.ACTIONS.map(a => `<div class="rm" data-a="${a}"><span class="an">${PAD_LABEL[a]}${PLAT.PAD.CRITICAL.includes(a) ? ' <span class="chip">จำเป็น</span>' : ''}</span><span class="bn">${(input.padMap[a] || []).map(b => PLAT.PAD.name(b, std)).join(' · ') || '— ไม่มี —'}</span><button class="btn" data-bind="${a}" ${input.pad ? '' : 'disabled'}>${input.pad ? 'ตั้งปุ่ม' : 'ต่อจอยก่อน'}</button></div>`).join('');
+  $$('#padRemap [data-bind]').forEach(b => b.addEventListener('click', () => startListen(b.dataset.bind)));
+}
+let listenT = 0, listenFor = null;
+function startListen(action) {
+  if (!input.pad) { notify('🎮 ยังไม่พบจอย', 'กดปุ่มบนจอย 1 ครั้งเพื่อเชื่อมต่อ'); return; }
+  listenFor = action; $('#plTitle').textContent = 'กดปุ่มบนจอย…'; $('#plSub').innerHTML = `ปุ่มใหม่สำหรับ <b>${PAD_LABEL[action]}</b> · ปล่อยทุกปุ่มก่อน แล้วกดปุ่มที่ต้องการ 1 ครั้ง`; $('#plMsg').textContent = '';
+  $('#padListen').classList.add('on'); setTimeout(() => $('#plCancel').focus(), 30);
+  const arm = () => { input.clearAll(); input.capture = { armed: false, cb: onCaptured }; clearTimeout(listenT); listenT = setTimeout(() => stopListen('หมดเวลา — ไม่ได้เปลี่ยนปุ่ม'), 10000); };
+  const onCaptured = (b, pad) => {
+    const res = PLAT.PAD.bind(input.padMap, action, b, pad && pad.buttons ? pad.buttons.length : 0);
+    if (!res.ok) { $('#plMsg').textContent = `✗ ${PLAT.PAD.name(b, input.pad && input.pad.standard)}: ${res.msg}`; PLAT.sfx.denied(); arm(); return; }
+    input.padMap = res.map; S.data.settings.padMap = res.map; S.persist();
+    const nm = PLAT.PAD.name(b, input.pad && input.pad.standard);
+    stopListen(); renderPadMap(); refreshGlyphs(); PLAT.sfx.checkpoint();
+    notify(`🎮 ${PAD_LABEL[action]} = ${nm}`, res.swapped ? `ปุ่มนี้เคยเป็นของ "${PAD_LABEL[res.swapped]}" — สลับให้แล้ว: ${PAD_LABEL[res.swapped]} = ${(res.map[res.swapped] || []).map(x => PLAT.PAD.name(x, input.pad && input.pad.standard)).join(' · ')}` : '');
+  };
+  arm();
+}
+function stopListen(msg) {
+  const was = !!input.capture || $('#padListen').classList.contains('on');
+  input.capture = null; clearTimeout(listenT); $('#padListen').classList.remove('on'); listenFor = null;
+  if (was && msg) notify('🎮 ' + msg);
+  input.reset('remap');
+}
+// Settings: the rows light up while their button is held (shows which physical button is which)
+let padHot = '';
+function padLive() {
+  if (app.screen !== 'settings' || !input.pad) return;
+  const down = input.padDown(), hot = PLAT.PAD.ACTIONS.filter(a => (input.padMap[a] || []).some(b => down.includes(b))).join(',');
+  if (hot === padHot) return; padHot = hot;
+  $$('#padRemap .rm').forEach(r => r.classList.toggle('hot', hot.split(',').includes(r.dataset.a)));
 }
 // sign texts name buttons as {JUMP} {ATK} {SKL} {DSH} — shown as the keys / pad buttons / touch icons in use
 function signText(t) {
   const dev = input.lastDevice === 'pad' ? 'pad' : input.lastDevice === 'touch' || (input.lastDevice === 'none' && isPhone()) ? 'touch' : 'key';
-  const M = { key: { JUMP: 'Space', ATK: 'J', SKL: 'I', DSH: 'L' }, pad: { JUMP: 'Ⓐ', ATK: 'Ⓧ', SKL: 'Ⓨ', DSH: 'Ⓑ' }, touch: { JUMP: '⤒', ATK: '⚔', SKL: '✦', DSH: '»' } }[dev];
+  const M = { key: { JUMP: 'Space', ATK: 'J', SKL: 'I', DSH: 'L' }, pad: { JUMP: shortPad('jump'), ATK: shortPad('attack'), SKL: shortPad('skill'), DSH: shortPad('dash') }, touch: { JUMP: '⤒', ATK: '⚔', SKL: '✦', DSH: '»' } }[dev];
   return t.replace(/\{(JUMP|ATK|SKL|DSH)\}/g, (_, k) => M[k]);
 }
 // how to fire each hero's ultimate, written for the device in use
 function ultHint(input) {
   const dev = PLAT.input.lastDevice === 'pad' ? 'pad' : 'key';
-  const K = dev === 'pad' ? { A: 'Ⓧ', S: 'Ⓨ', D: 'Ⓑ' } : { A: 'J', S: 'I', D: 'L' };
+  const K = dev === 'pad' ? { A: shortPad('attack'), S: shortPad('skill'), D: shortPad('dash') } : { A: 'J', S: 'I', D: 'L' };
   return { 'du+A': `↓ ↑ + ${K.A}`, 'dd+A': `↓ ↓ + ${K.A}`, 'S+A': `${K.S} + ${K.A} พร้อมกัน`, 'D+A': `${K.D} + ${K.A} พร้อมกัน`, 'S+D': `${K.S} + ${K.D} พร้อมกัน`,
     'u+S': `↑ + ${K.S}`, 'dS_air': `กลางอากาศ ↓ + ${K.S}`, 'SS': `${K.S} ${K.S} (กดสองครั้งเร็ว ๆ)`, 'holdS': `กด ${K.S} ค้าง แล้วปล่อย` }[input] || '';
 }
@@ -288,10 +357,19 @@ function renderMap() {
     }
     box.appendChild(div);
   }
+  const e = document.createElement('div'); e.className = 'world';
+  const best = [1, 2, 3].map(k => S.endlessRec(k).bestDist || 0);
+  e.innerHTML = `<div class="wn"><span>∞ โหมดไม่สิ้นสุด (Endless)</span><span class="chip gold">ไกลสุด ${best.map(b => b + ' ม.').join(' · ')}</span></div><button class="btn gold block">∞ เลือกโลกแล้ววิ่งไม่หยุด</button>`;
+  e.querySelector('button').addEventListener('click', () => go('endless'));
+  box.appendChild(e);
 }
 
 /* ------------------------------ level session ------------------------------ */
 async function startLevel(id) {
+  if (app.busy) return; app.busy = true;
+  try { await startLevel_(id); } finally { app.busy = false; }
+}
+async function startLevel_(id) {
   quitGame();
   const L = PLAT.LEVELS[id], heroId = heroAvailable(S.data.hero) ? S.data.hero : 'knight';
   $('#lTitle').textContent = `${id} · ${L.name}`; $('#lSub').textContent = L.teach || ''; $('#lBar').style.width = '0%';
@@ -306,7 +384,29 @@ async function startLevel(id) {
   toast(`${id} ${L.name}`, L.teach);
   if (PLAT.assets.failed.length) console.warn('[platform] missing assets:', PLAT.assets.failed);
 }
-function quitGame() { if (app.game) { app.game.mode = 'loading'; app.game = null; } $('#hud').classList.remove('on'); $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on'); }
+/* ENDLESS: one run per world. Loading uses the same loader / hero as the story levels. */
+async function startEndless(world, seed) {
+  if (app.busy) return; app.busy = true;
+  try {
+    quitGame();
+    const heroId = heroAvailable(S.data.hero) ? S.data.hero : 'knight', W = PLAT.ENDLESS_WORLDS[world];
+    $('#lTitle').textContent = `∞ ${W.name}`; $('#lSub').textContent = W.th; $('#lBar').style.width = '0%';
+    show('loading');
+    const g = new PLAT.Game({ endless: world, seed, heroId, onEvent: onGameEvent });
+    app.game = g;
+    try { await g.load((d, n) => { $('#lBar').style.width = Math.round(d / n * 100) + '%'; }); }
+    catch (e) { console.error(e); $('#lTitle').textContent = 'โหลดไม่สำเร็จ'; $('#lSub').textContent = String(e.message || e); app.game = null; setTimeout(() => show('endless'), 2200); return; }
+    if (app.game !== g) { g.dispose(); return; }
+    setupHud(g); input.reset('start'); show('game');
+    toast('∞ ' + W.name, 'ไปให้ไกลที่สุด! · ยิ่งไกลยิ่งยาก');
+  } finally { app.busy = false; }
+}
+function quitGame() {
+  const g = app.game;
+  if (g) { if (g.endlessWorld && (g.mode === 'play' || g.mode === 'paused')) recordEndless(g.result(), true); g.dispose(); app.game = null; }
+  $('#hud').classList.remove('on'); $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on');
+  app.idleOf = null; app.stillOf = null;                               // menus repaint their plain backdrop once
+}
 function onGameEvent(type, d) {
   const g = app.game; if (!g) return;
   switch (type) {
@@ -317,6 +417,7 @@ function onGameEvent(type, d) {
     case 'toast': toast(d.text, d.sub); break;
     case 'dead': S.data.stats.deaths++; S.persist(); $('#dRetry').textContent = g.spec.boss ? '↺ ท้าบอสอีกครั้ง' : '↺ เกิดใหม่ที่เช็กพอยต์'; show('dead'); break;
     case 'clear': finishLevel(d); break;
+    case 'over': finishEndless(d); break;
   }
 }
 let toastT = 0;
@@ -326,9 +427,10 @@ function toast(a, b) { $('#hToast1').textContent = a || ''; $('#hToast2').textCo
 let hudCache = {};
 function setupHud(g) {
   const h = PLAT.HEROES[g.heroId];
-  $('#hLv').textContent = `${g.levelId} ${g.spec.name}`;
+  $('#hLv').textContent = g.endlessWorld ? `∞ ${g.spec.name}` : `${g.levelId} ${g.spec.name}`;
+  $('#hDist').classList.toggle('on', !!g.endlessWorld); $('#hTime').style.display = g.endlessWorld ? 'none' : '';
   $('#hHearts').innerHTML = Array.from({ length: g.player.maxHp }, () => '<i></i>').join('');
-  $('#hGems').innerHTML = g.spec.boss ? '' : Array.from({ length: g.L.gems.length }, () => '<i>💎</i>').join('');
+  $('#hGems').innerHTML = g.spec.boss || g.endlessWorld ? '' : Array.from({ length: g.L.gems.length }, () => '<i>💎</i>').join('');
   $('#hEnMark').style.left = (h.skill.cost || 0) + '%'; $('#hEnMark').style.display = h.skill.cost ? '' : 'none';
   $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
   $('#tA').textContent = h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'; $('#tS').textContent = shortName(h.skill.name); $('#tD').textContent = shortName(h.dash.name);
@@ -344,7 +446,8 @@ function updateHud(d) {
   set('en', Math.round(d.en), v => $('#hEn').style.width = v + '%');
   set('coins', d.coins, v => $('#hCoins').textContent = v);
   set('gems', d.gems.join(','), () => $$('#hGems i').forEach((el, i) => el.classList.toggle('on', d.gems.includes(i))));
-  set('time', Math.floor(d.frames / 6), () => $('#hTime').textContent = U.fmtTime(d.frames));
+  if (d.endless) set('dist', d.dist + '|' + d.tier + '|' + d.score, () => $('#hDist').innerHTML = `<b>${d.dist}</b> ม. · ${d.score.toLocaleString()} แต้ม<i>LV ${d.tier}</i>`);
+  else set('time', Math.floor(d.frames / 6), () => $('#hTime').textContent = U.fmtTime(d.frames));
   set('low', d.en < d.skillCost, v => { const el = $('#abS'); if (el) el.classList.toggle('low', v); });
   set('cd', Math.round(d.dashCd * 10), v => { const el = $('#abD'); if (el) { el.classList.toggle('cd', v > 0); el.style.setProperty('--cd', (v * 10) + '%'); } $('#btns .bd').style.setProperty('--cd', (v * 10) + '%'); });
   set('tlow', d.en < d.skillCost, v => $('#btns .bs').classList.toggle('low', v));
@@ -400,6 +503,50 @@ function finishLevel(r) {
   show('clear');
 }
 
+/* --------------------------------- endless --------------------------------- */
+function renderEndless() {
+  $('#eHero').textContent = PLAT.HEROES[S.data.hero].name;
+  const box = $('#eWorlds'); box.innerHTML = '';
+  for (const k of [1, 2, 3]) {
+    const W = PLAT.ENDLESS_WORLDS[k], r = S.endlessRec(k);
+    const b = document.createElement('button'); b.className = 'eworld'; b.style.setProperty('--wc', W.color);
+    b.innerHTML = `<div class="nm">โลก ${k} · ${W.name}</div><div class="th">${W.th}</div>
+      <div class="rec"><span>แต้มสูงสุด<br><b>${(r.best || 0).toLocaleString()}</b></span><span>ไกลสุด<br><b>${r.bestDist || 0} ม.</b></span><span>LV สูงสุด<br><b>${r.bestTier || '-'}</b></span><span>เล่นแล้ว<br><b>${r.runs || 0} รอบ</b></span></div>
+      <div class="go">▶ เริ่มวิ่ง</div>`;
+    b.addEventListener('click', () => { PLAT.sfx.select(); startEndless(k); });
+    box.appendChild(b);
+  }
+}
+/* stats of one finished (or abandoned) run → the Platform save. Returns { rec, newBest } */
+function recordEndless(r, quit) {
+  if (!r || !r.endless || r._saved) return null; r._saved = true;
+  const g = app.game; if (g && g._recorded === g.seed + ':' + g.stats.frames) return null; if (g) g._recorded = g.seed + ':' + g.stats.frames;
+  if (quit && r.dist < 5) return null;                                  // quitting at the start is not a run
+  const rec = S.endlessRec(r.endless), newBest = r.score > (rec.best || 0);
+  rec.runs = (rec.runs || 0) + 1; rec.totalDist = (rec.totalDist || 0) + r.dist; rec.kills = (rec.kills || 0) + r.kills; rec.coins = (rec.coins || 0) + r.coins; rec.lastSeed = r.seed;
+  if (newBest) { rec.best = r.score; rec.bestSeed = r.seed; rec.bestHero = r.heroId; }
+  if (r.dist > (rec.bestDist || 0)) rec.bestDist = r.dist;
+  if (r.tier > (rec.bestTier || 0)) rec.bestTier = r.tier;
+  S.data.stats.kills += r.kills; S.data.stats.coins += r.coins; S.data.stats.playFrames += r.frames; if (!quit) S.data.stats.deaths++;
+  S.persist();
+  return { rec, newBest };
+}
+function finishEndless(r) {
+  const res = recordEndless(r, false) || { rec: S.endlessRec(r.endless), newBest: false }, rec = res.rec, W = PLAT.ENDLESS_WORLDS[r.endless];
+  const dev = S.devOn() || PLAT.debug.on;
+  $('#overBox').innerHTML = `
+    <h2 class="kick" style="text-align:center;color:#ff8a8a">จบรอบ!</h2>
+    <p class="sub" style="text-align:center;margin:0">∞ ${W.name} · ${PLAT.HEROES[r.heroId].name}</p>
+    <div class="bigdist">${r.dist}<small> ม.</small></div>
+    ${res.newBest ? '<div class="newbest">★ สถิติใหม่!</div>' : ''}
+    <div class="kv"><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>ระดับ<b>LV ${r.tier}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div><div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div></div>
+    <div class="reward" style="color:var(--ink)">สถิติโลกนี้ · แต้มสูงสุด <b>${(rec.best || 0).toLocaleString()}</b> · ไกลสุด <b>${rec.bestDist || 0} ม.</b> · LV สูงสุด <b>${rec.bestTier || 1}</b> · เล่น ${rec.runs || 0} รอบ</div>
+    <p class="note" style="text-align:center">ซีดด่าน ${r.seed}${dev && r.gen ? ` · สร้าง ${r.gen.built} ชิ้น · ไม่ผ่านตรวจ ${r.gen.failed} · สำรอง ${r.gen.fallback}` : ''}</p>
+    <div class="menu" style="margin-top:6px"><button class="btn red" data-go2="endlessAgain">▶ เล่นอีกครั้ง (ด่านใหม่)</button><button class="btn" data-go2="endlessSeed">🎲 เล่นซ้ำด่านเดิม</button><button class="btn" data-go2="endless">∞ เลือกโลก</button><button class="btn" data-go2="map">🗺 แผนที่</button></div>`;
+  $$('#overBox [data-go2]').forEach(b => b.addEventListener('click', () => go(b.dataset.go2)));
+  show('over');
+}
+
 /* -------------------------------- settings -------------------------------- */
 function setupSettings() {
   const sl = $('#setSfx'); sl.value = S.data.settings.sfx;
@@ -411,6 +558,9 @@ function setupSettings() {
   seg('setTouch', 'touch', { to: v => v || 'auto', from: v => v });
   seg('setVib', 'vibrate', { to: v => v === false ? '0' : '1', from: v => v === '1' });
   seg('setSize', 'btnSize', { to: v => v || 'M', from: v => { setTimeout(applyBtnSize); return v; } });
+  const jseg = (el, key, parse) => { const sync = () => $$(`#${el} button`).forEach(b => b.classList.toggle('on', String(S.data.settings.joy[key]) === String(parse(b.dataset.v))));
+    $$(`#${el} button`).forEach(b => b.addEventListener('click', () => { S.data.settings.joy[key] = parse(b.dataset.v); S.persist(); sync(); PLAT.sfx.select(); })); sync(); };
+  jseg('setJoyMode', 'mode', v => v); jseg('setJoyDead', 'dead', v => +v);
 }
 function touchWanted() {
   const m = S.data.settings.touch || 'auto';
@@ -423,7 +573,7 @@ function touchWanted() {
 const isPhone = () => matchMedia && matchMedia('(pointer:coarse)').matches;
 function syncTouch(playing) {
   const on = playing && touchWanted();
-  if (!on) { input.releaseTouch(); $$('#btns .on').forEach(b => b.classList.remove('on')); $('#dpad').dataset.dir = ''; }   // never leave a hidden button held (keyboard/pad input untouched)
+  if (!on) { input.releaseTouch(); $$('#btns .on').forEach(b => b.classList.remove('on')); $('#joy').dataset.dir = ''; }   // never leave a hidden button / the stick held (keyboard/pad input untouched)
   $('#touch').classList.toggle('on', on); $('#hAbil').style.display = on ? 'none' : '';
   $('#rotHint').classList.toggle('need', playing && (on || isPhone()));
   document.documentElement.classList.toggle('touchui', on);
@@ -444,7 +594,7 @@ function tick(now) {
   app.raf = requestAnimationFrame(tick);
   const g = app.game, dt = Math.min(100, now - app.last); app.last = now;
   input.pollPad();
-  menuNav();
+  menuNav(); padLive();
   if (g && g.mode !== 'loading') {
     if (app.screen === 'game' && input.wasPressed('pause') && g.mode === 'play') { pause(); input.endFrame(); }
     if (app.screen === 'game' && (g.mode === 'play' || g.mode === 'clear' || (g.mode === 'dead'))) {
@@ -456,16 +606,21 @@ function tick(now) {
       }
       if (steps === 5) app.acc = 0;
     } else { app.acc = 0; input.endFrame(); }
-    const cv = $('#cv'), ctx = cv.getContext('2d');
-    try { g.render(ctx, cv.width / C.VW); } catch (e) { if (!app.renderErr) { app.renderErr = true; console.error('[platform] render error', e); } }
+    const cv = app.cv, ctx = app.ctx;
+    // a paused / dead / clear screen is a still frame: draw it once, not 60 times a second
+    const still = app.screen !== 'game' && g.mode !== 'clear';
+    if (!still || app.stillOf !== g.frame + ':' + cv.width) { app.stillOf = still ? g.frame + ':' + cv.width : null;
+      try { g.render(ctx, cv.width / C.VW); } catch (e) { if (!app.renderErr) { app.renderErr = true; console.error('[platform] render error', e); } } }
   } else {
     input.endFrame();
     if (app.previews.length) animatePreviews();
     // idle menu backdrop
-    const cv = $('#cv'), ctx = cv.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#08070f'; ctx.fillRect(0, 0, cv.width, cv.height);
+    const cv = app.cv, ctx = app.ctx; if (app.idleOf !== cv.width + 'x' + cv.height) { app.idleOf = cv.width + 'x' + cv.height; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#08070f'; ctx.fillRect(0, 0, cv.width, cv.height); }
   }
   if (g && app.previews.length && app.screen !== 'game') animatePreviews();
 }
 
+// small handle for tools/plat-v92-test.mjs (and the browser console): the same functions the buttons call
+app.api = { startLevel, startEndless, show, go, pause, resume, quitGame, syncTouch, renderPadMap, startListen, stopListen };
 boot();
 })();

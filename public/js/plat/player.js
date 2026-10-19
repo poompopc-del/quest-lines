@@ -73,7 +73,7 @@ class Player {
     else {
       this.startActions(inp, ax);
       if (h.attack.charge && this.charge > 0) {            // X: hold attack to charge the buster
-        if (inp.isHeld('attack')) { this.charge++; const A = h.attack; if (this.charge === A.charge[0].t || this.charge === A.charge[A.charge.length - 1].t) sfx().charge(); if (this.charge > A.charge[0].t && this.t % 3 === 0) g.burst(this.cx + U.rnd(-14, 14), this.feet - U.rnd(4, 40), this.charge >= A.charge[A.charge.length - 1].t ? '#ff7af0' : '#6ad8ff', 1, .4); }
+        if (inp.isHeld('attack')) { this.charge++; const A = h.attack; if (this.charge === A.charge[0].t || this.charge === A.charge[A.charge.length - 1].t) sfx().charge(); if (!(md && md.chargeFx) && this.charge > A.charge[0].t && this.t % 3 === 0) g.burst(this.cx + U.rnd(-14, 14), this.feet - U.rnd(4, 40), this.charge >= A.charge[A.charge.length - 1].t ? '#ff7af0' : '#6ad8ff', 1, .4); }
         else this.releaseCharge();
       }
       if (this.act) this.stepAct(inp, ax);
@@ -415,6 +415,12 @@ class Player {
         if (this.t >= dur) self.endAct();
         else if (this.t > (A.fireAt || 1) + 4) this.cancellable = true;
       } };
+  }
+  // input reset (pause / lost focus / menu / restart): drop every held-button state WITHOUT firing anything —
+  // releasing a charge here used to shoot the moment the game resumed (the button "came up" while paused)
+  cancelHeld() {
+    this.charge = 0; this.holdS = null; this.holdA = null; this.queued = false; this.pend = null; this.dashBuf = 0; this.skillBuf = 0; this.buffer = 0;
+    if (this.act && this.act.kind === 'rev') this.endAct();          // Sonic's spin-dash rev would launch on "release"
   }
   releaseCharge() {
     const A = this.hero.attack; if (!A.charge) return;
@@ -765,6 +771,8 @@ class Player {
   }
   die() {
     if (this.dead) return; this.dead = true; this.deadT = 0; if (this.act) this.endAct(); this.hurtT = 0; this.vy = -6; this.vx = -this.face * 1.2;
+    // a charge / held move must not survive death (X kept flashing his charge palette while dying)
+    this.charge = 0; this.holdS = null; this.holdA = null; this.queued = false; this.pend = null; this.dashBuf = 0; this.skillBuf = 0;
     sfx().die(); this.anim.play('dead', null, true);
     if (this.hero.mod && this.hero.mod.die) this.hero.mod.die(this);
   }

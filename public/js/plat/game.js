@@ -13,9 +13,17 @@
 const PLAT = G.PLAT, C = PLAT.C, U = PLAT.U, W = PLAT.world, T = C.T, TL = PLAT.TILE;
 const sfx = () => PLAT.sfx;
 
+/* remove dead entries IN PLACE (keeps the same array — the per-frame .filter() copies of every effect / shot /
+   particle list were the main source of garbage-collector pauses on long sessions) */
+function compact(a, keep) { let j = 0; for (let i = 0; i < a.length; i++) { const v = a[i]; if (keep(v)) a[j++] = v; } a.length = j; return a; }
+const notDead = o => !o.dead, alive = o => o.life > 0, notGot = o => !o.got, notDone = o => !o.done, notGone = e => !e.gone;
+const SLEEP_X = C.VW * 1.6;           // enemies further than this from the camera centre sleep (not updated) — never bosses
+
 class Game {
   constructor(opt) {
-    this.opt = opt; this.levelId = opt.levelId; this.heroId = opt.heroId; this.spec = PLAT.LEVELS[opt.levelId];
+    this.opt = opt; this.heroId = opt.heroId;
+    if (opt.endless) { this.endlessWorld = opt.endless; this.seed = (opt.seed >>> 0) || ((Math.random() * 4294967296) >>> 0); this.spec = PLAT.Endless.spec(opt.endless); this.levelId = this.spec.id; }
+    else { this.levelId = opt.levelId; this.spec = PLAT.LEVELS[opt.levelId]; }
     this.theme = PLAT.THEMES[this.spec.theme]; this.input = PLAT.input; this.emitFn = opt.onEvent || (() => {});
     this.sheets = new Map(); this.frame = 0; this.mode = 'loading';
   }
@@ -29,7 +37,7 @@ class Game {
     if (hdef.kind === 'atlas') { const atlas = await PLAT.assets.json(hdef.atlasSrc); if (!atlas) throw new Error('missing ' + hdef.atlasSrc); hdef = Object.assign({}, hdef, { atlas }); }
     this.heroSheet = new PLAT.Sheet(hdef);
     const L = this.L0spec = this.spec;
-    const types = new Set(W.buildLevel(L).spawns.map(s => s.type)); if (L.boss) types.add(L.boss);
+    const types = new Set(this.endlessWorld ? PLAT.Endless.enemyTypes(this.endlessWorld) : W.buildLevel(L).spawns.map(s => s.type)); if (L.boss) types.add(L.boss);
     const imgs = [...this.heroSheet.srcs()];
     for (const t of types) {
       const d = this.enemyDef(t);
@@ -46,10 +54,14 @@ class Game {
     const th = this.theme; [th.bg, th.wall, th.block, ...(th.decor || [])].forEach(s => s && imgs.push(s));
     if (PLAT.themeImages) imgs.push(...PLAT.themeImages(th));            // world art (art.js): layers, tileset, decor
     await PLAT.assets.loadAll(imgs, onProgress);
+    if (this.endlessWorld) PLAT.Endless.envelope();                      // movement envelope: recorded once, before play starts
     this.start();
   }
   start() {
-    const L = this.L = W.buildLevel(this.spec);
+    if (this.runner) this.runner.dispose();
+    this.runner = this.endlessWorld ? new PLAT.Endless.Runner(this, this.endlessWorld, this.seed) : null;
+    this.chunkCache = new Map(); this.chunkDirty = new Set();
+    const L = this.L = this.runner ? this.runner.init() : W.buildLevel(this.spec);
     if (this.spec.arena) { const a = this.spec.arena; L.arena = { x0: a.x0 * T, x1: a.x1 * T, top: a.top || 2 * T }; }
     this.player = new PLAT.Player(this, this.heroId, L.start, this.heroSheet);
     this.checkpoint = { x: L.start.x, y: L.start.y };
@@ -57,16 +69,49 @@ class Game {
     this.measureEnemies();
     this.enemies = L.spawns.map(s => PLAT.makeEnemy(this, s.type, s.x, s.y, s.elite));
     this.enemyTotal = this.enemies.length;
+    this.decor = [];
+    if (this.runner) for (const ch of L.chunks) this.runner.spawnChunk(ch);
     this.boss = null; this.bossActive = false;
     this.projs = []; this.fxs = []; this.parts = []; this.texts = []; this.loose = []; this.warns = []; this.ghosts = [];
     this.stats = { coins: 0, gems: new Set(), kills: 0, hits: 0, deaths: 0, frames: 0, maxChain: 0 };
     this.shakeT = 0; this.shakeMag = 0; this.freeze = 0; this.flashT = 0;
     this.cam = { x: 0, y: 0 }; this.snapCam();
-    this.buildDecor(); this.tileCache = null;
-    this.mode = 'play'; this.signNear = null; this.clearT = 0;
+    if (!this.runner) this.buildDecor(); this.tileCache = null;
+    this.mode = 'play'; this.signNear = null; this.clearT = 0; this.held_ = null; this.freeze = 0; this.chain = 0; this.chainT = 0; this.cut = null; this.hurtT = 0;
     if (this.spec.boss) this.emit('toast', { text: this.spec.name, sub: this.spec.teach });
     this.emit('hud', this.hudState());
   }
+  /* ENDLESS: a new run in place (same loaded assets, new seed) — Game Over → "play again" is instant */
+  restart(seed) { if (!this.endlessWorld) return; this.seed = (seed >>> 0) || ((Math.random() * 4294967296) >>> 0); this.start(); }
+  dispose() { if (this.runner) this.runner.dispose(); this.mode = 'loading'; }
+  // decor for one endless chunk (same look rules as buildDecor, seeded by the chunk)
+  decorChunk(ch) {
+    const L = this.L, th = this.theme, rnd = mulberry(ch.gi * 7919 + 13), base = ch.gi * PLAT.Endless.CW;
+    for (let tx = base + 1; tx < base + PLAT.Endless.CW - 1; tx++) for (let ty = 1; ty < L.h; ty++) {
+      if (W.tileAt(L, tx, ty) !== TL.GROUND || W.tileAt(L, tx, ty - 1) !== TL.EMPTY || W.tileAt(L, tx, ty - 2) !== TL.EMPTY) continue;
+      const r = rnd();
+      if (th.art && th.art.decor) {
+        if (r < .12 && !W.tilesIn(L, { x: tx * T - T, y: ty * T - 2 * T, w: 3 * T, h: 3 * T }, TL.SPIKE).length) {
+          const D = th.art.decor, tot = D.reduce((n, d) => n + d.w, 0); let k = rnd() * tot, d = D[0];
+          for (const it of D) { k -= it.w; if (k <= 0) { d = it; break; } }
+          this.decor.push({ img: d.img, x: tx * T + 16, y: ty * T, sc: d.s, flip: rnd() < .5 });
+        }
+      } else if (th.graves && r < .1) this.decor.push({ grave: true, x: tx * T + 16, y: ty * T, s: .8 + rnd() * .4, cross: rnd() < .4 });
+    }
+  }
+  // ENDLESS: the window slid one chunk — forget everything that was left behind (memory stays flat)
+  onWindowShift(dropped, added) {
+    const px0 = this.L.px0;
+    for (const e of this.enemies) if (!e.boss && e.x + e.w < px0 + 8) { e.gone = true; this.tokens.delete(e); }
+    compact(this.enemies, notGone);
+    compact(this.decor, d => d.x > px0 - 64);
+    compact(this.loose, c => c.x > px0);
+    for (const pr of this.projs) if (pr.x < px0 - 32) pr.dead = true; compact(this.projs, notDead);
+    if (dropped) this.chunkCache.delete(dropped.gi);
+    // the chunk before the new one is repainted too: its right-edge tiles may change look now that a neighbour exists
+    this.chunkCache.delete(added.gi - 1); this.chunkDirty.delete(dropped && dropped.gi);
+  }
+  onInputReset() { if (this.player) this.player.cancelHeld(); this.held_ = null; }
   /* enemy collision boxes come from the sprite's own pixels (idle frame), so what you see is what you hit */
   measureEnemies() {
     this.geom = this.geom || {};
@@ -103,12 +148,15 @@ class Game {
     if (this.mode === 'clear') { this.stepClear(); this.stepParts(); this.updateCamera(); return; }
     p.update(this.input);
     this.playerHazards();
+    if (this.runner) this.runner.step();
     if (this.spec.boss && !this.boss && !p.dead && p.cx > (L.arena ? L.arena.x0 + 5 * T : 6 * T)) this.spawnBoss();
-    for (const e of this.enemies) e.update();
+    // enemies far from the camera sleep (no AI / physics) — bosses and dying enemies always update
+    const camC = this.cam.x + C.VW / 2;
+    for (const e of this.enemies) { if (!e.boss && !e.dead && Math.abs(e.cx - camC) > SLEEP_X) continue; e.update(); }
     this.separate();
     for (const e of this.tokens) if (e.dead || e.gone || !this.enemies.includes(e)) this.tokens.delete(e);
     this.contacts();
-    this.enemies = this.enemies.filter(e => !e.gone);
+    compact(this.enemies, notGone);
     this.stepProjs(); this.stepPickups(); this.stepWarns(); this.stepParts();
     for (const s of L.springs) if (s.sq > 0) s.sq--;
     // signs
@@ -118,7 +166,7 @@ class Game {
     const ex = L.exit;
     if (ex && ex.open && !p.dead && U.overlap(p, ex)) this.beginClear();
     // death
-    if (p.dead && p.deadT === 70) { this.stats.deaths++; this.emit('dead', {}); this.mode = 'dead'; }
+    if (p.dead && p.deadT === 70) { this.stats.deaths++; this.mode = 'dead'; if (this.runner) this.emit('over', this.result()); else this.emit('dead', {}); }
     this.updateCamera();
     if (this.frame % 6 === 0) this.emit('hud', this.hudState());
   }
@@ -222,7 +270,7 @@ class Game {
     this.chain = (this.chainT > 0 ? this.chain || 0 : 0) + n; this.chainT = 90; if (this.chain > (this.stats.maxChain || 0)) this.stats.maxChain = this.chain;
     if (this.chain >= 3) {
       const p = this.player, col = this.chain >= 10 ? '#ff5ad8' : this.chain >= 6 ? '#ffd84a' : '#ffffff';
-      this.texts = this.texts.filter(t => !t.chain);
+      compact(this.texts, t => !t.chain);
       this.texts.push({ x: p.cx, y: p.y - 18, str: this.chain + ' HIT!', col, life: 50, max: 50, big: this.chain >= 6, chain: true });
     }
   }
@@ -245,7 +293,7 @@ class Game {
     }
   }
   breakTile(tx, ty) {
-    W.setTile(this.L, tx, ty, TL.EMPTY); this.tileCache = null; sfx().break(); this.shake(2);
+    W.setTile(this.L, tx, ty, TL.EMPTY); this.invalidateTiles(tx); sfx().break(); this.shake(2);
     for (let i = 0; i < 10; i++) this.parts.push({ x: tx * T + U.rnd(4, 28), y: ty * T + U.rnd(4, 28), vx: U.rnd(-2.5, 2.5), vy: U.rnd(-5, -1), life: 40, col: this.theme.brick, size: 4, grav: .3 });
   }
   onEnemyKilled(e) {
@@ -347,10 +395,12 @@ class Game {
         if (n) { if (d.hitFx) { this.fx(d.hitFx, pr.x + U.sign(pr.vx || pr.dir) * b.w * .4, pr.y, { flip: (pr.vx || pr.dir) < 0 }); pr.didFx = true; } pr.pierce -= n; if (pr.pierce < 0) this.killProj(pr); }
       }
     }
-    this.projs = this.projs.filter(q => !q.dead);
+    compact(this.projs, notDead);
     for (const f of this.fxs) { f.t++; if (f.vx || f.vy) { f.x += f.vx || 0; f.y += f.vy || 0; } if (f.star) { if (f.t > f.life) f.dead = true; } else if (f.life ? f.t >= f.life : !f.loop && f.t >= f.frames.length * f.rate) f.dead = true; }
-    this.fxs = this.fxs.filter(f => !f.dead);
-    for (const a of this.ghosts) a.life--; this.ghosts = this.ghosts.filter(a => a.life > 0);
+    compact(this.fxs, notDead);
+    if (this.fxs.length > 160) this.fxs.splice(0, this.fxs.length - 160);          // hard cap: a loop / follow effect can never pile up
+    for (const a of this.ghosts) a.life--; compact(this.ghosts, alive);
+    if (this.ghosts.length > 80) this.ghosts.splice(0, this.ghosts.length - 80);
   }
   killProj(pr) {
     if (pr.dead) return; pr.dead = true; const d = pr.def, ex = d.explode;
@@ -394,7 +444,8 @@ class Game {
       if (c.t > 14 && near(c.x, c.y, 6)) { c.got = true; if (c.kind === 'coin') { this.stats.coins++; sfx().coin(); } else this.collectHeart(c.x, c.y); }
       if (c.t > 600 || c.y > L.ph + 50) c.got = true;
     }
-    this.loose = this.loose.filter(c => !c.got);
+    compact(this.loose, notGot);
+    if (this.runner && L.coins.length > 400) compact(L.coins, notGot);
   }
   collectHeart(x, y) {
     const p = this.player;
@@ -402,7 +453,7 @@ class Game {
     sfx().heart(); this.burst(x, y, '#ff8aa0', 8, 1.8);
   }
   warn(x, y, frames, cb) { this.warns.push({ x, y, t: 0, frames, cb }); }
-  stepWarns() { for (const w of this.warns) if (++w.t >= w.frames) { w.done = true; w.cb && w.cb(); } this.warns = this.warns.filter(w => !w.done); }
+  stepWarns() { for (const w of this.warns) if (++w.t >= w.frames) { w.done = true; w.cb && w.cb(); } compact(this.warns, notDone); }
   floorBelow(x, y) {
     const tx = Math.floor(x / T);
     for (let ty = Math.max(0, Math.floor(y / T)); ty < this.L.h; ty++) if (W.solidAt(this.L, tx, ty) || W.tileAt(this.L, tx, ty) === TL.ONEWAY) return ty * T;
@@ -432,6 +483,11 @@ class Game {
   }
   result() {
     const s = this.stats, L = this.L, par = this.spec.par * 60;
+    if (this.runner) {
+      const R = this.runner;
+      return { endless: this.endlessWorld, levelId: this.levelId, heroId: this.heroId, seed: this.seed, dist: R.dist, tier: R.tier, score: R.score(s), frames: s.frames, coins: s.coins, kills: s.kills, hits: s.hits, maxChain: s.maxChain || 0,
+        gen: R.gen ? Object.assign({}, R.stats || R.gen.stats) : null, genLog: (R.log && R.log.length ? R.log : R.gen && R.gen.log || []).slice(-8) };
+    }
     const checks = [
       { id: 'time', th: `เวลา ≤ ${U.fmtTime(par)}`, ok: s.frames <= par },
       { id: 'hits', th: 'โดนโจมตี ≤ 2 ครั้ง', ok: s.hits <= 2 },
@@ -444,7 +500,8 @@ class Game {
   }
   hudState() {
     const p = this.player, L = this.L, h = p.hero;
-    return { hp: p.hp, maxHp: p.maxHp, en: p.en, coins: this.stats.coins, gems: [...this.stats.gems], gemTotal: L.gems.length, frames: this.stats.frames,
+    const R = this.runner;
+    return { endless: !!R, dist: R ? R.dist : 0, tier: R ? R.tier : 0, score: R ? R.score(this.stats) : 0, hp: p.hp, maxHp: p.maxHp, en: p.en, coins: this.stats.coins, gems: [...this.stats.gems], gemTotal: L.gems.length, frames: this.stats.frames,
       dashCd: h.dash && h.dash.cd ? p.cd.dash / h.dash.cd : 0, skillCost: h.skill ? (h.skill.cost || 0) : 0, ult: h.chargeBar ? h.chargeBar(p).pct : p.ult, ultLv: h.chargeBar ? h.chargeBar(p).lv : 0, chargeBar: !!h.chargeBar, superT: p.superT, mouth: !!p.mouth, heat: p.heat, streak: p.streak, charge: p.charge };
   }
 
@@ -468,9 +525,11 @@ class Game {
   }
   stepParts() {
     for (const q of this.parts) { q.x += q.vx; q.y += q.vy; q.vy += q.grav != null ? q.grav : .1; q.life--; }
-    this.parts = this.parts.filter(q => q.life > 0);
+    compact(this.parts, alive);
+    if (this.parts.length > 600) this.parts.splice(0, this.parts.length - 600);
     for (const t of this.texts) { t.life--; t.y -= t.big ? .25 : .55; }
-    this.texts = this.texts.filter(t => t.life > 0);
+    compact(this.texts, alive);
+    if (this.texts.length > 60) this.texts.splice(0, this.texts.length - 60);
     if (this.shakeT > 0) { this.shakeT--; if (this.shakeT === 0) this.shakeMag = 0; }
     if (this.flashT > 0) this.flashT--;
     if (this.hurtT > 0) this.hurtT--;
@@ -484,7 +543,7 @@ class Game {
     this.look = U.lerp(this.look || 0, p.face * 44 + p.vx * 10, .04);
     let tx = p.cx - VW / 2 + this.look, ty = p.feet - VH * .62;
     if (this.bossActive && L.arena) { tx = U.clamp(tx, L.arena.x0 - T, L.arena.x1 + T - VW); }
-    tx = U.clamp(tx, 0, Math.max(0, L.pw - VW)); ty = U.clamp(ty, 0, Math.max(0, L.ph - VH));
+    const left = L.px0 || 0; tx = U.clamp(tx, left, Math.max(left, L.pw - VW)); ty = U.clamp(ty, 0, Math.max(0, L.ph - VH));
     if (snap) { this.cam.x = tx; this.cam.y = ty; return; }
     this.cam.x += (tx - this.cam.x) * .14;
     const dy = ty - this.cam.y; this.cam.y += dy * (Math.abs(dy) > 60 ? .16 : .08);
@@ -534,7 +593,10 @@ class Game {
       const x = VW / 2 + Math.max(0, 30 - c.t * 4); ctx.strokeText(c.name, x, VH * .36 + 34); ctx.fillStyle = '#fff'; ctx.fillText(c.name, x, VH * .36 + 34); ctx.restore();
     }
     // getting hurt: a short red vignette at the screen edges (never covers the middle of the action)
-    if (this.hurtT > 0) { const a = this.hurtT / 18 * .55, gr = ctx.createRadialGradient(VW / 2, VH / 2, VH * .35, VW / 2, VH / 2, VW * .62); gr.addColorStop(0, 'rgba(255,30,50,0)'); gr.addColorStop(1, `rgba(255,30,50,${a})`); ctx.fillStyle = gr; ctx.fillRect(0, 0, VW, VH); }
+    if (this.hurtT > 0) {
+      if (!this.hurtGrad || this.hurtCtx !== ctx) { const gr = ctx.createRadialGradient(VW / 2, VH / 2, VH * .35, VW / 2, VH / 2, VW * .62); gr.addColorStop(0, 'rgba(255,30,50,0)'); gr.addColorStop(1, 'rgba(255,30,50,1)'); this.hurtGrad = gr; this.hurtCtx = ctx; }
+      ctx.globalAlpha = this.hurtT / 18 * .55; ctx.fillStyle = this.hurtGrad; ctx.fillRect(0, 0, VW, VH); ctx.globalAlpha = 1;
+    }
     if (this.mode === 'clear') { const a = Math.min(1, this.clearT / 60); ctx.fillStyle = `rgba(8,7,15,${a * .6})`; ctx.fillRect(0, 0, VW, VH); }
   }
   /* world art (art.js): parallax layers back → front. Each layer repeats sideways, moves at f × the
@@ -554,7 +616,8 @@ class Game {
   }
   drawBackground(ctx, cx, cy) {
     const th = this.theme, VW = C.VW, VH = C.VH, A = PLAT.assets;
-    const sky = ctx.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, th.sky[0]); sky.addColorStop(1, th.sky[1]); ctx.fillStyle = sky; ctx.fillRect(0, 0, VW, VH);
+    if (!this.skyGrad || this.skyCtx !== ctx) { const sky = ctx.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, th.sky[0]); sky.addColorStop(1, th.sky[1]); this.skyGrad = sky; this.skyCtx = ctx; }
+    ctx.fillStyle = this.skyGrad; ctx.fillRect(0, 0, VW, VH);
     if (th.art && th.art.layers && this.drawLayers(ctx, cx, cy, th.art.layers)) return;   // all layers loaded → the old drawn background is not needed
     const bg = th.bg && A.img(th.bg);
     if (th.bgFull && bg) {
@@ -610,15 +673,34 @@ class Game {
       else ctx.drawImage(im, d.x - im.width * s / 2, d.y - im.height * s + 2, im.width * s, im.height * s);
     }
   }
-  /* static tiles are drawn once into an offscreen canvas (world px) */
+  /* static tiles are drawn once into an offscreen canvas (world px). A normal level has ONE canvas (re-used when a
+     block breaks — it used to allocate a new level-sized canvas per broken block); an Endless run has one small
+     canvas per chunk, painted when the chunk arrives and dropped with it. */
+  invalidateTiles(tx) { if (this.runner) this.chunkDirty.add(Math.floor(tx / PLAT.Endless.CW)); else this.tileCache = null; }
   buildTileCache() {
+    const L = this.L;
+    let c = this.tileCanvas;
+    if (!c || c.width !== L.pw || c.height !== L.ph) { c = this.tileCanvas = document.createElement('canvas'); c.width = L.pw; c.height = L.ph; }
+    const g = c.getContext('2d'); g.clearRect(0, 0, c.width, c.height);
+    this.paintTiles(g, 0, L.w, 0);
+    this.tileCache = c; L.dirty = false;
+  }
+  chunkCanvas(gi) {
+    let c = this.chunkCache.get(gi);
+    if (c && !this.chunkDirty.has(gi)) return c;
+    const CW = PLAT.Endless.CW;
+    if (!c) { c = document.createElement('canvas'); c.width = CW * T; c.height = this.L.ph; } else c.getContext('2d').clearRect(0, 0, c.width, c.height);
+    this.paintTiles(c.getContext('2d'), gi * CW, gi * CW + CW, gi * CW * T);
+    this.chunkCache.set(gi, c); this.chunkDirty.delete(gi);
+    return c;
+  }
+  // paint world columns [gx0, gx1) with world x = ox drawn at canvas x 0
+  paintTiles(g, gx0, gx1, ox) {
     const L = this.L, th = this.theme;
-    const c = document.createElement('canvas'); c.width = L.pw; c.height = L.ph;
-    const g = c.getContext('2d');
     const solidish = (tx, ty) => { const t = W.tileAt(this.L, tx, ty); return t === TL.GROUND || t === TL.BRICK; };
-    if (th.art && th.art.tiles && this.tileArtReady(th.art.tiles)) { this.buildTileArt(g, th.art.tiles, solidish); this.tileCache = c; L.dirty = false; return; }
-    for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
-      const t = L.tiles[ty * L.w + tx], x = tx * T, y = ty * T;
+    if (th.art && th.art.tiles && this.tileArtReady(th.art.tiles)) { this.buildTileArt(g, th.art.tiles, solidish, gx0, gx1, ox); return; }
+    for (let ty = 0; ty < L.h; ty++) for (let tx = gx0; tx < gx1; tx++) {
+      const t = W.tileAt(L, tx, ty), x = tx * T - ox, y = ty * T;
       if (t === TL.GROUND) {
         g.fillStyle = th.ground; g.fillRect(x, y, T, T);
         g.fillStyle = th.groundDark; const h = (tx * 7 + ty * 13) % 5; g.fillRect(x + 4 + h, y + 12, 5, 3); g.fillRect(x + 18 - h, y + 22, 4, 3); g.fillRect(x + 10, y + 4 + h, 3, 2);
@@ -631,7 +713,6 @@ class Game {
         for (let i = 0; i < 4; i++) { g.fillStyle = '#d6dbe6'; g.beginPath(); g.moveTo(x + i * 8, y + T); g.lineTo(x + i * 8 + 4, y + 12); g.lineTo(x + i * 8 + 8, y + T); g.fill(); g.fillStyle = '#8a90a0'; g.fillRect(x + i * 8 + 4, y + 16, 1, T - 16); }
       }
     }
-    this.tileCache = c; L.dirty = false;
   }
   /* ---- world-art tiles (art.js stamps). Order: every tile body first, then the overhangs (grass that
      reaches above a top tile) so a row below never paints over them. Same tiles, same collision. */
@@ -649,11 +730,12 @@ class Game {
     const dw = r[2] * k, dh = r[3] * k, dx = x + (T - dw) / 2, dy = o.bottom ? y + T - dh : y - oy;
     g.drawImage(im, r[0], r[1], r[2], r[3], dx, dy, dw, dh); return true;
   }
-  buildTileArt(g, t, solidish) {
+  buildTileArt(g, t, solidish, gx0, gx1, ox) {
     const L = this.L, th = this.theme; g.imageSmoothingEnabled = false;
+    if (gx0 == null) { gx0 = 0; gx1 = L.w; ox = 0; }
     const tileT = (tx, ty) => W.tileAt(L, tx, ty), over = [];
-    for (let ty = 0; ty < L.h; ty++) for (let tx = 0; tx < L.w; tx++) {
-      const tt = L.tiles[ty * L.w + tx], x = tx * T, y = ty * T;
+    for (let ty = 0; ty < L.h; ty++) for (let tx = gx0; tx < gx1; tx++) {
+      const tt = tileT(tx, ty), x = tx * T - ox, y = ty * T;
       if (tt === TL.GROUND || tt === TL.BRICK) {
         const open = !solidish(tx, ty - 1), lOpen = !solidish(tx - 1, ty) && tileT(tx - 1, ty) !== TL.BREAK && tileT(tx - 1, ty) !== TL.CRUMBLE, rOpen = !solidish(tx + 1, ty) && tileT(tx + 1, ty) !== TL.BREAK && tileT(tx + 1, ty) !== TL.CRUMBLE;
         let st;
@@ -685,15 +767,25 @@ class Game {
   }
   drawTiles(ctx, cx, cy) {
     const L = this.L, th = this.theme, VW = C.VW, VH = C.VH, p = this.player;
-    if (!this.tileCache) this.buildTileCache();
-    const x0 = Math.max(0, Math.floor(cx)), y0 = Math.max(0, Math.floor(cy)), w = Math.min(VW + 2, L.pw - x0), h = Math.min(VH + 2, L.ph - y0);
-    if (w > 0 && h > 0) ctx.drawImage(this.tileCache, x0, y0, w, h, x0, y0, w, h);
+    if (this.runner) {
+      const CW = PLAT.Endless.CW, cw = CW * T, y0 = Math.max(0, Math.floor(cy)), h = Math.min(VH + 2, L.ph - y0);
+      for (const ch of L.chunks) {
+        const cx0 = ch.gi * cw; if (cx0 > cx + VW + 2 || cx0 + cw < cx - 2) continue;
+        const c = this.chunkCanvas(ch.gi), sx = Math.max(0, Math.floor(cx) - cx0), w = Math.min(cw - sx, VW + 2);
+        if (w > 0 && h > 0) ctx.drawImage(c, sx, y0, w, h, cx0 + sx, y0, w, h);
+      }
+    } else {
+      if (!this.tileCache) this.buildTileCache();
+      const x0 = Math.max(0, Math.floor(cx)), y0 = Math.max(0, Math.floor(cy)), w = Math.min(VW + 2, L.pw - x0), h = Math.min(VH + 2, L.ph - y0);
+      if (w > 0 && h > 0) ctx.drawImage(this.tileCache, x0, y0, w, h, x0, y0, w, h);
+    }
     // dynamic tiles
     const tx0 = Math.floor(cx / T) - 1, tx1 = tx0 + Math.ceil(VW / T) + 2, ty0 = Math.floor(cy / T) - 1, ty1 = ty0 + Math.ceil(VH / T) + 2;
     const blockImg = th.block && PLAT.assets.img(th.block);
     const at = th.art && th.art.tiles, lt = at && at.liquidTop && PLAT.assets.img(at.liquidTop), lf = at && at.liquid && PLAT.assets.img(at.liquid), liqArt = lt && lf ? [lt, lf] : null;
-    for (let ty = Math.max(0, ty0); ty <= Math.min(L.h - 1, ty1); ty++) for (let tx = Math.max(0, tx0); tx <= Math.min(L.w - 1, tx1); tx++) {
-      const t = L.tiles[ty * L.w + tx], x = tx * T, y = ty * T;
+    const lox = L.ox || 0;
+    for (let ty = Math.max(0, ty0); ty <= Math.min(L.h - 1, ty1); ty++) for (let tx = Math.max(lox, tx0); tx <= Math.min(lox + L.w - 1, tx1); tx++) {
+      const t = L.tiles[ty * L.w + tx - lox], x = tx * T, y = ty * T;
       if (t === TL.LIQUID && liqArt) {             // world-art lava: the pack's lava tiles, the surface bobs a little
         const top = W.tileAt(L, tx, ty - 1) !== TL.LIQUID;
         ctx.drawImage(top ? liqArt[0] : liqArt[1], x, top ? y + Math.round(Math.sin((this.frame + tx * 9) / 14) * 1.5) : y, T, T);
@@ -707,7 +799,7 @@ class Game {
         if (blockImg) ctx.drawImage(blockImg, 0, 0, 24, 32, x, y, T, T);
         else { this.drawBrick(ctx, x, y, th, tx, ty); ctx.strokeStyle = '#0006'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x + 6, y + 6); ctx.lineTo(x + 14, y + 16); ctx.lineTo(x + 10, y + 26); ctx.moveTo(x + 14, y + 16); ctx.lineTo(x + 26, y + 12); ctx.stroke(); }
       } else if (t === TL.CRUMBLE) {
-        const c = L.crumble.get(ty * L.w + tx), cr = at && at.crumble && this.pick(at.crumble, tx, ty);
+        const c = L.crumble.get(W.ckey(tx, ty)), cr = at && at.crumble && this.pick(at.crumble, tx, ty);
         const draw = (xx, yy) => { if (!(cr && this.stamp(ctx, at, cr, xx, yy))) this.drawCrumble(ctx, xx, yy, blockImg); else if (!at.crumbleClean) this.drawCracks(ctx, xx, yy, true); };
         if (c && c.state === 'gone') { if (c.t < 30) { ctx.globalAlpha = .25; draw(x, y); ctx.globalAlpha = 1; } continue; }
         const j = c && c.state === 'shake' ? U.rnd(-1.5, 1.5) : 0; draw(x + j, y);
@@ -733,7 +825,7 @@ class Game {
     ctx.strokeStyle = '#0007'; ctx.beginPath(); ctx.moveTo(x + 8, y + 2); ctx.lineTo(x + 12, y + 30); ctx.moveTo(x + 22, y + 2); ctx.lineTo(x + 18, y + 30); ctx.stroke();
   }
   drawObjects(ctx) {
-    const L = this.L, f = this.frame;
+    const L = this.L, f = this.frame, x0 = this.cam.x - 48, x1 = this.cam.x + C.VW + 48, inV = x => x > x0 && x < x1;   // only what is on screen (coins were all drawn every frame)
     // exit door
     const ex = L.exit;
     if (ex) {
@@ -745,18 +837,19 @@ class Game {
     }
     // checkpoints
     for (const k of L.checkpoints) {
+      if (!inV(k.x)) continue;
       ctx.fillStyle = '#ddd'; ctx.fillRect(k.x - 1, k.y - 48, 3, 48);
       const wv = Math.sin(f / 8) * 2; ctx.fillStyle = k.on ? '#5aff7a' : '#a0a0a0'; ctx.beginPath(); ctx.moveTo(k.x + 2, k.y - 48); ctx.lineTo(k.x + 20, k.y - 41 + wv); ctx.lineTo(k.x + 2, k.y - 34); ctx.fill();
     }
     // signs
-    for (const s of L.signs) { ctx.fillStyle = '#6a4a2a'; ctx.fillRect(s.x - 1, s.y - 18, 3, 18); ctx.fillStyle = '#c8965a'; ctx.fillRect(s.x - 11, s.y - 30, 22, 14); ctx.fillStyle = '#6a4a2a'; ctx.font = '700 10px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', s.x, s.y - 19); }
+    for (const s of L.signs) { if (!inV(s.x)) continue; ctx.fillStyle = '#6a4a2a'; ctx.fillRect(s.x - 1, s.y - 18, 3, 18); ctx.fillStyle = '#c8965a'; ctx.fillRect(s.x - 11, s.y - 30, 22, 14); ctx.fillStyle = '#6a4a2a'; ctx.font = '700 10px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', s.x, s.y - 19); }
     // springs
-    for (const s of L.springs) { const sq = s.sq > 0 ? Math.sin(s.sq / 14 * Math.PI) * 6 : 0; ctx.fillStyle = '#8a8a9a'; ctx.fillRect(s.x + 3, s.y + 4 + sq / 2, s.w - 6, 8 - sq / 2); ctx.fillStyle = '#ff4a5a'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 5); ctx.fillStyle = '#ffa0a8'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 1.5); }
+    for (const s of L.springs) { if (!inV(s.x)) continue; const sq = s.sq > 0 ? Math.sin(s.sq / 14 * Math.PI) * 6 : 0; ctx.fillStyle = '#8a8a9a'; ctx.fillRect(s.x + 3, s.y + 4 + sq / 2, s.w - 6, 8 - sq / 2); ctx.fillStyle = '#ff4a5a'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 5); ctx.fillStyle = '#ffa0a8'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 1.5); }
     // coins / gems / hearts
-    for (const c of L.coins) if (!c.got) this.drawCoin(ctx, c.x, c.y + Math.sin((f + c.x) / 12) * 2, (f + c.x) / 16);
-    for (const c of this.loose) { if (c.kind === 'coin') this.drawCoin(ctx, c.x, c.y, (f + c.t) / 6, .8); else this.drawHeart(ctx, c.x, c.y); }
-    for (const g of L.gems) if (!g.got) this.drawGem(ctx, g.x, g.y + Math.sin(f / 15) * 3);
-    for (const h of L.hearts) if (!h.got) this.drawHeart(ctx, h.x, h.y + Math.sin(f / 14) * 2);
+    for (const c of L.coins) if (!c.got && inV(c.x)) this.drawCoin(ctx, c.x, c.y + Math.sin((f + c.x) / 12) * 2, (f + c.x) / 16);
+    for (const c of this.loose) { if (!inV(c.x)) continue; if (c.kind === 'coin') this.drawCoin(ctx, c.x, c.y, (f + c.t) / 6, .8); else this.drawHeart(ctx, c.x, c.y); }
+    for (const g of L.gems) if (!g.got && inV(g.x)) this.drawGem(ctx, g.x, g.y + Math.sin(f / 15) * 3);
+    for (const h of L.hearts) if (!h.got && inV(h.x)) this.drawHeart(ctx, h.x, h.y + Math.sin(f / 14) * 2);
   }
   drawCoin(ctx, x, y, ph, s) {
     s = s || 1; const w = Math.max(1.2, Math.abs(Math.cos(ph)) * 6 * s);
@@ -764,7 +857,7 @@ class Game {
     ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.ellipse(x, y, w, 6 * s, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = '#fff3a0'; ctx.fillRect(x - .5, y - 3 * s, 1.5, 3 * s);
   }
   drawGem(ctx, x, y) {
-    const g = ctx.createRadialGradient(x, y, 2, x, y, 22); g.addColorStop(0, 'rgba(120,240,255,.6)'); g.addColorStop(1, 'rgba(120,240,255,0)'); ctx.fillStyle = g; ctx.fillRect(x - 22, y - 22, 44, 44);
+    ctx.drawImage(glowSprite('rgba(120,240,255,.6)', 'rgba(120,240,255,0)', 22, 2), x - 22, y - 22);
     ctx.fillStyle = '#2aa8d8'; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x + 9, y - 3); ctx.lineTo(x, y + 11); ctx.lineTo(x - 9, y - 3); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#9af0ff'; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x + 4, y - 3); ctx.lineTo(x, y + 6); ctx.lineTo(x - 4, y - 3); ctx.closePath(); ctx.fill();
     if (this.frame % 40 < 6) { ctx.fillStyle = '#fff'; ctx.fillRect(x + 5, y - 9, 2, 6); ctx.fillRect(x + 3, y - 7, 6, 2); }
@@ -772,7 +865,7 @@ class Game {
   drawHeart(ctx, x, y) { ctx.fillStyle = '#ff4a6a'; ctx.beginPath(); ctx.arc(x - 4, y - 2, 4.5, 0, 6.283); ctx.arc(x + 4, y - 2, 4.5, 0, 6.283); ctx.moveTo(x - 8.5, y - 1); ctx.lineTo(x, y + 8); ctx.lineTo(x + 8.5, y - 1); ctx.fill(); ctx.fillStyle = '#ffc0cc'; ctx.fillRect(x - 6, y - 5, 2, 2); }
   drawProj(ctx, pr) {
     const d = pr.def;
-    if (d.glow) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const r = Math.max(d.box[0], d.box[1]) * .9, g = ctx.createRadialGradient(pr.x, pr.y, 1, pr.x, pr.y, r); g.addColorStop(0, d.glow + 'aa'); g.addColorStop(1, d.glow + '00'); ctx.fillStyle = g; ctx.fillRect(pr.x - r, pr.y - r, r * 2, r * 2); ctx.restore(); }
+    if (d.glow) { const r = Math.round(Math.max(d.box[0], d.box[1]) * .9); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite(d.glow + 'aa', d.glow + '00', r, 1), pr.x - r, pr.y - r); ctx.restore(); }
     if (d.proc) {
       ctx.fillStyle = d.col;
       if (d.proc === 'tracer') { ctx.fillRect(pr.x - 8, pr.y - 1, 16, 2.5); ctx.fillStyle = '#fff'; ctx.fillRect(pr.x + (pr.vx > 0 ? 4 : -8), pr.y - 1, 4, 2.5); }
@@ -855,6 +948,13 @@ class Game {
     for (let i = 0; i < 26; i++) { const x = ((i * 137 + this.frame * (.3 + (i % 3) * .2)) % (C.VW + 40)) - 20, y = C.VH - ((i * 59 + this.frame * (.6 + (i % 4) * .2)) % (C.VH + 20)); ctx.globalAlpha = .35 + (i % 3) * .2; ctx.fillRect(x + Math.sin((this.frame + i * 20) / 20) * 6, y, 2, 2); }
     ctx.globalAlpha = 1;
   }
+}
+// a radial glow drawn once into a small canvas and re-used (was a new gradient per gem / shot every frame)
+const GLOW = new Map();
+function glowSprite(c0, c1, r, r0) {
+  const k = c0 + c1 + r; let c = GLOW.get(k); if (c) return c;
+  c = document.createElement('canvas'); c.width = c.height = r * 2; const g = c.getContext('2d'), gr = g.createRadialGradient(r, r, r0, r, r, r);
+  gr.addColorStop(0, c0); gr.addColorStop(1, c1); g.fillStyle = gr; g.fillRect(0, 0, r * 2, r * 2); GLOW.set(k, c); return c;
 }
 function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 PLAT.Game = Game;

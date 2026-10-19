@@ -119,7 +119,9 @@ class Anim {
 function drawFrame(ctx, fr, x, y, face, scale, o) {
   if (!fr) return false;
   o = o || {};
-  const im = o.pal ? PLAT.assets.recolor(fr.src, o.pal) : PLAT.assets.img(fr.src); if (!im) return false;
+  let im = PLAT.assets.img(fr.src), sx0 = fr.sx, sy0 = fr.sy;
+  if (o.pal && im) { const c = PLAT.assets.recolorFrame(fr, o.pal); if (c) { im = c; sx0 = 0; sy0 = 0; } }   // per-frame palette canvas (core.js)
+  if (!im) return false;
   const dev = (PLAT.viewScale || 1) * scale;
   ctx.save();
   ctx.imageSmoothingEnabled = o.smooth || dev < 1.5;
@@ -128,8 +130,8 @@ function drawFrame(ctx, fr, x, y, face, scale, o) {
   if (o.rot) ctx.rotate(o.rot);
   const sx = (o.sx || 1) * (face < 0 ? -1 : 1) * (fr.flip ? -1 : 1), sy = o.sy || 1;
   ctx.scale(sx * scale, sy * scale);
-  ctx.drawImage(im, fr.sx, fr.sy, fr.sw, fr.sh, -fr.ax, -fr.by, fr.sw, fr.sh);
-  if (o.flash) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= o.flash; ctx.drawImage(im, fr.sx, fr.sy, fr.sw, fr.sh, -fr.ax, -fr.by, fr.sw, fr.sh); ctx.drawImage(im, fr.sx, fr.sy, fr.sw, fr.sh, -fr.ax, -fr.by, fr.sw, fr.sh); }
+  ctx.drawImage(im, sx0, sy0, fr.sw, fr.sh, -fr.ax, -fr.by, fr.sw, fr.sh);
+  if (o.flash) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= o.flash; ctx.drawImage(im, sx0, sy0, fr.sw, fr.sh, -fr.ax, -fr.by, fr.sw, fr.sh); ctx.drawImage(im, sx0, sy0, fr.sw, fr.sh, -fr.ax, -fr.by, fr.sw, fr.sh); }
   ctx.restore();
   return true;
 }

@@ -55,18 +55,25 @@ function buildLevel(spec) {
 }
 
 /* ---------------------------------- tiles ---------------------------------- */
+/* Tile coordinates are WORLD columns. A normal level starts at column 0 (L.ox = 0). An Endless level
+   (endless.js) is a sliding window: L.ox is the world column of window column 0 and moves right as
+   chunks are dropped behind the player — so nothing that stores world x (enemies, shots, camera …)
+   ever has to be shifted. Columns left of the window (and right of it) read as wall. */
 function tileAt(L, tx, ty) {
-  if (tx < 0 || tx >= L.w) return TL.BRICK;          // level sides are walls
+  const lx = tx - (L.ox || 0);
+  if (lx < 0 || lx >= L.w) return TL.BRICK;          // level sides are walls
   if (ty < 0 || ty >= L.h) return TL.EMPTY;          // open above and below (below = pit)
-  return L.tiles[ty * L.w + tx];
+  return L.tiles[ty * L.w + lx];
 }
+// crumble-state key of a tile (world coordinates, so it survives the Endless window sliding)
+const ckey = (tx, ty) => tx * 128 + ty;
 function isSolidTile(t) { return t === TL.GROUND || t === TL.BRICK || t === TL.BREAK || t === TL.CRUMBLE; }
 function solidAt(L, tx, ty) {
   const t = tileAt(L, tx, ty);
-  if (t === TL.CRUMBLE) { const c = L.crumble.get(ty * L.w + tx); return !(c && c.state === 'gone'); }
+  if (t === TL.CRUMBLE) { const c = L.crumble.get(ckey(tx, ty)); return !(c && c.state === 'gone'); }
   return isSolidTile(t);
 }
-function setTile(L, tx, ty, t) { if (tx >= 0 && tx < L.w && ty >= 0 && ty < L.h) { L.tiles[ty * L.w + tx] = t; L.dirty = true; } }
+function setTile(L, tx, ty, t) { const lx = tx - (L.ox || 0); if (lx >= 0 && lx < L.w && ty >= 0 && ty < L.h) { L.tiles[ty * L.w + lx] = t; L.dirty = true; } }
 
 /* -------------------------------- movement --------------------------------
    moveBody(L, b, dx, dy, opt): axis-separated sweep in ≤ 6 px sub-steps (never tunnels: T = 32).
@@ -168,7 +175,7 @@ function landOnMovers(L, b, prevBottom) {
 
 /* -------------------------------- crumbling -------------------------------- */
 function touchCrumble(L, tx, ty) {
-  const i = ty * L.w + tx, c = L.crumble.get(i);
+  const i = ckey(tx, ty), c = L.crumble.get(i);
   if (!c || c.state === 'idle') { L.crumble.set(i, { state: 'shake', t: 28, tx, ty }); return true; }
   return false;
 }
@@ -182,5 +189,5 @@ function stepCrumble(L, blocker) {
   }
 }
 
-PLAT.world = { buildLevel, tileAt, solidAt, setTile, isSolidTile, moveBody, overlapsSolid, tilesIn, floorAhead, wallAhead, clearLine, stepMovers, landOnMovers, touchCrumble, stepCrumble };
+PLAT.world = { buildLevel, tileAt, ckey, solidAt, setTile, isSolidTile, moveBody, overlapsSolid, tilesIn, floorAhead, wallAhead, clearLine, stepMovers, landOnMovers, touchCrumble, stepCrumble };
 })(typeof window !== 'undefined' ? window : globalThis);

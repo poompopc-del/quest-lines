@@ -312,17 +312,10 @@ H.mod = {
     if (act && act.kind === 'beam' && act.t < 12) PLAT.drawFrame(ctx, fr, p.cx, p.feet - (12 - act.t) * 22, 1, 1, { pal });
     if (g.mode === 'clear' && g.clearT >= 40) PLAT.drawFrame(ctx, fr, p.cx, p.feet - (g.clearT - 40) * 16, 1, 1, { pal });
   },
-  drawFront(ctx, p) {
-    const g = p.g;
-    // charge level 2 → 4: an energy ball grows in X's hand (X-Fire frames: dots → orb → bright orb)
-    const C4 = H.attack.charge;
-    if (p.charge >= C4[1].t && !p.dead && g.mode === 'play') {
-      const fs = PLAT.fxSheet(PLAT.FXDEF[FXN.chargeBall]); if (!fs || !fs.length) return;
-      let i = Math.min(7, Math.floor((p.charge - C4[1].t) / (C4[3].t - C4[1].t) * 8));
-      if (p.charge >= C4[3].t) i = 7 + (Math.floor(p.t / 3) % 2);
-      const m = muzzlePt(p, shotKey(p)), sc = p.charge >= C4[3].t ? .95 + Math.sin(p.t * .5) * .06 : .8;
-      PLAT.drawFrame(ctx, fs[i], m.x - p.face * 6, m.y + (fs[i].by - fs[i].sh / 2) * sc, 1, sc, { smooth: false });
-    }
-  },
+  // v92: no energy ball is drawn in X's hand while CHARGING any more (the developer did not want it).
+  // Charging shows only what X4 shows: the palette flash (drawOpts) + the gathering particles (update).
+  // The ball / sphere sprites are used only once the shot is RELEASED (x4c3 / x4c4 projectiles, muzzle, hit FX).
+  drawFront() {},
+  chargeFx: true,                 // this module draws its own charge particles (player.js skips the generic ones)
 };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -375,7 +375,8 @@ const results = await page.evaluate(async (filter) => {
   await t('enemy dies during its own wind-up — no damage after death', async () => {
     const { g, p, e } = await setup('knight', 'zombie', 26, 1, { ai: true });
     step(g, 60, () => { if (e.st === 'bite' && !e.dead) { e.hp = 1; e.takeHit(1, { id: P.newSwing() }); } });
-    p.inv = 0; const hp0 = p.hp; step(g, 60);
+    // (a killed enemy drops a heart 9 % of the time — picking it up is not "damage after death", so drops are cleared)
+    p.inv = 0; const hp0 = p.hp; step(g, 60, () => { g.loose.length = 0; });
     return { ok: e.dead && p.hp === hp0, detail: `dead ${e.dead} hp ${hp0}→${p.hp}` };
   });
   await t('looping skill effects are cleaned up (pit respawn / boss phase / level clear)', async () => {

@@ -11,6 +11,8 @@
     "validate:levels": "node tools/plat-validate.mjs",
     "check:assets": "python3 tools/plat-assets.py",
     "test:combat": "node tools/plat-combat-test.mjs",
-    "test:platform": "node tools/plat-validate.mjs && python3 tools/plat-assets.py && node tools/plat-combat-test.mjs"
+    "test:v92": "node tools/plat-v92-test.mjs",
+    "test:endless": "node tools/plat-endless-test.mjs",
+    "test:platform": "node tools/plat-validate.mjs && python3 tools/plat-assets.py && node tools/plat-combat-test.mjs && node tools/plat-v92-test.mjs && node tools/plat-endless-test.mjs 2"
   }
 }

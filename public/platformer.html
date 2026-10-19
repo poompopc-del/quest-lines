@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/platform.css?v=8">
+<link rel="stylesheet" href="css/platform.css?v=9">
 </head>
 <body>
 <div id="stage">
@@ -20,7 +20,7 @@
         <div class="h-face"><canvas id="hFace" width="48" height="48"></canvas></div>
         <div class="h-bars"><div class="hearts" id="hHearts"></div><div class="en"><b id="hEn"></b><s id="hEnMark"></s></div><div class="ultb" id="hUltB"><b id="hUlt"></b><span>ULT</span></div></div>
       </div>
-      <div class="h-mid"><div class="h-lv" id="hLv"></div><div class="h-time" id="hTime">0:00.0</div></div>
+      <div class="h-mid"><div class="h-lv" id="hLv"></div><div class="h-time" id="hTime">0:00.0</div><div class="h-dist" id="hDist"></div></div>
       <div class="h-right"><span>🪙 <b id="hCoins">0</b></span><span class="gems" id="hGems"></span><button class="pbtn" id="hFull" aria-label="เต็มจอ">⛶</button><button class="pbtn" id="hPause" aria-label="หยุดเกม">⏸</button></div>
     </div>
     <div class="bossbar" id="hBoss"><div class="nm" id="hBossNm"></div><div class="bar"><b id="hBossBar"></b></div></div>
@@ -32,7 +32,8 @@
 </div>
 
 <div id="touch">
-  <div id="dpad"><span class="k l">◀</span><span class="k r">▶</span><span class="k u">▲</span><span class="k d">▼</span></div>
+  <!-- v92: virtual joystick (one finger, drag in any direction) — replaces the 4-way d-pad -->
+  <div id="joy" aria-label="จอยสติ๊กเดิน"><div class="jbase"><span class="k l">◀</span><span class="k r">▶</span><span class="k u">▲</span><span class="k d">▼</span></div><div class="jknob"></div></div>
   <div id="btns">
     <button class="bj" data-act="jump"><span><b>⤒</b>กระโดด</span></button>
     <button class="ba" data-act="attack"><span><b>⚔</b><i id="tA">โจมตี</i></span></button>
@@ -51,6 +52,7 @@
     <h1 class="logo">PLATFORM MODE<small>QUEST LINES · ACTION PLATFORMER</small></h1>
     <div class="menu">
       <button class="btn red" data-go="map">▶ เล่น · เลือกด่าน</button>
+      <button class="btn gold" data-go="endless">∞ โหมดไม่สิ้นสุด (Endless)</button>
       <button class="btn" data-go="heroes">🦸 เลือกฮีโร่ <span class="chip gold" id="tHero"></span></button>
       <button class="btn" data-go="settings">⚙️ ตั้งค่า · ปุ่มควบคุม · จอย</button>
       <button class="btn" id="tFull">⛶ เต็มจอ</button>
@@ -78,16 +80,29 @@
   </div>
 </section>
 
+<section class="screen" id="sEndless">
+  <div class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">∞ โหมดไม่สิ้นสุด</h2>
+      <div class="row"><button class="btn" data-go="heroes">🦸 <span id="eHero"></span></button><button class="btn" data-go="title">✕</button></div></div>
+    <p class="sub">ด่านสร้างใหม่ทุกครั้ง ไม่ซ้ำ และตรวจแล้วว่าผ่านได้จริงทุกช่วง · ยิ่งไกลยิ่งยาก (LV 1–10) · HP หมด = จบรอบ · เหว/ลาวา −1 HP</p>
+    <div class="eworlds" id="eWorlds"></div>
+  </div>
+</section>
+
+<section class="screen dim" id="sOver">
+  <div class="panel sm" id="overBox"></div>
+</section>
+
 <section class="screen dim" id="sPause">
   <div class="panel sm">
     <h2 class="kick">หยุดเกม</h2>
     <p class="sub" id="pSub"></p>
     <div class="menu" style="margin-top:6px">
       <button class="btn red" data-go="resume">▶ เล่นต่อ</button>
-      <button class="btn" data-go="retryCp">↺ เริ่มจากเช็กพอยต์</button>
-      <button class="btn" data-go="restart">⟲ เริ่มด่านใหม่</button>
+      <button class="btn" data-go="retryCp" id="pRetry">↺ เริ่มจากเช็กพอยต์</button>
+      <button class="btn" data-go="restart" id="pRestart">⟲ เริ่มด่านใหม่</button>
       <button class="btn" data-go="settings">⚙️ ตั้งค่า</button>
-      <button class="btn" data-go="map">🗺 ออกไปแผนที่</button>
+      <button class="btn" data-go="map" id="pExit">🗺 ออกไปแผนที่</button>
     </div>
   </div>
 </section>
@@ -114,11 +129,15 @@
     <div class="set-row"><span>🔊 เสียงเอฟเฟกต์</span><input type="range" id="setSfx" min="0" max="100" step="5"></div>
     <div class="set-row"><span>📳 จอสั่น</span><div class="seg" id="setShake"><button data-v="1">เปิด</button><button data-v="0">ปิด</button></div></div>
     <div class="set-row"><span>👆 ปุ่มบนจอ<br><small class="note">อัตโนมัติ = ซ่อนเมื่อใช้จอย/คีย์บอร์ด</small></span><div class="seg" id="setTouch"><button data-v="auto">อัตโนมัติ</button><button data-v="on">แสดง</button><button data-v="off">ซ่อน</button></div></div>
-    <div class="set-row"><span>🔘 ขนาดปุ่มบนจอ</span><div class="seg" id="setSize"><button data-v="S">เล็ก</button><button data-v="M">กลาง</button><button data-v="L">ใหญ่</button></div></div>
+    <div class="set-row"><span>🔘 ขนาดปุ่ม / จอยบนจอ</span><div class="seg" id="setSize"><button data-v="S">เล็ก</button><button data-v="M">กลาง</button><button data-v="L">ใหญ่</button></div></div>
+    <div class="set-row"><span>🕹 จอยสติ๊ก<br><small class="note">ลอยตามนิ้ว = แตะตรงไหนก็ได้ทางซ้ายของจอ</small></span><div class="seg" id="setJoyMode"><button data-v="float">ลอยตามนิ้ว</button><button data-v="fixed">คงที่</button></div></div>
+    <div class="set-row"><span>🎯 ระยะเริ่มเดิน (Dead zone)<br><small class="note">ใหญ่ = ต้องลากไกลขึ้นก่อนเดิน กันเดินโดยไม่ตั้งใจ</small></span><div class="seg" id="setJoyDead"><button data-v="0.15">น้อย</button><button data-v="0.25">กลาง</button><button data-v="0.35">มาก</button></div></div>
     <div class="set-row"><span>📳 สั่นเมื่อโดนตี (มือถือ/จอย)</span><div class="seg" id="setVib"><button data-v="1">เปิด</button><button data-v="0">ปิด</button></div></div>
-    <h3>จอยเกม</h3>
+    <h3>จอยเกม · ตั้งปุ่ม</h3>
     <p class="keys" id="padStatus"></p>
-    <div class="padmap"><span><b>A</b>/✕ กระโดด</span><span><b>X</b>/□ โจมตี</span><span><b>Y</b>/△ สกิล</span><span><b>B</b>/○ พุ่ง</span><span><b>LB·LT</b> สกิล</span><span><b>RB·RT</b> พุ่ง</span><span><b>✚</b>/สติ๊ก เดิน</span><span><b>Start</b> หยุด</span><span class="wide">ในเมนู: ✚ เลื่อน · A เลือก · B ย้อนกลับ</span></div>
+    <div class="remap" id="padRemap"></div>
+    <div class="row" style="margin-top:6px"><button class="btn" id="padDefaults">↺ คืนค่าปุ่มเริ่มต้น</button></div>
+    <p class="note" id="padNote">ปุ่มซ้ำ = <b>สลับกัน</b> (ปุ่มหนึ่งทำได้อย่างเดียว) · กระโดด / โจมตี / หยุดเกม ต้องมีปุ่มเสมอ · เดิน (✚ / สติ๊กซ้าย) และปุ่มในเมนู (A เลือก · B ย้อนกลับ · Start) ตั้งไม่ได้ เพื่อไม่ให้ติดอยู่ในเมนู</p>
     <h3>ปุ่มควบคุม</h3>
     <div class="keys">
       <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> เดิน (กดค้าง = วิ่ง) · <kbd>Space</kbd>/<kbd>K</kbd> กระโดด (กดค้าง = สูง)<br>
@@ -129,22 +148,25 @@
   </div>
 </section>
 
+<div class="listen" id="padListen"><div class="panel sm" style="text-align:center"><h2 class="kick" id="plTitle">กดปุ่มบนจอย…</h2><p class="sub" id="plSub"></p><p class="note" id="plMsg"></p><button class="btn" id="plCancel">✕ ยกเลิก (Esc)</button></div></div>
+
 <section class="screen" id="sLoading">
   <div style="text-align:center"><div class="kick" id="lTitle">กำลังโหลด…</div><div class="sub" id="lSub"></div><div class="loadbar"><b id="lBar"></b></div></div>
 </section>
 
-<script src="js/plat/core.js?v=8"></script>
-<script src="js/plat/world.js?v=8"></script>
-<script src="js/plat/anim.js?v=8"></script>
-<script src="js/plat/heroes.js?v=8"></script>
-<script src="js/plat/x4-sheet.js?v=8"></script>
-<script src="js/plat/xmod.js?v=8"></script>
-<script src="js/plat/player.js?v=8"></script>
-<script src="js/plat/enemies.js?v=8"></script>
-<script src="js/plat/art-sheets.js?v=8"></script>
-<script src="js/plat/levels.js?v=8"></script>
-<script src="js/plat/art.js?v=8"></script>
-<script src="js/plat/game.js?v=8"></script>
-<script src="js/plat/ui.js?v=8"></script>
+<script src="js/plat/core.js?v=9"></script>
+<script src="js/plat/world.js?v=9"></script>
+<script src="js/plat/anim.js?v=9"></script>
+<script src="js/plat/heroes.js?v=9"></script>
+<script src="js/plat/x4-sheet.js?v=9"></script>
+<script src="js/plat/xmod.js?v=9"></script>
+<script src="js/plat/player.js?v=9"></script>
+<script src="js/plat/enemies.js?v=9"></script>
+<script src="js/plat/art-sheets.js?v=9"></script>
+<script src="js/plat/levels.js?v=9"></script>
+<script src="js/plat/endless.js?v=9"></script>
+<script src="js/plat/art.js?v=9"></script>
+<script src="js/plat/game.js?v=9"></script>
+<script src="js/plat/ui.js?v=9"></script>
 </body>
 </html>

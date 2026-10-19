@@ -50,14 +50,18 @@ button{font-family:var(--font)}
 #touch{position:fixed;inset:0;pointer-events:none;display:none;z-index:5}
 #touch.on{display:block}
 #touch{--tsz:1}
-#dpad{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));width:calc(min(36vh,176px) * var(--tsz));height:calc(min(36vh,176px) * var(--tsz));border-radius:50%;pointer-events:auto;touch-action:none;
-  background:radial-gradient(circle,rgba(255,255,255,.07) 0 30%,rgba(255,255,255,.04) 31% 100%);border:2px solid rgba(255,255,255,.14)}
-#dpad::before,#dpad::after{content:'';position:absolute;background:rgba(255,255,255,.1);border-radius:6px}
-#dpad::before{left:36%;right:36%;top:8%;bottom:8%}#dpad::after{top:36%;bottom:36%;left:8%;right:8%}
-#dpad .k{position:absolute;color:#fff9;font-size:min(4.4vh,22px);font-weight:800;z-index:1;pointer-events:none}
-#dpad .l{left:12%;top:50%;transform:translateY(-50%)}#dpad .r{right:12%;top:50%;transform:translateY(-50%)}#dpad .u{top:8%;left:50%;transform:translateX(-50%)}#dpad .d{bottom:8%;left:50%;transform:translateX(-50%)}
-#dpad[data-dir*="l"] .l,#dpad[data-dir*="r"] .r,#dpad[data-dir*="u"] .u,#dpad[data-dir*="d"] .d{color:var(--k-gold)}
-#btns{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));width:calc(min(44vh,214px) * var(--tsz));height:calc(min(40vh,194px) * var(--tsz));pointer-events:auto}
+/* v92 virtual joystick: the zone is the whole lower-left of the screen; the stick floats to the thumb (or stays put) */
+#joy{position:absolute;left:0;bottom:0;width:46vw;height:74vh;pointer-events:auto;touch-action:none;
+  --js:calc(min(34vh,170px) * var(--tsz));--jl:max(14px,env(safe-area-inset-left));--jb:max(16px,env(safe-area-inset-bottom))}
+#joy .jbase{position:absolute;left:var(--jl);bottom:var(--jb);width:var(--js);height:var(--js);border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.07) 0 38%,rgba(20,14,36,.5) 39% 100%);border:2px solid rgba(255,255,255,.18);opacity:.6;transition:opacity .12s;pointer-events:none}
+#joy .jknob{position:absolute;left:calc(var(--jl) + var(--js) * .28);bottom:calc(var(--jb) + var(--js) * .28);width:calc(var(--js) * .44);height:calc(var(--js) * .44);border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.55),rgba(255,200,61,.35) 60%,rgba(120,80,20,.4));border:2px solid rgba(255,200,61,.7);box-shadow:0 4px 12px #0008;opacity:.7;pointer-events:none}
+#joy.act .jbase{opacity:1}#joy.act .jknob{opacity:1}
+#joy .k{position:absolute;color:#fff7;font-size:min(3.6vh,18px);font-weight:800;pointer-events:none}
+#joy .l{left:9%;top:50%;transform:translateY(-50%)}#joy .r{right:9%;top:50%;transform:translateY(-50%)}#joy .u{top:6%;left:50%;transform:translateX(-50%)}#joy .d{bottom:6%;left:50%;transform:translateX(-50%)}
+#joy[data-dir*="l"] .l,#joy[data-dir*="r"] .r,#joy[data-dir*="u"] .u,#joy[data-dir*="d"] .d{color:var(--k-gold)}
+#btns{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));width:calc(min(46vh,226px) * var(--tsz));height:calc(min(42vh,204px) * var(--tsz));pointer-events:auto;touch-action:none}
 #btns button{position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.22);background:rgba(20,14,36,.55);color:#fff;font-weight:700;font-size:min(2.3vh,12px);line-height:1.1;touch-action:none;display:grid;place-items:center;padding:0}
 #btns button.on{background:rgba(255,200,61,.45);border-color:var(--k-gold)}
 #btns .bj{width:46%;height:52%;right:0;bottom:0;background:rgba(255,59,78,.35)}
@@ -162,7 +166,8 @@ html[data-dev=pad] .screen button:focus,html[data-dev=key] .screen button:focus,
 html[data-dev=pad] .hcard:focus,html[data-dev=pad] .lvl:focus{border-color:var(--k-gold)}
 .notify{position:fixed;left:50%;top:max(10px,env(safe-area-inset-top));transform:translate(-50%,-140%);z-index:20;background:var(--k-glass);border:1px solid #4a3a6a;border-left:4px solid var(--k-gold);padding:8px 14px;display:flex;flex-direction:column;gap:2px;font-size:14px;transition:transform .3s;pointer-events:none;max-width:90vw}
 .notify span{font-size:12px;color:var(--dim)}
-.notify.on{transform:translate(-50%,0)}
+.notify{visibility:hidden;opacity:0;transition:transform .3s,opacity .3s,visibility 0s .3s}
+.notify.on{transform:translate(-50%,0);visibility:visible;opacity:1;transition:transform .3s,opacity .3s}   /* v92: the empty box no longer peeks in at the top edge */
 .padmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px;font-size:13px;color:var(--dim)}
 .padmap span{background:#ffffff08;padding:4px 8px}
 .padmap b{color:var(--k-gold);margin-right:4px}
@@ -203,3 +208,37 @@ html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:
 #btns .bw.on2{display:grid}
 #btns .bu.ready{display:grid;animation:ultpulse .5s infinite alternate}
 .moves .hd{border-left-color:var(--k-gold);background:rgba(255,200,61,.08);font-weight:700}
+
+/* v92 · HUD distance (Endless) */
+.h-dist{font-size:clamp(11px,1.7vw,15px);color:#9fe8ff;font-variant-numeric:tabular-nums;display:none}
+.h-dist.on{display:block}
+.h-dist b{color:#fff}.h-dist i{font-style:normal;color:var(--k-gold);margin-left:6px}
+/* Endless world picker + game over */
+.eworlds{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.eworld{position:relative;text-align:left;border:1px solid #2c2547;background:linear-gradient(180deg,#221c3e,#14102a);color:var(--ink);padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:150px;border-top:3px solid var(--wc,#ffc83d)}
+.eworld:hover,.eworld:focus-visible{border-color:var(--k-gold);outline:none}
+.eworld .nm{font:italic 800 17px var(--font);color:#fff}
+.eworld .th{font-size:12px;color:var(--dim);line-height:1.35}
+.eworld .rec{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:auto;font-size:12px;color:var(--dim)}
+.eworld .rec b{color:#fff}
+.eworld .go{margin-top:6px;color:var(--k-gold);font-weight:800}
+@media (max-width:640px){.eworlds{grid-template-columns:1fr}.eworld{min-height:0}}
+.newbest{color:#8aff8a;text-align:center;font-weight:800;font-size:15px;margin:2px 0 6px;animation:ultpulse .5s infinite alternate}
+.bigdist{font:italic 900 clamp(40px,10vw,76px)/1 var(--font);text-align:center;color:#9fe8ff;text-shadow:3px 3px 0 #123a5a,0 0 20px #3ee0ff55;margin:2px 0}
+.bigdist small{font-size:.38em;color:var(--dim)}
+/* controller remap */
+.remap{display:grid;gap:4px}
+.remap .rm{display:flex;align-items:center;gap:8px;background:#ffffff08;padding:5px 8px;font-size:13px;border-left:3px solid transparent}
+.remap .rm.hot{border-left-color:var(--k-gold);background:rgba(255,200,61,.12)}
+.remap .rm .an{flex:1}
+.remap .rm .bn{color:var(--k-gold);font-weight:700;min-width:96px;text-align:right}
+.remap .rm .btn{min-height:30px;padding:4px 12px;font-size:13px}
+.listen{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(8,7,15,.8);padding:14px}
+.listen.on{display:flex}
+#plMsg{color:#ff9a8a;min-height:16px}
+@media (max-height:440px){
+  .bigdist{font-size:40px}.newbest{margin:0 0 2px}
+  .kv{grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0}.kv div{padding:3px 6px}.kv b{font-size:15px}
+  #overBox .menu{grid-template-columns:1fr 1fr;width:100%}
+  .eworld{min-height:0;padding:8px 10px}.eworld .th{display:none}
+}
