@@ -286,6 +286,15 @@ window.V92 = async function (filter) {
     await capture('jump', 3);          // leave a custom mapping for the reload (persistence) test
     return { ok: d, detail: JSON.stringify(I.padMap) };
   });
+  await t('remap: a non-standard pad whose RT is an axis can bind it (virtual button)', async () => {
+    pad.mapping = ''; pad.axes = [0, 0, -1, 0, 0, -1]; I._axRest = null; await frames(3);
+    bindBtn('skill').click(); await frames(3); pad.axes[5] = 1; await frames(3); pad.axes[5] = -1; await frames(3);
+    const bound = I.padMap.skill.join(), name = P.PAD.name(I.padMap.skill[0], false);
+    pad.axes[5] = 1; await frames(3); const fires = I.isHeld('skill'); pad.axes[5] = -1; await frames(3); const off = !I.isHeld('skill');
+    pad.mapping = 'standard'; pad.axes = [0, 0, 0, 0]; I._axRest = null;
+    document.querySelector('#padDefaults').click(); await frames(2); await capture('jump', 3);
+    return { ok: bound === '105' && /แกน/.test(name) && off, detail: `skill → ${bound} (${name}) held in settings ${fires} released ${off}` };
+  });
   await t('remap: the new mapping is used in game (Y jumps, A does not)', async () => {
     app.api.go('back'); await frames(2); app.api.resume(); await frames(3);
     const p = app.game.player; p.inv = 99;

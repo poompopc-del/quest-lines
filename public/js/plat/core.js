@@ -131,16 +131,19 @@ const PAD_ACTIONS = ['jump', 'attack', 'skill', 'dash', 'swap', 'pause'];
 const PAD_DEFAULT = { jump: [0], attack: [2], skill: [3, 4, 6], dash: [1, 5, 7], swap: [10, 11], pause: [9, 8] };
 const PAD_CRITICAL = ['jump', 'attack', 'pause'];            // must always keep at least one button
 const PAD_RESERVED = { 12: 'ปุ่มทิศทางใช้เดิน', 13: 'ปุ่มทิศทางใช้เดิน', 14: 'ปุ่มทิศทางใช้เดิน', 15: 'ปุ่มทิศทางใช้เดิน', 16: 'ปุ่ม Home สงวนไว้ให้ระบบ' };
+// some pads (mostly non-standard ones on Android / Firefox) report LT / RT as AXES, not buttons: an axis
+// pushed well away from where it rests counts as a virtual button AXB + axis index (sticks 0/1 excluded)
+const AXB = 100;
 const PAD_NAMES = ['A / ✕', 'B / ○', 'X / □', 'Y / △', 'LB / L1', 'RB / R1', 'LT / L2', 'RT / R2', 'Select / Share', 'Start / Options', 'L3 (กดสติ๊กซ้าย)', 'R3 (กดสติ๊กขวา)', 'D-pad ↑', 'D-pad ↓', 'D-pad ←', 'D-pad →', 'Home'];
 PLAT.PAD = { ACTIONS: PAD_ACTIONS, DEFAULT: PAD_DEFAULT, CRITICAL: PAD_CRITICAL, RESERVED: PAD_RESERVED,
-  name(i, standard) { return standard !== false && PAD_NAMES[i] ? PAD_NAMES[i] : 'ปุ่ม #' + i; },
+  name(i, standard) { if (i >= AXB) return 'ไก/แกน #' + (i - AXB); return standard !== false && PAD_NAMES[i] ? PAD_NAMES[i] : 'ปุ่ม #' + i; },
   copy(m) { const o = {}; for (const a of PAD_ACTIONS) o[a] = (m && Array.isArray(m[a]) ? m[a] : PAD_DEFAULT[a]).slice(); return o; },
   // a stored mapping is trusted only if it is well-formed; anything odd falls back to the defaults
   sanitize(m) {
     if (!m || typeof m !== 'object') return this.copy(PAD_DEFAULT);
     const o = {}, used = new Set();
     for (const a of PAD_ACTIONS) {
-      const l = Array.isArray(m[a]) ? m[a].filter(b => Number.isInteger(b) && b >= 0 && b < 32 && !PAD_RESERVED[b] && !used.has(b)) : null;
+      const l = Array.isArray(m[a]) ? m[a].filter(b => Number.isInteger(b) && ((b >= 0 && b < 32) || (b >= AXB + 2 && b < AXB + 6)) && !PAD_RESERVED[b] && !used.has(b)) : null;
       o[a] = l && (l.length || !PAD_CRITICAL.includes(a)) ? l : PAD_DEFAULT[a].filter(b => !used.has(b));
       o[a].forEach(b => used.add(b));
     }
@@ -154,7 +157,7 @@ PLAT.PAD = { ACTIONS: PAD_ACTIONS, DEFAULT: PAD_DEFAULT, CRITICAL: PAD_CRITICAL,
     if (!PAD_ACTIONS.includes(action)) return { ok: false, map, msg: 'การกระทำนี้ตั้งปุ่มไม่ได้' };
     if (!Number.isInteger(b) || b < 0) return { ok: false, map, msg: 'ปุ่มนี้ใช้ไม่ได้' };
     if (PAD_RESERVED[b]) return { ok: false, map, msg: PAD_RESERVED[b] + ' — เลือกปุ่มอื่น' };
-    if (buttonsOnPad && b >= buttonsOnPad) return { ok: false, map, msg: 'จอยนี้ไม่มีปุ่มนี้' };
+    if (buttonsOnPad && b < AXB && b >= buttonsOnPad) return { ok: false, map, msg: 'จอยนี้ไม่มีปุ่มนี้' };
     const m = this.copy(map), old = m[action].slice(); let swapped = null;
     for (const a of PAD_ACTIONS) if (a !== action && m[a].includes(b)) {
       m[a] = m[a].filter(x => x !== b);
@@ -233,8 +236,8 @@ const input = PLAT.input = {
     this._pu = e => { if (this.ptr.has(e.pointerId)) this.releasePointer(e.pointerId); };
     this._te = e => { if (!e.touches || e.touches.length === 0) this.releaseTouch(); };
     // a controller only shows up after its first button press on most browsers (security rule)
-    this._gc = e => { this.pad = this._padInfo(e.gamepad); this.setDevice('pad'); if (this.onPad) this.onPad(this.pad); };
-    this._gd = e => { if (this.pad && this.pad.index === e.gamepad.index) { this.pad = null; for (const a of ACTIONS) this.set(a, 'pad', false); this._pad = {}; this._raw = []; if (this.lastDevice === 'pad') this.setDevice('touchless'); if (this.onPad) this.onPad(null); } };
+    this._gc = e => { this._axRest = null; this.pad = this._padInfo(e.gamepad); this.setDevice('pad'); if (this.onPad) this.onPad(this.pad); };
+    this._gd = e => { if (this.pad && this.pad.index === e.gamepad.index) { this.pad = null; for (const a of ACTIONS) this.set(a, 'pad', false); this._pad = {}; this._raw = []; this._axRest = null; if (this.lastDevice === 'pad') this.setDevice('touchless'); if (this.onPad) this.onPad(null); } };
     addEventListener('keydown', this._kd); addEventListener('keyup', this._ku);
     addEventListener('blur', this._blur); document.addEventListener('visibilitychange', this._vis);
     addEventListener('pointerup', this._pu, true); addEventListener('pointercancel', this._pu, true);
@@ -270,7 +273,8 @@ const input = PLAT.input = {
   setPadMap(m) { this.padMap = PLAT.PAD.sanitize(m); },
   pollPad() {
     const p = this.getPad(); if (!p) return;
-    const b = i => !!(p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > .5)), ax = p.axes || [];
+    const ax = p.axes || [], rest = this._axRest || (this._axRest = ax.map(v => v));   // first reading = resting position
+    const b = i => i >= AXB ? (ax[i - AXB] !== undefined && Math.abs(ax[i - AXB] - (rest[i - AXB] || 0)) > .6) : !!(p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > .5));
     const sx = Math.abs(ax[0] || 0) > .4 ? ax[0] : 0, sy = Math.abs(ax[1] || 0) > .4 ? ax[1] : 0;
     // some non-standard Android pads report the d-pad as a hat on axes 9 or 6/7
     let hx = 0, hy = 0;
@@ -285,6 +289,7 @@ const input = PLAT.input = {
       ok: b(0) || b(9), back: b(1),
     };
     const raw = (p.buttons || []).map((_, i) => b(i));
+    if (p.mapping !== 'standard') for (let k = 2; k < Math.min(ax.length, 6); k++) raw[AXB + k] = b(AXB + k);    // trigger axes as virtual buttons (non-standard pads only; standard pads give LT/RT as buttons 6/7)
     // remap listening: wait until every button is up, then hand over the next button that goes down.
     // Meanwhile the pad drives NOTHING (no menu moves, no "back"), and buttons still down afterwards
     // do not count as fresh presses (the state is tracked silently).
@@ -299,7 +304,7 @@ const input = PLAT.input = {
     if (any) this.setDevice('pad');
   },
   // which pad buttons are down right now (Settings shows it live)
-  padDown() { const p = this.getPad(); if (!p) return []; return (p.buttons || []).map((x, i) => x && (x.pressed || x.value > .5) ? i : -1).filter(i => i >= 0); },
+  padDown() { const p = this.getPad(); if (!p) return []; const ax = p.axes || [], rest = this._axRest || []; const d = (p.buttons || []).map((x, i) => x && (x.pressed || x.value > .5) ? i : -1).filter(i => i >= 0); if (p.mapping !== 'standard') for (let k = 2; k < Math.min(ax.length, 6); k++) if (Math.abs(ax[k] - (rest[k] || 0)) > .6) d.push(AXB + k); return d; },
   rumble(strong, weak, ms) {
     const p = this.getPad(); const v = p && p.vibrationActuator;
     if (v && v.playEffect) v.playEffect(v.type || 'dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak }).catch(() => {});
