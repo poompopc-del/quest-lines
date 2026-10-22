@@ -1,12 +1,12 @@
-const CACHE_NAME = 'quest-lines-v96';
+const CACHE_NAME = 'quest-lines-v97';
 const V = '?v=83';
 const MODULES = ['balance','vocab','core','quests','shell','settings','hub','world','questboard','heroes','inventory','codex','profile','endgame-core','endgame-modes','endgame-ui','armory','items','more','wordfx','boss-encounter','zombies','bestiary','kirby','knight','unlocks','tactics','events','ecl','luffy','sonic','heroplus','heroup','ultcharge','yota','cream','kea','freeheroes','goldbulb','title','dev','boot'];
 const APP_SHELL = ['./', './index.html', './manifest.json', './scenes/hub/cave.png', './title/logo.webp', './npc/merchant.png', './icons/icon-192.png', './icons/icon-512.png', './css/ql2.css' + V, './css/endgame.css' + V, './css/battle.css' + V, './css/ui26.css' + V, './css/boss.css' + V, './css/tactics.css' + V, './css/ecl.css' + V,
   './data/lexicon.js' + V, './data/vocabulary.js' + V,
   ...MODULES.map((m) => `./js/ql2/${m}.js${V}`),
   // Platform Mode (offline copy; scripts/pages are network-first anyway)
-  './platformer.html', './css/platform.css?v=21',
-  ...['core', 'world', 'anim', 'heroes', 'x4-sheet', 'xmod', 'player', 'enemies', 'art-sheets', 'levels', 'items', 'endless', 'endless-worker', 'art', 'game', 'ui'].map((m) => `./js/plat/${m}.js?v=21`)];
+  './platformer.html', './css/platform.css?v=22',
+  ...['core', 'world', 'anim', 'heroes', 'x4-sheet', 'xmod', 'player', 'enemies', 'art-sheets', 'levels', 'items', 'endless', 'endless-worker', 'art', 'game', 'ui'].map((m) => `./js/plat/${m}.js?v=22`)];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)).catch(() => {}));

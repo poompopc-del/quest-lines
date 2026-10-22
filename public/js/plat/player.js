@@ -296,7 +296,9 @@ class Player {
       if (inp.wasPressed('attack')) this.holdA = 0;
       if (this.holdA != null) {
         if (inp.isHeld('attack')) { this.holdA++; if (this.holdA === HM.t) { sfx().charge(); this.g.burst(this.cx, this.y + 8, '#ffffff', 10, 2); } if (this.holdA > HM.t && this.t % 4 === 0) this.g.burst(this.cx + U.rnd(-12, 12), this.y + U.rnd(0, this.h), '#ffe36a', 1, .4); }
-        else { const t = this.holdA; this.holdA = null; if (t >= HM.t) { if (this.act) this.endAct(); this.doMove(HM); } }
+        else { const t = this.holdA; this.holdA = null; if (t >= HM.t && !HM.live) { if (this.act) this.endAct(); this.doMove(HM); } }
+        // v107: a LIVE hold move (Luffy's charged pistol) starts at HM.t and keeps charging while the button is held
+        if (HM.live && this.holdA === HM.t && this.onGround && !(this.act && /^(chargeBlast|gatlingCharge|ult|counter)$/.test(this.act.kind))) { this.holdA = null; if (this.act) this.endAct(); this.doMove(HM); }
       }
     }
     this.runBuffers(inp);
@@ -637,7 +639,7 @@ class Player {
       }
       case 'chargeBlast': {                            // v104 Luffy: hold = charge (area grows, no cap) · release = the blast — 'ground' spreads both ways, 'front' shoots straight ahead
         if (!this.onGround) return;
-        if (!this.spend(S.cost)) return;
+        if (S.cost && !this.spend(S.cost)) return;
         const front = S.area === 'front';
         this.anim.play(S.up, S.rise, true); sfx().charge();
         this.act = { kind: 'chargeBlast', t: 0, pose: S.up, slow: 0, canTurn: !front, phase: 'up', held: 0, dt: 0,
@@ -653,7 +655,7 @@ class Player {
                 else g.parts.push({ x: self.cx + U.rnd(-w / 2, w / 2), y: self.feet - 1, vx: 0, vy: U.rnd(-1.4, -.4), life: 14, col, size: 2 });
               }
               if (lvlUp(this.held, self.chargeMul || 1)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + (front ? 'ไกล ' : 'กว้าง ') + Math.round(w) + 'px', '#ffd060', 40); sfx().gem(); }
-              if (!g.input.isHeld('skill') || self.hurtT > 0) { this.phase = 'go'; this.w = w; self.anim.play(S.go, S.goDur, true); this.pose = S.go; }
+              if (!g.input.isHeld(S.btn || 'skill') || self.hurtT > 0) { this.phase = 'go'; this.w = w; self.anim.play(S.go, S.goDur, true); this.pose = S.go; }
               return;
             }
             if (++this.dt === S.hitAt) {
@@ -666,7 +668,7 @@ class Player {
                 if (front) { const x = self.cx + self.face * (i + .5) * w / n; g.parts.push({ x, y: fy + U.rnd(-14, 14), vx: self.face * U.rnd(4, 9), vy: U.rnd(-1, 1), life: 16, col: '#ffe0a0', size: 3, line: true }); if (i % 4 === 0) g.burst(x, fy, '#ffb04a', 1, 1.2); }
                 else { const x = self.cx - w / 2 + (i + .5) * w / n; g.dust(x, self.feet, 1); g.parts.push({ x, y: self.feet - 2, vx: U.sign(x - self.cx) * U.rnd(1, 3), vy: U.rnd(-6, -2) * (1 - Math.abs(x - self.cx) / w), life: 26, col: '#ffb04a', size: 3, grav: .3 }); }
               }
-              if (w > 200) g.text(self.cx, self.y - 18, front ? 'GOMU GOMU BAZOOKA!!' : 'GOMU GOMU STOMP!!', '#ffd060', 60, true);
+              if (w > 200) g.text(self.cx, self.y - 18, S.call || (front ? 'GOMU GOMU BAZOOKA!!' : 'GOMU GOMU STOMP!!'), '#ffd060', 60, true);
             }
             if (this.dt >= S.goDur) self.endAct();
           } };

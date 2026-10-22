@@ -271,6 +271,10 @@ class Game {
       if (o.shake) this.shake(o.shake); else if (heavy) this.shake(2);
       if (o.finisher) this.burst(cxs, cys, '#ffd860', 8, 3.5);
       if (o.from === this.player) { this.player.onHitLanded(n); this.chainHit(n); }
+      if (o.from && o.from.gear2) {                    // v107 Gear Second: every blow lands HARD — big shake, longer hit-stop, steam-pink impact burst
+        this.shake(o.multi ? 3 : heavy ? 9 : 6); this.hitstop(o.multi ? 2 : heavy ? 9 : 6); if (!o.multi) this.flashT = Math.max(this.flashT || 0, 3);
+        this.spark(cxs, cys, heavy ? 2.4 : 1.6); this.burst(cxs, cys, '#ff8aa0', heavy ? 18 : 10, heavy ? 4 : 3); if (!o.multi) sfx().boom(); PLAT.haptic('big');
+      }
     }
     return n;
   }
