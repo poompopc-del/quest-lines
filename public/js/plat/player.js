@@ -42,7 +42,7 @@ class Player {
     this.inv = 0; this.hurtT = 0; this.dead = false; this.deadT = 0; this.act = null; this.cd = { dash: 0, shot: 0 };
     this.combo = 0; this.comboWin = 0; this.queued = false; this.floating = false; this.wallDir = 0; this.wallLock = 0;
     this.ball = false; this.mouth = null; this.charge = 0; this.airDash = true; this.rocketUsed = false; this.heat = 0;
-    this.mover = null; this.dashJump = false; this.parryT = 0; this.parryCd = 0; this.parryOk = 0; this.aegisCd = this.aegisCd || 0; this.itemCd = 0; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
+    this.mover = null; this.dashJump = false; this.parryT = 0; this.parryCd = 0; this.parryOk = 0; this.parryAnim = 0; this.tapT = 0; this.aegisCd = this.aegisCd || 0; this.itemCd = 0; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
     this.t = 0; this.airT = 0; this.landT = 0; this.lastSafe = { x: spawn.x, y: spawn.y };
     this.ult = this.ult || 0; this.superT = 0; this.pend = null; this.holdS = null; this.holdA = null; this.pressAt = {};
     this.anim.play('idle', null, true);
@@ -84,6 +84,10 @@ class Player {
     if (this.parryCd > 0) this.parryCd--; if (this.parryOk > 0) this.parryOk--;
     if (inp.wasPressed('potion')) this.usePotion();
     if (inp.wasPressed('item')) this.useItem();
+    { const td = inp.wasPressed('right') ? 1 : inp.wasPressed('left') ? -1 : 0;          // v102: double tap → run
+      if (this.tapT > 0) this.tapT--;
+      if (td) { if (this.tapDir === td && this.tapT > 0) { this.runT = C.RUN_AFTER; this.tapT = 0; if (this.onGround) this.g.dust(this.cx - td * 8, this.feet, 3); } else { this.tapDir = td; this.tapT = C.TAP_RUN; } } }
+    if (this.parryAnim > 0) this.parryAnim--;
     if (this.parryT > 0) this.parryT--;
     else if (inp.wasPressed('parry') && this.parryCd <= 0 && this.hurtT === 0 && !busy) this.startParry();
     if (this.hurtT > 0) { this.hurtT--; if (this.onGround) this.vx *= .86; }
@@ -132,7 +136,8 @@ class Player {
   walk(inp, ax) {
     const h = this.hero, spd = h.speed || 1, accMul = h.accel || 1;
     if (this.wallLock > 0) ax = 0;
-    if (ax && this.onGround) this.runT = (Math.sign(this.vx) === ax || Math.abs(this.vx) < .5) ? this.runT + 1 : 0; else if (this.onGround) this.runT = 0;
+    // v102: holding a direction WALKS; a double tap (runTap) makes it RUN until the direction is let go or reversed
+    if (ax && this.onGround) this.runT = (Math.sign(this.vx) === ax || Math.abs(this.vx) < .5) ? (this.runT >= C.RUN_AFTER ? this.runT + 1 : Math.min(this.runT + 1, C.RUN_AFTER - 1)) : 0; else if (this.onGround) this.runT = 0;
     let top = (this.runT >= C.RUN_AFTER ? C.RUN : C.WALK) * spd * (this.superT > 0 ? h.ult.speed : 1);
     if (!this.onGround) top = Math.max(C.WALK * spd, this.airTop || 0);
     if (this.act && this.act.slow) top *= this.onGround ? this.act.slow : 1;
@@ -603,6 +608,33 @@ class Player {
           update() { this.t++; const fi = self.anim.index(); this.reflect = fi >= S.on[0] && fi <= S.on[1]; if (this.t >= S.dur) self.endAct(); } };
         break;
       }
+      case 'stompCharge': {                            // v103 Luffy: hold = leg up (charge), release = STOMP — the shock-wave widens with the charge, no cap
+        if (!this.onGround) return;
+        if (!this.spend(S.cost)) return;
+        this.anim.play(S.up, S.rise, true); sfx().charge();
+        this.act = { kind: 'stompCharge', t: 0, pose: S.up, slow: 0, canTurn: true, phase: 'up', held: 0, dt: 0,
+          update() {
+            this.t++;
+            if (this.phase === 'up') {
+              const w = S.base + (++this.held) * S.grow; self.vx *= .6;
+              if (this.held % 12 === 0) sfx().charge();
+              for (let i = 0; i < (this.held > 60 ? 2 : 1); i++) g.parts.push({ x: self.cx + U.rnd(-w / 2, w / 2), y: self.feet - 1, vx: 0, vy: U.rnd(-1.4, -.4), life: 14, col: this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0', size: 2 });
+              if (this.held === 60 || this.held === 180 || (this.held > 180 && this.held % 180 === 0)) { g.text(self.cx, self.y - 14, 'ชาร์จ! กว้าง ' + Math.round(w) + 'px', '#ffd060', 40); sfx().gem(); }
+              if (!g.input.isHeld('skill') || self.hurtT > 0) { this.phase = 'down'; this.w = w; self.anim.play(S.down, 14, true); this.pose = S.down; }
+              return;
+            }
+            if (++this.dt === 5) {
+              const w = this.w, dmg = S.dmg + Math.floor(this.held / 60);
+              g.hit({ x: self.cx - w / 2, y: self.feet - 44, w, h: 48 }, dmg, { id: newSwing(), kb: 8 + Math.min(10, w / 60), dir: 0, from: self, at: self.cx, heavy: true });
+              g.shake(Math.min(12, 3 + w / 70)); g.hitstop(Math.min(8, 2 + w / 150)); sfx().boom(); PLAT.haptic('big');
+              const n = Math.min(70, Math.round(w / 10));
+              for (let i = 0; i < n; i++) { const x = self.cx - w / 2 + (i + .5) * w / n; g.dust(x, self.feet, 1); g.parts.push({ x, y: self.feet - 2, vx: U.sign(x - self.cx) * U.rnd(1, 3), vy: U.rnd(-6, -2) * (1 - Math.abs(x - self.cx) / w), life: 26, col: '#ffb04a', size: 3, grav: .3 }); }
+              if (w > 200) g.text(self.cx, self.y - 18, 'GOMU GOMU STOMP!!', '#ffd060', 60, true);
+            }
+            if (this.dt >= 14) self.endAct();
+          } };
+        break;
+      }
       case 'pillar': {                                 // Mia: fire pillar in front, several ticks
         if (!this.spend(S.cost)) return;
         this.anim.play(S.pose, S.dur, true); sfx().big();
@@ -937,6 +969,7 @@ class Player {
     if (a) this.endAct();
     this.cancelHeld();
     this.parryWin = PARRY_WIN + (PLAT.relicOn('shadow') ? 6 : 0); this.parryT = this.parryWin; this.parryCd = PARRY_CD;
+    if (this.hero.parryPose) { this.anim.play(this.hero.parryPose, 30, true); this.parryAnim = 30; }   // v103: Luffy parries with Gomu Gomu Fusen
     sfx().swing(); this.g.burst(this.cx + this.face * 12, this.y + this.h * .4, '#cfe8ff', 4, 1.2);
   }
   parryPerfect() { return this.parryT > (this.parryWin || PARRY_WIN) - PARRY_PERFECT - 1; }
@@ -1082,6 +1115,7 @@ class Player {
     let want;
     if (this.dead) want = 'dead';
     else if (this.hurtT > 0) want = this.hurtElem ? 'hurt_' + this.hurtElem : pick('hurt');
+    else if (this.parryAnim > 0 && this.hero.parryPose && !this.act) return;
     else if (this.act && this.act.pose) { const ap = m && has(m + this.act.pose) ? m + this.act.pose : this.act.pose; if (a.pose !== ap && a.pose !== this.act.pose) a.play(ap, null, true); return; }
     else if (this.guarding) want = 'guard';
     else if (this.wallDir) want = 'wall';

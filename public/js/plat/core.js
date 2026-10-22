@@ -22,7 +22,8 @@ PLAT.C = {
   GRAV: 0.62,            // gravity otherwise
   MAX_FALL: 9.5,
   WALK: 2.2, RUN: 3.4,   // px / frame
-  RUN_AFTER: 26,         // frames of holding a direction on the ground before walking turns into running
+  RUN_AFTER: 26,         // runT at/above this = running (v102: reached only by a double tap, see TAP_RUN)
+  TAP_RUN: 16,           // v102: tap a direction twice within this many frames to RUN (holding = walk)
   ACC_GROUND: 0.34, DEC_GROUND: 0.5, ACC_AIR: 0.24,
   JUMP: 9.2,             // jump velocity
   JUMP_CUT: 3.2,         // releasing jump early caps the upward speed to this…
