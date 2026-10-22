@@ -120,10 +120,35 @@ H.puff = {
     atk1: { n: 5, cw: 32, ax: 16 }, atk2: { n: 8, cw: 30, ax: 15 }, atk3: { n: 7, cw: 34, ax: 17 }, inhale: { n: 8, cw: 31, ax: 15 },
     fspit: { n: 6, cw: 33, ax: 16 }, fidle: { n: 4, cw: 33, ax: 16 }, fwalk: { n: 6, cw: 35, ax: 17 }, fhurt: { n: 4, cw: 34, ax: 17 }, guard: { n: 5, cw: 30, ax: 15 } }, { by: 33 }),
   scale: 1.45, box: [20, 30], hp: 5, speed: .9, jump: 1,
-  poses: { idle: { a: 'idle', fps: 4 }, walk: { a: 'walk', fps: 12 }, run: { a: 'walk', fps: 18 }, jump: { a: 'atk3', f: [0, 1, 2, 3], fps: 16, hold: true }, fall: { a: 'idle', f: [0] },
-    float: { a: 'fidle', fps: 8, loopy: true }, hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 5 }, guard: { a: 'guard', f: [2] },
-    m_idle: { a: 'fidle', fps: 5, loopy: true }, m_walk: { a: 'fwalk', fps: 10, loopy: true }, m_hurt: { a: 'fhurt', fps: 10 }, m_jump: { a: 'fidle', f: [1] }, m_fall: { a: 'fidle', f: [2] },
-    inhaling: { a: 'inhale', f: [3, 4, 5, 6, 7], fps: 12, loopy: true }, roll: { a: 'atk2', fps: 18, loopy: true } },
+  // v98 animation pass (checked against Kirby Super Star footage): quick blink instead of a
+  // ¾-second eye-close · upright rise → somersault at the top of a jump → upright fall ·
+  // cheeks puff up before hovering · mouth-open exhale when the hover ends · the roll loops
+  // only its ball frames (atk2 6–7 are the stand-up frames that used to flicker into it).
+  poses: { idle: { a: 'idle', f: [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 7], fps: 12 },
+    walk: { a: 'walk', fps: 14 }, run: { a: 'walk', fps: 20 },
+    jump: { a: 'walk', f: [6] }, fall: { a: 'idle', f: [0] }, flip: { a: 'atk3', f: [0, 1, 2, 3], fps: 22 },
+    puffUp: { a: 'fspit', f: [0, 1], fps: 20 }, float: { a: 'fidle', fps: 10, loopy: true }, exhale: { a: 'fspit', f: [2, 3, 4, 5], fps: 22 },
+    hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 5 }, guard: { a: 'guard', f: [2] },
+    m_idle: { a: 'fidle', fps: 5, loopy: true }, m_walk: { a: 'fwalk', f: [0, 1, 2, 3], fps: 10, loopy: true }, m_hurt: { a: 'fhurt', fps: 10 }, m_jump: { a: 'fidle', f: [1] }, m_fall: { a: 'fidle', f: [2] },
+    inhaling: { a: 'inhale', f: [3, 4, 5, 6, 7], fps: 12, loopy: true }, roll: { a: 'atk2', f: [0, 1, 2, 3], fps: 18, loopy: true } },
+  mod: { pose(p) {
+    const a = p.anim, wasFloat = p._kFloat; p._kFloat = p.floating;
+    if (p.dead || p.hurtT > 0 || p.act || p.guarding || p.mouth || p.wallDir) { p._kRise = false; return false; }
+    if (p.floating) {
+      if (!wasFloat) { a.play('puffUp', null, true); return true; }        // first press: cheeks fill up
+      if (a.pose === 'puffUp' && !a.done) return true;
+      if (a.pose !== 'float') a.play('float');
+      return true;
+    }
+    if (wasFloat) { a.play('exhale', null, true); p.sq = { x: 1.12, y: .9 }; return true; }   // hover ended: blow the air out
+    if (a.pose === 'exhale' && !a.done) return true;
+    if (p.onGround) { p._kRise = false; return false; }
+    if (p.jumping && p.vy < -2) { p._kRise = true; if (a.pose !== 'jump') a.play('jump'); return true; }
+    if (p._kRise) { p._kRise = false; a.play('flip', null, true); return true; }   // top of the jump
+    if (a.pose === 'flip' && !a.done) return true;
+    if (a.pose !== 'fall') a.play('fall');
+    return true;
+  } },
   airJumps: 5, float: { vy: -4.6, maxFall: 1.4, pose: 'float', puff: 'puff' }, guard: { pose: 'guard' },
   attack: { kind: 'combo', name: 'เตะสไลด์', steps: [{ pose: 'atk1', dur: 22, hit: [3, 17], box: [-6, -16, 32, 16], dmg: 2, kb: 4, lunge: 5.5, slide: true }],
     mouthful: { pose: 'fspit', dur: 18, fireAt: 6, proj: 'star', y: -18 } },
