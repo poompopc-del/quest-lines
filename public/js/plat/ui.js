@@ -434,7 +434,7 @@ function setupHud(g) {
   $('#hEnMark').style.left = (h.skill.cost || 0) + '%'; $('#hEnMark').style.display = h.skill.cost ? '' : 'none';
   $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
   $('#tA').textContent = h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'; $('#tS').textContent = shortName(h.skill.name); $('#tD').textContent = shortName(h.dash.name);
-  $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on'); $('#hUltHint').classList.remove('on'); $('#tU').classList.remove('ready'); $('#tW').classList.toggle('on2', !!h.forms); $('#hUltB span').textContent = h.chargeBar ? 'CHARGE' : 'ULT'; $('#hUltB').classList.toggle('charge', !!h.chargeBar);
+  $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on'); $('#hUltHint').classList.remove('on'); $('#tU').classList.remove('ready'); $('#tW').classList.toggle('on2', !!h.forms); $('#hUltB span').textContent = h.chargeBar ? 'CHARGE' : 'ULT'; $('#hUltB').classList.toggle('charge', !!h.chargeBar); $('#hUltB').style.display = h.ult || h.chargeBar ? '' : 'none';
   hudCache = {}; refreshGlyphs();
   const fc = $('#hFace'); heroSheet(g.heroId).then(() => { const ctx = fc.getContext('2d'); ctx.clearRect(0, 0, 48, 48); const sh = sheetCache[g.heroId], f = sh.frames('idle')[0]; PLAT.viewScale = 1;
     const s = 70 / (f.by || f.sh); PLAT.drawFrame(ctx, f, 24, 48 + (f.by * s) * .32, 1, s, { smooth: !!h.smooth }); });

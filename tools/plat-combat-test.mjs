@@ -165,7 +165,7 @@ const results = await page.evaluate(async (filter) => {
   });
 
   // 9 · every hero's skill and dash do what they say, against a target where the move should land
-  const skillSetup = { step: 24, bash: 30, proj: 90, flare: 70, spin: 22, beam: 120, spindash: 80, inhale: 50, slam: 30, burst: 40, heat: 90 };
+  const skillSetup = { step: 24, bash: 30, proj: 90, flare: 70, flareCharge: 70, spin: 22, beam: 120, spindash: 80, inhale: 50, slam: 30, burst: 40, heat: 90 };
   for (const hid of HEROES) for (const et of ['slime', 'tyrant']) await t(`skill ${P.HEROES[hid].skill.kind} hits · ${hid} vs ${et}`, async () => {
     const S = P.HEROES[hid].skill, hold = ['inhale', 'heat', 'spindash'].includes(S.kind) ? 70 : 1;
     const w = await hurtW(hid, et);
@@ -317,6 +317,35 @@ const results = await page.evaluate(async (filter) => {
     step(g, 30, i => { shield(p); press('down'); if (i === 0) press('attack'); else rel('attack'); });
     rel('down');
     return { ok: sum(log).hits >= 1, detail: `hits ${sum(log).hits}` };
+  });
+  // v93 · Shovel Knight: charged fireball (grows while held, crawls), dash-slash bats it, meteor = air ↓ + attack
+  await t('Shovel: holding the skill grows the fireball; released it crawls slowly', async () => {
+    const tap = await setup('shovel', null, 0, 1); press('skill'); step(tap.g, 2); rel('skill'); step(tap.g, 3);
+    const a = tap.g.projs.find(q => q.def.charged); const sa = a && a.scale, x0 = a && a.x; step(tap.g, 30); const crawl = a && Math.abs(a.x - x0) / 30;
+    const hold = await setup('shovel', null, 0, 1); press('skill'); step(hold.g, 95); rel('skill'); step(hold.g, 3);
+    const b = hold.g.projs.find(q => q.def.charged);
+    return { ok: !!a && !!b && b.scale > sa * 2 && b.def.dmg > a.def.dmg && b.def.box[0] > a.def.box[0] && crawl > .3 && crawl < 1.2,
+      detail: `tap scale ${sa && sa.toFixed(2)} dmg ${a && a.def.dmg} · max scale ${b && b.scale.toFixed(2)} dmg ${b && b.def.dmg} · speed ${crawl && crawl.toFixed(2)} px/f` };
+  });
+  await t('Shovel: dash-slash bats his fireball away fast and it hits far away', async () => {
+    const { g, p, e, log } = await setup('shovel', 'tyrant', 330, 1, { hp: 99 });
+    press('skill'); step(g, 40, () => shield(p)); rel('skill'); step(g, 20, () => shield(p));
+    const fb = g.projs.find(q => q.def.charged); const slow = fb && Math.abs(fb.vx);
+    press('dash'); step(g, 1); rel('dash'); step(g, 10, () => shield(p)); const fast = fb && Math.abs(fb.vx);
+    step(g, 60, () => shield(p));
+    return { ok: !!fb && slow < 1.2 && fast > 6 && fb.batted && sum(log).hits >= 1, detail: `speed ${slow} → ${fast} batted ${fb && fb.batted} hits ${sum(log).hits}` };
+  });
+  await t('Shovel: input reset while charging drops the fireball (nothing thrown)', async () => {
+    const { g, p } = await setup('shovel', null, 0, 1);
+    const saved = P.app.game; P.app.game = g;                 // the UI routes input resets to the running game
+    press('skill'); step(g, 40); I.reset('test'); step(g, 5); P.app.game = saved;
+    return { ok: !g.projs.some(q => q.def.charged) && !(p.act && p.act.kind === 'flareCharge') && !g.fxs.some(f => f.loop), detail: `shots ${g.projs.length} act ${p.act && p.act.kind}` };
+  });
+  await t('Shovel: meteor is air ↓+attack (no ULT, no cut-in) — dives, shock-wave on landing', async () => {
+    const { g, p, e, log } = await setup('shovel', 'tyrant', 60, 1, { hp: 99 });
+    p.y = GY - p.h - 150; p.vy = 0; p.onGround = false;
+    step(g, 40, i => { shield(p); press('down'); if (i === 0) press('attack'); else rel('attack'); }); rel('down');
+    return { ok: !P.HEROES.shovel.ult && !g.cut && sum(log).hits >= 1 && p.onGround, detail: `ult ${!!P.HEROES.shovel.ult} cut ${!!g.cut} hits ${sum(log).hits} ground ${p.onGround}` };
   });
   await t('Plink guard blocks a frontal hit', async () => {
     const { g, p } = await setup('pip', null, 0, 1);

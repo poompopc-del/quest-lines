@@ -318,17 +318,23 @@ H.kea = {
 
 H.shovel = {
   name: 'Shovel Knight', th: 'อัศวินพลั่ว (ตัวดั้งเดิมของโหมดนี้)', role: 'กระโดดพลั่ว · ไม้เท้าไฟ', color: '#6ab8ff', free: true,
-  desc: 'กลางอากาศ ↓+โจมตี = กดพลั่วเหยียบเด้งต่อเนื่อง (เด้งบนหนามได้) · สกิลบนพื้นยิงลูกไฟ กลางอากาศหมุนตัวฟัน',
+  desc: 'สกิลบนพื้น: กดค้าง = ชาร์จลูกไฟ (ยิ่งนานยิ่งใหญ่) ปล่อย = ลูกไฟลอยไปช้า ๆ → พุ่งฟันใส่ลูกไฟเพื่อตีมันพุ่งออกไป · กลางอากาศ ↓+โจมตี = พลั่วอุกกาบาต (ดิ่งลง เด้งบนศัตรู/หนาม กระแทกพื้นเป็นคลื่น) · สกิลกลางอากาศหมุนตัวฟัน',
   sprite: { kind: 'atlas', atlasSrc: 'heroes/shovel/atlas.json', img: 'heroes/shovel/atlas.png', footGap: 0, midBy: 16 },
   scale: 1.35, box: [16, 38], hp: 5, speed: 1, jump: 1,
   poses: { idle: { a: 'idle', fps: 5 }, walk: { a: 'walk', fps: 10 }, run: { a: 'walk', fps: 15 }, jump: { a: 'jump' }, fall: { a: 'fall' }, hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 5 },
     pogo: { a: 'pogo' }, dashp: { a: 'dash', fps: 16, loopy: true }, spinp: { a: 'spin', fps: 20, loopy: true }, castp: { a: 'cast', fps: 8 } },
   attack: { kind: 'combo', name: 'ฟาดพลั่ว', steps: [{ pose: 'attack', dur: 15, on: [3, 4], hit: [9, 15], box: [2, -32, 32, 24], dmg: 1, kb: 3 }] },
-  moves: { downAir: { name: 'กดพลั่วเหยียบ (Pogo)', kind: 'pogo' } },
-  skill: { kind: 'flare', name: 'ไม้เท้าไฟ', cost: 25, pose: 'castp', dur: 16, fireAt: 8, proj: 'flare', y: -24,
+  // v93: the old ULT (SHOVEL METEOR) is now an ordinary move — in the air ↓ + attack, no ULT gauge, no cut-in.
+  // It is the pogo plunge made heavier: dives fast, still bounces off enemies / spikes (chain them),
+  // and hitting the ground sends a shock-wave (smaller than the old ULT, since it is free and repeatable).
+  moves: { downAir: { name: 'พลั่วอุกกาบาต (กลางอากาศ ↓+โจมตี)', kind: 'meteorDive', fall: 11, wave: { r: 84, h: 40, dmg: 3 }, booms: 2, minFall: 8 } },
+  // v93: hold the skill on the ground to charge a fireball (bigger the longer), release to let it go — it CRAWLS
+  // forward very slowly; a dash-slash (L) that touches it bats it away at speed.
+  skill: { kind: 'flareCharge', name: 'ไม้เท้าไฟ (ค้าง = ชาร์จ)', cost: 25, pose: 'castp', proj: 'flare', y: -24, max: 90, slow: .35,
+    sizes: { scale: [1.6, 4.2], box: [14, 40], dmg: [2, 6], boom: [28, 70], boomDmg: [2, 5] }, crawl: .7, life: 520, push: 9,
     air: { kind: 'spin', name: 'หมุนตัวฟัน', cost: 25, pose: 'spinp', dur: 26, every: 8, box: [-28, -46, 56, 54], dmg: 1, hover: true } },
-  dash: { kind: 'dash', name: 'พุ่งฟัน', pose: 'dashp', speed: 5.6, dur: 14, cd: 36, hit: { box: [-4, -34, 46, 30], dmg: 1 }, air: true, inv: 14 },
-  ult: { input: 'dd+A', name: 'SHOVEL METEOR · พลั่วอุกกาบาต', kind: 'meteor', leap: 12, fall: 15, rise: 'jump', drop: 'pogo', wave: { r: 130, h: 48, dmg: 6 }, booms: 6 },
+  dash: { kind: 'dash', name: 'พุ่งฟัน (ตีลูกไฟ)', pose: 'dashp', speed: 5.6, dur: 14, cd: 36, hit: { box: [-4, -34, 46, 30], dmg: 1 }, air: true, inv: 14, batFire: true },
+  ult: null,
 };
 
 /* Roster rule (v86): only heroes whose sheet has a COMPLETE walk cycle are playable here.

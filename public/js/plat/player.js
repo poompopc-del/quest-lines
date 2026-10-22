@@ -420,7 +420,8 @@ class Player {
   // releasing a charge here used to shoot the moment the game resumed (the button "came up" while paused)
   cancelHeld() {
     this.charge = 0; this.holdS = null; this.holdA = null; this.queued = false; this.pend = null; this.dashBuf = 0; this.skillBuf = 0; this.buffer = 0;
-    if (this.act && this.act.kind === 'rev') this.endAct();          // Sonic's spin-dash rev would launch on "release"
+    if (this.act && this.act.kind === 'rev') this.endAct();
+    if (this.act && this.act.kind === 'flareCharge') this.endAct();     // Shovel Knight's charging fireball is dropped, not thrown          // Sonic's spin-dash rev would launch on "release"
   }
   releaseCharge() {
     const A = this.hero.attack; if (!A.charge) return;
@@ -460,6 +461,7 @@ class Player {
         if (D.hit) {
           if (D.hit.multi && this.t % D.hit.multi === 0) this.mid = newSwing();
           self.g.hit(self.box(D.hit.box), D.hit.dmg, { id: this.mid || sw, kb: D.hit.kb || 4, dir: self.face, from: self, los: self.losPt(), multi: !!D.hit.multi });
+          if (D.batFire) self.batFireballs(self.box(D.hit.box));
         }
         if (this.t % 2 === 0) { if (D.trail) self.g.burst(self.cx - self.face * 10, self.y + self.h * .6, D.trail, 1, .5); else self.g.afterimage(self); }
         if (this.t >= D.dur) { self.endAct(); self.vx *= .5; }
@@ -498,6 +500,7 @@ class Player {
     switch (m.kind || 'step') {
       case 'step': this.startStep(m, null); break;
       case 'pogo': this.startPogo(); break;
+      case 'meteorDive': this.startMeteorDive(m); break;
       case 'homing': if (this.onGround) return; this.startHoming(m); break;
       default: this.useSkill(Object.assign({ cost: 0 }, m), this.g.input);
     }
@@ -582,6 +585,35 @@ class Player {
         break;
       }
       case 'slam': if (this.spend(S.cost)) this.startSlam(false); break;
+      case 'flareCharge': {                            // Shovel Knight: hold = the fireball grows on the staff, release = it crawls out
+        if (!this.onGround) return;
+        if (!this.spend(S.cost)) return;
+        const Z = S.sizes, lerp = (a, k) => a[0] + (a[1] - a[0]) * k, frames = this.anim.sheet.frames('fireball') || [];
+        let k = 0;
+        const ball = g.fx({ frames, rate: 3, scale: Z.scale[0] }, 0, 0, { loop: true, follow: () => ({ x: self.cx + self.face * (16 + k * 14), y: self.feet + S.y - k * 8 }) });
+        this.anim.show(S.pose, 0); sfx().charge();
+        this.act = { kind: 'flareCharge', t: 0, pose: S.pose, slow: S.slow, canTurn: true,
+          update() {
+            this.t++; k = Math.min(1, this.t / S.max); ball.scale = lerp(Z.scale, k);
+            self.anim.show(S.pose, 0);
+            if (this.t % 10 === 0 && k < 1) sfx().charge();
+            if (this.t === S.max) { g.text(self.cx, self.y - 10, 'MAX!', '#ffb04a', 30); sfx().gem(); }
+            if (this.t % 3 === 0) g.burst(self.cx + self.face * (16 + k * 14) + U.rnd(-6, 6) * (1 + k), self.feet + S.y - k * 8 + U.rnd(-6, 6) * (1 + k), k >= 1 ? '#ffe36a' : '#ff8a3a', 1, .4);
+            if (!g.input.isHeld('skill') || self.hurtT > 0) this.release();
+          },
+          release() {
+            ball.dead = true;
+            const base = PLAT.PROJ[S.proj], b = Math.round(lerp(Z.box, k)), dmg = Math.round(lerp(Z.dmg, k));
+            const pd = Object.assign({}, base, { dmg, box: [b, b], speed: S.crawl, life: S.life, charged: true, pushSpeed: S.push,
+              explode: Object.assign({}, base.explode, { r: Math.round(lerp(Z.boom, k)), dmg: Math.round(lerp(Z.boomDmg, k)) }) });
+            g.spawnProj(pd, self.cx + self.face * (16 + k * 14), self.feet + S.y - k * 8, self.face, { owner: self, scale: lerp(Z.scale, k) });
+            sfx().big(); g.shake(1 + Math.round(k * 3));
+            self.anim.play(S.pose, 12, true);
+            self.act = { kind: 'skill', t: 0, pose: S.pose, slow: .3, cancellable: false, update() { if (++this.t >= 12) self.endAct(); else if (this.t > 4) this.cancellable = true; } };
+          },
+          onEnd() { ball.dead = true; } };
+        break;
+      }
       case 'beam': {
         if (!this.spend(S.cost)) return;
         this.anim.play(S.chargePose, null, true); sfx().charge();
@@ -644,6 +676,46 @@ class Player {
         break;
       }
     }
+  }
+  // Shovel Knight: a dash-slash that touches one of his own crawling fireballs bats it away, fast, in the dash direction
+  batFireballs(box) {
+    const g = this.g;
+    for (const pr of g.projs) {
+      if (pr.dead || pr.enemy || pr.owner !== this || !pr.def.charged || pr.batted) continue;
+      const b = pr.box(); if (!U.overlap(box, { x: b.x - 6, y: b.y - 6, w: b.w + 12, h: b.h + 12 })) continue;
+      pr.batted = true; pr.dir = this.face; pr.vx = this.face * pr.def.pushSpeed; pr.vy = 0; pr.life = 120; pr.id = newSwing();
+      g.hitstop(4); g.shake(3); sfx().clang(); sfx().big(); g.spark(pr.x, pr.y, 1.6); g.burst(pr.x, pr.y, '#ffd060', 10, 3);
+      g.text(pr.x, pr.y - 16, 'ตีลูกไฟ!', '#ffb04a', 36);
+    }
+  }
+  /* Shovel Knight: SHOVEL METEOR as a normal move (air ↓ + attack). Plunges straight down fast; touching an
+     enemy or spikes on the way bounces him up like the pogo (and the move stays on, so bounces chain);
+     reaching the ground after a real drop makes a shock-wave + a few blasts. */
+  startMeteorDive(M) {
+    if (this.onGround) return;
+    const self = this, g = this.g; let sw = newSwing();
+    this.anim.play('pogo', null, true); sfx().dash();
+    this.act = { kind: 'pogo', t: 0, pose: 'pogo', canTurn: true, cancellable: true, ownsY: true, fallT: 0,
+      update() {
+        this.t++;
+        if (self.vy < M.fall) { self.vy = Math.min(M.fall, self.vy + (self.vy < 0 ? C.GRAV : 1.6)); }
+        if (self.vy > 0) {
+          this.fallT++;
+          if (this.fallT % 2 === 0) g.burst(self.cx, self.y, '#ff8a3a', 1, .5);
+          const box = { x: self.x + 1, y: self.feet - 4, w: self.w - 2, h: 16 };
+          const n = g.hit(box, 1, { id: sw, kb: 0, dir: 0, from: self, pogo: true });
+          const spikes = W.tilesIn(g.L, box, PLAT.TILE.SPIKE).length;
+          if (n || spikes) { sw = newSwing(); self.vy = -8.6; this.fallT = 0; self.jumping = false; self.airDash = true; self.airJumps = self.hero.airJumps || 0; self.inv = Math.max(self.inv, 8); g.burst(self.cx, self.feet, '#ffffff', 5, 1.5); if (spikes) sfx().clang(); }
+        }
+      },
+      onLand() {
+        const big = this.fallT >= M.minFall; self.endAct();
+        if (!big) { sfx().land(); return; }
+        const w = M.wave; g.shake(4); g.hitstop(2); sfx().boom();
+        for (let i = 0; i < M.booms; i++) { const x = self.cx + (i - (M.booms - 1) / 2) * 40; g.fx({ frames: self.anim.sheet.frames('boom') || PLAT.fxSheet(PLAT.FXDEF.boom), rate: 3, scale: 1.6 }, x, self.feet - 18, {}); }
+        g.hit({ x: self.cx - w.r, y: self.feet - w.h, w: w.r * 2, h: w.h + 6 }, w.dmg, { id: newSwing(), kb: 6, dir: 0, from: self, up: true, los: self.losPt(), heavy: true });
+        for (let i = 0; i < 10; i++) g.burst(self.cx + U.rnd(-w.r, w.r), self.feet - 2, i % 2 ? '#ff6a2a' : '#ffd060', 1, 2.2);
+      } };
   }
   startPogo() {
     const self = this, g = this.g;
