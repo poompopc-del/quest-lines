@@ -228,6 +228,7 @@ class Game {
        finisher (last combo step) → +1 frame and a bigger burst · multi-hit ticks (o.multi) → 1 frame */
   hit(box, dmg, o) {
     o = o || {}; let n = 0, kills = 0, cxs = 0, cys = 0;
+    if (o.from && o.from.dmgMul && o.from.dmgMul !== 1) dmg = Math.round(dmg * o.from.dmgMul);   // v106: Luffy's Gear Second
     const dbg = PLAT.debug.on;
     if (dbg) PLAT.debug.boxes.push({ b: { x: box.x, y: box.y, w: box.w, h: box.h }, t: 6, col: o.from === this.player || (o.from && o.from.hero) ? '#ff3a3a' : '#ffa03a' });
     for (const e of this.enemies) {

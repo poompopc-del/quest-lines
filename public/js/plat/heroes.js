@@ -221,9 +221,12 @@ H.sonic = {
   ult: { input: 'SS', name: 'SUPER SONIC · ซูเปอร์โซนิค', kind: 'super', dur: 600, speed: 1.35, dmg: 3 },
 };
 
+// GEAR SECOND palette: Luffy's skin tones → pink / red (exact colours from the luffy strips)
+const GEAR_PAL = { key: 'gear2', from: [[248, 200, 144], [216, 136, 40], [160, 72, 0]], to: [[255, 150, 160], [228, 84, 92], [160, 32, 48]] };
+const U = PLAT.U, sfx_ = n => PLAT.sfx && PLAT.sfx[n] && PLAT.sfx[n]();
 H.luffy = {
   name: 'Luffy', th: 'ลูฟี่ หมวกฟาง', role: 'แขนยาง · ระยะกลาง', color: '#ff4a3a',
-  desc: 'โจมตีรัว = หมัด หมัด แล้วพิสทอลยืดแขน · ↓+โจมตีค้าง = แกตลิ่งชาร์จ · ↑+โจมตี = ขวานยางยืด · สกิล = บาซูก้า · ↓+สกิลค้าง = ชาร์จเหยียบพื้น (ยิ่งค้างยิ่งกว้าง) · ปัด = ลูกโป่ง · พุ่ง = วิ่งพุ่งบนพื้น / ร็อกเก็ตกลางอากาศ',
+  desc: 'Q / ⟳ = เกียร์ 2 (เร็ว · แรง ×1.5 · ชาร์จไว) · โจมตีรัว = หมัด หมัด แล้วพิสทอลยืดแขน · ↓+โจมตีค้าง = แกตลิ่งชาร์จ · ↑+โจมตี = ขวานยางยืด · สกิล = บาซูก้า · ↓+สกิลค้าง = ชาร์จเหยียบพื้น (ยิ่งค้างยิ่งกว้าง) · ปัด = ลูกโป่ง · พุ่ง = วิ่งพุ่งบนพื้น / ร็อกเก็ตกลางอากาศ',
   sprite: strip('heroes/luffy/', 127, {
     idle: { n: 7, cw: 33, ax: 14 }, walk: { n: 6, cw: 40, ax: 18 }, hurt: { n: 3, cw: 51, ax: 34 }, dead: { n: 4, cw: 62, ax: 23 },
     pistol: { n: 7, cw: 94, ax: 21 }, gatling: { n: 9, cw: 125, ax: 52 }, rocket: { n: 6, cw: 66, ax: 46 }, dash: { n: 8, cw: 61, ax: 26 },
@@ -233,7 +236,7 @@ H.luffy = {
     hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 5 }, fly: { a: 'rocket', f: [4, 5], fps: 12, loopy: true },
     // v103 (picked by the player): jab = the pistol wind-up without the stretch · bazooka plays 1→7 then back to 0 ·
     // parry = Gomu Gomu Fusen (balloon) · ground dash = the sprint with sparks · ↓+skill = leg raised while charging, stomp on release
-    jab: { a: 'pistol', f: [1, 2, 2, 1] }, bazUp: { a: 'bazooka', f: [1, 2, 3] }, bazHold: { a: 'bazooka', f: [4, 5, 6, 5], fps: 10, loopy: true }, bazGo: { a: 'bazooka', f: [7, 0, 0, 0, 0] }, parryp: { a: 'balloon', f: [2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    jab: { a: 'pistol', f: [1, 2, 2, 1] }, gearOn: { a: 'pistol', f: [0, 0, 1, 0, 0] }, bazUp: { a: 'bazooka', f: [1, 2, 3] }, bazHold: { a: 'bazooka', f: [4, 5, 6, 5], fps: 10, loopy: true }, bazGo: { a: 'bazooka', f: [7, 0, 0, 0, 0] }, parryp: { a: 'balloon', f: [2, 3, 4, 5, 6, 7, 8, 9, 10] },
     dashp: { a: 'dash', f: [0, 1, 2, 3, 4, 5, 6, 7], fps: 24, loopy: true }, stompUp: { a: 'axe', f: [0, 1] }, gatWind: { a: 'gatling', f: [0, 1] }, gatLoop: { a: 'gatling', f: [2, 3, 4, 5, 6, 7], fps: 24, loopy: true }, gatEnd: { a: 'gatling', f: [8] }, stompDown: { a: 'axe', f: [4, 5, 6, 7, 8, 9, 10] } },
   parryPose: 'parryp',
   attack: { kind: 'combo', name: 'หมัด · หมัด · โกมุโกมุโนะ พิสทอล', steps: [
@@ -249,7 +252,32 @@ H.luffy = {
   airDash: { kind: 'rocket', name: 'โกมุโกมุ ร็อกเก็ต', pose: 'fly', vx: 6.4, vy: -9.6, dur: 18, cd: 10, hit: { box: [-6, -40, 34, 40], dmg: 2 } },
   // ult: the gatling until the player picks the new one
   ult: { input: 'D+A', name: 'GOMU GOMU GATLING · แกตลิ่ง', kind: 'step', step: { pose: 'gatling', dur: 50, on: [2, 3, 4, 5, 6, 7], hit: [6, 44], box: [4, -48, 100, 36], dmg: 9, kb: 10, heavy: true, multi: true, shake: 5 } },
-  mod: { dash(p, D) { if (p.onGround) return false; p.startDash(p.hero.airDash); return true; } },
+  // v106 GEAR SECOND — a form change (Q / ⟳, like X's armour): pink-red skin, steam, faster, harder blows, charges fill faster
+  forms: [{ name: 'ปกติ' }, { name: 'เกียร์ 2' }], formLabel: 'เปลี่ยนร่าง', formBtn: 'เกียร์',
+  mod: {
+    dash(p, D) { if (p.onGround) return false; p.startDash(p.hero.airDash); return true; },
+    reset(p) { p.gear2 = false; p.speedMul = 1; p.dmgMul = 1; p.chargeMul = 1; p.ghostPal = null; },
+    update(p, inp) {
+      const g = p.g;
+      if (inp.wasPressed('swap') && p.onGround && !p.act && !p.dead && p.hurtT === 0) {
+        const on = !p.gear2;
+        p.anim.play(on ? 'gearOn' : 'idle', on ? 26 : null, true); sfx_(on ? 'gem' : 'select');
+        p.act = { kind: 'gear', t: 0, pose: on ? 'gearOn' : 'idle', ownsMove: true, noJump: true, canTurn: false,
+          update() { p.vx *= .5;
+            if (on && this.t % 2 === 0) for (let i = 0; i < 3; i++) g.parts.push({ x: p.cx + U.rnd(-14, 14), y: p.y + U.rnd(4, p.h), vx: U.rnd(-1.5, 1.5), vy: U.rnd(-3, -1), life: 26, col: 'rgba(255,220,230,.85)', size: 5, grav: -.02, fade: true });
+            if (++this.t === 14) { p.gear2 = on; p.speedMul = on ? 1.35 : 1; p.dmgMul = on ? 1.5 : 1; p.chargeMul = on ? 1.6 : 1; p.ghostPal = on ? GEAR_PAL : null;
+              if (on) { g.flashT = 10; g.shake(4); g.text(p.cx, p.y - 16, 'GEAR SECOND!', '#ff8aa0', 70, true); } else g.text(p.cx, p.y - 10, 'กลับร่างปกติ', '#ffd8a0', 40); }
+            if (this.t >= (on ? 26 : 16)) p.endAct(); } };
+        return true;
+      }
+      if (p.gear2) {                                   // steam off the skin, afterimages at speed
+        if (g.frame % 3 === 0) g.parts.push({ x: p.cx + U.rnd(-10, 10), y: p.y + U.rnd(2, p.h - 6), vx: U.rnd(-.6, .6), vy: U.rnd(-1.8, -.6), life: 30, col: 'rgba(255,225,235,.7)', size: 4, grav: -.01, fade: true });
+        if (Math.abs(p.vx) > 2.6 && g.frame % 4 === 0) g.afterimage(p);
+      }
+      return false;
+    },
+    drawOpts(p, o) { if (p.gear2) o.pal = GEAR_PAL; },
+  },
 };
 
 H.x = {

@@ -26,6 +26,8 @@ const COUNTER_WIN = 45, COUNTER_DMG = 4, COUNTER_PERFECT_DMG = 6;
 
 let SWING = 1;                         // global swing id: one swing hits each target once
 const newSwing = () => ++SWING;
+// v106: a charge just crossed 1 s, 3 s, then every further 3 s (works with fractional charge rates)
+const lvlUp = (h, inc) => { const a = h - inc; return [60, 180].some(m => a < m && h >= m) || (h > 180 && Math.floor((a - 180) / 180) !== Math.floor((h - 180) / 180)); };
 
 class Player {
   constructor(g, heroId, spawn, sheet) {
@@ -138,7 +140,7 @@ class Player {
     if (this.wallLock > 0) ax = 0;
     // v102: holding a direction WALKS; a double tap (runTap) makes it RUN until the direction is let go or reversed
     if (ax && this.onGround) this.runT = (Math.sign(this.vx) === ax || Math.abs(this.vx) < .5) ? (this.runT >= C.RUN_AFTER ? this.runT + 1 : Math.min(this.runT + 1, C.RUN_AFTER - 1)) : 0; else if (this.onGround) this.runT = 0;
-    let top = (this.runT >= C.RUN_AFTER ? C.RUN : C.WALK) * spd * (this.superT > 0 ? h.ult.speed : 1);
+    let top = (this.runT >= C.RUN_AFTER ? C.RUN : C.WALK) * spd * (this.superT > 0 ? h.ult.speed : 1) * (this.speedMul || 1);
     if (!this.onGround) top = Math.max(C.WALK * spd, this.airTop || 0);
     if (this.act && this.act.slow) top *= this.onGround ? this.act.slow : 1;
     if (this.mouth) top *= .85;
@@ -615,10 +617,10 @@ class Player {
           update() {
             this.t++;
             if (this.phase === 'wind') {
-              this.held++; self.vx *= .6;
-              if (this.held % 12 === 0) sfx().charge();
-              if (this.held % 3 === 0) g.burst(self.cx + self.face * 14, self.feet - 34, this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0', 1, .6);
-              if (this.held === 60 || this.held === 180 || (this.held > 180 && this.held % 180 === 0)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + ((S.base + this.held * S.perFrame) / 60).toFixed(1) + ' วิ', '#ffd060', 40); sfx().gem(); }
+              this.held += (self.chargeMul || 1); self.vx *= .6;
+              if (this.t % 12 === 0) sfx().charge();
+              if (this.t % 3 === 0) g.burst(self.cx + self.face * 14, self.feet - 34, this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0', 1, .6);
+              if (lvlUp(this.held, self.chargeMul || 1)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + ((S.base + this.held * S.perFrame) / 60).toFixed(1) + ' วิ', '#ffd060', 40); sfx().gem(); }
               if (!g.input.isHeld('attack') || self.hurtT > 0) { this.phase = 'go'; this.dur = Math.round(S.base + this.held * S.perFrame); this.dmg = S.dmg + Math.floor(this.held / 120); self.anim.play(S.loop, null, true); this.pose = S.loop; this.canTurn = false; this.sw = newSwing(); }
               return;
             }
@@ -642,7 +644,7 @@ class Player {
           update() {
             this.t++;
             if (this.phase === 'up') {
-              const w = S.base + (++this.held) * S.grow; self.vx *= .6;
+              this.held += (self.chargeMul || 1); const w = S.base + this.held * S.grow; self.vx *= .6;
               if (S.hold && this.held === S.rise) { self.anim.play(S.hold, null, true); this.pose = S.hold; }
               if (this.held % 12 === 0) sfx().charge();
               const col = this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0';
@@ -650,7 +652,7 @@ class Player {
                 if (front) g.parts.push({ x: self.cx + self.face * U.rnd(20, w), y: self.feet + S.y + U.rnd(-10, 10), vx: -self.face * 1.5, vy: 0, life: 12, col, size: 2, line: true });
                 else g.parts.push({ x: self.cx + U.rnd(-w / 2, w / 2), y: self.feet - 1, vx: 0, vy: U.rnd(-1.4, -.4), life: 14, col, size: 2 });
               }
-              if (this.held === 60 || this.held === 180 || (this.held > 180 && this.held % 180 === 0)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + (front ? 'ไกล ' : 'กว้าง ') + Math.round(w) + 'px', '#ffd060', 40); sfx().gem(); }
+              if (lvlUp(this.held, self.chargeMul || 1)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + (front ? 'ไกล ' : 'กว้าง ') + Math.round(w) + 'px', '#ffd060', 40); sfx().gem(); }
               if (!g.input.isHeld('skill') || self.hurtT > 0) { this.phase = 'go'; this.w = w; self.anim.play(S.go, S.goDur, true); this.pose = S.go; }
               return;
             }
