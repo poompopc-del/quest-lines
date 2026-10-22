@@ -374,6 +374,51 @@ const results = await page.evaluate(async (filter) => {
     step(g, 90, () => shield(p));
     return { ok: air && vAir > run + .4 && back < -run && p.onGround && !p.dashJump, detail: `air ${air} vx ${vAir.toFixed(2)} (run ${run.toFixed(2)}) reverse ${back.toFixed(2)} landed ${p.onGround}` };
   });
+  // v94 · PARRY (every hero) and harder enemies
+  for (const hid of HEROES) await t(`parry: a zombie bite is deflected and the zombie reels · ${hid}`, async () => {
+    const { g, p, e } = await setup(hid, 'zombie', 30, 1, { ai: true });
+    let hp0 = null, pressed = false;
+    for (let i = 0; i < 260 && !g.stats.parries; i++) {
+      // contact before the bite is not what is tested: protected until just before the bite lands, then parry
+      if (hp0 == null && !(e.st === 'bite' && e.stT >= e.def.bite.wind - 6)) { shield(p); p.hp = p.maxHp; step(g, 1); continue; }
+      if (hp0 == null) { hp0 = p.hp; p.inv = 0; }
+      if (!pressed) { pressed = true; press('parry'); step(g, 1); rel('parry'); } else step(g, 1);
+    }
+    step(g, 4);
+    return { ok: p.hp === hp0 && g.stats.parries >= 1 && e.st === 'dizzy', detail: `hp ${hp0}→${p.hp} parries ${g.stats.parries || 0} zombie ${e.st} pressed ${pressed} pT ${p.parryT} cd ${p.parryCd} act ${p.act && p.act.kind} hurtT ${p.hurtT}` };
+  });
+  await t('parry: PERFECT (first frames) vs late — perfect gives more energy and a longer stun', async () => {
+    const run = async late => { const { g, p, e } = await setup('knight', 'zombie', 26, 1); p.en = 0; p.inv = 0;
+      press('parry'); step(g, 1); rel('parry'); step(g, late ? 8 : 0); const r = p.hurt(1, e.cx, { src: e }); return { r, en: p.en, dz: e.dizzyFor, st: e.st }; };
+    const a = await run(false), b = await run(true);
+    return { ok: a.r === 'parried' && b.r === 'parried' && a.en > b.en && a.dz > b.dz && a.st === 'dizzy', detail: JSON.stringify([a, b]) };
+  });
+  await t('parry: whiffing locks the parry for a moment (no mashing)', async () => {
+    const { g, p, e } = await setup('knight', 'zombie', 26, 1); p.inv = 0;
+    press('parry'); step(g, 1); rel('parry'); step(g, 16);              // window over, still locked
+    press('parry'); step(g, 1); rel('parry'); const r = p.hurt(1, e.cx, { src: e });
+    return { ok: r === 'hit', detail: `second press during lock → ${r}` };
+  });
+  await t('parry: an enemy fireball is reflected and hits its shooter', async () => {
+    const { g, p, e, log } = await setup('knight', 'tyrant', 160, 1, { hp: 99 });
+    g.spawnProj('fireball', p.cx + 40, p.feet - 24, -1, { vx: -3.2 }); let parried = false;
+    for (let i = 0; i < 80; i++) { const pr = g.projs.find(q => q.enemy); if (!parried && pr && Math.abs(pr.x - p.cx) < 26) { press('parry'); step(g, 1); rel('parry'); parried = true; } else step(g, 1); }
+    return { ok: parried && g.stats.parries >= 1 && p.hp === p.maxHp && sum(log).hits >= 1 && sum(log).dmg >= 2, detail: `parries ${g.stats.parries || 0} hp ${p.hp}/${p.maxHp} tyrant hits ${sum(log).hits} dmg ${sum(log).dmg}` };
+  });
+  await t('parry: boss loses poise (repeated parries stagger it); spikes / pits cannot be parried', async () => {
+    const { g, p, e } = await setup('knight', 'garg', 60, 1, { hp: 99 }); e.set('move'); p.inv = 0;
+    const po = e.poise; for (let i = 0; i < 2; i++) { press('parry'); step(g, 1); rel('parry'); p.hurt(2, e.cx, { src: e }); step(g, 8); }
+    const boss = e.poise < po || e.st === 'stagger';
+    press('parry'); step(g, 1); rel('parry'); p.inv = 0; const r = p.hurt(1, p.cx, { unblockable: true });
+    return { ok: boss && r === 'hit', detail: `poise ${po}→${e.poise} st ${e.st} · spike → ${r}` };
+  });
+  await t('harder enemies: tougher, faster to act, 3 attack tokens; a poise-broken heavy recovers (was dizzy forever)', async () => {
+    const { g, e } = await setup('knight', 'tyrant', 200, 1, { ai: true });
+    const z = P.makeEnemy(g, 'zombie', 0, 0);
+    const tough = z.maxHp > P.ENEMIES.zombie.hp && e.def.rate < P.ENEMIES.tyrant.rate && e.def.sight > P.ENEMIES.tyrant.sight;
+    e.set('dizzy'); step(g, 140); const back = e.st !== 'dizzy';
+    return { ok: tough && back && P.ENEMY_TUNE.tokens === 3, detail: `zombie hp ${z.maxHp} (base ${P.ENEMIES.zombie.hp}) · tyrant rate ${e.def.rate} sight ${e.def.sight.toFixed(0)} · dizzy recovered ${back}` };
+  });
   await t('Plink guard blocks a frontal hit', async () => {
     const { g, p } = await setup('pip', null, 0, 1);
     press('down'); step(g, 3); const r = p.hurt(1, p.cx + 30); rel('down');
@@ -449,7 +494,7 @@ const results = await page.evaluate(async (filter) => {
     return { ok: p.hp === p.maxHp && !p.dead && !p.act && g.projs.length === 0 && g.freeze === 0 && g.mode === 'play', detail: `hp ${p.hp} dead ${p.dead} projs ${g.projs.length}` };
   });
 
-  // 11b · world-art enemy skins (art.js): only the LOOK changes — the fight is the base type's
+  // 11b · world-art enemy skins (art.js): only the LOOK changes — the fight is the base type's (with the v94 ENEMY_TUNE applied to every type alike)
   for (const th of Object.keys(P.SKINS)) for (const type of Object.keys(P.SKINS[th])) await t(`skin ${th}:${type} keeps stats, is hittable both sides, has its sprite`, async () => {
     QT.theme(th);
     const base = P.ENEMIES[type], out = [];
@@ -459,7 +504,7 @@ const results = await page.evaluate(async (filter) => {
       const hp0 = e.hp, ar0 = e.armor;
       press('attack'); step(g, 1); rel('attack'); step(g, 40, () => shield(p));
       out.push(sum(log).hits >= 1 && (e.hp < hp0 || e.armor < ar0));
-      out.push(e.def.sheet === P.SKINS[th][type].sheet && e.def.hp === base.hp && e.def.ai === base.ai && e.def.dmg === base.dmg && (e.def.armor || 0) === (base.armor || 0) && !!e.def.small === !!base.small);
+      out.push(e.def.sheet === P.SKINS[th][type].sheet && e.def.hp === Math.max(2, Math.round(base.hp * P.ENEMY_TUNE.hp)) && e.def.ai === base.ai && e.def.dmg === base.dmg && (e.def.armor || 0) === Math.round((base.armor || 0) * P.ENEMY_TUNE.armor) && !!e.def.small === !!base.small);
       out.push(!!P.assets.img(e.def.sheet.img) && !!e.anim.frame());
     }
     QT.theme('meadow');

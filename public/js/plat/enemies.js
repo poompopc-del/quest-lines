@@ -56,17 +56,31 @@ const E = PLAT.ENEMIES = {
    so enemies take turns. Being hit puts an enemy in hit-stun (no contact damage, AI paused);
    light enemies are interrupted by any hit, heavy ones only when their poise breaks (stagger). */
 const TELE = { bite: 1, crouch: 1, aim: 1, rev: 1, tele: 1 };
+/* v94 — HARDER ENEMIES (developer: "too weak"). One place to tune. Telegraph wind-ups ("!") keep their length
+   so attacks stay readable — and parryable — but enemies are tougher, see further, move and recover faster,
+   attack more often and three may attack at once. Bosses get more HP and shorter rests. */
+const TUNE = PLAT.ENEMY_TUNE = { hp: 1.6, armor: 1.3, bossHp: 1.3, speed: 1.25, chase: 1.3, sight: 1.35, cool: .55, rate: .6, wait: .6, recover: .65, shot: 1.3, swoop: 1.25, rest: .6, tokens: 3, bossRest: .7 };
+function tuneDef(d) {
+  if (d.boss) return Object.assign({}, d, { hp: Math.round(d.hp * TUNE.bossHp) });
+  const o = Object.assign({}, d, { hp: Math.max(2, Math.round(d.hp * TUNE.hp)) });
+  if (d.armor) o.armor = Math.round(d.armor * TUNE.armor);
+  if (d.speed) o.speed = d.speed * TUNE.speed; if (d.chase) o.chase = d.chase * TUNE.chase; if (d.sight) o.sight = d.sight * TUNE.sight;
+  if (d.rate) o.rate = Math.round(d.rate * TUNE.rate); if (d.wait) o.wait = Math.round(d.wait * TUNE.wait);
+  if (d.bite) o.bite = Object.assign({}, d.bite, { recover: Math.round(d.bite.recover * TUNE.recover) });
+  return o;
+}
+const coolT = n => Math.round(n * TUNE.cool);
 class Enemy {
   constructor(g, type, x, y, elite) {
     // the theme's skin (art.js) replaces only the look; AI / HP / damage stay the type's own
-    const d = this.def = (PLAT.enemyDef ? PLAT.enemyDef(type, g.spec && g.spec.theme) : null) || E[type] || PLAT.BOSSES[type]; this.type = type; this.g = g; this.elite = !!elite && !d.boss;
+    const d = this.def = tuneDef((PLAT.enemyDef ? PLAT.enemyDef(type, g.spec && g.spec.theme) : null) || E[type] || PLAT.BOSSES[type]); this.type = type; this.g = g; this.elite = !!elite && !d.boss;
     this.sc = d.scale * (this.elite ? 1.15 : 1);
     const geo = g.geom && g.geom[type], k = this.sc / d.scale;
     this.w = Math.round((geo ? geo.w : d.box[0]) * k); this.h = Math.round((geo ? geo.h : d.box[1]) * k); this.cOff = geo ? geo.c / d.scale : 0;
     this.x = x - this.w / 2; this.y = y - this.h; this.home = { x: this.x, y: this.y };
     this.vx = 0; this.vy = 0; this.dir = -1; this.hp = d.hp * (this.elite ? 2 : 1) + (this.elite ? 1 : 0); this.maxHp = this.hp; this.armor = d.armor || 0;
     this.maxPoise = (d.poise || 1) * (this.elite ? 2 : 1); this.poise = this.maxPoise;
-    this.t = U.rint(0, 60); this.st = 'idle'; this.stT = 0; this.flash = 0; this.kbT = 0; this.stunT = 0; this.cool = U.rint(20, 60);
+    this.t = U.rint(0, 60); this.st = 'idle'; this.stT = 0; this.flash = 0; this.kbT = 0; this.stunT = 0; this.cool = U.rint(10, 40); this.dizzyFor = 80;
     this.lastHit = new Set(); this.dead = false; this.deadT = 0; this.gone = false; this.stuckT = 0; this.lastX = this.x; this.combo = 0;
     this.anim = new PLAT.Anim(g.sheets.get(this.sheetKey()), {});
     this.anim.play('move');
@@ -91,7 +105,7 @@ class Enemy {
   token() { return this.g.takeToken(this); }
   release() { this.g.dropToken(this); }
   // a hit (or a stagger) cancels a wind-up / attack in progress
-  interrupt(next) { if (TELE[this.st] || this.st === 'swoop' || this.st === 'charge') { this.set(next || 'walk'); this.cool = 50; this.blocking = false; this.release(); } }
+  interrupt(next) { if (TELE[this.st] || this.st === 'swoop' || this.st === 'charge') { this.set(next || 'walk'); this.cool = coolT(50); this.blocking = false; this.release(); } }
 
   update() {
     const d = this.def, g = this.g, p = g.player; this.t++; this.stT++;
@@ -99,6 +113,7 @@ class Enemy {
     if (this.dead) { this.deadT++; this.vy = Math.min(this.vy + C.GRAV, C.MAX_FALL); if (!d.ghost && !this.inhaled) W.moveBody(g.L, this, this.vx *= .9, this.vy); if (this.deadT > 50) this.gone = true; this.anim.update(); return; }
     if (this.inhaled) return;
     if (this.kbT > 0) { this.kbT--; this.vx *= .86; }
+    else if (this.st === 'dizzy') { this.vx *= .7; this.anim.play('idle'); if (this.stT > this.dizzyFor) { this.set('walk'); this.cool = coolT(40); this.dizzyFor = 80; if (p) this.face(U.sign(p.cx - this.cx)); } }
     else this.think(p);
     if (d.ai !== 'flyer') {
       this.vy = Math.min(this.vy + C.GRAV, C.MAX_FALL);
@@ -135,7 +150,7 @@ class Enemy {
           }
           if (this.stT >= wind + B.recover) {
             if (this.elite && ++this.combo < 2) { this.set('bite'); this.anim.play('atk', wind + 10, true); }
-            else { this.combo = 0; this.set('walk'); this.cool = 60; this.release(); }
+            else { this.combo = 0; this.set('walk'); this.cool = coolT(60); this.release(); }
           }
           break;
         }
@@ -175,9 +190,9 @@ class Enemy {
       }
       case 'flyer': {                                       // ghost: drift → telegraph → swoop at where you were → recover
         if (this.st === 'tele') { this.vx *= .85; this.vy *= .85; this.face(toP); this.anim.play('atk'); if (this.stT % 6 < 3) this.flash = 2;
-          if (this.stT >= 26) { const tx = p.cx, ty = p.y + p.h / 2, dx = tx - this.cx, dy = ty - (this.y + this.h / 2), dd = Math.hypot(dx, dy) || 1; this.sw = { vx: dx / dd * 3.4, vy: dy / dd * 3.4 }; this.set('swoop'); sfx().dash(); }
+          if (this.stT >= 26) { const tx = p.cx, ty = p.y + p.h / 2, dx = tx - this.cx, dy = ty - (this.y + this.h / 2), dd = Math.hypot(dx, dy) || 1; this.sw = { vx: dx / dd * 3.4 * TUNE.swoop, vy: dy / dd * 3.4 * TUNE.swoop }; this.set('swoop'); sfx().dash(); }
           break; }
-        if (this.st === 'swoop') { this.vx = this.sw.vx; this.vy = this.sw.vy; if (this.t % 2 === 0) g.afterimage(this); if (this.stT >= 34) { if (this.elite && ++this.combo < 2) this.set('tele'); else { this.combo = 0; this.set('recover'); this.release(); this.cool = 100; } } break; }
+        if (this.st === 'swoop') { this.vx = this.sw.vx; this.vy = this.sw.vy; if (this.t % 2 === 0) g.afterimage(this); if (this.stT >= 34) { if (this.elite && ++this.combo < 2) this.set('tele'); else { this.combo = 0; this.set('recover'); this.release(); this.cool = coolT(100); } } break; }
         if (this.st === 'recover') { this.vx *= .95; this.vy += (this.home.y - this.y) * .002 - this.vy * .04; this.anim.play('move'); if (this.stT > 50) this.set('drift'); break; }
         const hx = this.home.x, hy = this.home.y;
         if (this.seesPlayer(d.sight, 160)) {
@@ -196,8 +211,8 @@ class Enemy {
           if (this.stT >= (this.elite ? 18 : 24)) { this.vy = -6.2; this.vx = this.dir * 4.3; this.set('leap'); this.anim.play('atk', 40, true); sfx().swing(); }
           break;
         }
-        if (this.st === 'leap') { if (this.onGround && this.stT > 4) { if (this.elite && ++this.combo < 2) { this.face(toP); this.set('crouch'); } else { this.combo = 0; this.set('rest'); this.vx = 0; this.release(); this.cool = 60; } } break; }
-        if (this.st === 'rest') { this.vx *= .8; this.anim.play('idle'); if (this.stT > 60) this.set('idle'); break; }
+        if (this.st === 'leap') { if (this.onGround && this.stT > 4) { if (this.elite && ++this.combo < 2) { this.face(toP); this.set('crouch'); } else { this.combo = 0; this.set('rest'); this.vx = 0; this.release(); this.cool = coolT(60); } } break; }
+        if (this.st === 'rest') { this.vx *= .8; this.anim.play('idle'); if (this.stT > 60 * TUNE.rest) this.set('idle'); break; }
         if (this.onGround && this.cool <= 0 && this.seesPlayer(d.sight, 70) && this.token()) { this.face(toP); this.set('crouch'); this.anim.play('idle'); break; }
         this.walkTurn(L);
         this.vx = this.dir * d.speed; this.anim.play('move');
@@ -209,7 +224,7 @@ class Enemy {
           if (this.stT === 28) {
             const sx = this.cx + this.dir * 18, sy = this.y + 16, a = Math.atan2((p.y + p.h / 2) - sy, Math.abs(p.cx - sx));
             const base = U.clamp(a, -.5, .5), shots = this.elite ? [-.22, 0, .22] : [0];
-            for (const o of shots) g.spawnProj('fireball', sx, sy, this.dir, { vx: this.dir * Math.cos(base + o) * 3.2, vy: Math.sin(base + o) * 3.2 });
+            for (const o of shots) g.spawnProj('fireball', sx, sy, this.dir, { vx: this.dir * Math.cos(base + o) * 3.2 * TUNE.shot, vy: Math.sin(base + o) * 3.2 * TUNE.shot });
             sfx().shoot();
           }
           if (this.stT > 48) { this.set('walk'); this.release(); this.cool = d.rate; }
@@ -235,7 +250,7 @@ class Enemy {
           break;
         }
         this.blocking = false;
-        if (this.st === 'dizzy') { this.vx = 0; this.anim.play('idle'); if (this.stT > 80) { this.set('walk'); this.cool = 60; } break; }
+        if (this.st === 'dizzy') { this.vx = 0; this.anim.play('idle'); if (this.stT > this.dizzyFor) { this.set('walk'); this.cool = coolT(60); this.dizzyFor = 80; } break; }
         if (this.onGround && this.cool <= 0 && this.seesPlayer(d.sight, 40) && this.token()) { this.face(toP); this.set('rev'); break; }
         this.walkTurn(L);
         this.vx = this.dir * d.speed; this.anim.play('move');
@@ -280,6 +295,17 @@ class Enemy {
       if (this.poise <= 0 && !d.boss) { this.poise = this.maxPoise; this.interrupt('dizzy'); this.set('dizzy'); this.kbT = 10; this.vx = dirKb * 1.5; g.text(this.cx, this.y - 10, 'เสียหลัก!', '#8aff8a', 40); }
     }
     return true;
+  }
+  /* v94 PARRY: the player deflected this enemy's attack. A normal enemy is knocked off balance (dizzy: takes ×2
+     damage, harmless) — longer after a PERFECT parry; an elite recovers faster. A boss loses a chunk of poise
+     instead (enough parries → stagger). */
+  parried(perfect, fromX) {
+    const g = this.g; if (this.dead) return;
+    this.release(); this.blocking = false;
+    if (this.boss) { this.poise -= perfect ? 10 : 6; this.flash = 8; if (this.breakPoise) this.breakPoise(); return; }
+    this.interrupt('dizzy'); this.set('dizzy'); this.dizzyFor = (perfect ? 110 : 75) * (this.elite ? .65 : 1);
+    this.kbT = 8; this.vx = U.sign(this.cx - (fromX != null ? fromX : g.player.cx)) * 2.2; this.flash = 8;
+    g.text(this.cx, this.y - 10, perfect ? 'เสียหลัก! ×2' : 'เสียหลัก!', '#8aff8a', 40);
   }
   updateArmorSheet() {
     const d = this.def;
@@ -403,7 +429,7 @@ class Boss extends Enemy {
         else if (this.stT < 56) this.alpha = (this.stT - 30) / 26;
         else { this.alpha = 1; this.set(this.phase >= 2 ? 'wave2' : 'wave'); }
         break;
-      case 'rest': this.vx = 0; this.anim.play('idle'); this.vulnerable = true; if (this.stT > (this.phase >= 2 ? 30 : 50)) this.set('move'); break;
+      case 'rest': this.vx = 0; this.anim.play('idle'); this.vulnerable = true; if (this.stT > (this.phase >= 2 ? 30 : 50) * TUNE.bossRest) this.set('move'); break;
     }
   }
   garg() {
@@ -490,14 +516,17 @@ class Boss extends Enemy {
     if (ok) {
       this.g.bossHit(this);
       // poise break → STAGGER: the boss reels (takes double damage); a flying dragon is knocked out of the sky
-      if (!this.dead && this.poise <= 0 && this.st !== 'stagger') {
-        this.poise = this.maxPoise; this.alpha = 1;
-        if (this.flying) { this.passes = 0; this.set('land'); this.dropFast = true; }
-        else this.set('stagger');
-        this.g.text(this.cx, this.y - 16, 'เสียหลัก! ตีแรง ×2', '#8aff8a', 60, true); sfx().heavy(); this.g.shake(4);
-      }
+      this.breakPoise();
     }
     return ok;
+  }
+  breakPoise() {
+    if (!this.dead && this.poise <= 0 && this.st !== 'stagger' && this.st !== 'intro' && this.st !== 'phase') {
+      this.poise = this.maxPoise; this.alpha = 1;
+      if (this.flying) { this.passes = 0; this.set('land'); this.dropFast = true; }
+      else this.set('stagger');
+      this.g.text(this.cx, this.y - 16, 'เสียหลัก! ตีแรง ×2', '#8aff8a', 60, true); sfx().heavy(); this.g.shake(4);
+    }
   }
   kill(o) {
     this.dead = true; this.deadT = 0; this.vx = 0; sfx().roar(); this.g.hitstop(8); this.g.shake(10);

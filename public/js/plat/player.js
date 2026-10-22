@@ -11,6 +11,13 @@
 'use strict';
 const PLAT = G.PLAT, C = PLAT.C, U = PLAT.U, W = PLAT.world;
 const sfx = () => PLAT.sfx;
+/* v94 PARRY (every hero) — press PARRY (O / F · pad LB · touch 🛡) just before an attack lands.
+     window   PARRY_WIN frames after the press; the first PARRY_PERFECT of them are a PERFECT parry
+     success  no damage · melee / contact attacker knocked off balance (dizzy, takes ×2) · shots reflected
+              (×2, PERFECT ×3) · boss loses poise · +energy +ULT · short invulnerability · parry ready again at once
+     whiff    the parry is locked for PARRY_CD frames after the press (no mashing) and you are slowed while it is up
+   Spikes / pits / lava are not attacks — they cannot be parried. */
+const PARRY_WIN = 12, PARRY_PERFECT = 5, PARRY_CD = 36;
 
 let SWING = 1;                         // global swing id: one swing hits each target once
 const newSwing = () => ++SWING;
@@ -30,7 +37,7 @@ class Player {
     this.inv = 0; this.hurtT = 0; this.dead = false; this.deadT = 0; this.act = null; this.cd = { dash: 0, shot: 0 };
     this.combo = 0; this.comboWin = 0; this.queued = false; this.floating = false; this.wallDir = 0; this.wallLock = 0;
     this.ball = false; this.mouth = null; this.charge = 0; this.airDash = true; this.rocketUsed = false; this.heat = 0;
-    this.mover = null; this.dashJump = false; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
+    this.mover = null; this.dashJump = false; this.parryT = 0; this.parryCd = 0; this.parryOk = 0; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
     this.t = 0; this.airT = 0; this.landT = 0; this.lastSafe = { x: spawn.x, y: spawn.y };
     this.ult = this.ult || 0; this.superT = 0; this.pend = null; this.holdS = null; this.holdA = null; this.pressAt = {};
     this.anim.play('idle', null, true);
@@ -68,8 +75,13 @@ class Player {
     else if (this.coyote > 0) this.coyote--;
 
     const md = h.mod, busy = md && md.update ? md.update(this, inp, ax) : false;   // hero module: forms, hover, beam-in …
+    if (this.parryCd > 0) this.parryCd--; if (this.parryOk > 0) this.parryOk--;
+    if (this.parryT > 0) this.parryT--;
+    else if (inp.wasPressed('parry') && this.parryCd <= 0 && this.hurtT === 0 && !busy) this.startParry();
     if (this.hurtT > 0) { this.hurtT--; if (this.onGround) this.vx *= .86; }
+    else if (this.parryT > 0) { if (this.onGround) this.vx *= .6; }                // committed: no attacks during the window
     else if (busy) { if (this.act) this.stepAct(inp, ax); }
+    else if (this.parryT > 0) { this.walk(inp, 0); this.jumpLogic(inp, ax); }
     else {
       this.startActions(inp, ax);
       if (h.attack.charge && this.charge > 0) {            // X: hold attack to charge the buster
@@ -843,10 +855,39 @@ class Player {
   }
 
   /* -------------------------------- damage -------------------------------- */
-  // returns 'hit' | 'blocked' | 'ignored'
+  /* ---------------------------------- parry ---------------------------------- */
+  startParry() {
+    const a = this.act;
+    if (a && /^(ult|beam|transform|nova|meteor|bigshot)$/.test(a.kind)) return;       // big committed moves cannot be cancelled
+    if (a) this.endAct();
+    this.cancelHeld();
+    this.parryT = PARRY_WIN; this.parryCd = PARRY_CD;
+    sfx().swing(); this.g.burst(this.cx + this.face * 12, this.y + this.h * .4, '#cfe8ff', 4, 1.2);
+  }
+  parryPerfect() { return this.parryT > PARRY_WIN - PARRY_PERFECT - 1; }
+  onParry(e, fromX, perfect) {
+    const g = this.g; if (perfect == null) perfect = this.parryPerfect();
+    if (e && e.parried) e.parried(perfect, this.cx);
+    this.parryT = 0; this.parryCd = 6; this.parryOk = 30;                 // a successful parry is ready again almost at once (chains)
+    this.inv = Math.max(this.inv, 22);
+    this.en = Math.min(100, this.en + (perfect ? 30 : 15)); this.gainUlt(perfect ? 20 : 10);
+    if (fromX != null) this.face = U.sign(fromX - this.cx) || this.face;
+    g.hitstop(perfect ? 10 : 6); g.shake(perfect ? 4 : 2); g.flashT = perfect ? 8 : 4; sfx().clang(); if (perfect) sfx().gem(); PLAT.haptic(perfect ? 'big' : 'hit');
+    const x = this.cx + this.face * 14, y = this.y + this.h * .4;
+    g.spark(x, y, perfect ? 2.2 : 1.5); g.burst(x, y, perfect ? '#ffe36a' : '#cfe8ff', perfect ? 16 : 10, 3);
+    g.text(this.cx, this.y - 12, perfect ? 'PERFECT PARRY!' : 'ปัด!', perfect ? '#ffe36a' : '#bfe8ff', perfect ? 50 : 36, perfect);
+    g.stats.parries = (g.stats.parries || 0) + 1;
+  }
+  // returns 'hit' | 'blocked' | 'ignored' | 'parried'
   hurt(dmg, fromX, o) {
     o = o || {};
-    if (this.dead || this.inv > 0) return 'ignored';
+    if (this.dead) return 'ignored';
+    if (this.parryT > 0 && !o.unblockable) {
+      let e = o.src || null;
+      if (!e && fromX != null) { let bd = 110; for (const q of this.g.enemies) { if (q.dead) continue; const d = Math.abs(q.cx - fromX); if (d < bd) { bd = d; e = q; } } }
+      this.onParry(e, fromX); return 'parried';
+    }
+    if (this.inv > 0) return 'ignored';
     const dir = fromX < this.cx ? 1 : -1;      // pushed away from the source
     if (this.guarding && Math.sign(fromX - this.cx) === this.face && !o.unblockable) {
       this.vx = dir * 2; sfx().clang(); this.g.burst(this.cx + this.face * 10, this.y + 20, '#e0f0ff', 6, 2); this.inv = 12; this.g.text(this.cx, this.y - 4, 'กันได้!', '#bfe8ff', 30); return 'blocked';
@@ -929,6 +970,15 @@ class Player {
       ctx.fillStyle = h.color || '#fff'; ctx.fillRect(this.x, this.y, this.w, this.h);
     }
     if (h.mod && h.mod.drawFront) h.mod.drawFront(ctx, this);
+    // parry window: a bright guard arc in front (gold during the PERFECT frames); a flash after a successful parry
+    if ((this.parryT > 0 || this.parryOk > 20) && !this.dead) {
+      const perf = this.parryT > 0 && this.parryPerfect(), cx = this.cx + this.face * 6, cy = this.y + this.h * .5, r = this.h * .62;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+      ctx.strokeStyle = perf || this.parryOk > 20 ? 'rgba(255,230,120,.95)' : 'rgba(150,220,255,.85)'; ctx.lineWidth = perf ? 4 : 3;
+      ctx.beginPath(); ctx.arc(cx, cy, r, this.face > 0 ? -1.1 : Math.PI - 1.1 + 0, this.face > 0 ? 1.1 : Math.PI + 1.1); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r - 4, this.face > 0 ? -.8 : Math.PI - .8, this.face > 0 ? .8 : Math.PI + .8); ctx.stroke();
+      ctx.restore();
+    }
   }
 }
 PLAT.Player = Player;

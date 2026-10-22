@@ -167,10 +167,10 @@ function refreshFullBtn() {
 /* ------------------------- controls: glyphs & pad info ------------------------- */
 // the pad glyphs follow the player's own button mapping (Settings → จอยเกม)
 const shortPad = a => { const b = (input.padMap[a] || [])[0]; return b == null ? '—' : PLAT.PAD.name(b, !input.pad || input.pad.standard).split(' / ')[0].split(' (')[0]; };
-const GLYPH = { key: { a: 'J', s: 'I', d: 'L', j: 'Space' }, get pad() { return { a: shortPad('attack'), s: shortPad('skill'), d: shortPad('dash'), j: shortPad('jump') }; } };
+const GLYPH = { key: { a: 'J', p: 'O', s: 'I', d: 'L', j: 'Space' }, get pad() { return { a: shortPad('attack'), p: shortPad('parry'), s: shortPad('skill'), d: shortPad('dash'), j: shortPad('jump') }; } };
 function refreshGlyphs() {
   const g = input.lastDevice === 'pad' || (input.pad && input.lastDevice !== 'touch' && input.lastDevice !== 'key') ? GLYPH.pad : GLYPH.key;
-  $$('#hAbil kbd').forEach((k, i) => k.textContent = [g.a, g.s, g.d][i] || k.textContent);
+  $$('#hAbil kbd').forEach((k, i) => k.textContent = [g.a, g.p, g.s, g.d][i] || k.textContent);
 }
 function renderPadStatus() {
   const el = $('#padStatus'); if (!el) return;
@@ -180,7 +180,7 @@ function renderPadStatus() {
     : '🎮 ยังไม่พบจอย — ต่อ Bluetooth/USB แล้ว<b>กดปุ่มใดก็ได้ 1 ครั้ง</b> เกมจะเจอเอง (เบราว์เซอร์จะไม่บอกว่ามีจอยจนกว่าจะกดปุ่ม)';
 }
 /* ------------------------------ controller remap ------------------------------ */
-const PAD_LABEL = { jump: 'กระโดด', attack: 'โจมตี / ยิง (ค้าง = ชาร์จ)', skill: 'สกิล', dash: 'พุ่ง / แดช', swap: 'เปลี่ยนเกราะ (X)', pause: 'หยุดเกม' };
+const PAD_LABEL = { jump: 'กระโดด', attack: 'โจมตี / ยิง (ค้าง = ชาร์จ)', parry: 'ปัดป้อง (Parry)', skill: 'สกิล', dash: 'พุ่ง / แดช', swap: 'เปลี่ยนเกราะ (X)', pause: 'หยุดเกม' };
 function renderPadMap() {
   const box = $('#padRemap'); if (!box) return;
   const std = !input.pad || input.pad.standard;
@@ -330,6 +330,7 @@ function moveList(h) {
   if (h.skills && h.skills.up) L.push({ k: '↑+I', n: h.skills.up.name, c: h.skills.up.cost });
   if (h.skills && h.skills.down) L.push({ k: '↓+I', n: h.skills.down.name, c: h.skills.down.cost });
   L.push({ k: 'L', n: h.dash.name });
+  L.push({ k: 'O', n: 'ปัดป้อง — กดตอนศัตรูจะโดน: ไม่เสียเลือด ศัตรูเสียหลัก (โดน ×2) กระสุนสะท้อนกลับ · กดเร็วพอดี = PERFECT', cls: 'hd' });
   if (h.chargeBar) L.push({ k: 'ค้าง J', n: 'ชาร์จบัสเตอร์ 4 ระดับ (หลอด CHARGE) · ระดับ 4 = LVL 4 BUSTER ใช้พลัง 50', cls: 'hd' });
   if (h.forms) L.push({ k: 'Q', n: 'เปลี่ยนเกราะ (บนพื้น): ' + h.forms.map(f => f.name).join(' → '), cls: 'hd' });
   if (h.ult) L.push({ k: 'ULT', n: `${h.ult.name} — ${ultHint(h.ult.input)}`, cls: 'hd' });
@@ -432,7 +433,7 @@ function setupHud(g) {
   $('#hHearts').innerHTML = Array.from({ length: g.player.maxHp }, () => '<i></i>').join('');
   $('#hGems').innerHTML = g.spec.boss || g.endlessWorld ? '' : Array.from({ length: g.L.gems.length }, () => '<i>💎</i>').join('');
   $('#hEnMark').style.left = (h.skill.cost || 0) + '%'; $('#hEnMark').style.display = h.skill.cost ? '' : 'none';
-  $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
+  $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abP"><kbd>O</kbd>ปัด</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
   $('#tA').textContent = h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'; $('#tS').textContent = shortName(h.skill.name); $('#tD').textContent = shortName(h.dash.name);
   $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on'); $('#hUltHint').classList.remove('on'); $('#tU').classList.remove('ready'); $('#tW').classList.toggle('on2', !!h.forms); $('#hUltB span').textContent = h.chargeBar ? 'CHARGE' : 'ULT'; $('#hUltB').classList.toggle('charge', !!h.chargeBar); $('#hUltB').style.display = h.ult || h.chargeBar ? '' : 'none';
   hudCache = {}; refreshGlyphs();
@@ -492,7 +493,7 @@ function finishLevel(r) {
     <p class="sub" style="text-align:center;margin:0">${id} ${PLAT.LEVELS[id].name}</p>
     <div class="res-rank rk ${r.rank}">${r.rank}</div>
     <div class="checks">${r.checks.map(c => `<div><span>${c.th}</span><span class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'}</span></div>`).join('')}</div>
-    <div class="kv"><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div>${PLAT.LEVELS[id].boss ? '' : `<div>💎<b>${r.gems.length}/${r.gemTotal}</b></div>`}<div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>ตาย<b>${r.deaths}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div></div>
+    <div class="kv"><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div>${PLAT.LEVELS[id].boss ? '' : `<div>💎<b>${r.gems.length}/${r.gemTotal}</b></div>`}<div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>ตาย<b>${r.deaths}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div><div>ปัดสำเร็จ<b>🛡 ${r.parries || 0}</b></div></div>
     ${newBest ? '<p class="note" style="text-align:center;color:#8aff8a">★ สถิติใหม่!</p>' : ''}
     <div class="reward">${paid ? `🪙 ทองเข้ากระเป๋าเกมหลัก +${gold}` : gold ? `🪙 ได้ทอง ${gold} — แต่ยังไม่มีเซฟเกมหลักในเครื่องนี้ (เริ่มเกมหลักก่อนแล้วทองจะเข้าครั้งถัดไป)` : '🪙 ทองให้เฉพาะผ่านครั้งแรก / 💎 ใหม่ / แรงก์ S ครั้งแรก'}
       <div class="note">${first ? 'ผ่านครั้งแรก' : 'เล่นซ้ำ (ได้จากเหรียญที่เก็บ)'}${newGems.length ? ` · 💎 ใหม่ ${newGems.length}` : ''}${firstS ? ' · แรงก์ S ครั้งแรก' : ''}</div></div>
@@ -539,7 +540,7 @@ function finishEndless(r) {
     <p class="sub" style="text-align:center;margin:0">∞ ${W.name} · ${PLAT.HEROES[r.heroId].name}</p>
     <div class="bigdist">${r.dist}<small> ม.</small></div>
     ${res.newBest ? '<div class="newbest">★ สถิติใหม่!</div>' : ''}
-    <div class="kv"><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>ระดับ<b>LV ${r.tier}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div><div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div></div>
+    <div class="kv"><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>ระดับ<b>LV ${r.tier}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div><div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div><div>ปัดสำเร็จ<b>🛡 ${r.parries || 0}</b></div></div>
     <div class="reward" style="color:var(--ink)">สถิติโลกนี้ · แต้มสูงสุด <b>${(rec.best || 0).toLocaleString()}</b> · ไกลสุด <b>${rec.bestDist || 0} ม.</b> · LV สูงสุด <b>${rec.bestTier || 1}</b> · เล่น ${rec.runs || 0} รอบ</div>
     <p class="note" style="text-align:center">ซีดด่าน ${r.seed}${dev && r.gen ? ` · สร้าง ${r.gen.built} ชิ้น · ไม่ผ่านตรวจ ${r.gen.failed} · สำรอง ${r.gen.fallback}` : ''}</p>
     <div class="menu" style="margin-top:6px"><button class="btn red" data-go2="endlessAgain">▶ เล่นอีกครั้ง (ด่านใหม่)</button><button class="btn" data-go2="endlessSeed">🎲 เล่นซ้ำด่านเดิม</button><button class="btn" data-go2="endless">∞ เลือกโลก</button><button class="btn" data-go2="map">🗺 แผนที่</button></div>`;

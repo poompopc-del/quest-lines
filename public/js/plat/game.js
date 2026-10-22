@@ -182,7 +182,7 @@ class Game {
       if (p.bodyHit || (p.act && p.act.kind === 'pogo' && p.vy > 0)) continue;       // we are the one hitting
       if (p.act && (p.act.kind === 'roll' || p.act.kind === 'spindash' || p.act.kind === 'ult')) continue;
       if (p.act && p.act.reflect) { if (!e.boss && !e.def.heavy) { e.kbT = 14; e.vx = (e.cx < p.cx ? -1 : 1) * 5; e.vy = -3; e.interrupt && e.interrupt(); } continue; }
-      p.hurt(e.def.dmg, e.cx);
+      p.hurt(e.def.dmg, e.cx, { src: e });
     }
   }
   playerHazards() {
@@ -283,7 +283,7 @@ class Game {
   }
   /* attack tokens: at most 2 enemies may be winding up / attacking at the same moment,
      so a crowd takes turns instead of hitting all at once */
-  takeToken(e) { if (this.tokens.has(e)) return true; if (this.tokens.size >= 2) return false; this.tokens.add(e); return true; }
+  takeToken(e) { if (this.tokens.has(e)) return true; if (this.tokens.size >= (PLAT.ENEMY_TUNE ? PLAT.ENEMY_TUNE.tokens : 2)) return false; this.tokens.add(e); return true; }
   dropToken(e) { this.tokens.delete(e); }
   // ground enemies push each other apart instead of stacking into one sprite
   separate() {
@@ -383,10 +383,15 @@ class Game {
       if (d.ground) { if (W.solidAt(L, Math.floor((pr.x + pr.dir * b.w / 2) / T), Math.floor((pr.y - 4) / T)) || !W.solidAt(L, Math.floor(pr.x / T), Math.floor((pr.y + 4) / T))) { this.killProj(pr); continue; } if (pr.t % 4 === 0) this.dust(pr.x, pr.y, 1, d.proc === 'shock' ? '#ffd060' : '#bfe8ff'); }
       else if (!d.boomerang && W.solidAt(L, Math.floor(pr.x / T), Math.floor(pr.y / T))) { if (!pr.enemy) for (const t of W.tilesIn(L, b, TL.BREAK)) this.breakTile(t.tx, t.ty); this.killProj(pr); continue; }
       if (pr.enemy) {
-        if (!p.dead && p.act && p.act.reflect && !d.ground && U.overlap(b, { x: p.x - 10, y: p.y - 6, w: p.w + 20, h: p.h + 8 })) {
-          // reflected: the shot now belongs to the player and flies back
-          pr.enemy = false; pr.owner = p; pr.vx = -pr.vx * 1.3 || p.face * 5; pr.vy = -pr.vy * .5; pr.dir = U.sign(pr.vx); pr.id = PLAT.newSwing(); pr.life = 90; pr.pierce = 1;
-          sfx().clang(); this.burst(pr.x, pr.y, '#cfe8ff', 8, 2); this.text(pr.x, pr.y - 10, 'สะท้อน!', '#bfe8ff', 30); continue;
+        const parry = p.parryT > 0;
+        if (!p.dead && ((p.act && p.act.reflect) || parry) && !d.ground && U.overlap(b, { x: p.x - 10, y: p.y - 6, w: p.w + 20, h: p.h + 8 })) {
+          // reflected: the shot now belongs to the player and flies back (a parried shot hits ×2, ×3 when PERFECT)
+          const perfect = parry && p.parryPerfect();
+          if (parry) pr.def = Object.assign({}, d, { dmg: Math.max(2, d.dmg * (perfect ? 3 : 2)) });
+          pr.enemy = false; pr.owner = p; pr.vx = -pr.vx * (parry ? 1.8 : 1.3) || p.face * 5; pr.vy = -pr.vy * .5; pr.dir = U.sign(pr.vx); pr.id = PLAT.newSwing(); pr.life = 90; pr.pierce = 1;
+          sfx().clang(); this.burst(pr.x, pr.y, '#cfe8ff', 8, 2); this.text(pr.x, pr.y - 10, 'สะท้อน!', '#bfe8ff', 30);
+          if (parry) p.onParry(null, pr.x, perfect);
+          continue;
         }
         if (!p.dead && U.overlap(b, { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 2 })) { const r = p.hurt(d.dmg, pr.x); if (r !== 'ignored' || !d.ground) { if (r !== 'ignored') this.killProj(pr); } }
       } else {
@@ -488,7 +493,7 @@ class Game {
     const s = this.stats, L = this.L, par = this.spec.par * 60;
     if (this.runner) {
       const R = this.runner;
-      return { endless: this.endlessWorld, levelId: this.levelId, heroId: this.heroId, seed: this.seed, dist: R.dist, tier: R.tier, score: R.score(s), frames: s.frames, coins: s.coins, kills: s.kills, hits: s.hits, maxChain: s.maxChain || 0,
+      return { endless: this.endlessWorld, levelId: this.levelId, heroId: this.heroId, seed: this.seed, dist: R.dist, tier: R.tier, score: R.score(s), frames: s.frames, coins: s.coins, kills: s.kills, hits: s.hits, maxChain: s.maxChain || 0, parries: s.parries || 0,
         gen: R.gen ? Object.assign({}, R.stats || R.gen.stats) : null, genLog: (R.log && R.log.length ? R.log : R.gen && R.gen.log || []).slice(-8) };
     }
     const checks = [
@@ -499,7 +504,7 @@ class Game {
     ];
     const n = checks.filter(c => c.ok).length, rank = n === 4 ? 'S' : n === 3 ? 'A' : n === 2 ? 'B' : 'C';
     const score = s.coins * 10 + s.kills * 50 + s.gems.size * 500 + Math.max(0, Math.round((par - s.frames) / 60)) * 10 + (s.hits === 0 ? 1000 : 0);
-    return { levelId: this.levelId, heroId: this.heroId, frames: s.frames, coins: s.coins, gems: [...s.gems], gemTotal: L.gems.length, kills: s.kills, enemyTotal: this.enemyTotal, hits: s.hits, deaths: s.deaths, maxChain: s.maxChain || 0, checks, rank, score };
+    return { levelId: this.levelId, heroId: this.heroId, frames: s.frames, coins: s.coins, gems: [...s.gems], gemTotal: L.gems.length, kills: s.kills, enemyTotal: this.enemyTotal, hits: s.hits, deaths: s.deaths, maxChain: s.maxChain || 0, parries: s.parries || 0, checks, rank, score };
   }
   hudState() {
     const p = this.player, L = this.L, h = p.hero;
