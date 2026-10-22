@@ -608,6 +608,31 @@ class Player {
           update() { this.t++; const fi = self.anim.index(); this.reflect = fi >= S.on[0] && fi <= S.on[1]; if (this.t >= S.dur) self.endAct(); } };
         break;
       }
+      case 'gatlingCharge': {                          // v105 Luffy: hold ↓+attack = wind up; release = a gatling flurry that lasts longer and hits harder the longer the charge (no cap)
+        if (!this.onGround) return;
+        this.anim.play(S.wind, 10, true); sfx().charge();
+        this.act = { kind: 'gatlingCharge', t: 0, pose: S.wind, slow: 0, canTurn: true, phase: 'wind', held: 0, ft: 0,
+          update() {
+            this.t++;
+            if (this.phase === 'wind') {
+              this.held++; self.vx *= .6;
+              if (this.held % 12 === 0) sfx().charge();
+              if (this.held % 3 === 0) g.burst(self.cx + self.face * 14, self.feet - 34, this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0', 1, .6);
+              if (this.held === 60 || this.held === 180 || (this.held > 180 && this.held % 180 === 0)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + ((S.base + this.held * S.perFrame) / 60).toFixed(1) + ' วิ', '#ffd060', 40); sfx().gem(); }
+              if (!g.input.isHeld('attack') || self.hurtT > 0) { this.phase = 'go'; this.dur = Math.round(S.base + this.held * S.perFrame); this.dmg = S.dmg + Math.floor(this.held / 120); self.anim.play(S.loop, null, true); this.pose = S.loop; this.canTurn = false; this.sw = newSwing(); }
+              return;
+            }
+            if (this.phase === 'go') {
+              this.ft++; self.vx = 0;
+              if (this.ft % S.every === 0) { this.sw = newSwing(); g.hit(self.box(S.box), this.dmg, { id: this.sw, kb: 1.5, dir: self.face, from: self, los: self.losPt() }); if (this.ft % (S.every * 2) === 0) sfx().swing(); }
+              if (this.ft % 2 === 0) g.parts.push({ x: self.cx + self.face * U.rnd(20, S.box[2]), y: self.feet + U.rnd(-44, -16), vx: self.face * U.rnd(2, 5), vy: 0, life: 6, col: '#ffd8a0', size: 3, line: true });
+              if (this.ft >= this.dur) { this.phase = 'end'; this.et = 0; self.anim.play(S.end, 14, true); this.pose = S.end; g.hit(self.box(S.box), this.dmg * 2, { id: newSwing(), kb: 9, dir: self.face, from: self, heavy: true }); g.shake(4); sfx().boom(); }
+              return;
+            }
+            if (++this.et >= 14) self.endAct();
+          } };
+        break;
+      }
       case 'chargeBlast': {                            // v104 Luffy: hold = charge (area grows, no cap) · release = the blast — 'ground' spreads both ways, 'front' shoots straight ahead
         if (!this.onGround) return;
         if (!this.spend(S.cost)) return;
