@@ -252,6 +252,9 @@ class Game {
       }
     }
     // breakable blocks
+    // Shovel Knight: a normal blow (not a shot / dash / plunge) on his own crawling fireball splits it (player.splitFireball)
+    if (o.from === this.player && !o.proj && !o.bat && !o.body && !o.pogo && this.player.splitFireball)
+      for (const pr of this.projs) if (pr.def.charged && !pr.dead && !pr.batted && pr.owner === this.player && U.overlap(box, pr.box())) { this.player.splitFireball(pr, o.id); break; }
     if (!o.noBreak) for (const t of W.tilesIn(this.L, box, TL.BREAK)) this.breakTile(t.tx, t.ty);
     if (n) {
       const heavy = o.heavy || dmg >= 3, stop = o.multi ? 1 : o.pogo ? 2 : heavy ? 5 : dmg >= 2 ? 3 : 2;

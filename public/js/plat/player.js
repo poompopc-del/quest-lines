@@ -464,7 +464,7 @@ class Player {
         if (this.ownsY) self.vy = 0;
         if (D.hit) {
           if (D.hit.multi && this.t % D.hit.multi === 0) this.mid = newSwing();
-          self.g.hit(self.box(D.hit.box), D.hit.dmg, { id: this.mid || sw, kb: D.hit.kb || 4, dir: self.face, from: self, los: self.losPt(), multi: !!D.hit.multi });
+          self.g.hit(self.box(D.hit.box), D.hit.dmg, { id: this.mid || sw, kb: D.hit.kb || 4, dir: self.face, from: self, los: self.losPt(), multi: !!D.hit.multi, bat: !!D.batFire });
           if (D.batFire) self.batFireballs(self.box(D.hit.box));
         }
         if (this.t % 2 === 0) { if (D.trail) self.g.burst(self.cx - self.face * 10, self.y + self.h * .6, D.trail, 1, .5); else self.g.afterimage(self); }
@@ -610,7 +610,8 @@ class Player {
             const base = PLAT.PROJ[S.proj], b = Math.round(lerp(Z.box, k)), dmg = Math.round(lerp(Z.dmg, k));
             const pd = Object.assign({}, base, { dmg, box: [b, b], speed: S.crawl, life: S.life, charged: true, pushSpeed: S.push,
               explode: Object.assign({}, base.explode, { r: Math.round(lerp(Z.boom, k)), dmg: Math.round(lerp(Z.boomDmg, k)) }) });
-            g.spawnProj(pd, self.cx + self.face * (16 + k * 14), self.feet + S.y - k * 8, self.face, { owner: self, scale: lerp(Z.scale, k) });
+            const fb = g.spawnProj(pd, self.cx + self.face * (16 + k * 14), self.feet + S.y - k * 8, self.face, { owner: self, scale: lerp(Z.scale, k) });
+            if (fb) fb.cluster = { members: [fb], cx: fb.x, cy: fb.y, lastId: 0 };
             sfx().big(); g.shake(1 + Math.round(k * 3));
             self.anim.play(S.pose, 12, true);
             self.act = { kind: 'skill', t: 0, pose: S.pose, slow: .3, cancellable: false, update() { if (++this.t >= 12) self.endAct(); else if (this.t > 4) this.cancellable = true; } };
@@ -683,14 +684,32 @@ class Player {
   }
   // Shovel Knight: a dash-slash that touches one of his own crawling fireballs bats it away, fast, in the dash direction
   batFireballs(box) {
-    const g = this.g;
-    for (const pr of g.projs) {
+    for (const pr of this.g.projs) {
       if (pr.dead || pr.enemy || pr.owner !== this || !pr.def.charged || pr.batted) continue;
       const b = pr.box(); if (!U.overlap(box, { x: b.x - 6, y: b.y - 6, w: b.w + 12, h: b.h + 12 })) continue;
-      pr.batted = true; pr.dir = this.face; pr.vx = this.face * pr.def.pushSpeed; pr.vy = 0; pr.life = 120; pr.id = newSwing();
-      g.hitstop(4); g.shake(3); sfx().clang(); sfx().big(); g.spark(pr.x, pr.y, 1.6); g.burst(pr.x, pr.y, '#ffd060', 10, 3);
-      g.text(pr.x, pr.y - 16, 'ตีลูกไฟ!', '#ffb04a', 36);
+      // the whole cluster flies together (same speed, so it stays one tight bunch)
+      const list = pr.cluster ? pr.cluster.members.filter(q => !q.dead) : [pr];
+      for (const q of list) { q.batted = true; q.dir = this.face; q.vx = this.face * q.def.pushSpeed; q.vy = 0; q.life = 120; q.id = newSwing(); }
+      const G = this.g; G.hitstop(4); G.shake(3); sfx().clang(); sfx().big(); G.spark(pr.x, pr.y, 1.6); G.burst(pr.x, pr.y, '#ffd060', 10, 3);
+      G.text(pr.x, pr.y - 16, list.length > 1 ? `ตีลูกไฟ! ×${list.length}` : 'ตีลูกไฟ!', '#ffb04a', 36);
     }
+  }
+  /* Shovel Knight: hitting his own crawling fireball with a normal attack splits off one more. Every split
+     slows the whole bunch down further, and the new ball appears right next to the others (they stay one
+     tight cluster, sharing one speed). One split per swing; at most CLUSTER_MAX balls. */
+  splitFireball(pr, swingId) {
+    const g = this.g, CL = pr.cluster || (pr.cluster = { members: [pr], cx: pr.x, cy: pr.y, lastId: 0 });
+    if (CL.lastId === swingId) return; CL.lastId = swingId;
+    const live = CL.members = CL.members.filter(q => !q.dead);
+    if (live.length >= 8) { g.text(pr.x, pr.y - 16, 'เต็ม!', '#ffb04a', 24); return; }
+    const sp = Math.max(.12, Math.abs(pr.vx) * .7) * (pr.dir || 1);
+    const n = live.length, ang = n * 2.4, rad = 6 + Math.min(10, n * 2.2);           // golden-angle spiral: packed, never far apart
+    const cx = live.reduce((a, q) => a + q.x, 0) / n, cy = live.reduce((a, q) => a + q.y, 0) / n;
+    const nb = g.spawnProj(pr.def, cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad * .8, pr.dir, { owner: this, scale: pr.scale, vx: sp });
+    if (!nb) return;
+    nb.cluster = CL; live.push(nb);
+    for (const q of live) { q.vx = sp; q.life = Math.max(q.life, q.def.life); }
+    sfx().big(); g.shake(1); g.burst(nb.x, nb.y, '#ff8a3a', 8, 2); g.text(cx, cy - 18, `ลูกไฟ ×${live.length}`, '#ffb04a', 30);
   }
   /* Shovel Knight: SHOVEL METEOR as a normal move (air ↓ + attack). Plunges straight down fast; touching an
      enemy or spikes on the way bounces him up like the pogo (and the move stays on, so bounces chain);

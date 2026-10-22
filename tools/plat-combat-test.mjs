@@ -335,6 +335,23 @@ const results = await page.evaluate(async (filter) => {
     step(g, 60, () => shield(p));
     return { ok: !!fb && slow < 1.2 && fast > 6 && fb.batted && sum(log).hits >= 1, detail: `speed ${slow} → ${fast} batted ${fb && fb.batted} hits ${sum(log).hits}` };
   });
+  await t('Shovel: hitting his fireball splits it — more hits, more balls, slower, one tight cluster; dash bats them all', async () => {
+    const { g, p } = await setup('shovel', null, 0, 1);
+    press('skill'); step(g, 30, () => shield(p)); rel('skill'); step(g, 16);
+    const speeds = [], counts = [];
+    for (let i = 0; i < 4; i++) {
+      const fb = g.projs.find(q => q.def.charged); p.x = fb.x - 30 - p.w / 2; p.face = 1;
+      press('attack'); step(g, 1); rel('attack'); step(g, 20, () => shield(p));
+      const fs = g.projs.filter(q => q.def.charged); counts.push(fs.length); speeds.push(Math.abs(fs[0].vx));
+    }
+    const fs = g.projs.filter(q => q.def.charged), xs = fs.map(q => q.x), ys = fs.map(q => q.y);
+    const spread = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    const same = fs.every(q => q.vx === fs[0].vx);
+    p.x = Math.min(...xs) - 40 - p.w / 2; press('dash'); step(g, 1); rel('dash'); step(g, 12, () => shield(p));
+    const batted = g.projs.filter(q => q.def.charged && q.batted).length;
+    return { ok: counts.join() === '2,3,4,5' && speeds.every((v, i) => i === 0 || v < speeds[i - 1]) && spread < 48 && same && batted === 5,
+      detail: `balls ${counts} · speed ${speeds.map(v => v.toFixed(2))} · cluster ${spread.toFixed(0)} px · batted ${batted}` };
+  });
   await t('Shovel: input reset while charging drops the fireball (nothing thrown)', async () => {
     const { g, p } = await setup('shovel', null, 0, 1);
     const saved = P.app.game; P.app.game = g;                 // the UI routes input resets to the running game
