@@ -347,6 +347,16 @@ const results = await page.evaluate(async (filter) => {
     step(g, 40, i => { shield(p); press('down'); if (i === 0) press('attack'); else rel('attack'); }); rel('down');
     return { ok: !P.HEROES.shovel.ult && !g.cut && sum(log).hits >= 1 && p.onGround, detail: `ult ${!!P.HEROES.shovel.ult} cut ${!!g.cut} hits ${sum(log).hits} ground ${p.onGround}` };
   });
+  // v93 · every hero: jump out of a ground dash = dash-jump (dash speed carried in the air, X-style instant reversal)
+  for (const hid of HEROES.filter(h => ['dash', 'roll'].includes(P.HEROES[h].dash.kind) || h === 'x')) await t(`dash-jump keeps the dash speed · ${hid}`, async () => {
+    const { g, p } = await setup(hid, null, 0, 1); p.en = 100;
+    press('right'); press('dash'); step(g, 4, () => shield(p)); rel('dash');
+    press('jump'); step(g, 1); const air = !p.onGround;
+    step(g, 10, () => shield(p)); const vAir = Math.abs(p.vx), run = P.C.RUN * (P.HEROES[hid].speed || 1);
+    rel('right'); press('left'); step(g, 2, () => shield(p)); const back = p.vx; rel('left'); rel('jump');
+    step(g, 90, () => shield(p));
+    return { ok: air && vAir > run + .4 && back < -run && p.onGround && !p.dashJump, detail: `air ${air} vx ${vAir.toFixed(2)} (run ${run.toFixed(2)}) reverse ${back.toFixed(2)} landed ${p.onGround}` };
+  });
   await t('Plink guard blocks a frontal hit', async () => {
     const { g, p } = await setup('pip', null, 0, 1);
     press('down'); step(g, 3); const r = p.hurt(1, p.cx + 30); rel('down');

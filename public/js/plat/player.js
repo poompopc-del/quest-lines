@@ -30,7 +30,7 @@ class Player {
     this.inv = 0; this.hurtT = 0; this.dead = false; this.deadT = 0; this.act = null; this.cd = { dash: 0, shot: 0 };
     this.combo = 0; this.comboWin = 0; this.queued = false; this.floating = false; this.wallDir = 0; this.wallLock = 0;
     this.ball = false; this.mouth = null; this.charge = 0; this.airDash = true; this.rocketUsed = false; this.heat = 0;
-    this.mover = null; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
+    this.mover = null; this.dashJump = false; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
     this.t = 0; this.airT = 0; this.landT = 0; this.lastSafe = { x: spawn.x, y: spawn.y };
     this.ult = this.ult || 0; this.superT = 0; this.pend = null; this.holdS = null; this.holdA = null; this.pressAt = {};
     this.anim.play('idle', null, true);
@@ -121,7 +121,7 @@ class Player {
     const target = ax * top;
     let k;
     if (this.onGround) k = ax ? C.ACC_GROUND * accMul : C.DEC_GROUND; else k = C.ACC_AIR * accMul;
-    const PH = h.phys; if (PH && (this.onGround ? PH.instantGround : PH.instantAir)) k = 99;   // X4: no momentum — full speed / stop / reverse at once
+    const PH = h.phys; if ((PH && (this.onGround ? PH.instantGround : PH.instantAir)) || (!this.onGround && this.dashJump)) k = 99;   // X4: no momentum — full speed / stop / reverse at once (every hero during a dash-jump)
     if (k === 99 && this.wallLock > 0) return;                                   // …except the wall-kick push
     if (ax && Math.sign(target) !== Math.sign(this.vx) && this.onGround) k *= 1.6;   // snappy turn
     const d = target - this.vx; this.vx += U.clamp(d, -k, k);
@@ -141,6 +141,7 @@ class Player {
       if (this.coyote > 0 && !this.act?.lockJump) {
         this.vy = -C.JUMP * (h.jump || 1); this.jumping = true; this.cutOK = true; this.buffer = 0; this.coyote = 0; this.onGround = false;
         this.airTop = Math.abs(this.vx); this.sq = { x: .86, y: 1.14 }; sfx().jump(); this.ball = !!h.ballJump; this.g.dust(this.cx, this.feet, 4);
+        if (this.act && (this.act.dashJumpable || this.act.kind === 'x4dash')) this.dashJump = true;   // dash-jump: dash speed in the air, X-style steering
         if (this.act && this.act.cancelOnJump) this.endAct();
         return;
       }
@@ -185,6 +186,7 @@ class Player {
     }
   }
   land(vy) {
+    this.dashJump = false;
     this.ball = false; this.floating = false; this.jumping = false; this.springT = 0;
     if (vy > 4) { this.sq = { x: 1.14, y: .86 }; sfx().land(); this.g.dust(this.cx, this.feet, vy > 7 ? 6 : 3); }
     if (this.act && this.act.onLand) this.act.onLand(vy);
@@ -452,7 +454,9 @@ class Player {
     this.anim.play(D.pose, null, true); sfx().dash();
     if (D.shout) g.text(this.cx + this.face * 10, this.y - 10, D.shout, '#ff5a6a', 70, true);
     if (D.inv) this.inv = Math.max(this.inv, D.inv);
-    this.act = { kind: D.kind, t: 0, pose: D.pose, ownsMove: true, ownsY: !this.onGround || D.kind === 'dash', noJump: D.kind !== 'roll', stopOnWall: true,
+    // v93: like X — a dash started on the ground can be jumped out of; the jump keeps the dash speed (dash-jump)
+    const fromGround = this.onGround;
+    this.act = { kind: D.kind, t: 0, pose: D.pose, ownsMove: true, ownsY: !this.onGround || D.kind === 'dash', noJump: !fromGround && D.kind !== 'roll', cancelOnJump: fromGround, dashJumpable: fromGround, stopOnWall: true,
       update() {
         this.t++;
         const ease = this.t > D.dur - 5 ? .7 : 1;
