@@ -411,6 +411,12 @@ const results = await page.evaluate(async (filter) => {
     const st = g.projs.find(q => q.owner === p && !q.dead), base = P.PROJ.star;
     return { ok: !!st && st.def.box[0] > base.box[0] * 2 && st.def.dmg > base.dmg && !p.mouth, detail: st ? `box ${st.def.box} dmg ${st.def.dmg}` : 'no star' };
   });
+  await t('inhaling tears a breakable block loose and swallows it · puff', async () => {
+    const { g, p } = await setup('puff', null, 0, 1); const tx = Math.floor((p.cx + 50) / T), ty = Math.floor((p.feet - 4) / T);
+    P.world.setTile(g.L, tx, ty, P.TILE.BREAK); g.tileCache = null;
+    press('attack'); step(g, 40, () => shield(p)); rel('attack'); step(g, 5);
+    return { ok: !P.world.solidAt(g.L, tx, ty) && p.mouth && p.mouth.n === 1, detail: `solid ${P.world.solidAt(g.L, tx, ty)} mouth ${p.mouth && p.mouth.n}` };
+  });
   await t('a parried boss drops 3 stars for Kirby · puff', async () => {
     const { g, p, e } = await setup('puff', 'aqua', 120, 1, { hp: 999 }); p.inv = 0; g.mstars = [];
     press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e }); step(g, 5);

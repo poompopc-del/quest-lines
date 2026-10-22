@@ -479,7 +479,8 @@ class Player {
     if (!this.onGround) { if (!D.air || !this.airDash) return; this.airDash = false; }
     if (!D.isSkill) this.cd.dash = D.cd; this.floating = false;
     const sw = newSwing(); let multi = 0;
-    this.anim.play(D.pose, null, true); sfx().dash();
+    const mp = this.mouth && this.anim.poses['m_' + D.pose] ? 'm_' + D.pose : D.pose;   // v101 Kirby: full-mouth dash stays puffed
+    this.anim.play(mp, null, true); sfx().dash();
     if (D.shout) g.text(this.cx + this.face * 10, this.y - 10, D.shout, '#ff5a6a', 70, true);
     if (D.inv) this.inv = Math.max(this.inv, D.inv);
     // v93: like X — a dash started on the ground can be jumped out of; the jump keeps the dash speed (dash-jump)

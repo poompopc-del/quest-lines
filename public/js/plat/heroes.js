@@ -133,7 +133,11 @@ H.puff = {
     hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 5 }, guard: { a: 'guard', f: [2] },
     hurt_fire: { a: 'burned', fps: 30 }, hurt_shock: { a: 'shocked', f: [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3], fps: 30 }, hurt_ice: { a: 'frozen', f: [0, 1, 2, 3, 3, 3, 4, 5, 6], fps: 24 },
     m_idle: { a: 'fidle', fps: 5, loopy: true }, m_walk: { a: 'fwalk', f: [0, 1, 2, 3], fps: 10, loopy: true }, m_hurt: { a: 'fhurt', fps: 10 }, m_jump: { a: 'fidle', f: [1] }, m_fall: { a: 'fidle', f: [2] },
-    inhaling: { a: 'inhale', f: [3, 4, 5, 6, 7], fps: 12, loopy: true }, roll: { a: 'atk2', f: [0, 1, 2, 3], fps: 18, loopy: true },
+    inhaling: { a: 'inhale', f: [3, 4, 5, 6, 7], fps: 12, loopy: true },
+    // v101: swallowing — the spit frames in reverse: small with the mouth still open → cheeks fill → settle
+    gulp: { a: 'fspit', f: [5, 5, 4, 4, 1, 1, 0], fps: 20 },
+    // v101: a dash with a full mouth slides along puffed up instead of rolling
+    m_roll: { a: 'fwalk', f: [4, 5], fps: 12, loopy: true }, roll: { a: 'atk2', f: [0, 1, 2, 3], fps: 18, loopy: true },
     // slide kick: duck flat → foot-forward slide held through the hit window → back up
     // (the strip's frames 0–1 point the foot backwards, so they are left out)
     atk1: { a: 'atk1', f: [2, 3, 4, 4, 4, 4, 4, 4, 4, 3, 2] },
@@ -150,7 +154,13 @@ H.puff = {
     return false;
   }, pose(p) {
     const a = p.anim, wasFloat = p._kFloat; p._kFloat = p.floating;
-    if (p.dead || p.hurtT > 0 || p.act || p.guarding || p.mouth || p.wallDir) { p._kRise = false; return false; }
+    const mn = p.mouth ? p.mouth.n || 1 : 0; if (!mn) p._kGulp = 0;
+    if (p.dead || p.hurtT > 0 || p.act || p.guarding || p.wallDir) { p._kRise = false; return false; }
+    if (mn) {                                           // something new went in: swallow it before the puffed poses
+      if (p._kGulp !== mn) { p._kGulp = mn; a.play('gulp', null, true); p.sq = { x: .9, y: 1.08 }; return true; }
+      if (a.pose === 'gulp' && !a.done) return true;
+      p._kRise = false; return false;
+    }
     if (p.floating) {
       if (!wasFloat) { a.play('puffUp', null, true); return true; }        // first press: cheeks fill up
       if (a.pose === 'puffUp' && !a.done) return true;

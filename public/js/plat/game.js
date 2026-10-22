@@ -350,6 +350,23 @@ class Game {
       e.kbT = 3; e.vx = U.sign(mx - e.cx) * S.pull; e.x += U.sign(mx - e.cx) * S.pull; const dy = U.sign(my - (e.y + e.h / 2)) * 1.2; if (!(dy > 0 && e.onGround)) e.y += dy;   // never push a tall one into the floor
       if (Math.abs(e.cx - mx) < 16 + (e.def.small ? 0 : e.w / 3)) { e.inhaled = true; e.dead = true; e.gone = true; this.onEnemyKilled(e); this.burst(mx, my, '#ffb0e0', 8, 1.5); return { type: e.type, n: e.def.small ? 1 : e.elite ? 3 : 2 }; }
     }
+    // v101: coins in the stream fly into the mouth (collected by the normal pickup as they reach Kirby)
+    for (const c of this.L.coins) {
+      if (c.got || c.x < zone.x || c.x > zone.x + zone.w || c.y < zone.y - 10 || c.y > zone.y + zone.h) continue;
+      c.x += U.sign(mx - c.x) * Math.min(4.5, Math.abs(mx - c.x)); c.y += U.sign(my - c.y) * Math.min(1.6, Math.abs(my - c.y));
+    }
+    // v101: breakable blocks / crates in front are torn loose and swallowed (a mouthful each)
+    const bz = { x: p.face > 0 ? p.cx + 6 : p.cx - 6 - S.range * .6, y: p.feet - S.height, w: S.range * .6, h: S.height };
+    const suck = this._suck || (this._suck = new Map());
+    for (const t of W.tilesIn(this.L, bz, TL.BREAK)) {
+      const k = t.tx + ',' + t.ty, n = (suck.get(k) || 0) + 1; suck.set(k, n);
+      if (n % 4 === 0) this.parts.push({ x: t.tx * T + 16 + U.rnd(-10, 10), y: t.ty * T + 16 + U.rnd(-10, 10), vx: -p.face * 3, vy: 0, life: 10, col: this.theme.brick, size: 3 });
+      if (n >= 18) {
+        suck.delete(k); this.breakTile(t.tx, t.ty);
+        for (let i = 0; i < 6; i++) this.parts.push({ x: t.tx * T + 16, y: t.ty * T + 16, vx: (mx - t.tx * T - 16) / 8 + U.rnd(-1, 1), vy: (my - t.ty * T - 16) / 8 + U.rnd(-1, 1), life: 8, col: this.theme.brick, size: 4 });
+        return { block: true, n: 1 };
+      }
+    }
     for (const st of this.mstars) {                                             // stars a parried boss dropped
       if (st.got || !U.overlap(zone, { x: st.x - 8, y: st.y - 8, w: 16, h: 16 })) continue;
       st.x += U.sign(mx - st.x) * Math.min(3.2, Math.abs(mx - st.x)); st.y += U.sign(my - st.y) * 1.2; st.pulled = true;
