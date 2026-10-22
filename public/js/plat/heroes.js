@@ -227,22 +227,23 @@ H.luffy = {
   sprite: strip('heroes/luffy/', 127, {
     idle: { n: 7, cw: 33, ax: 14 }, walk: { n: 6, cw: 40, ax: 18 }, hurt: { n: 3, cw: 51, ax: 34 }, dead: { n: 4, cw: 62, ax: 23 },
     pistol: { n: 7, cw: 94, ax: 21 }, gatling: { n: 9, cw: 125, ax: 52 }, rocket: { n: 6, cw: 66, ax: 46 }, dash: { n: 8, cw: 61, ax: 26 },
-    axe: { n: 11, cw: 68, ax: 19 }, bazooka: { n: 8, cw: 110, ax: 18 }, balloon: { n: 11, cw: 49, ax: 24 } }),
+    axe: { n: 11, cw: 68, ax: 19 }, bazooka: { n: 8, cw: 110, ax: 18, flip: true }, balloon: { n: 11, cw: 49, ax: 24 } }),
   scale: 1.08, box: [16, 42], hp: 5, speed: 1, jump: 1,
   poses: { idle: { a: 'idle', fps: 8 }, walk: { a: 'walk', fps: 12 }, run: { a: 'dash', f: [2, 3, 4, 5, 6, 7], fps: 16, loopy: true }, jump: { a: 'walk', f: [5] }, fall: { a: 'walk', f: [2] },
     hurt: { a: 'hurt', fps: 8 }, dead: { a: 'dead', fps: 5 }, fly: { a: 'rocket', f: [4, 5], fps: 12, loopy: true },
     // v103 (picked by the player): jab = the pistol wind-up without the stretch · bazooka plays 1→7 then back to 0 ·
     // parry = Gomu Gomu Fusen (balloon) · ground dash = the sprint with sparks · ↓+skill = leg raised while charging, stomp on release
-    jab: { a: 'pistol', f: [1, 2, 2, 1] }, bazookap: { a: 'bazooka', f: [1, 2, 3, 4, 5, 6, 7, 0] }, parryp: { a: 'balloon', f: [2, 3, 4, 5, 6, 7, 8, 9, 10] },
-    dashp: { a: 'dash', f: [0, 1, 2, 3, 4, 5, 6, 7], fps: 24, loopy: true }, stompUp: { a: 'axe', f: [0, 1, 2, 3, 4, 5, 6, 7, 8] }, stompDown: { a: 'axe', f: [9, 10] } },
+    jab: { a: 'pistol', f: [1, 2, 2, 1] }, bazUp: { a: 'bazooka', f: [1, 2, 3] }, bazHold: { a: 'bazooka', f: [4, 5, 6, 5], fps: 10, loopy: true }, bazGo: { a: 'bazooka', f: [7, 0, 0, 0, 0] }, parryp: { a: 'balloon', f: [2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    dashp: { a: 'dash', f: [0, 1, 2, 3, 4, 5, 6, 7], fps: 24, loopy: true }, stompUp: { a: 'axe', f: [0, 1] }, stompDown: { a: 'axe', f: [4, 5, 6, 7, 8, 9, 10] } },
   parryPose: 'parryp',
   attack: { kind: 'combo', name: 'หมัด · หมัด · โกมุโกมุโนะ พิสทอล', steps: [
     { pose: 'jab', dur: 13, on: [1, 2], hit: [4, 9], box: [4, -40, 24, 16], dmg: 1, kb: 2 },
     { pose: 'jab', dur: 13, on: [1, 2], hit: [4, 9], box: [4, -40, 24, 16], dmg: 1, kb: 2 },
     { pose: 'pistol', dur: 26, on: [3, 4, 5], hit: [11, 19], box: [6, -42, 30, 16], dmg: 3, kb: 5 }] },
   moves: { up: { name: 'โกมุโกมุโนะ โอโนะ (ขวาน)', pose: 'axe', dur: 40, on: [4, 5, 6, 7, 8, 9], hit: [14, 34], box: [0, -96, 44, 96], dmg: 3, kb: 6, up: true, heavy: true } },
-  skill: { kind: 'step', name: 'โกมุโกมุโนะ บาซูก้า', cost: 30, pose: 'bazookap', dur: 42, on: [3, 4, 5, 6], hit: [14, 34], box: [6, -46, 96, 30], dmg: 6, kb: 16, heavy: true, shake: 6 },
-  skills: { down: { kind: 'stompCharge', name: 'ชาร์จเหยียบพื้น (↓+สกิลค้าง · ยิ่งค้างยิ่งกว้าง ไม่มีเพดาน)', cost: 20, up: 'stompUp', down: 'stompDown', rise: 34, base: 70, grow: 2.4, dmg: 3 } },
+  // v104: both skills are HOLD-to-charge — the longer the hold, the further the blast reaches (no cap, +dmg every second)
+  skill: { kind: 'chargeBlast', area: 'front', name: 'โกมุโกมุโนะ บาซูก้า (สกิลค้าง · ยิ่งค้างยิ่งไกล)', cost: 30, up: 'bazUp', rise: 12, hold: 'bazHold', go: 'bazGo', goDur: 16, hitAt: 5, y: -30, base: 90, grow: 2.6, dmg: 4, kb: 16 },
+  skills: { down: { kind: 'chargeBlast', area: 'ground', name: 'ชาร์จเหยียบพื้น (↓+สกิลค้าง · ยิ่งค้างยิ่งกว้าง)', cost: 20, up: 'stompUp', rise: 10, go: 'stompDown', goDur: 18, hitAt: 14, base: 70, grow: 2.4, dmg: 3, kb: 8 } },
   dash: { kind: 'dash', name: 'พุ่งยาง', pose: 'dashp', speed: 7.2, dur: 18, cd: 26, hit: { box: [-6, -40, 34, 40], dmg: 2 }, air: false },
   airDash: { kind: 'rocket', name: 'โกมุโกมุ ร็อกเก็ต', pose: 'fly', vx: 6.4, vy: -9.6, dur: 18, cd: 10, hit: { box: [-6, -40, 34, 40], dmg: 2 } },
   // ult: the gatling until the player picks the new one

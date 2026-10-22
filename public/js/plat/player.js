@@ -608,30 +608,40 @@ class Player {
           update() { this.t++; const fi = self.anim.index(); this.reflect = fi >= S.on[0] && fi <= S.on[1]; if (this.t >= S.dur) self.endAct(); } };
         break;
       }
-      case 'stompCharge': {                            // v103 Luffy: hold = leg up (charge), release = STOMP — the shock-wave widens with the charge, no cap
+      case 'chargeBlast': {                            // v104 Luffy: hold = charge (area grows, no cap) · release = the blast — 'ground' spreads both ways, 'front' shoots straight ahead
         if (!this.onGround) return;
         if (!this.spend(S.cost)) return;
+        const front = S.area === 'front';
         this.anim.play(S.up, S.rise, true); sfx().charge();
-        this.act = { kind: 'stompCharge', t: 0, pose: S.up, slow: 0, canTurn: true, phase: 'up', held: 0, dt: 0,
+        this.act = { kind: 'chargeBlast', t: 0, pose: S.up, slow: 0, canTurn: !front, phase: 'up', held: 0, dt: 0,
           update() {
             this.t++;
             if (this.phase === 'up') {
               const w = S.base + (++this.held) * S.grow; self.vx *= .6;
+              if (S.hold && this.held === S.rise) { self.anim.play(S.hold, null, true); this.pose = S.hold; }
               if (this.held % 12 === 0) sfx().charge();
-              for (let i = 0; i < (this.held > 60 ? 2 : 1); i++) g.parts.push({ x: self.cx + U.rnd(-w / 2, w / 2), y: self.feet - 1, vx: 0, vy: U.rnd(-1.4, -.4), life: 14, col: this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0', size: 2 });
-              if (this.held === 60 || this.held === 180 || (this.held > 180 && this.held % 180 === 0)) { g.text(self.cx, self.y - 14, 'ชาร์จ! กว้าง ' + Math.round(w) + 'px', '#ffd060', 40); sfx().gem(); }
-              if (!g.input.isHeld('skill') || self.hurtT > 0) { this.phase = 'down'; this.w = w; self.anim.play(S.down, 14, true); this.pose = S.down; }
+              const col = this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0';
+              for (let i = 0; i < (this.held > 60 ? 2 : 1); i++) {
+                if (front) g.parts.push({ x: self.cx + self.face * U.rnd(20, w), y: self.feet + S.y + U.rnd(-10, 10), vx: -self.face * 1.5, vy: 0, life: 12, col, size: 2, line: true });
+                else g.parts.push({ x: self.cx + U.rnd(-w / 2, w / 2), y: self.feet - 1, vx: 0, vy: U.rnd(-1.4, -.4), life: 14, col, size: 2 });
+              }
+              if (this.held === 60 || this.held === 180 || (this.held > 180 && this.held % 180 === 0)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + (front ? 'ไกล ' : 'กว้าง ') + Math.round(w) + 'px', '#ffd060', 40); sfx().gem(); }
+              if (!g.input.isHeld('skill') || self.hurtT > 0) { this.phase = 'go'; this.w = w; self.anim.play(S.go, S.goDur, true); this.pose = S.go; }
               return;
             }
-            if (++this.dt === 5) {
-              const w = this.w, dmg = S.dmg + Math.floor(this.held / 60);
-              g.hit({ x: self.cx - w / 2, y: self.feet - 44, w, h: 48 }, dmg, { id: newSwing(), kb: 8 + Math.min(10, w / 60), dir: 0, from: self, at: self.cx, heavy: true });
+            if (++this.dt === S.hitAt) {
+              const w = this.w, dmg = S.dmg + Math.floor(this.held / 60), fy = self.feet + (S.y || 0);
+              const box = front ? { x: self.face > 0 ? self.cx : self.cx - w, y: fy - 24, w, h: 48 } : { x: self.cx - w / 2, y: self.feet - 44, w, h: 48 };
+              g.hit(box, dmg, { id: newSwing(), kb: S.kb + Math.min(10, w / 60), dir: front ? self.face : 0, from: self, at: self.cx, heavy: true });
               g.shake(Math.min(12, 3 + w / 70)); g.hitstop(Math.min(8, 2 + w / 150)); sfx().boom(); PLAT.haptic('big');
               const n = Math.min(70, Math.round(w / 10));
-              for (let i = 0; i < n; i++) { const x = self.cx - w / 2 + (i + .5) * w / n; g.dust(x, self.feet, 1); g.parts.push({ x, y: self.feet - 2, vx: U.sign(x - self.cx) * U.rnd(1, 3), vy: U.rnd(-6, -2) * (1 - Math.abs(x - self.cx) / w), life: 26, col: '#ffb04a', size: 3, grav: .3 }); }
-              if (w > 200) g.text(self.cx, self.y - 18, 'GOMU GOMU STOMP!!', '#ffd060', 60, true);
+              for (let i = 0; i < n; i++) {
+                if (front) { const x = self.cx + self.face * (i + .5) * w / n; g.parts.push({ x, y: fy + U.rnd(-14, 14), vx: self.face * U.rnd(4, 9), vy: U.rnd(-1, 1), life: 16, col: '#ffe0a0', size: 3, line: true }); if (i % 4 === 0) g.burst(x, fy, '#ffb04a', 1, 1.2); }
+                else { const x = self.cx - w / 2 + (i + .5) * w / n; g.dust(x, self.feet, 1); g.parts.push({ x, y: self.feet - 2, vx: U.sign(x - self.cx) * U.rnd(1, 3), vy: U.rnd(-6, -2) * (1 - Math.abs(x - self.cx) / w), life: 26, col: '#ffb04a', size: 3, grav: .3 }); }
+              }
+              if (w > 200) g.text(self.cx, self.y - 18, front ? 'GOMU GOMU BAZOOKA!!' : 'GOMU GOMU STOMP!!', '#ffd060', 60, true);
             }
-            if (this.dt >= 14) self.endAct();
+            if (this.dt >= S.goDur) self.endAct();
           } };
         break;
       }

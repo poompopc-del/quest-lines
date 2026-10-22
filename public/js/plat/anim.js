@@ -36,6 +36,7 @@ class Sheet {
       const by = a.by != null ? a.by : a.ch ? a.ch : (def.by != null ? def.by : def.ch);   // feet line inside the cell
       if (a.rects) a.rects.forEach(([x, w, ax]) => frames.push({ src, sx: x + 1, sy: 0, sw: w - 2, sh: ch, ax: ax - 1, by }));   // 1 px inset: no divider bleed when smoothed
       else for (let i = 0; i < a.n; i++) frames.push({ src, sx: i * a.cw + (a.trimL || 0), sy: 0, sw: a.cw - (a.trimL || 0) - (a.trim || 0), sh: ch, ax: a.ax - (a.trimL || 0), by });
+      if (a.flip) frames.forEach(f => { f.flip = true; });                   // v104: a strip drawn facing LEFT (mirrored around its anchor)
       this.anims[name] = frames;
     }
   }
