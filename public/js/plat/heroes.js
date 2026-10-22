@@ -130,8 +130,17 @@ H.puff = {
     puffUp: { a: 'fspit', f: [0, 1], fps: 20 }, float: { a: 'fidle', fps: 10, loopy: true }, exhale: { a: 'fspit', f: [2, 3, 4, 5], fps: 22 },
     hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 5 }, guard: { a: 'guard', f: [2] },
     m_idle: { a: 'fidle', fps: 5, loopy: true }, m_walk: { a: 'fwalk', f: [0, 1, 2, 3], fps: 10, loopy: true }, m_hurt: { a: 'fhurt', fps: 10 }, m_jump: { a: 'fidle', f: [1] }, m_fall: { a: 'fidle', f: [2] },
-    inhaling: { a: 'inhale', f: [3, 4, 5, 6, 7], fps: 12, loopy: true }, roll: { a: 'atk2', f: [0, 1, 2, 3], fps: 18, loopy: true } },
-  mod: { pose(p) {
+    inhaling: { a: 'inhale', f: [3, 4, 5, 6, 7], fps: 12, loopy: true }, roll: { a: 'atk2', f: [0, 1, 2, 3], fps: 18, loopy: true },
+    // slide kick: duck flat → foot-forward slide held through the hit window → back up
+    // (the strip's frames 0–1 point the foot backwards, so they are left out)
+    atk1: { a: 'atk1', f: [2, 3, 4, 4, 4, 4, 4, 4, 4, 3, 2] },
+    // air attack: a double somersault (the strip's frames 4–6 are the back-view puff-up)
+    atk3: { a: 'atk3', f: [0, 1, 2, 3, 0, 1, 2, 3] } },
+  mod: { update(p) {
+    // dust kicked up behind the slide (Kirby Super Star)
+    if (p.act && p.act.pose === 'atk1' && p.onGround && (p.act.t || 0) % 3 === 1 && Math.abs(p.vx) > 1.5) p.g.dust(p.cx - p.face * 12, p.feet, 1);
+    return false;
+  }, pose(p) {
     const a = p.anim, wasFloat = p._kFloat; p._kFloat = p.floating;
     if (p.dead || p.hurtT > 0 || p.act || p.guarding || p.mouth || p.wallDir) { p._kRise = false; return false; }
     if (p.floating) {
