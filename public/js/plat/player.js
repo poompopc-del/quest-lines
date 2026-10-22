@@ -18,6 +18,11 @@ const sfx = () => PLAT.sfx;
      whiff    the parry is locked for PARRY_CD frames after the press (no mashing) and you are slowed while it is up
    Spikes / pits / lava are not attacks — they cannot be parried. */
 const PARRY_WIN = 12, PARRY_PERFECT = 5, PARRY_CD = 36;
+/* v95 COUNTER STRIKE — a normal ATTACK pressed within COUNTER_WIN frames after a successful parry becomes a
+   special move for every hero: a flash-step to the parried enemy (afterimages), a huge crescent slash with a
+   long hit-stop, white flash, shake and a "COUNTER!" call-out. Big damage (the reeling enemy also takes ×2),
+   PERFECT parry → PERFECT COUNTER (more damage, gold slash). Invulnerable for the whole move. */
+const COUNTER_WIN = 45, COUNTER_DMG = 4, COUNTER_PERFECT_DMG = 6;
 
 let SWING = 1;                         // global swing id: one swing hits each target once
 const newSwing = () => ++SWING;
@@ -239,6 +244,7 @@ class Player {
   startActions(inp, ax) {
     const h = this.hero, I = h.ult && h.ult.input;
     this.trackInputs(inp);
+    if (this.parryOk > 0 && inp.wasPressed('attack') && !(this.act && /^(counter|ult)$/.test(this.act.kind))) { this.startCounter(); return; }
     // guard (Plink / Kirby): hold ↓ on the ground
     if (h.guard && !this.act && this.onGround && inp.isHeld('down') && !ax && !this.holdA) { this.guarding = true; this.vx *= .6; }
     if (inp.wasPressed('ult') && this.ultReady) return this.startUlt();            // touch ULT button
@@ -855,6 +861,48 @@ class Player {
   }
 
   /* -------------------------------- damage -------------------------------- */
+  /* --------------------------------- counter --------------------------------- */
+  counterPose() {
+    const h = this.hero, A = h.attack;
+    if (h.counterPose) return h.counterPose;
+    if (A.steps && A.steps.length) return A.steps[A.steps.length - 1].pose;          // the combo finisher
+    return (h.skill && h.skill.kind === 'step' && h.skill.pose) || A.pose || 'idle'; // shooters: their melee skill (X: Z-saber)
+  }
+  startCounter() {
+    const g = this.g, self = this, perfect = !!this.counterPerfect, e = this.counterTarget && !this.counterTarget.dead ? this.counterTarget : null;
+    if (this.act) this.endAct();
+    this.parryOk = 0; this.counterTarget = null; this.inv = Math.max(this.inv, 50); this.cancelHeld();
+    if (e) this.face = U.sign(e.cx - this.cx) || this.face;
+    const pose = this.counterPose(), sw = newSwing(), dmg = perfect ? COUNTER_PERFECT_DMG : COUNTER_DMG, col = perfect ? '#ffe36a' : '#ffffff';
+    const goal = e ? e.cx - this.face * (e.w / 2 + this.w / 2 + 6) : this.cx + this.face * 56;
+    this.anim.play(pose, 30, true); sfx().dash(); g.hitstop(3);
+    g.text(this.cx, this.y - 16, perfect ? 'PERFECT COUNTER!' : 'COUNTER!', perfect ? '#ffe36a' : '#ff5a6a', 70, true);
+    this.act = { kind: 'counter', t: 0, pose, ownsMove: true, ownsY: true, noJump: true, canTurn: false, slash: 0,
+      update() {
+        this.t++;
+        if (this.t <= 6) {                                       // flash-step
+          const dx = (goal - self.cx) / Math.max(1, 7 - this.t);
+          W.moveBody(g.L, self, dx, 0); self.vx = 0; self.vy = 0; g.afterimage(self); if (this.t % 2) g.burst(self.cx, self.y + self.h / 2, col, 2, 1);
+        } else if (this.t === 7) {                               // the strike
+          self.vx = 0; self.vy = 0; this.slash = 1;
+          const box = { x: self.face > 0 ? self.cx - 10 : self.cx - 86, y: self.feet - 76, w: 96, h: 84 };
+          g.hit(box, dmg, { id: sw, kb: 9, dir: self.face, from: self, up: true, heavy: true, finisher: true, fx: 'impact', shake: perfect ? 9 : 7, los: self.losPt() });
+          g.hitstop(perfect ? 18 : 13); g.flashT = perfect ? 14 : 10; sfx().boom(); sfx().heavy(); PLAT.haptic('boss');
+          const fx = e && !e.dead ? e : null, cx = fx ? fx.cx : self.cx + self.face * 40, cy = fx ? fx.y + fx.h / 2 : self.feet - 30;
+          g.fx('impact', cx, cy, { scale: perfect ? 1.4 : 1.1 }); g.spark(cx, cy, 2.6);
+          for (let i = 0; i < (perfect ? 30 : 20); i++) g.burst(cx, cy, i % 3 ? col : '#ff5a6a', 1, 4.2);
+        } else { self.vx = 0; self.vy = Math.min(self.vy + .3, 3); this.slash++; if (this.t >= 26) self.endAct(); }
+      },
+      draw(ctx) {
+        if (!this.slash || this.slash > 12) return;
+        const k = this.slash / 12, cx = self.cx + self.face * 34, cy = self.feet - 34, r = 34 + k * 30;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - k; ctx.lineCap = 'round';
+        const a0 = self.face > 0 ? -1.9 : Math.PI - 1.2, a1 = self.face > 0 ? 1.2 : Math.PI + 1.9;
+        ctx.strokeStyle = col; ctx.lineWidth = 10 * (1 - k) + 2; ctx.beginPath(); ctx.arc(cx, cy, r, a0, a1); ctx.stroke();
+        ctx.strokeStyle = perfect ? '#ff9a3a' : '#9fe8ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, r + 8, a0 + .3, a1 - .3); ctx.stroke();
+        ctx.restore();
+      } };
+  }
   /* ---------------------------------- parry ---------------------------------- */
   startParry() {
     const a = this.act;
@@ -868,7 +916,8 @@ class Player {
   onParry(e, fromX, perfect) {
     const g = this.g; if (perfect == null) perfect = this.parryPerfect();
     if (e && e.parried) e.parried(perfect, this.cx);
-    this.parryT = 0; this.parryCd = 6; this.parryOk = 30;                 // a successful parry is ready again almost at once (chains)
+    this.parryT = 0; this.parryCd = 6; this.parryOk = COUNTER_WIN;        // a successful parry is ready again almost at once (chains)
+    this.counterTarget = e && !e.dead ? e : null; this.counterPerfect = perfect;
     this.inv = Math.max(this.inv, 22);
     this.en = Math.min(100, this.en + (perfect ? 30 : 15)); this.gainUlt(perfect ? 20 : 10);
     if (fromX != null) this.face = U.sign(fromX - this.cx) || this.face;
@@ -970,11 +1019,16 @@ class Player {
       ctx.fillStyle = h.color || '#fff'; ctx.fillRect(this.x, this.y, this.w, this.h);
     }
     if (h.mod && h.mod.drawFront) h.mod.drawFront(ctx, this);
+    // counter ready: a pulsing ⚔ over the head — press ATTACK now
+    if (this.parryOk > 0 && !this.dead && !(this.act && this.act.kind === 'counter')) {
+      ctx.save(); ctx.globalAlpha = .6 + Math.sin(this.t * .6) * .4; ctx.font = '900 12px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000a';
+      ctx.strokeText('⚔ COUNTER', this.cx, this.y - 40); ctx.fillStyle = this.counterPerfect ? '#ffe36a' : '#ff8a8a'; ctx.fillText('⚔ COUNTER', this.cx, this.y - 40); ctx.restore();
+    }
     // parry window: a bright guard arc in front (gold during the PERFECT frames); a flash after a successful parry
-    if ((this.parryT > 0 || this.parryOk > 20) && !this.dead) {
+    if ((this.parryT > 0 || this.parryOk > COUNTER_WIN - 10) && !this.dead) {
       const perf = this.parryT > 0 && this.parryPerfect(), cx = this.cx + this.face * 6, cy = this.y + this.h * .5, r = this.h * .62;
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-      ctx.strokeStyle = perf || this.parryOk > 20 ? 'rgba(255,230,120,.95)' : 'rgba(150,220,255,.85)'; ctx.lineWidth = perf ? 4 : 3;
+      ctx.strokeStyle = perf || this.parryOk > COUNTER_WIN - 10 ? 'rgba(255,230,120,.95)' : 'rgba(150,220,255,.85)'; ctx.lineWidth = perf ? 4 : 3;
       ctx.beginPath(); ctx.arc(cx, cy, r, this.face > 0 ? -1.1 : Math.PI - 1.1 + 0, this.face > 0 ? 1.1 : Math.PI + 1.1); ctx.stroke();
       ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r - 4, this.face > 0 ? -.8 : Math.PI - .8, this.face > 0 ? .8 : Math.PI + .8); ctx.stroke();
       ctx.restore();

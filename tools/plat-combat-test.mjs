@@ -393,6 +393,19 @@ const results = await page.evaluate(async (filter) => {
     const a = await run(false), b = await run(true);
     return { ok: a.r === 'parried' && b.r === 'parried' && a.en > b.en && a.dz > b.dz && a.st === 'dizzy', detail: JSON.stringify([a, b]) };
   });
+  for (const hid of HEROES) await t(`counter strike: attack right after a parry flash-steps in and hits hard · ${hid}`, async () => {
+    const { g, p, e, log } = await setup(hid, 'zombie', 70, 1, { hp: 99 }); p.inv = 0;
+    press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e });        // PERFECT parry (from 70 px away)
+    let act = null; step(g, 4); press('attack'); step(g, 1); rel('attack'); step(g, 90, () => { shield(p); if (p.act && p.act.kind === 'counter') act = 'counter'; });
+    const hit = log.filter(l => l.ok).reduce((n, l) => n + l.dhp, 0), close = Math.abs(p.cx - e.cx) < 70;
+    return { ok: act === 'counter' && hit >= 12 && !p.act && close, detail: `act ${act} dmg ${hit} dist ${Math.abs(p.cx - e.cx).toFixed(0)}` };
+  });
+  await t('counter strike: only right after a parry (a late attack is a normal attack)', async () => {
+    const { g, p, e } = await setup('knight', 'zombie', 40, 1, { hp: 99 }); p.inv = 0;
+    press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e }); step(g, 60, () => shield(p));
+    press('attack'); step(g, 1); rel('attack');
+    return { ok: p.act && p.act.kind !== 'counter', detail: `act ${p.act && p.act.kind}` };
+  });
   await t('parry: whiffing locks the parry for a moment (no mashing)', async () => {
     const { g, p, e } = await setup('knight', 'zombie', 26, 1); p.inv = 0;
     press('parry'); step(g, 1); rel('parry'); step(g, 16);              // window over, still locked
