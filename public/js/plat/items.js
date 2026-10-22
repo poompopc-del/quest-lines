@@ -21,13 +21,13 @@ const RELIC_SLOTS = PLAT.RELIC_SLOTS = 3;
 
 const I = PLAT.ITEMS = {
   // ---- potions
-  potS:   { type: 'potion', name: 'ยาฟื้นฟูเล็ก', icon: '🧪', price: 40, heal: .3, desc: 'ฟื้น HP 30%' },
-  potL:   { type: 'potion', name: 'ยาฟื้นฟูใหญ่', icon: '⚗️', price: 110, heal: .7, desc: 'ฟื้น HP 70%' },
-  elixir: { type: 'potion', name: 'น้ำอมฤตสวรรค์', icon: '🌟', price: 280, heal: 1, inv: 300, desc: 'ฟื้นเต็มหลอด + อมตะ 5 วินาที' },
+  potS:   { type: 'potion', spr: [0, 0], name: 'ยาฟื้นฟูเล็ก', icon: '🧪', price: 40, heal: .3, desc: 'ฟื้น HP 30%' },
+  potL:   { type: 'potion', spr: [1, 0], name: 'ยาฟื้นฟูใหญ่', icon: '⚗️', price: 110, heal: .7, desc: 'ฟื้น HP 70%' },
+  elixir: { type: 'potion', spr: [2, 0], name: 'น้ำอมฤตสวรรค์', icon: '🌟', price: 280, heal: 1, inv: 300, desc: 'ฟื้นเต็มหลอด + อมตะ 5 วินาที' },
   // ---- quick items (one is selected as the QUICK item)
   bomb:   { type: 'use', name: 'ระเบิดปีศาจ', icon: '💣', price: 90, desc: 'ขว้างระเบิดโค้ง ระเบิดรัศมีกว้าง ดาเมจ 12' },
-  frost:  { type: 'use', name: 'ลูกแก้วยุคน้ำแข็ง', icon: '❄️', price: 170, desc: 'แช่แข็งศัตรูทั้งจอ 3 วิ (บอส 1 วิ) — โดนตี ×2 ระหว่างแข็ง' },
-  meteor: { type: 'use', name: 'คัมภีร์ฝนอุกกาบาต', icon: '☄️', price: 260, desc: 'เรียกอุกกาบาต 8 ลูกถล่มศัตรูบนจอ ลูกละ 8' },
+  frost:  { type: 'use', spr: [3, 0], name: 'ลูกแก้วยุคน้ำแข็ง', icon: '❄️', price: 170, desc: 'แช่แข็งศัตรูทั้งจอ 3 วิ (บอส 1 วิ) — โดนตี ×2 ระหว่างแข็ง' },
+  meteor: { type: 'use', spr: [4, 0], name: 'คัมภีร์ฝนอุกกาบาต', icon: '☄️', price: 260, desc: 'เรียกอุกกาบาต 8 ลูกถล่มศัตรูบนจอ ลูกละ 8' },
   // ---- relics (passive · equip up to 3)
   wind:    { type: 'relic', name: 'รองเท้าวายุ', icon: '🪽', price: 800, desc: 'กระโดดกลางอากาศได้อีก 1 ครั้ง (ทุกตัวละคร)' },
   vamp:    { type: 'relic', name: 'เขี้ยวแวมไพร์', icon: '🩸', price: 650, desc: 'ฆ่าศัตรู = ดูดเลือด +6 HP (บอส +40)' },
@@ -43,12 +43,41 @@ const I = PLAT.ITEMS = {
   dragon:  { type: 'relic', legend: true, name: 'มงกุฎราชันมังกร', icon: '🐉', price: 0, sell: 2000, desc: 'HP สูงสุด +40 · ออร่าไฟเผาศัตรูรอบตัวตลอดเวลา' },
   // ---- treasure (sell)
   ring:   { type: 'treasure', name: 'แหวนทองโบราณ', icon: '💍', sell: 25 },
-  goblet: { type: 'treasure', name: 'ถ้วยราชวงศ์', icon: '🏆', sell: 45 },
+  goblet: { type: 'treasure', spr: [5, 0], name: 'ถ้วยราชวงศ์', icon: '🏆', sell: 45 },
   orb:    { type: 'treasure', name: 'ลูกแก้วพยากรณ์', icon: '🔮', sell: 80 },
   crown:  { type: 'treasure', name: 'มงกุฎราชา', icon: '👑', sell: 160 },
   egg:    { type: 'treasure', name: 'ไข่มังกรทองคำ', icon: '🥚', sell: 400 },
 };
 for (const [k, v] of Object.entries(I)) v.id = k;
+
+/* ------------------------------------------------------------------ pixel icons (v97)
+   items/plat/icons.png = 16 px cells from "16x16 Assorted RPG Icons" by Shade (CC0),
+   built by tools/plat-icons.py. An item with `spr: [col, row]` shows that cell;
+   items without one (or before the image loads) keep their emoji. */
+const ICON_SRC = 'items/plat/icons.png?v=1', ICON_COLS = 8, ICON_ROWS = 1;
+let iconImg = null;
+const icons = () => { if (!iconImg && typeof Image === 'function') { iconImg = new Image(); iconImg.src = ICON_SRC; } return iconImg; };
+icons();
+PLAT.ICON_CELL = { chest: [6, 0] };
+// draw an item (or a raw [col,row] cell) centred on x,y, `size` px tall
+PLAT.drawIcon = function (ctx, it, x, y, size) {
+  const spr = Array.isArray(it) ? it : it && it.spr;
+  const img = icons();
+  if (spr && img && img.complete && img.naturalWidth) {
+    const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, spr[0] * 16, spr[1] * 16, 16, 16, Math.round(x - size / 2), Math.round(y - size / 2), size, size);
+    ctx.imageSmoothingEnabled = sm; return true;
+  }
+  if (Array.isArray(it)) return false;
+  ctx.font = Math.round(size * .78) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(it.icon, x, y); ctx.textBaseline = 'alphabetic';
+  return true;
+};
+// HTML for an item icon: a pixel sprite sized 1em (scale it with font-size), else the emoji
+PLAT.iconHTML = function (it) {
+  if (!it) return '—';
+  if (!it.spr) return it.icon;
+  return `<i class="pi" role="img" aria-label="${it.name}" style="background-image:url('${ICON_SRC}');background-size:${ICON_COLS}em ${ICON_ROWS}em;background-position:-${it.spr[0]}em -${it.spr[1]}em"></i>`;
+};
 PLAT.SHOP_ORDER = ['potS', 'potL', 'elixir', 'bomb', 'frost', 'meteor', 'wind', 'vamp', 'thunder', 'midas', 'aegis', 'berserk', 'phoenix', 'shadow'];
 const LEGENDS = ['godblade', 'halo', 'dragon'], BUY_RELICS = PLAT.SHOP_ORDER.filter(k => I[k].type === 'relic');
 

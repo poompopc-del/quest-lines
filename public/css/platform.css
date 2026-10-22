@@ -280,3 +280,8 @@ html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:
 .lootline span.rel{filter:drop-shadow(0 0 6px #c8a0ff)}
 .lootline span.leg{filter:drop-shadow(0 0 8px #ffe36a);animation:hplow .5s infinite alternate}
 .lootline small{opacity:.7;font-size:11px}
+
+/* v97 pixel item icons (items/plat/icons.png via PLAT.iconHTML) — 1em square, scale with font-size */
+.pi{display:inline-block;width:1em;height:1em;vertical-align:-.14em;background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges}
+#hPotI,#hItemI{font-style:normal}
+.sh-card .ic .pi{font-size:40px}

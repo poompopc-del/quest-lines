@@ -436,14 +436,14 @@ function toast(a, b) { $('#hToast1').textContent = a || ''; $('#hToast2').textCo
 function lootLine(r) {
   const l = r.loot || []; if (!l.length) return '';
   const c = {}; l.forEach(id => c[id] = (c[id] || 0) + 1);
-  return `<div class="lootline">ของที่ได้: ${Object.entries(c).map(([id, n]) => { const it = PLAT.ITEMS[id]; return `<span class="${it.type === 'relic' ? (it.legend ? 'leg' : 'rel') : ''}">${it.icon}${n > 1 ? '×' + n : ''}</span>`; }).join(' ')} <small>· ขาย/ใส่ได้ที่ 🛒 ร้านค้า</small></div>`;
+  return `<div class="lootline">ของที่ได้: ${Object.entries(c).map(([id, n]) => { const it = PLAT.ITEMS[id]; return `<span class="${it.type === 'relic' ? (it.legend ? 'leg' : 'rel') : ''}">${PLAT.iconHTML(it)}${n > 1 ? '×' + n : ''}</span>`; }).join(' ')} <small>· ขาย/ใส่ได้ที่ 🛒 ร้านค้า</small></div>`;
 }
 function renderShop() {
   const B = PLAT.bag, I = PLAT.ITEMS, d = B.d(), tab = app.shopTab || 'buy', box = $('#shGrid');
   const keep = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.k;
   $('#shWallet').textContent = B.coins().toLocaleString();
   $$('#shTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
-  const card = (it, right, extra, cls) => `<div class="sh-card ${cls || ''} t-${it.type}${it.legend ? ' legend' : ''}"><div class="ic">${it.icon}</div><div class="tx"><b>${it.name}</b><span>${it.desc || ('ขายได้ 🪙 ' + it.sell)}</span>${extra || ''}</div><div class="act">${right}</div></div>`;
+  const card = (it, right, extra, cls) => `<div class="sh-card ${cls || ''} t-${it.type}${it.legend ? ' legend' : ''}"><div class="ic">${PLAT.iconHTML(it)}</div><div class="tx"><b>${it.name}</b><span>${it.desc || ('ขายได้ 🪙 ' + it.sell)}</span>${extra || ''}</div><div class="act">${right}</div></div>`;
   let html = '', sub = '';
   if (tab === 'buy') {
     sub = 'ยาต้องกดดื่มเอง (H / 🧪) · ไอเทมด่วนกด G · เรลิกใส่ได้ 3 ชิ้น (แท็บกระเป๋า) · ไอเทมเทพ 🗡️😇🐉 ไม่มีขาย — ต้องล่าจากศัตรู (บอสดรอปบ่อยสุด)';
@@ -510,7 +510,7 @@ function updateHud(d) {
     $('#hHp').classList.toggle('low', pc <= 30); setTimeout(() => { const l = $('#hHpL'); if (l) l.style.width = pc + '%'; }, 260);     // the pale "lost HP" trail catches up a moment later
   });
   { const B = PLAT.bag, q = B.d().quick, pot = B.count('potS') + B.count('potL') + B.count('elixir'), qi = PLAT.ITEMS[q];
-    set('bag', pot + '|' + q + '|' + B.count(q), () => { $('#hPotN').textContent = pot; $('#hPot').classList.toggle('empty', !pot); $('#hItemI').textContent = qi ? qi.icon : '—'; $('#hItemN').textContent = B.count(q); $('#hItem').classList.toggle('empty', !B.count(q)); }); }
+    set('bag', pot + '|' + q + '|' + B.count(q), () => { $('#hPotN').textContent = pot; $('#hPotI').innerHTML = PLAT.iconHTML(PLAT.ITEMS.potS); $('#hPot').classList.toggle('empty', !pot); $('#hItemI').innerHTML = PLAT.iconHTML(qi); $('#hItemN').textContent = B.count(q); $('#hItem').classList.toggle('empty', !B.count(q)); }); }
   set('wallet', d.coins, () => $('#hCoins').textContent = PLAT.bag.coins().toLocaleString());
   set('en', Math.round(d.en), v => $('#hEn').style.width = v + '%');
   set('gems', d.gems.join(','), () => $$('#hGems i').forEach((el, i) => el.classList.toggle('on', d.gems.includes(i))));

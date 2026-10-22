@@ -908,6 +908,7 @@ class Game {
     if (this.frame % 40 < 6) { ctx.fillStyle = '#fff'; ctx.fillRect(x + 5, y - 9, 2, 6); ctx.fillRect(x + 3, y - 7, 6, 2); }
   }
   drawChest(ctx, x, y) {
+    if (PLAT.drawIcon(ctx, PLAT.ICON_CELL.chest, x, y - 5, 26)) { if (this.frame % 50 < 6) { ctx.fillStyle = '#fff'; ctx.fillRect(x + 7, y - 19, 2, 5); ctx.fillRect(x + 5.5, y - 17.5, 5, 2); } return; }
     ctx.fillStyle = '#5a3416'; ctx.fillRect(x - 11, y - 9, 22, 15); ctx.fillStyle = '#8a5424'; ctx.fillRect(x - 11, y - 14, 22, 7);
     ctx.fillStyle = '#ffd84a'; ctx.fillRect(x - 11, y - 8, 22, 2); ctx.fillRect(x - 2, y - 10, 4, 6);
     if (this.frame % 50 < 6) { ctx.fillStyle = '#fff'; ctx.fillRect(x + 6, y - 15, 2, 5); ctx.fillRect(x + 4.5, y - 13.5, 5, 2); }
@@ -915,7 +916,7 @@ class Game {
   drawItem(ctx, c) {
     const it = PLAT.ITEMS[c.id]; if (!it) return; const rare = it.type === 'relic';
     if (rare) { ctx.drawImage(glowSprite(it.legend ? 'rgba(255,230,120,.8)' : 'rgba(200,160,255,.75)', 'rgba(255,255,255,0)', 18, 2), c.x - 18, c.y - 18); }
-    ctx.font = (rare ? '18px' : '14px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(it.icon, c.x, c.y); ctx.textBaseline = 'alphabetic';
+    PLAT.drawIcon(ctx, it, c.x, c.y, it.spr ? 20 : (rare ? 23 : 18));
   }
   drawHeart(ctx, x, y) { ctx.fillStyle = '#ff4a6a'; ctx.beginPath(); ctx.arc(x - 4, y - 2, 4.5, 0, 6.283); ctx.arc(x + 4, y - 2, 4.5, 0, 6.283); ctx.moveTo(x - 8.5, y - 1); ctx.lineTo(x, y + 8); ctx.lineTo(x + 8.5, y - 1); ctx.fill(); ctx.fillStyle = '#ffc0cc'; ctx.fillRect(x - 6, y - 5, 2, 2); }
   drawProj(ctx, pr) {
