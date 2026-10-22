@@ -72,7 +72,7 @@ class Game {
     this.decor = [];
     if (this.runner) for (const ch of L.chunks) this.runner.spawnChunk(ch);
     this.boss = null; this.bossActive = false;
-    this.projs = []; this.fxs = []; this.parts = []; this.texts = []; this.loose = []; this.warns = []; this.ghosts = [];
+    this.projs = []; this.fxs = []; this.parts = []; this.texts = []; this.loose = []; this.mstars = []; this.warns = []; this.ghosts = [];
     this.stats = { coins: 0, gems: new Set(), kills: 0, hits: 0, deaths: 0, frames: 0, maxChain: 0 };
     this.shakeT = 0; this.shakeMag = 0; this.freeze = 0; this.flashT = 0;
     this.cam = { x: 0, y: 0 }; this.snapCam();
@@ -182,7 +182,7 @@ class Game {
       if (p.bodyHit || (p.act && p.act.kind === 'pogo' && p.vy > 0)) continue;       // we are the one hitting
       if (p.act && (p.act.kind === 'roll' || p.act.kind === 'spindash' || p.act.kind === 'ult')) continue;
       if (p.act && p.act.reflect) { if (!e.boss && !e.def.heavy) { e.kbT = 14; e.vx = (e.cx < p.cx ? -1 : 1) * 5; e.vy = -3; e.interrupt && e.interrupt(); } continue; }
-      p.hurt(e.def.dmg, e.cx, { src: e });
+      p.hurt(e.def.dmg, e.cx, { src: e, elem: e.def.elem });
     }
   }
   playerHazards() {
@@ -345,9 +345,15 @@ class Game {
     if (this.frame % 3 === 0) this.parts.push({ x: mx + p.face * S.range * U.rnd(.5, 1), y: my + U.rnd(-18, 12), vx: -p.face * 4, vy: 0, life: 14, col: '#ffffff', size: 2, line: true });
     for (const e of this.enemies) {
       if (e.dead || e.inhaled || !U.overlap(zone, e)) continue;
-      if (!e.def.small || e.boss) { if (!e._heavyMsg) { e._heavyMsg = true; this.text(e.cx, e.y - 6, 'หนักเกิน!', '#ffb0b0', 40); } continue; }
-      e.kbT = 3; e.vx = U.sign(mx - e.cx) * S.pull; e.x += U.sign(mx - e.cx) * S.pull; e.y += U.sign(my - (e.y + e.h / 2)) * 1.2;
-      if (Math.abs(e.cx - mx) < 16) { e.inhaled = true; e.dead = true; e.gone = true; this.onEnemyKilled(e); this.burst(mx, my, '#ffb0e0', 8, 1.5); return { type: e.type }; }
+      const opened = !e.boss && e.suckUntil > this.frame;                       // v100: a parried (reeling) enemy can be inhaled
+      if ((!e.def.small && !opened) || e.boss) { if (e._heavyMsg !== this.frame >> 7) { e._heavyMsg = this.frame >> 7; this.text(e.cx, e.y - 6, e.boss ? 'หนักเกิน! ปัดให้ดาวหล่น' : 'หนักเกิน! ปัดก่อน', '#ffb0b0', 40); } continue; }
+      e.kbT = 3; e.vx = U.sign(mx - e.cx) * S.pull; e.x += U.sign(mx - e.cx) * S.pull; const dy = U.sign(my - (e.y + e.h / 2)) * 1.2; if (!(dy > 0 && e.onGround)) e.y += dy;   // never push a tall one into the floor
+      if (Math.abs(e.cx - mx) < 16 + (e.def.small ? 0 : e.w / 3)) { e.inhaled = true; e.dead = true; e.gone = true; this.onEnemyKilled(e); this.burst(mx, my, '#ffb0e0', 8, 1.5); return { type: e.type, n: e.def.small ? 1 : e.elite ? 3 : 2 }; }
+    }
+    for (const st of this.mstars) {                                             // stars a parried boss dropped
+      if (st.got || !U.overlap(zone, { x: st.x - 8, y: st.y - 8, w: 16, h: 16 })) continue;
+      st.x += U.sign(mx - st.x) * Math.min(3.2, Math.abs(mx - st.x)); st.y += U.sign(my - st.y) * 1.2; st.pulled = true;
+      if (Math.abs(st.x - mx) < 12) { st.got = true; this.burst(mx, my, '#fff27a', 8, 1.5); return { star: true, n: 1 }; }
     }
     for (const pr of this.projs) {
       if (!pr.enemy || pr.def.ground || !U.overlap(zone, pr.box())) continue;
@@ -400,7 +406,7 @@ class Game {
           if (parry) p.onParry(null, pr.x, perfect);
           continue;
         }
-        if (!p.dead && U.overlap(b, { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 2 })) { const r = p.hurt(d.dmg, pr.x); if (r !== 'ignored' || !d.ground) { if (r !== 'ignored') this.killProj(pr); } }
+        if (!p.dead && U.overlap(b, { x: p.x + 2, y: p.y + 2, w: p.w - 4, h: p.h - 2 })) { const r = p.hurt(d.dmg, pr.x, { elem: d.elem }); if (r !== 'ignored' || !d.ground) { if (r !== 'ignored') this.killProj(pr); } }
       } else {
         // swept box (continuous collision): the box covers where the shot was last frame AND where it is now,
         // so a fast shot can never step over a thin target between two frames
@@ -417,6 +423,12 @@ class Game {
     for (const a of this.ghosts) a.life--; compact(this.ghosts, alive);
     if (this.ghosts.length > 80) this.ghosts.splice(0, this.ghosts.length - 80);
   }
+  dropMouthStars(x, y, n) {
+    if (this.mstars.length > 12) return;
+    const d = U.sign(this.player.cx - x) || 1;                                  // they land in a row between the boss and Kirby
+    for (let i = 0; i < n; i++) this.mstars.push({ x, y, vx: d * (.8 + i * .9), vy: -5 - i * .4, t: 0, got: false });
+    this.text(x, y - 16, '★ ดาวหล่น! ดูดเลย', '#fff27a', 60, true); sfx().gem();
+  }
   killProj(pr) {
     if (pr.dead) return; pr.dead = true; const d = pr.def, ex = d.explode;
     if (d.hitFx && !pr.enemy && pr.life > 0 && !pr.didFx) { this.fx(d.hitFx, pr.x, pr.y, { flip: (pr.vx || pr.dir) < 0 }); return; }   // shot stopped by a wall
@@ -425,7 +437,7 @@ class Game {
       else if (ex.r > 0 || pr.enemy) this.fx('boom', pr.x, pr.y, { scale: ex.r ? ex.r / 30 : .7 });
       if (ex.r > 0) {
         const area = { x: pr.x - ex.r, y: pr.y - ex.r, w: ex.r * 2, h: ex.r * 2 };
-        if (pr.enemy) { if (U.overlap(area, this.player)) this.player.hurt(ex.dmg, pr.x); }
+        if (pr.enemy) { if (U.overlap(area, this.player)) this.player.hurt(ex.dmg, pr.x, { elem: d.elem }); }
         else this.hit(area, ex.dmg, { id: PLAT.newSwing(), kb: 5, dir: 0, from: pr.owner, at: pr.x, heavy: ex.dmg >= 3 });
         sfx().boom(); this.shake(3);
       }
@@ -466,6 +478,14 @@ class Game {
       if (c.t > 900) { c.got = true; this.collectLoose(c); }
     }
     compact(this.loose, notGot);
+    // v100 Kirby: stars dropped by a parried boss fall, bounce, and wait (10 s) to be inhaled
+    for (const st of this.mstars) {
+      st.t++; if (st.t > 600) st.got = true; if (st.pulled) { st.pulled = false; continue; }
+      st.vy = Math.min(st.vy + .3, 6);
+      const b = { x: st.x - 7, y: st.y - 7, w: 14, h: 14, vx: st.vx, vy: st.vy };
+      W.moveBody(L, b, st.vx, st.vy); st.x = b.x + 7; st.y = b.y + 7; st.vx *= .985; if (b.onGround) { st.vy = st.vy > 2 ? -st.vy * .45 : 0; st.vx *= .7; }
+    }
+    compact(this.mstars, notGot);
     if (this.runner && L.coins.length > 400) compact(L.coins, notGot);
   }
   collectLoose(c) {
@@ -894,6 +914,11 @@ class Game {
     for (const c of L.coins) if (!c.got && inV(c.x)) this.drawCoin(ctx, c.x, c.y + Math.sin((f + c.x) / 12) * 2, (f + c.x) / 16);
     for (const c of this.loose) { if (!inV(c.x)) continue; if (c.kind === 'coin') this.drawCoin(ctx, c.x, c.y, (f + c.t) / 6, .8); else this.drawItem(ctx, c); }
     for (const g of L.gems) if (!g.got && inV(g.x)) this.drawGem(ctx, g.x, g.y + Math.sin(f / 15) * 3);
+    if (this.mstars.length) { const im = PLAT.assets.img('heroes/kirby/star.png');
+      for (const st of this.mstars) { if (st.t > 480 && st.t % 8 < 4) continue;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('rgba(255,240,120,.7)', 'rgba(255,240,120,0)', 16, 2), st.x - 16, st.y - 16); ctx.restore();
+        if (im) { ctx.save(); ctx.translate(st.x, st.y); ctx.rotate(Math.sin((f + st.t) / 10) * .3); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, (Math.floor((f + st.t) / 6) % 4) * 24, 0, 24, 24, -12, -12, 24, 24); ctx.restore(); }
+        else { ctx.fillStyle = '#ffe94a'; ctx.beginPath(); ctx.arc(st.x, st.y, 7, 0, 6.283); ctx.fill(); } } }
     for (const h of L.hearts) if (!h.got && inV(h.x)) this.drawChest(ctx, h.x, h.y + 6);
   }
   drawCoin(ctx, x, y, ph, s) {

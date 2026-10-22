@@ -311,7 +311,7 @@ function renderHeroInfo(id) {
   const h = PLAT.HEROES[id], ok = heroAvailable(id), box = $('#heroInfo');
   const bar = (v, max) => `<span class="bar"><b style="width:${Math.round(U.clamp(v / max, 0, 1) * 100)}%"></b></span>`;
   const A = h.attack, Sk = h.skill, D = h.dash;
-  const atkName = A.kind === 'shot' ? 'ยิง' + (A.charge ? ' · กดค้างเพื่อชาร์จ' : '') + (A.combo ? ` · คอมโบ ${A.combo.at}+ เปลี่ยนอาวุธ` : '') : `ฟัน/ต่อย ${A.steps.length} จังหวะ`;
+  const atkName = A.kind === 'inhale' ? A.name : A.kind === 'shot' ? 'ยิง' + (A.charge ? ' · กดค้างเพื่อชาร์จ' : '') + (A.combo ? ` · คอมโบ ${A.combo.at}+ เปลี่ยนอาวุธ` : '') : `ฟัน/ต่อย ${A.steps.length} จังหวะ`;
   const extra = [h.airJumps ? (h.float ? `ลอยตัวได้ ${h.airJumps} ครั้ง` : `กระโดด ${h.airJumps + 1} ชั้น`) : '', h.wallJump ? 'ถีบกำแพง' : '', h.ballJump ? 'กระโดดเป็นลูกบอลชนศัตรู' : '', h.armor ? 'เกราะหนา' : ''].filter(Boolean);
   box.innerHTML = `<canvas width="300" height="300"></canvas>
     <div><div class="nm" style="color:${h.color}">${h.name}</div><div class="th">${h.th} · <span class="chip">${h.role}</span></div>

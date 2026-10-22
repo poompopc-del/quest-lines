@@ -247,7 +247,7 @@ class Player {
   startActions(inp, ax) {
     const h = this.hero, I = h.ult && h.ult.input;
     this.trackInputs(inp);
-    if (this.parryOk > 0 && inp.wasPressed('attack') && !(this.act && /^(counter|ult)$/.test(this.act.kind))) { this.startCounter(); return; }
+    if (this.parryOk > 0 && !h.counterInhale && inp.wasPressed('attack') && !(this.act && /^(counter|ult)$/.test(this.act.kind))) { this.startCounter(); return; }
     // guard (Plink / Kirby): hold ↓ on the ground
     if (h.guard && !this.act && this.onGround && inp.isHeld('down') && !ax && !this.holdA) { this.guarding = true; this.vx *= .6; }
     if (inp.wasPressed('ult') && this.ultReady) return this.startUlt();            // touch ULT button
@@ -322,7 +322,7 @@ class Player {
 
   startAttack(inp) {
     const h = this.hero, A = h.attack, g = this.g;
-    if (this.mouth && A.mouthful) return this.shoot(A.mouthful, { mouth: true });
+    if (this.mouth && A.mouthful) return A.kind === 'inhale' ? this.startSpitHold(A) : this.shoot(A.mouthful, { mouth: true });
     if (this.floating && h.float.puff) { this.floating = false; this.airJumps = 0; g.spawnProj(h.float.puff, this.cx + this.face * 14, this.feet - 16, this.face, { owner: this }); sfx().shoot(); return; }
     const M = h.moves || {}, run = this.onGround && Math.abs(this.vx) > C.RUN * (h.speed || 1) * .8;
     let mv = null;
@@ -332,6 +332,7 @@ class Player {
     else if (!this.onGround && M.air) mv = M.air;
     else if (run && M.run) mv = M.run;
     if (mv) { if (this.act) this.endAct(); return this.doMove(mv); }
+    if (A.kind === 'inhale') { if (this.act) this.endAct(); return this.startInhale(A.suck, 'attack'); }
     if (A.kind === 'shot') {
       if (A.melee) { const e = g.nearestEnemy(this.cx, this.feet - this.h / 2, this.face, A.melee.range + this.w / 2, 30); if (e) return this.startStep(A.melee); }
       if (this.cd.shot > 0) return;
@@ -426,13 +427,19 @@ class Player {
   shoot(A, o) {
     o = o || {};
     if (this.hero.mod && this.hero.mod.shoot) return this.hero.mod.shoot(this, A, o);
-    const self = this, pose = o.pose || A.pose, dur = A.dur || 14, proj = o.proj || A.proj;
+    const self = this, pose = o.pose || A.pose, dur = A.dur || 14;
+    let proj = o.proj || A.proj, py = A.y || -24;
+    if (o.mouth && this.mouth && this.mouth.n > 1) {       // v100 Kirby: every extra mouthful = a bigger, harder star (no cap)
+      const n = this.mouth.n, base = PLAT.PROJ[proj], k = 1 + .3 * (n - 1), bw = Math.round(base.box[0] * k);
+      proj = Object.assign({}, base, { scale: base.scale * k, box: [bw, bw], dmg: base.dmg + 3 * (n - 1), pierce: (base.pierce || 0) + n, life: base.life + 4 * n });
+      py = Math.min(py, -bw / 2 - 2);
+    }
     this.anim.play(pose, dur, true);
     this.act = { kind: 'shot', t: 0, pose, slow: .55, canTurn: true, cancellable: false,
       update() {
         if (++this.t === (A.fireAt || 1)) {
-          self.g.spawnProj(proj, self.cx + self.face * 16, self.feet + (A.y || -24), self.face, { owner: self });
-          sfx().shoot();
+          self.g.spawnProj(proj, self.cx + self.face * 16, self.feet + py, self.face, { owner: self });
+          sfx().shoot(); if (o.mouth && proj.box && proj.box[0] > 40) { self.g.shake(Math.min(8, proj.box[0] / 30)); sfx().boom(); }
           if (o.mouth) { self.mouth = null; }
         }
         if (this.t >= dur) self.endAct();
@@ -510,6 +517,31 @@ class Player {
         if (this.t % 2 === 0) self.g.afterimage(self);
         if (this.t >= (tgt ? 30 : 12) || self.wall || self.onGround || self.ceil) { self.endAct(); }
       } };
+  }
+  /* v100 INHALE (Kirby): hold `btn` to suck. Whatever is swallowed STACKS in the mouth (mouth.n) —
+     the spat star grows with the stack, with no cap. */
+  startInhale(S, btn) {
+    if (!this.onGround) return;
+    const self = this, g = this.g;
+    this.anim.play(S.pose, null, true); sfx().inhale();
+    this.act = { kind: 'inhale', t: 0, pose: S.pose, slow: 0, canTurn: false,
+      update() { this.t++; if (this.t % 30 === 0) sfx().inhale();
+        const got = g.inhale(self, S);
+        if (got) {
+          const n = (self.mouth ? self.mouth.n || 1 : 0) + (got.n || 1);
+          self.mouth = Object.assign({}, got, { n }); sfx().heart(); self.sq = { x: 1.2, y: .88 };
+          g.text(self.cx, self.y - 8, n > 1 ? 'อม! ×' + n : 'อม!', '#ff9ad8', 40, n >= 5);
+          if (btn !== 'attack') { self.endAct(); return; }                      // J: keep hoovering while it is held
+        }
+        if (!g.input.isHeld(btn) && this.t > 10) self.endAct(); } };
+  }
+  // full mouth + J: a tap spits the star, holding past `holdToSuck` frames opens up and inhales more
+  startSpitHold(A) {
+    const self = this, g = this.g, wait = A.holdToSuck || 10;
+    this.act = { kind: 'spitHold', t: 0, slow: .3, canTurn: true,
+      update() { this.t++;
+        if (!g.input.isHeld('attack')) { self.endAct(); self.shoot(A.mouthful, { mouth: true }); return; }
+        if (this.t >= wait) { self.endAct(); if (self.onGround) self.startInhale(A.suck, 'attack'); else self.shoot(A.mouthful, { mouth: true }); } } };
   }
   startSkill(inp) {
     const h = this.hero, g = this.g;
@@ -599,16 +631,7 @@ class Player {
             if (this.t >= S.dur) self.endAct(); } };
         break;
       }
-      case 'inhale': {
-        if (!this.onGround) return;
-        this.anim.play(S.pose, null, true); sfx().inhale();
-        this.act = { kind: 'inhale', t: 0, pose: S.pose, slow: 0, canTurn: false,
-          update() { this.t++; if (this.t % 30 === 0) sfx().inhale();
-            const got = g.inhale(self, S);
-            if (got) { self.mouth = got; self.endAct(); sfx().heart(); g.text(self.cx, self.y - 8, 'อม!', '#ff9ad8', 40); return; }
-            if (!g.input.isHeld('skill') && this.t > 10) self.endAct(); } };
-        break;
-      }
+      case 'inhale': this.startInhale(S, 'skill'); break;
       case 'slam': if (this.spend(S.cost)) this.startSlam(false); break;
       case 'flareCharge': {                            // Shovel Knight: hold = the fireball grows on the staff, release = it crawls out
         if (!this.onGround) return;
@@ -919,6 +942,10 @@ class Player {
   onParry(e, fromX, perfect) {
     const g = this.g; if (perfect == null) perfect = this.parryPerfect();
     if (e && e.parried) e.parried(perfect, this.cx);
+    if (this.hero.parryStars) {                       // v100 Kirby: a parried boss (or its shot) drops stars to inhale
+      const B = e && e.boss ? e : (!e && g.bossActive && g.boss && !g.boss.dead ? g.boss : null);
+      if (B) g.dropMouthStars(B.cx, B.y + B.h * .3, this.hero.parryStars);
+    }
     this.parryT = 0; this.parryCd = 6; this.parryOk = COUNTER_WIN;        // a successful parry is ready again almost at once (chains)
     this.counterTarget = e && !e.dead ? e : null; this.counterPerfect = perfect;
     this.inv = Math.max(this.inv, 22);
@@ -951,7 +978,8 @@ class Player {
       this.vx = dir * 2; sfx().clang(); this.g.burst(this.cx + this.face * 10, this.y + 20, '#e0f0ff', 6, 2); this.inv = 12; this.g.text(this.cx, this.y - 4, 'กันได้!', '#bfe8ff', 30); return 'blocked';
     }
     if (this.act && this.act.guardMul && Math.random() < this.act.guardMul) { dmg = Math.max(0, dmg - 1); }
-    this.hp = Math.max(0, this.hp - dmg); this.inv = C.INV_FRAMES; this.hurtT = 16; this.streak = 0; this.charge = 0; this.heat = 0;
+    this.hurtElem = o.elem && this.anim.poses['hurt_' + o.elem] ? o.elem : null;   // v100: burned / shocked / frozen strip
+    this.hp = Math.max(0, this.hp - dmg); this.inv = C.INV_FRAMES; this.hurtT = this.hurtElem ? 28 : 16; this.streak = 0; this.charge = 0; this.heat = 0;
     if (this.act) this.endAct();
     this.floating = false; this.ball = false; this.mouth = null;
     const kb = this.hero.armor ? 1.5 : 2.8;
@@ -1052,7 +1080,7 @@ class Player {
     const pick = n => (m && has(m + n)) ? m + n : n;
     let want;
     if (this.dead) want = 'dead';
-    else if (this.hurtT > 0) want = pick('hurt');
+    else if (this.hurtT > 0) want = this.hurtElem ? 'hurt_' + this.hurtElem : pick('hurt');
     else if (this.act && this.act.pose) { const ap = m && has(m + this.act.pose) ? m + this.act.pose : this.act.pose; if (a.pose !== ap && a.pose !== this.act.pose) a.play(ap, null, true); return; }
     else if (this.guarding) want = 'guard';
     else if (this.wallDir) want = 'wall';

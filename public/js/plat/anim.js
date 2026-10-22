@@ -32,9 +32,10 @@ class Sheet {
   _strips(def) {
     for (const [name, a] of Object.entries(def.anims)) {
       const src = def.dir + (a.file || name) + '.png', frames = [];
-      const by = a.by != null ? a.by : (def.by != null ? def.by : def.ch);   // feet line inside the cell
-      if (a.rects) a.rects.forEach(([x, w, ax]) => frames.push({ src, sx: x + 1, sy: 0, sw: w - 2, sh: def.ch, ax: ax - 1, by }));   // 1 px inset: no divider bleed when smoothed
-      else for (let i = 0; i < a.n; i++) frames.push({ src, sx: i * a.cw + (a.trimL || 0), sy: 0, sw: a.cw - (a.trimL || 0) - (a.trim || 0), sh: def.ch, ax: a.ax - (a.trimL || 0), by });
+      const ch = a.ch || def.ch;                                            // a strip may be taller/shorter than the set (Kirby's burned/frozen/shocked)
+      const by = a.by != null ? a.by : a.ch ? a.ch : (def.by != null ? def.by : def.ch);   // feet line inside the cell
+      if (a.rects) a.rects.forEach(([x, w, ax]) => frames.push({ src, sx: x + 1, sy: 0, sw: w - 2, sh: ch, ax: ax - 1, by }));   // 1 px inset: no divider bleed when smoothed
+      else for (let i = 0; i < a.n; i++) frames.push({ src, sx: i * a.cw + (a.trimL || 0), sy: 0, sw: a.cw - (a.trimL || 0) - (a.trim || 0), sh: ch, ax: a.ax - (a.trimL || 0), by });
       this.anims[name] = frames;
     }
   }

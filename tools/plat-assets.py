@@ -39,9 +39,11 @@ for hid, h in D['heroes'].items():
     for name, a in sp['anims'].items():
         path = sp['dir'] + (a.get('file') or name) + '.png'; im = img(path)
         if im is None: bad('missing ' + path); continue
-        if im.height != sp['ch']: bad(f'{path}: height {im.height} != ch {sp["ch"]}')
+        ch = a.get('ch', sp['ch'])          # a strip may set its own height (Kirby's burned/frozen/shocked)
+        if im.height != ch: bad(f'{path}: height {im.height} != ch {ch}')
         if 'rects' in a: continue
         if im.width != a['n'] * a['cw']: bad(f'{path}: width {im.width} != n*cw {a["n"]}*{a["cw"]}')
+        if a.get('fullBleed'): continue    # art that fills the whole cell height (flames, ice) — not divider lines
         dv = dividers(im)
         if dv: bad(f'{path}: opaque divider columns at {dv[:8]} (use explicit rects)')
 

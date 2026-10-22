@@ -34,7 +34,7 @@ const E = PLAT.ENEMIES = {
   slime:  { name: 'Green Slime', sheet: slimeSheet('green'), scale: .5, box: [26, 22], hp: 2, dmg: 1, ai: 'patrol', speed: .55, coins: 1, small: true, fps: 6 },
   hopper: { name: 'Devil Slime', sheet: slimeSheet('devil', true), scale: .55, box: [30, 24], hp: 3, dmg: 1, ai: 'hopper', jumpV: 7.6, jumpX: 2.4, wait: 54, sight: 210, coins: 2, small: true, fps: 6 },
   golden: { name: 'Golden Slime', sheet: slimeSheet('golden'), scale: .5, box: [26, 22], hp: 3, dmg: 0, ai: 'coward', speed: 2, sight: 150, coins: 10, small: true, fps: 8, sparkle: true },
-  magma:  { name: 'Magma Slime', sheet: slimeSheet('magma'), scale: .55, box: [28, 24], hp: 3, dmg: 1, ai: 'hopper', jumpV: 8.2, jumpX: 2.8, wait: 44, sight: 240, coins: 2, small: true, fps: 7, trail: '#ff8a2a' },
+  magma:  { elem: 'fire', name: 'Magma Slime', sheet: slimeSheet('magma'), scale: .55, box: [28, 24], hp: 3, dmg: 1, ai: 'hopper', jumpV: 8.2, jumpX: 2.8, wait: 44, sight: 240, coins: 2, small: true, fps: 7, trail: '#ff8a2a' },
   zombie: { name: 'Zombie', sheet: zSheet('enemies/pvz/basic.png'), scale: .9, box: [18, 42], hp: 4, dmg: 1, ai: 'patrol', bite: { wind: 22, recover: 34, reach: 24 }, speed: .4, chase: 1.0, sight: 170, coins: 2, small: true, fps: 8 },
   cone:   { name: 'Conehead', sheet: zSheet('enemies/pvz/cone_1.png', true), states: ['enemies/pvz/cone_1.png', 'enemies/pvz/cone_2.png', 'enemies/pvz/cone_3.png'], after: 'enemies/pvz/basic.png',
             scale: .9, box: [18, 42], hp: 4, armor: 3, dmg: 1, ai: 'patrol', bite: { wind: 22, recover: 34, reach: 24 }, speed: .4, chase: 1.0, sight: 170, coins: 3, fps: 8 },
@@ -305,6 +305,7 @@ class Enemy {
     this.release(); this.blocking = false;
     if (this.boss) { this.poise -= perfect ? 10 : 6; this.flash = 8; if (this.breakPoise) this.breakPoise(); return; }
     this.interrupt('dizzy'); this.set('dizzy'); this.dizzyFor = (perfect ? 110 : 75) * (this.elite ? .65 : 1);
+    this.suckUntil = g.frame + this.dizzyFor;                                   // v100 Kirby: inhalable while it reels
     this.kbT = 8; this.vx = U.sign(this.cx - (fromX != null ? fromX : g.player.cx)) * 2.2; this.flash = 8;
     g.text(this.cx, this.y - 10, perfect ? 'เสียหลัก! ×2' : 'เสียหลัก!', '#8aff8a', 40);
   }
@@ -364,12 +365,12 @@ class Enemy {
 /* ---------------------------------- bosses ----------------------------------
    Each boss: multi-phase pattern loop with readable telegraphs and a punish window. */
 PLAT.BOSSES = {
-  aqua: { name: 'AQUA SPIRIT', th: 'วิญญาณวารี', boss: true, hp: 34, dmg: 1, poise: 9, scale: 1.15, box: [34, 56],
+  aqua: { elem: 'ice', name: 'AQUA SPIRIT', th: 'วิญญาณวารี', boss: true, hp: 34, dmg: 1, poise: 9, scale: 1.15, box: [34, 56],
     sheet: { kind: 'grid', img: 'bosses/aqua/boss.png', cols: 6, fw: 100, fh: 100, ax: 50, by: 98, anims: { idle: [0, 1, 2, 3], move: [0, 1, 2, 3], atk: [4], hurt: [5] } }, fps: 6, heavy: true },
-  garg: { name: 'GARGANTUAR', th: 'การ์แกนทัวร์ ยักษ์เสาไฟฟ้า', boss: true, hp: 50, dmg: 1, poise: 12, scale: .95, box: [42, 70],
+  garg: { elem: 'shock', name: 'GARGANTUAR', th: 'การ์แกนทัวร์ ยักษ์เสาไฟฟ้า', boss: true, hp: 50, dmg: 1, poise: 12, scale: .95, box: [42, 70],
     sheet: { kind: 'grid', img: 'enemies/pvz/garg.png', cols: 10, fw: 126.8, fh: 127.6, ax: 80.5, by: 99,
       anims: { idle: row(0, 10), move: row(1, 9), raise: [18, 19, 20, 21], smash: range(22, 29), stuck: [29], dead: range(40, 48) } }, fps: 8, heavy: true },
-  dragon: { name: 'BLACK DRAGON', th: 'มังกรทมิฬ เปลวนรก', boss: true, hp: 72, dmg: 1, poise: 16, scale: 1.2, box: [112, 82],
+  dragon: { elem: 'fire', name: 'BLACK DRAGON', th: 'มังกรทมิฬ เปลวนรก', boss: true, hp: 72, dmg: 1, poise: 16, scale: 1.2, box: [112, 82],
     sheet: { kind: 'grid', img: 'bosses/dragon/blackdragon.png', cols: 37, fw: 246, fh: 134, ax: 128, by: 134,
       anims: { idle: range(0, 12), breath: range(13, 19), hurt: [20, 21, 22, 23], dead: range(24, 28), fly: range(29, 36) } }, fps: 8, heavy: true },
 };
@@ -449,7 +450,7 @@ class Boss extends Enemy {
         if (this.stT === 12) {
           sfx().boom(); g.shake(8); g.hitstop(3);
           const hb = { x: this.dir > 0 ? this.cx : this.cx - 96, y: this.feet - 70, w: 96, h: 70 };
-          if (U.overlap(hb, p)) p.hurt(2, this.cx);
+          if (U.overlap(hb, p)) p.hurt(2, this.cx, { elem: 'shock' });
           g.spawnProj('shock', this.cx + this.dir * 70, this.feet, this.dir, {}); g.spawnProj('shock', this.cx - this.dir * 10, this.feet, -this.dir, {});
           g.dust(this.cx + this.dir * 60, this.feet, 12);
           if (fast) { for (let i = 0; i < (this.phase >= 3 ? 7 : 5); i++) { const x = U.rnd(this.arena().x0 + 16, this.arena().x1 - 16); g.warn(x, g.floorBelow(x, p.y), 46 + i * 9, () => g.spawnProj('rock', x, g.cam.y - 10, 0, {})); } }
@@ -504,7 +505,7 @@ class Boss extends Enemy {
         if (this.stT === 1) g.warn(this.cx, this.groundY, 34);          // shadow where it will land
         if (this.stT < 34 && !this.dropFast) { this.y += Math.sin(this.stT / 5) * .4; break; }
         this.y += this.dropFast ? 6 : 4;
-        if (this.y + this.h >= this.groundY - 1) { const p2 = g.player; if (p2 && U.overlap(this, p2)) p2.hurt(1, this.cx); }
+        if (this.y + this.h >= this.groundY - 1) { const p2 = g.player; if (p2 && U.overlap(this, p2)) p2.hurt(1, this.cx, { elem: 'fire' }); }
         if (this.y + this.h >= this.groundY) { this.y = this.groundY - this.h; this.flying = false; this.dropFast = false; sfx().boom(); g.shake(6); g.dust(this.cx, this.feet, 14); this.set('tired'); g.text(this.cx, this.y - 14, 'มังกรเหนื่อย! โจมตี!', '#8aff8a', 60); }
         break;
       case 'tired': this.vx = 0; this.anim.play('hurt'); this.vulnerable = true; if (this.stT > 90) this.set('move'); break;

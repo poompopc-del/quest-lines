@@ -393,7 +393,30 @@ const results = await page.evaluate(async (filter) => {
     const a = await run(false), b = await run(true);
     return { ok: a.r === 'parried' && b.r === 'parried' && a.en > b.en && a.dz > b.dz && a.st === 'dizzy', detail: JSON.stringify([a, b]) };
   });
-  for (const hid of HEROES) await t(`counter strike: attack right after a parry flash-steps in and hits hard · ${hid}`, async () => {
+  // v100: Kirby (counterInhale) swaps the counter for inhaling the reeling enemy
+  for (const hid of HEROES.filter(h => P.HEROES[h].counterInhale)) await t(`parry then hold attack inhales the reeling (big) enemy · ${hid}`, async () => {
+    const { g, p, e } = await setup(hid, 'zombie', 60, 1, { hp: 99 }); p.inv = 0; e.def = Object.assign({}, e.def, { small: false });
+    press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e });
+    let counter = false; step(g, 4); press('attack'); step(g, 70, () => { shield(p); if (p.act && p.act.kind === 'counter') counter = true; }); rel('attack'); step(g, 5);
+    return { ok: !counter && e.inhaled && p.mouth && p.mouth.n === 2, detail: `counter ${counter} inhaled ${!!e.inhaled} mouth ${p.mouth && p.mouth.n}` };
+  });
+  await t('a big enemy cannot be inhaled without a parry · puff', async () => {
+    const { g, p, e } = await setup('puff', 'zombie', 60, 1, { hp: 99 }); p.inv = 0; e.def = Object.assign({}, e.def, { small: false });
+    press('attack'); step(g, 70, () => shield(p)); rel('attack'); step(g, 5);
+    return { ok: !e.inhaled && !p.mouth, detail: `inhaled ${!!e.inhaled}` };
+  });
+  await t('mouthfuls stack and the spat star grows · puff', async () => {
+    const { g, p } = await setup('puff', null, 0, 1); p.mouth = { n: 5 };
+    press('attack'); step(g, 2); rel('attack'); step(g, 20, () => shield(p));
+    const st = g.projs.find(q => q.owner === p && !q.dead), base = P.PROJ.star;
+    return { ok: !!st && st.def.box[0] > base.box[0] * 2 && st.def.dmg > base.dmg && !p.mouth, detail: st ? `box ${st.def.box} dmg ${st.def.dmg}` : 'no star' };
+  });
+  await t('a parried boss drops 3 stars for Kirby · puff', async () => {
+    const { g, p, e } = await setup('puff', 'aqua', 120, 1, { hp: 999 }); p.inv = 0; g.mstars = [];
+    press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e }); step(g, 5);
+    return { ok: g.mstars.length === 3, detail: `stars ${g.mstars.length}` };
+  });
+  for (const hid of HEROES.filter(h => !P.HEROES[h].counterInhale)) await t(`counter strike: attack right after a parry flash-steps in and hits hard · ${hid}`, async () => {
     const { g, p, e, log } = await setup(hid, 'zombie', 70, 1, { hp: 99 }); p.inv = 0;
     press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e });        // PERFECT parry (from 70 px away)
     let act = null; step(g, 4); press('attack'); step(g, 1); rel('attack'); step(g, 90, () => { shield(p); if (p.act && p.act.kind === 'counter') act = 'counter'; });

@@ -42,12 +42,12 @@ const PROJ = PLAT.PROJ = {
   flareBig: { atlasAnim: 'fireball', scale: 3, speed: 4.5, dmg: 4, life: 90, box: [22, 22], explode: { r: 44, dmg: 4, atlasAnim: 'boom' } },
   fist:   { img: 'heroes/cream/fx_fist.png', fw: 250, fh: 250, n: 6, rate: 4, scale: .26, speed: 7, dmg: 2, pierce: 2, life: 34, box: [40, 40], glow: '#ff3a3a' },
   // enemy shots
-  fireball:  { img: 'bosses/dragon/fireball.png', fw: 56, fh: 32, n: 6, rate: 4, loopFrom: 3, scale: .55, speed: 3.2, dmg: 1, life: 140, box: [14, 12], enemy: true, explode: { r: 0 } },
-  bigfire:   { img: 'bosses/dragon/fireball.png', fw: 56, fh: 32, n: 6, rate: 4, loopFrom: 3, scale: 1, speed: 3.6, dmg: 2, life: 200, box: [26, 20], enemy: true, explode: { r: 40, dmg: 2 } },
-  wave:      { img: 'bosses/aqua/wave.png', fw: 69, fh: 83, n: 1, scale: .7, speed: 2.8, dmg: 1, life: 260, box: [30, 50], enemy: true, ground: true },
-  drop:      { proc: 'drop', col: '#7ad8ff', speed: 0, grav: .22, dmg: 1, life: 200, box: [8, 12], enemy: true },
+  fireball:  { img: 'bosses/dragon/fireball.png', fw: 56, fh: 32, n: 6, rate: 4, loopFrom: 3, scale: .55, speed: 3.2, dmg: 1, life: 140, box: [14, 12], enemy: true, elem: 'fire', explode: { r: 0 } },
+  bigfire:   { img: 'bosses/dragon/fireball.png', fw: 56, fh: 32, n: 6, rate: 4, loopFrom: 3, scale: 1, speed: 3.6, dmg: 2, life: 200, box: [26, 20], enemy: true, elem: 'fire', explode: { r: 40, dmg: 2 } },
+  wave:      { img: 'bosses/aqua/wave.png', fw: 69, fh: 83, n: 1, scale: .7, speed: 2.8, dmg: 1, life: 260, box: [30, 50], enemy: true, elem: 'ice', ground: true },
+  drop:      { proc: 'drop', col: '#7ad8ff', speed: 0, grav: .22, dmg: 1, life: 200, box: [8, 12], enemy: true, elem: 'ice' },
   rock:      { proc: 'rock', col: '#8a7a6a', speed: 0, grav: .3, dmg: 1, life: 200, box: [16, 16], enemy: true },
-  shock:     { proc: 'shock', col: '#ffd060', speed: 4, dmg: 1, life: 90, box: [20, 18], enemy: true, ground: true },
+  shock:     { proc: 'shock', col: '#ffd060', speed: 4, dmg: 1, life: 90, box: [20, 18], enemy: true, elem: 'shock', ground: true },
 };
 const FX = PLAT.FXDEF = {
   boom:   { img: 'bosses/dragon/boom.png', fw: 53, fh: 48, n: 8, rate: 3, scale: 1 },
@@ -114,11 +114,13 @@ H.pip = {
 
 H.puff = {
   name: 'Kirby', th: 'เคอร์บี้ ก้อนชมพูจอมดูด', role: 'ลอยตัว · ดูดแล้วพ่น', color: '#ff8ac8',
-  desc: 'กดกระโดดกลางอากาศ = ลอย 5 ครั้ง · สกิลค้าง = ดูดศัตรู/กระสุน แล้วโจมตีพ่นดาว · กลางอากาศโจมตี = ตีลังกา · ↓+โจมตีกลางอากาศ = กลิ้งทิ่มลง · ↓ ค้าง = ตั้งการ์ด',
+  desc: 'โจมตีค้าง = ดูด (ตัวใหญ่ต้องปัดก่อนถึงดูดได้ · ปัดบอส = ดาวหล่น 3 ดวง) · อมแล้วกด = พ่นดาว / ค้าง = ดูดเพิ่ม ยิ่งอมเยอะดาวยิ่งใหญ่ · ↓+โจมตี = เตะสไลด์ · กดกระโดดกลางอากาศ = ลอย 5 ครั้ง · กลางอากาศโจมตี = ตีลังกา · ↓+โจมตีกลางอากาศ = กลิ้งทิ่มลง · ↓ ค้าง = ตั้งการ์ด',
   sprite: strip('heroes/kirby/', 34, {
     idle: { n: 10, cw: 26, ax: 13 }, walk: { n: 7, cw: 28, ax: 14 }, hurt: { n: 4, cw: 26, ax: 13 }, dead: { n: 4, cw: 36, ax: 18 },
     atk1: { n: 5, cw: 32, ax: 16 }, atk2: { n: 8, cw: 30, ax: 15 }, atk3: { n: 7, cw: 34, ax: 17 }, inhale: { n: 8, cw: 31, ax: 15 },
-    fspit: { n: 6, cw: 33, ax: 16 }, fidle: { n: 4, cw: 33, ax: 16 }, fwalk: { n: 6, cw: 35, ax: 17 }, fhurt: { n: 4, cw: 34, ax: 17 }, guard: { n: 5, cw: 30, ax: 15 } }, { by: 33 }),
+    fspit: { n: 6, cw: 33, ax: 16 }, fidle: { n: 4, cw: 33, ax: 16 }, fwalk: { n: 6, cw: 35, ax: 17 }, fhurt: { n: 4, cw: 34, ax: 17 }, guard: { n: 5, cw: 30, ax: 15 },
+    // elemental hurt strips (already in heroes/kirby/, unused until v100) — their own heights
+    burned: { n: 10, cw: 41, ax: 20, ch: 40, by: 39, fullBleed: true }, shocked: { n: 8, cw: 40, ax: 20, ch: 40, by: 39, fullBleed: true }, frozen: { n: 7, cw: 27, ax: 13, ch: 26, by: 25, fullBleed: true } }, { by: 33 }),
   scale: 1.45, box: [20, 30], hp: 5, speed: .9, jump: 1,
   // v98 animation pass (checked against Kirby Super Star footage): quick blink instead of a
   // ¾-second eye-close · upright rise → somersault at the top of a jump → upright fall ·
@@ -129,6 +131,7 @@ H.puff = {
     jump: { a: 'walk', f: [6] }, fall: { a: 'idle', f: [0] }, flip: { a: 'atk3', f: [0, 1, 2, 3], fps: 22 },
     puffUp: { a: 'fspit', f: [0, 1], fps: 20 }, float: { a: 'fidle', fps: 10, loopy: true }, exhale: { a: 'fspit', f: [2, 3, 4, 5], fps: 22 },
     hurt: { a: 'hurt', fps: 10 }, dead: { a: 'dead', fps: 5 }, guard: { a: 'guard', f: [2] },
+    hurt_fire: { a: 'burned', fps: 30 }, hurt_shock: { a: 'shocked', f: [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3], fps: 30 }, hurt_ice: { a: 'frozen', f: [0, 1, 2, 3, 3, 3, 4, 5, 6], fps: 24 },
     m_idle: { a: 'fidle', fps: 5, loopy: true }, m_walk: { a: 'fwalk', f: [0, 1, 2, 3], fps: 10, loopy: true }, m_hurt: { a: 'fhurt', fps: 10 }, m_jump: { a: 'fidle', f: [1] }, m_fall: { a: 'fidle', f: [2] },
     inhaling: { a: 'inhale', f: [3, 4, 5, 6, 7], fps: 12, loopy: true }, roll: { a: 'atk2', f: [0, 1, 2, 3], fps: 18, loopy: true },
     // slide kick: duck flat → foot-forward slide held through the hit window → back up
@@ -136,7 +139,12 @@ H.puff = {
     atk1: { a: 'atk1', f: [2, 3, 4, 4, 4, 4, 4, 4, 4, 3, 2] },
     // air attack: a double somersault (the strip's frames 4–6 are the back-view puff-up)
     atk3: { a: 'atk3', f: [0, 1, 2, 3, 0, 1, 2, 3] } },
-  mod: { update(p) {
+  mod: { drawFront(ctx, p) {                         // v100: mouthful stack counter over Kirby's head
+    if (!p.mouth || (p.mouth.n || 1) < 2 || p.dead) return;
+    const n = p.mouth.n, t = p.g.frame, y = p.y - 18 + Math.sin(t / 8) * 2;
+    ctx.save(); ctx.font = '900 ' + Math.min(22, 12 + n) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#2a0a1a';
+    ctx.strokeText('★×' + n, p.cx, y); ctx.fillStyle = n >= 10 ? '#ffe36a' : '#ffb0e0'; ctx.fillText('★×' + n, p.cx, y); ctx.restore();
+  }, update(p) {
     // dust kicked up behind the slide (Kirby Super Star)
     if (p.act && p.act.pose === 'atk1' && p.onGround && (p.act.t || 0) % 3 === 1 && Math.abs(p.vx) > 1.5) p.g.dust(p.cx - p.face * 12, p.feet, 1);
     return false;
@@ -159,9 +167,15 @@ H.puff = {
     return true;
   } },
   airJumps: 5, float: { vy: -4.6, maxFall: 1.4, pose: 'float', puff: 'puff' }, guard: { pose: 'guard' },
-  attack: { kind: 'combo', name: 'เตะสไลด์', steps: [{ pose: 'atk1', dur: 22, hit: [3, 17], box: [-6, -16, 32, 16], dmg: 2, kb: 4, lunge: 5.5, slide: true }],
+  // v100: J = INHALE (hold) like the real thing · ↓+J = slide kick. With a full mouth: tap J = spit a star,
+  // hold J = keep inhaling — every swallow adds to the stack and the star grows with it, no cap.
+  // Big enemies can only be inhaled after a successful parry (while they reel); a parried boss drops 3 stars.
+  attack: { kind: 'inhale', name: 'ดูด! (ค้าง) · อมแล้วกด = พ่นดาว · อมแล้วค้าง = ดูดเพิ่ม',
+    suck: { pose: 'inhaling', range: 104, height: 44, pull: 2.6 }, holdToSuck: 10,
     mouthful: { pose: 'fspit', dur: 18, fireAt: 6, proj: 'star', y: -18 } },
+  counterInhale: true, parryStars: 3,
   moves: {
+    down:    { name: 'เตะสไลด์', pose: 'atk1', dur: 22, hit: [3, 17], box: [-6, -16, 32, 16], dmg: 2, kb: 4, lunge: 5.5, slide: true },
     air:     { name: 'ตีลังกากลางอากาศ', pose: 'atk3', dur: 22, auto: false, hit: [3, 18], box: [-16, -32, 34, 34], dmg: 2, kb: 4 },
     downAir: { name: 'กลิ้งทิ่มลง', kind: 'dive', pose: 'roll', vy: 8.5, dmg: 2, bounce: 7.5 },
   },
