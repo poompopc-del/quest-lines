@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/platform.css?v=10">
+<link rel="stylesheet" href="css/platform.css?v=11">
 </head>
 <body>
 <div id="stage">
@@ -18,10 +18,10 @@
     <div class="h-top">
       <div class="h-left">
         <div class="h-face"><canvas id="hFace" width="48" height="48"></canvas></div>
-        <div class="h-bars"><div class="hearts" id="hHearts"></div><div class="en"><b id="hEn"></b><s id="hEnMark"></s></div><div class="ultb" id="hUltB"><b id="hUlt"></b><span>ULT</span></div></div>
+        <div class="h-bars"><div class="hpbar" id="hHp"><i id="hHpL"></i><b id="hHpB"></b><span id="hHpT"></span></div><div class="en"><b id="hEn"></b><s id="hEnMark"></s></div><div class="ultb" id="hUltB"><b id="hUlt"></b><span>ULT</span></div></div>
       </div>
       <div class="h-mid"><div class="h-lv" id="hLv"></div><div class="h-time" id="hTime">0:00.0</div><div class="h-dist" id="hDist"></div></div>
-      <div class="h-right"><span>🪙 <b id="hCoins">0</b></span><span class="gems" id="hGems"></span><button class="pbtn" id="hFull" aria-label="เต็มจอ">⛶</button><button class="pbtn" id="hPause" aria-label="หยุดเกม">⏸</button></div>
+      <div class="h-right"><span>🪙 <b id="hCoins">0</b></span><span class="gems" id="hGems"></span><button class="pbtn ib" id="hPot" aria-label="ดื่มยา (H)">🧪<sub id="hPotN">0</sub></button><button class="pbtn ib" id="hItem" aria-label="ใช้ไอเทม (G)"><em id="hItemI">💣</em><sub id="hItemN">0</sub></button><button class="pbtn" id="hFull" aria-label="เต็มจอ">⛶</button><button class="pbtn" id="hPause" aria-label="หยุดเกม">⏸</button></div>
     </div>
     <div class="bossbar" id="hBoss"><div class="nm" id="hBossNm"></div><div class="bar"><b id="hBossBar"></b></div></div>
     <div class="abil" id="hAbil"></div>
@@ -55,6 +55,7 @@
       <button class="btn red" data-go="map">▶ เล่น · เลือกด่าน</button>
       <button class="btn gold" data-go="endless">∞ โหมดไม่สิ้นสุด (Endless)</button>
       <button class="btn" data-go="heroes">🦸 เลือกฮีโร่ <span class="chip gold" id="tHero"></span></button>
+      <button class="btn gold2" data-go="shop">🛒 ร้านค้า · กระเป๋า <span class="chip gold" id="tWallet"></span></button>
       <button class="btn" data-go="settings">⚙️ ตั้งค่า · ปุ่มควบคุม · จอย</button>
       <button class="btn" id="tFull">⛶ เต็มจอ</button>
       <button class="btn" data-go="main">↩ กลับเกมหลัก</button>
@@ -75,7 +76,7 @@
 <section class="screen" id="sMap">
   <div class="panel">
     <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">แผนที่</h2>
-      <div class="row"><button class="btn" data-go="heroes">🦸 <span id="mHero"></span></button><button class="btn" data-go="title">✕</button></div></div>
+      <div class="row"><button class="btn" data-go="shop">🛒</button><button class="btn" data-go="heroes">🦸 <span id="mHero"></span></button><button class="btn" data-go="title">✕</button></div></div>
     <p class="sub" id="mSub"></p>
     <div class="worlds" id="worlds"></div>
   </div>
@@ -84,8 +85,8 @@
 <section class="screen" id="sEndless">
   <div class="panel">
     <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">∞ โหมดไม่สิ้นสุด</h2>
-      <div class="row"><button class="btn" data-go="heroes">🦸 <span id="eHero"></span></button><button class="btn" data-go="title">✕</button></div></div>
-    <p class="sub">ด่านสร้างใหม่ทุกครั้ง ไม่ซ้ำ และตรวจแล้วว่าผ่านได้จริงทุกช่วง · ยิ่งไกลยิ่งยาก (LV 1–10) · HP หมด = จบรอบ · เหว/ลาวา −1 HP</p>
+      <div class="row"><button class="btn" data-go="shop">🛒</button><button class="btn" data-go="heroes">🦸 <span id="eHero"></span></button><button class="btn" data-go="title">✕</button></div></div>
+    <p class="sub">ด่านสร้างใหม่ทุกครั้ง ไม่ซ้ำ และตรวจแล้วว่าผ่านได้จริงทุกช่วง · ยิ่งไกลยิ่งยาก (LV 1–10) · HP หมด = จบรอบ · เหว/ลาวา −20 HP</p>
     <div class="eworlds" id="eWorlds"></div>
   </div>
 </section>
@@ -102,6 +103,7 @@
       <button class="btn red" data-go="resume">▶ เล่นต่อ</button>
       <button class="btn" data-go="retryCp" id="pRetry">↺ เริ่มจากเช็กพอยต์</button>
       <button class="btn" data-go="restart" id="pRestart">⟲ เริ่มด่านใหม่</button>
+      <button class="btn" data-go="shop">🛒 ร้านค้า · กระเป๋า (ใส่เรลิก)</button>
       <button class="btn" data-go="settings">⚙️ ตั้งค่า</button>
       <button class="btn" data-go="map" id="pExit">🗺 ออกไปแผนที่</button>
     </div>
@@ -124,6 +126,16 @@
   <div class="panel sm" id="clearBox"></div>
 </section>
 
+<section class="screen" id="sShop">
+  <div class="panel">
+    <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">🛒 ร้านค้าพ่อค้าลึกลับ</h2>
+      <div class="row"><span class="wallet">🪙 <b id="shWallet">0</b></span><button class="btn" data-go="back">✕ ปิด</button></div></div>
+    <div class="seg shtabs" id="shTabs"><button data-t="buy">ซื้อของ</button><button data-t="sell">ขายสมบัติ</button><button data-t="bag">กระเป๋า · เรลิก</button></div>
+    <p class="sub" id="shSub"></p>
+    <div class="shop-grid" id="shGrid"></div>
+  </div>
+</section>
+
 <section class="screen" id="sSettings">
   <div class="panel sm">
     <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">ตั้งค่า</h2><button class="btn" data-go="back">✕ ปิด</button></div>
@@ -142,6 +154,7 @@
     <h3>ปุ่มควบคุม</h3>
     <div class="keys">
       <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> เดิน (กดค้าง = วิ่ง) · <kbd>Space</kbd>/<kbd>K</kbd> กระโดด (กดค้าง = สูง)<br>
+      <kbd>H</kbd>/<kbd>1</kbd> ดื่มยา 🧪 · <kbd>G</kbd>/<kbd>2</kbd> ใช้ไอเทมด่วน (💣/❄️/☄️) · ไอเทม/เหรียญที่ศัตรูดรอปจะลอยเข้าตัวเอง<br>
       <kbd>J</kbd>/<kbd>X</kbd> โจมตี · <kbd>O</kbd>/<kbd>F</kbd> ปัดป้อง (Parry) · <kbd>I</kbd>/<kbd>C</kbd> สกิล · <kbd>L</kbd>/<kbd>Shift</kbd> พุ่ง · <kbd>↓</kbd>+กระโดด ลงจากแผ่นไม้<br>
       <kbd>↑</kbd>/<kbd>↓</kbd>+โจมตี/สกิล = ท่าพิเศษ · ULT แต่ละตัวกดต่างกัน (ดูในหน้าเลือกฮีโร่)<br>
       <kbd>Esc</kbd>/<kbd>P</kbd> หยุดเกม · เมนู: ลูกศรเลื่อน · <kbd>Enter</kbd> เลือก
@@ -155,19 +168,20 @@
   <div style="text-align:center"><div class="kick" id="lTitle">กำลังโหลด…</div><div class="sub" id="lSub"></div><div class="loadbar"><b id="lBar"></b></div></div>
 </section>
 
-<script src="js/plat/core.js?v=10"></script>
-<script src="js/plat/world.js?v=10"></script>
-<script src="js/plat/anim.js?v=10"></script>
-<script src="js/plat/heroes.js?v=10"></script>
-<script src="js/plat/x4-sheet.js?v=10"></script>
-<script src="js/plat/xmod.js?v=10"></script>
-<script src="js/plat/player.js?v=10"></script>
-<script src="js/plat/enemies.js?v=10"></script>
-<script src="js/plat/art-sheets.js?v=10"></script>
-<script src="js/plat/levels.js?v=10"></script>
-<script src="js/plat/endless.js?v=10"></script>
-<script src="js/plat/art.js?v=10"></script>
-<script src="js/plat/game.js?v=10"></script>
-<script src="js/plat/ui.js?v=10"></script>
+<script src="js/plat/core.js?v=11"></script>
+<script src="js/plat/world.js?v=11"></script>
+<script src="js/plat/anim.js?v=11"></script>
+<script src="js/plat/heroes.js?v=11"></script>
+<script src="js/plat/x4-sheet.js?v=11"></script>
+<script src="js/plat/xmod.js?v=11"></script>
+<script src="js/plat/player.js?v=11"></script>
+<script src="js/plat/enemies.js?v=11"></script>
+<script src="js/plat/art-sheets.js?v=11"></script>
+<script src="js/plat/levels.js?v=11"></script>
+<script src="js/plat/items.js?v=11"></script>
+<script src="js/plat/endless.js?v=11"></script>
+<script src="js/plat/art.js?v=11"></script>
+<script src="js/plat/game.js?v=11"></script>
+<script src="js/plat/ui.js?v=11"></script>
 </body>
 </html>

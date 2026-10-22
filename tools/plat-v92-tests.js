@@ -348,6 +348,87 @@ window.V92 = async function (filter) {
     g.dispose();
     return { ok: grow < 12 && st.gi >= 250 && st.canvases <= 6, detail: `heap +${grow.toFixed(1)} MB after 260 more chunks · ${JSON.stringify(st)}`, info: `${ms.toFixed(2)} ms/frame avg (with rendering every 2nd frame) · heap +${grow.toFixed(1)} MB over 260 chunks` };
   });
+  /* =============================== v96 · HP BAR, POTIONS, SHOP, RELICS, LOOT =============================== */
+  const SD = P.save.data, snap = JSON.stringify({ wallet: SD.wallet, inv: SD.inv, relics: SD.relics, owned: SD.owned, quick: SD.quick });
+  const B = P.bag, bagReset = (o) => { B.d(); SD.wallet = 0; SD.inv = {}; SD.relics = []; SD.owned = []; SD.quick = 'bomb'; Object.assign(SD, o || {}); };
+  const GY = 10 * T;
+  P.LEVELS.__w = { name: 'test', theme: 'meadow', par: 99, map: [...Array(9)].map(() => row('')).concat([row('P...s.j.g.m.z.c.b.w.l.t.h'), '#'.repeat(80), '#'.repeat(80)]) };
+  let g96 = null;
+  async function hero96() {
+    if (!g96) { g96 = new P.Game({ levelId: '__w', heroId: 'knight' }); await g96.load();
+      for (const t of Object.keys(P.BOSSES)) if (!g96.sheets.has(t)) { const d = P.BOSSES[t]; g96.sheets.set(t, new P.Sheet(d.sheet)); await P.assets.load(d.sheet.img); }
+      g96.geom = null; g96.measureEnemies && g96.measureEnemies(); }
+    I.clearAll(); g96.start(); g96.phoenixUsed = false; step(g96, 3); g96.enemies.length = 0; g96.loose.length = 0; g96.projs.length = 0; return g96;
+  }
+  const foe = (g, type, dx, o) => { const p = g.player, e = P.makeEnemy(g, type, p.cx + dx, GY); e.think = () => {}; g.enemies.push(e); Object.assign(e, o || {}); return e; };
+  const kill = (g, e) => g.hit({ x: e.x - 2, y: e.y - 2, w: e.w + 4, h: e.h + 4 }, 999, { id: P.newSwing(), dir: 1, from: g.player });
+  await t('v96 HP: a hero has an HP bar (old hearts × 20), damage scales the same', async () => {
+    bagReset(); const g = await hero96(), p = g.player; g.enemies.length = 0;
+    const max = p.maxHp; p.inv = 0; p.hurt(1, p.cx + 10); const after = p.hp;
+    return { ok: max === P.HEROES.knight.hp * 20 && after === max - 20 && P.HPU === 20, detail: `max ${max} after 1 hit ${after}` };
+  });
+  await t('v96 loot: no HP drops; coins + loot fly to the hero by themselves (no walking)', async () => {
+    bagReset(); const g = await hero96(), p = g.player; g.enemies.length = 0; g.loose.length = 0;
+    const roll = P.rollLoot; P.rollLoot = () => ['ring'];
+    try { const e = foe(g, 'zombie', 220, { elite: true }); kill(g, e); } finally { P.rollLoot = roll; }
+    const kinds = g.loose.map(c => c.kind), x0 = p.x, c0 = g.stats.coins;
+    step(g, 120, () => { p.inv = 9; });
+    return { ok: !kinds.includes('heart') && kinds.includes('item') && g.loose.length === 0 && g.stats.coins > c0 && B.coins() === g.stats.coins - c0 && B.count('ring') === 1 && Math.abs(p.x - x0) < 2,
+      detail: `drops ${[...new Set(kinds)]} left ${g.loose.length} coins +${g.stats.coins - c0} wallet ${B.coins()} ring ${B.count('ring')} moved ${(p.x - x0).toFixed(1)}` };
+  });
+  await t('v96 potion: H drinks the right potion; none left = nothing happens', async () => {
+    bagReset({ inv: { potS: 1 } }); const g = await hero96(), p = g.player; g.enemies.length = 0;
+    p.hp = Math.round(p.maxHp * .5); const h0 = p.hp; press('potion'); step(g, 1); rel('potion'); step(g, 2); const h1 = p.hp;
+    p.hp = 10; press('potion'); step(g, 1); rel('potion'); step(g, 2);
+    return { ok: h1 === h0 + Math.ceil(p.maxHp * .3) && B.count('potS') === 0 && p.hp === 10, detail: `hp ${h0}→${h1}, potS left ${B.count('potS')}, without potion hp ${p.hp}` };
+  });
+  await t('v96 shop: buy (money check, relic once), sell treasure, equip max 3', async () => {
+    bagReset({ wallet: 2000, inv: { orb: 2 } });
+    const r1 = B.buy('potS'), w1 = B.coins(), r2 = B.buy('wind'), r3 = B.buy('wind'), r4 = B.buy('phoenix'), sold = B.sell('orb'), w2 = B.coins();
+    SD.owned.push('vamp', 'midas', 'thunder'); const eq = ['wind', 'vamp', 'midas', 'thunder'].map(id => B.toggleRelic(id));
+    return { ok: r1 === 'ok' && w1 === 1960 && r2 === 'ok' && r3 === 'owned' && r4 === 'money' && sold && w2 === 1160 + 80 && eq.join() === 'on,on,on,full',
+      detail: `${r1} ${w1} ${r2} ${r3} ${r4} sold ${sold} wallet ${w2} equip ${eq}` };
+  });
+  await t('v96 shop screen: renders, buy button really buys, tabs work', async () => {
+    bagReset({ wallet: 500 }); P.app.api.go('shop'); await frames(2);
+    const btn = document.querySelector('#shGrid [data-k="buy:potS"]'); btn && btn.click(); await frames(1);
+    const cnt = B.count('potS'); document.querySelector('#shTabs [data-t="bag"]').click(); await frames(1);
+    const bagTab = !!document.querySelector('#shGrid [data-k="quick:frost"]'); P.app.api.go('title'); await frames(1);
+    return { ok: !!btn && cnt === 1 && B.coins() === 460 && bagTab, detail: `button ${!!btn} potS ${cnt} wallet ${B.coins()} bag tab ${bagTab}` };
+  });
+  await t('v96 relics: wind (+1 air jump), aegis (blocks 1 hit), phoenix (revive once), vampire (heal on kill)', async () => {
+    bagReset({ owned: ['wind', 'aegis', 'phoenix', 'vamp'], relics: ['wind', 'aegis', 'phoenix'] });
+    const g = await hero96(), p = g.player; g.enemies.length = 0;
+    const aj = p.maxAirJumps(); p.inv = 0; const r1 = p.hurt(1, p.cx + 10), hpA = p.hp; p.inv = 0; p.hurtT = 0; p.hurt(1, p.cx + 10); const hpB = p.hp;
+    p.inv = 0; p.hp = 5; p.hurt(1, p.cx + 10); step(g, 2); const reborn = !p.dead && p.hp > 0;
+    SD.relics = ['vamp']; p.hp = 50; const e = foe(g, 'zombie', 60); kill(g, e); const vamp = p.hp;
+    return { ok: aj === (P.HEROES.knight.airJumps || 0) + 1 && r1 === 'blocked' && hpA === p.maxHp && hpB === p.maxHp - 20 && reborn && g.phoenixUsed && vamp === 56,
+      detail: `airJumps ${aj} aegis ${r1} ${hpA}/${hpB} phoenix ${reborn} vamp ${vamp}` };
+  });
+  await t('v96 items: bomb blows up an enemy, frost freezes everything on screen (no moving)', async () => {
+    bagReset({ inv: { bomb: 1, frost: 1 }, quick: 'bomb' }); const g = await hero96(), p = g.player; g.enemies.length = 0;
+    const e = foe(g, 'tyrant', 170); e.hp = e.maxHp = 999; press('item'); step(g, 1); rel('item'); step(g, 80, () => { p.inv = 9; });
+    const bombDmg = 999 - e.hp; B.setQuick('frost'); const z = foe(g, 'zombie', 120); delete z.think; const zx = z.x;
+    p.itemCd = 0; press('item'); step(g, 1); rel('item'); step(g, 60, () => { p.inv = 9; });
+    return { ok: bombDmg >= 12 && z.frozenT > 0 && Math.abs(z.x - zx) < 1 && B.count('bomb') === 0, detail: `bomb dmg ${bombDmg} frozen ${z.frozenT} moved ${(z.x - zx).toFixed(1)}` };
+  });
+  await t('v96 boss HP: bosses have a LOT more HP (×3.5 tune)', async () => {
+    const id = Object.keys(P.BOSSES)[0], g = await hero96();
+    const b = P.makeEnemy(g, id, g.player.cx + 200, GY);
+    return { ok: b.maxHp >= P.BOSSES[id].hp * 3.5 - 1 && P.ENEMY_TUNE.bossHp >= 3.5, detail: `${id} hp ${b.maxHp} (base ${P.BOSSES[id].hp})` };
+  });
+  await t('v96 loot table: bosses drop treasure + potions and can drop a legendary', async () => {
+    bagReset(); const r = P.rollLoot({ def: { boss: true } }, () => 0), n = P.rollLoot({ def: {} }, () => .99);
+    return { ok: r.includes('crown') && r.some(k => P.ITEMS[k].legend) && r.some(k => P.ITEMS[k].type === 'potion') && n.length === 0, detail: `boss ${r} · unlucky normal ${n}` };
+  });
+  await t('v96 chest: map hearts are now treasure chests', async () => {
+    bagReset(); const g = await hero96(), p = g.player; g.enemies.length = 0; g.loose.length = 0; g.L.hearts.push({ x: p.cx, y: p.y + p.h / 2, got: false });
+    const hp0 = p.hp; step(g, 100, () => { p.inv = 9; });
+    const tr = ['ring', 'goblet', 'orb', 'potS', 'potL'].some(k => B.count(k) > 0);
+    return { ok: tr && p.hp === hp0 && B.coins() >= 6, detail: `loot ${JSON.stringify(SD.inv)} wallet ${B.coins()} hp ${hp0}→${p.hp}` };
+  });
+  Object.assign(SD, JSON.parse(snap)); P.save.persist();
+
   P.drawFrame = realDraw;
   return out;
 };

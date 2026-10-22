@@ -198,9 +198,9 @@ class Game {
     const inLiquid = W.tilesIn(L, { x: p.x + 2, y: p.y + p.h * .5, w: p.w - 4, h: p.h * .5 }, TL.LIQUID).length;
     if (inLiquid || p.y > L.ph + 30) {
       for (let i = 0; i < 14; i++) this.burst(p.cx + U.rnd(-10, 10), Math.min(p.feet, L.ph), inLiquid ? this.theme.liquid[1] : '#ffffff', 1, 2.4);
-      if (p.hp <= 1) { p.inv = 0; p.hurt(1, p.cx, { unblockable: true }); p.vy = -2; }
+      if (p.hp <= PLAT.HPU) { p.inv = 0; p.hurt(1, p.cx, { unblockable: true }); p.vy = -2; }
       else {
-        p.hp--; this.stats.hits++; sfx().hurt(); this.flashT = 10; this.text(p.cx, p.y, '-1', '#ff6a7a', 40);
+        p.hp -= PLAT.HPU; this.stats.hits++; sfx().hurt(); this.flashT = 10; this.text(p.cx, p.y, '-' + PLAT.HPU, '#ff6a7a', 40);
         p.endAct();          // not act = null: a looping skill effect (YOTA's orb, a charge aura) would follow the player forever
         const s = p.lastSafe; p.x = s.x - p.w / 2; p.y = s.y - p.h; p.vx = 0; p.vy = 0; p.inv = 90; p.floating = false; p.ball = false; p.charge = 0;
       }
@@ -238,7 +238,13 @@ class Game {
         const tx = U.clamp(o.los.x, hb.x, hb.x + hb.w), ty = U.clamp(o.los.y, hb.y, hb.y + hb.h);
         if (!W.clearLine(this.L, o.los.x, o.los.y, tx, ty)) { if (dbg) this.dbgLog(e, 'wall', 0); continue; }
       }
-      if (e.takeHit(dmg, o)) {
+      let dd = dmg;
+      if (o.from === this.player && !o.aura) {
+        const p = this.player, mul = 1 + (PLAT.relicOn('godblade') ? .6 : 0) + (PLAT.relicOn('berserk') && p.hp < p.maxHp * .4 ? .5 : 0);
+        dd = Math.max(1, Math.round(dmg * mul));
+        if (PLAT.relicOn('godblade') && Math.random() < .15) { dd *= 2; this.text(e.cx, e.y - 22, 'CRITICAL!', '#ffe36a', 34, true); }
+      }
+      if (e.takeHit(dd, o)) {
         n++; if (e.dead) kills++;
         if (o.from === this.player && !o.proj) this.player.lastTarget = e;      // combo step-in (player.startStep) follows this target
         if (dbg) this.dbgLog(e, 'hit', e.lastDmg);
@@ -253,7 +259,7 @@ class Game {
     }
     // breakable blocks
     // Shovel Knight: a normal blow (not a shot / dash / plunge) on his own crawling fireball splits it (player.splitFireball)
-    if (o.from === this.player && !o.proj && !o.bat && !o.body && !o.pogo && this.player.splitFireball)
+    if (o.from === this.player && !o.proj && !o.bat && !o.body && !o.pogo && !o.aura && this.player.splitFireball)
       for (const pr of this.projs) if (pr.def.charged && !pr.dead && !pr.batted && pr.owner === this.player && U.overlap(box, pr.box())) { this.player.splitFireball(pr, o.id); break; }
     if (!o.noBreak) for (const t of W.tilesIn(this.L, box, TL.BREAK)) this.breakTile(t.tx, t.ty);
     if (n) {
@@ -304,10 +310,11 @@ class Game {
     const d = e.def;
     if (e.inhaled) return;
     if (e.fell) return;                     // fell into a pit / lava: no loot raining into the hole
-    const n = d.boss ? 20 : (d.coins || 1) * (e.elite ? 2 : 1);
-    if (e.elite) this.loose.push({ x: e.cx, y: e.y, vx: 0, vy: -5.5, kind: 'heart', t: 0 });
+    // v96: no hearts any more — coins (fly to you), plus a chance of treasure / potions / relics (items.js rollLoot)
+    const n = d.boss ? 40 : (d.coins || 1) * (e.elite ? 3 : 1);
     for (let i = 0; i < n; i++) this.loose.push({ x: e.cx, y: e.y + e.h / 2, vx: U.rnd(-2, 2) * (d.boss ? 1.6 : 1), vy: U.rnd(-6, -2.5), kind: 'coin', t: 0 });
-    if (!d.boss && Math.random() < .09) this.loose.push({ x: e.cx, y: e.y, vx: 0, vy: -5, kind: 'heart', t: 0 });
+    for (const id of PLAT.rollLoot(e)) this.loose.push({ x: e.cx, y: e.y + e.h / 3, vx: U.rnd(-1.6, 1.6), vy: U.rnd(-7, -4.5), kind: 'item', id, t: 0 });
+    if (PLAT.relicOn('vamp')) { const p = this.player, hv = d.boss ? 40 : 6; if (!p.dead && p.hp < p.maxHp) { p.heal(hv); this.text(p.cx, p.y - 18, `🩸 +${hv}`, '#ff6a8a', 30); } }
     if (d.boss) {
       PLAT.haptic('boss'); this.bossActive = false; this.clearHostile(); this.emit('boss', null);
       setTimeout(() => { if (this.L.exit) { this.L.exit.open = true; this.text(this.L.exit.x + T / 2, this.L.exit.y - 10, 'ประตูเปิดแล้ว!', '#8aff8a', 120, true); sfx().checkpoint(); } }, 1600);
@@ -438,27 +445,56 @@ class Game {
       for (let i = 0; i < 18; i++) this.burst(g.x, g.y, i % 2 ? '#7af0ff' : '#ffffff', 1, 3);
       this.text(g.x, g.y - 14, `💎 ${this.stats.gems.size}/${L.gems.length}`, '#9af0ff', 80, true); this.emit('gem', { n: this.stats.gems.size, of: L.gems.length });
     }
-    for (const h of L.hearts) if (!h.got && near(h.x, h.y, 8)) { h.got = true; this.collectHeart(h.x, h.y); }
+    for (const h of L.hearts) if (!h.got && near(h.x, h.y, 8)) { h.got = true; this.openChest(h.x, h.y); }     // map 'H' = treasure chest (v96)
     for (const k of L.checkpoints) if (!k.on && Math.abs(k.x - p.cx) < 22 && Math.abs(k.y - p.feet) < 40) {
       L.checkpoints.forEach(o => o.on = false); k.on = true; this.checkpoint = { x: k.x, y: k.y }; sfx().checkpoint();
       for (let i = 0; i < 16; i++) this.burst(k.x, k.y - 40, i % 2 ? '#ffe36a' : '#8aff8a', 1, 2.4);
-      this.text(k.x, k.y - 60, 'เช็กพอยต์!', '#8aff8a', 70, true); p.heal(1); this.emit('checkpoint', {});
+      this.text(k.x, k.y - 60, 'เช็กพอยต์!', '#8aff8a', 70, true); this.emit('checkpoint', {});
     }
-    // loose drops (coins / hearts thrown out of enemies)
+    // loose drops: they pop out, then FLY TO THE PLAYER by themselves (magnet) — no walking around to collect
     for (const c of this.loose) {
-      c.t++; c.vy = Math.min(c.vy + .35, 7);
-      const b = { x: c.x - 5, y: c.y - 5, w: 10, h: 10, vx: c.vx, vy: c.vy };
-      W.moveBody(L, b, c.vx, c.vy); c.x = b.x + 5; c.y = b.y + 5; if (b.onGround) { c.vy = c.vy > 2 ? -c.vy * .4 : 0; c.vx *= .85; }
-      if (c.t > 14 && near(c.x, c.y, 6)) { c.got = true; if (c.kind === 'coin') { this.stats.coins++; sfx().coin(); } else this.collectHeart(c.x, c.y); }
-      if (c.t > 600 || c.y > L.ph + 50) c.got = true;
+      c.t++;
+      if (c.t < 18) {
+        c.vy = Math.min(c.vy + .35, 7);
+        const b = { x: c.x - 5, y: c.y - 5, w: 10, h: 10, vx: c.vx, vy: c.vy };
+        W.moveBody(L, b, c.vx, c.vy); c.x = b.x + 5; c.y = b.y + 5; if (b.onGround) { c.vy = c.vy > 2 ? -c.vy * .4 : 0; c.vx *= .85; }
+      } else {
+        const tx = p.cx, ty = p.y + p.h / 2, dx = tx - c.x, dy = ty - c.y, dd = Math.hypot(dx, dy) || 1, sp = Math.min(14, 3 + (c.t - 18) * .45);
+        c.x += dx / dd * Math.min(sp, dd); c.y += dy / dd * Math.min(sp, dd);
+        if (dd < 12) { c.got = true; this.collectLoose(c); }
+      }
+      if (c.t > 900) { c.got = true; this.collectLoose(c); }
     }
     compact(this.loose, notGot);
     if (this.runner && L.coins.length > 400) compact(L.coins, notGot);
   }
-  collectHeart(x, y) {
-    const p = this.player;
-    if (p.hp < p.maxHp) { p.heal(1); this.text(x, y - 10, '+1 ❤', '#ff8aa0', 50); } else { this.stats.coins += 5; this.text(x, y - 10, 'HP เต็ม · +5', '#ffd84a', 50); }
-    sfx().heart(); this.burst(x, y, '#ff8aa0', 8, 1.8);
+  collectLoose(c) {
+    if (c.kind === 'coin') { this.addCoins(1); sfx().coin(); return; }
+    this.gainItem(c.id, c.x, c.y);
+  }
+  addCoins(n) {
+    let v = n * (PLAT.relicOn('midas') ? 1.5 : 1); v = Math.floor(v) + (Math.random() < v % 1 ? 1 : 0);
+    this.stats.coins += v; PLAT.bag.earn(v);
+  }
+  gainItem(id, x, y) {
+    const it = PLAT.ITEMS[id]; if (!it) return;
+    const dup = it.type === 'relic' && PLAT.bag.owns(id);
+    if (dup) { this.addCoins(it.sell || Math.round(it.price / 2)); this.text(x, y - 12, `${it.icon} ซ้ำ → 🪙`, '#ffd84a', 50); return; }
+    PLAT.bag.add(id); (this.stats.loot || (this.stats.loot = [])).push(id); PLAT.save.persist();
+    const rare = it.type === 'relic';
+    if (rare) { this.flashT = 10; this.hitstop(8); sfx().gem(); PLAT.haptic('gem'); for (let i = 0; i < 24; i++) this.burst(x, y, i % 2 ? (it.legend ? '#ffe36a' : '#c8a0ff') : '#ffffff', 1, 3.5); }
+    else sfx().coin();
+    this.text(x, y - 14, `${it.icon} ${it.name}${rare ? (it.legend ? ' — ไอเทมเทพ!!' : ' — เรลิก!') : ''}`, it.legend ? '#ffe36a' : rare ? '#d8b0ff' : '#ffffff', rare ? 110 : 50, rare);
+    this.emit('bag', { id });
+    if (rare) this.emit('toast', { text: `${it.icon} ${it.name}`, sub: (it.legend ? 'ไอเทมเทพ! ' : 'ได้เรลิกใหม่! ') + it.desc + ' · ใส่ได้ที่ร้านค้า → กระเป๋า' });
+  }
+  // a treasure chest (map 'H'): coins + one treasure, sometimes a potion
+  openChest(x, y) {
+    sfx().gem(); this.burst(x, y, '#ffd84a', 14, 2.4);
+    for (let i = 0; i < 6; i++) this.loose.push({ x, y, vx: U.rnd(-2, 2), vy: U.rnd(-6, -3), kind: 'coin', t: 0 });
+    const pick = Math.random() < .25 ? (Math.random() < .8 ? 'potS' : 'potL') : ['ring', 'goblet', 'orb'][Math.floor(Math.random() * 3)];
+    this.loose.push({ x, y, vx: 0, vy: -6, kind: 'item', id: pick, t: 0 });
+    this.text(x, y - 16, 'หีบสมบัติ!', '#ffd84a', 50);
   }
   warn(x, y, frames, cb) { this.warns.push({ x, y, t: 0, frames, cb }); }
   stepWarns() { for (const w of this.warns) if (++w.t >= w.frames) { w.done = true; w.cb && w.cb(); } compact(this.warns, notDone); }
@@ -493,7 +529,7 @@ class Game {
     const s = this.stats, L = this.L, par = this.spec.par * 60;
     if (this.runner) {
       const R = this.runner;
-      return { endless: this.endlessWorld, levelId: this.levelId, heroId: this.heroId, seed: this.seed, dist: R.dist, tier: R.tier, score: R.score(s), frames: s.frames, coins: s.coins, kills: s.kills, hits: s.hits, maxChain: s.maxChain || 0, parries: s.parries || 0,
+      return { endless: this.endlessWorld, levelId: this.levelId, heroId: this.heroId, seed: this.seed, dist: R.dist, tier: R.tier, score: R.score(s), frames: s.frames, coins: s.coins, kills: s.kills, hits: s.hits, maxChain: s.maxChain || 0, parries: s.parries || 0, loot: (s.loot || []).slice(),
         gen: R.gen ? Object.assign({}, R.stats || R.gen.stats) : null, genLog: (R.log && R.log.length ? R.log : R.gen && R.gen.log || []).slice(-8) };
     }
     const checks = [
@@ -504,7 +540,7 @@ class Game {
     ];
     const n = checks.filter(c => c.ok).length, rank = n === 4 ? 'S' : n === 3 ? 'A' : n === 2 ? 'B' : 'C';
     const score = s.coins * 10 + s.kills * 50 + s.gems.size * 500 + Math.max(0, Math.round((par - s.frames) / 60)) * 10 + (s.hits === 0 ? 1000 : 0);
-    return { levelId: this.levelId, heroId: this.heroId, frames: s.frames, coins: s.coins, gems: [...s.gems], gemTotal: L.gems.length, kills: s.kills, enemyTotal: this.enemyTotal, hits: s.hits, deaths: s.deaths, maxChain: s.maxChain || 0, parries: s.parries || 0, checks, rank, score };
+    return { levelId: this.levelId, heroId: this.heroId, frames: s.frames, coins: s.coins, gems: [...s.gems], gemTotal: L.gems.length, kills: s.kills, enemyTotal: this.enemyTotal, hits: s.hits, deaths: s.deaths, maxChain: s.maxChain || 0, parries: s.parries || 0, loot: (s.loot || []).slice(), checks, rank, score };
   }
   hudState() {
     const p = this.player, L = this.L, h = p.hero;
@@ -579,6 +615,7 @@ class Game {
     this.player.draw(ctx);
     if (this.player.mouth && !this.player.dead) { ctx.fillStyle = '#ffb0e0'; ctx.font = '700 10px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('อมอยู่', this.player.cx, this.player.y - 6); }
     for (const pr of this.projs) this.drawProj(ctx, pr);
+    if (this.bolts && this.bolts.length) this.drawBolts(ctx);
     for (const f of this.fxs) if (!f.behind) this.drawFx(ctx, f);
     for (const q of this.parts) {
       ctx.globalAlpha = q.fade ? Math.min(1, q.life / 20) : 1; ctx.fillStyle = q.col;
@@ -855,9 +892,9 @@ class Game {
     for (const s of L.springs) { if (!inV(s.x)) continue; const sq = s.sq > 0 ? Math.sin(s.sq / 14 * Math.PI) * 6 : 0; ctx.fillStyle = '#8a8a9a'; ctx.fillRect(s.x + 3, s.y + 4 + sq / 2, s.w - 6, 8 - sq / 2); ctx.fillStyle = '#ff4a5a'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 5); ctx.fillStyle = '#ffa0a8'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 1.5); }
     // coins / gems / hearts
     for (const c of L.coins) if (!c.got && inV(c.x)) this.drawCoin(ctx, c.x, c.y + Math.sin((f + c.x) / 12) * 2, (f + c.x) / 16);
-    for (const c of this.loose) { if (!inV(c.x)) continue; if (c.kind === 'coin') this.drawCoin(ctx, c.x, c.y, (f + c.t) / 6, .8); else this.drawHeart(ctx, c.x, c.y); }
+    for (const c of this.loose) { if (!inV(c.x)) continue; if (c.kind === 'coin') this.drawCoin(ctx, c.x, c.y, (f + c.t) / 6, .8); else this.drawItem(ctx, c); }
     for (const g of L.gems) if (!g.got && inV(g.x)) this.drawGem(ctx, g.x, g.y + Math.sin(f / 15) * 3);
-    for (const h of L.hearts) if (!h.got && inV(h.x)) this.drawHeart(ctx, h.x, h.y + Math.sin(f / 14) * 2);
+    for (const h of L.hearts) if (!h.got && inV(h.x)) this.drawChest(ctx, h.x, h.y + 6);
   }
   drawCoin(ctx, x, y, ph, s) {
     s = s || 1; const w = Math.max(1.2, Math.abs(Math.cos(ph)) * 6 * s);
@@ -870,6 +907,16 @@ class Game {
     ctx.fillStyle = '#9af0ff'; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x + 4, y - 3); ctx.lineTo(x, y + 6); ctx.lineTo(x - 4, y - 3); ctx.closePath(); ctx.fill();
     if (this.frame % 40 < 6) { ctx.fillStyle = '#fff'; ctx.fillRect(x + 5, y - 9, 2, 6); ctx.fillRect(x + 3, y - 7, 6, 2); }
   }
+  drawChest(ctx, x, y) {
+    ctx.fillStyle = '#5a3416'; ctx.fillRect(x - 11, y - 9, 22, 15); ctx.fillStyle = '#8a5424'; ctx.fillRect(x - 11, y - 14, 22, 7);
+    ctx.fillStyle = '#ffd84a'; ctx.fillRect(x - 11, y - 8, 22, 2); ctx.fillRect(x - 2, y - 10, 4, 6);
+    if (this.frame % 50 < 6) { ctx.fillStyle = '#fff'; ctx.fillRect(x + 6, y - 15, 2, 5); ctx.fillRect(x + 4.5, y - 13.5, 5, 2); }
+  }
+  drawItem(ctx, c) {
+    const it = PLAT.ITEMS[c.id]; if (!it) return; const rare = it.type === 'relic';
+    if (rare) { ctx.drawImage(glowSprite(it.legend ? 'rgba(255,230,120,.8)' : 'rgba(200,160,255,.75)', 'rgba(255,255,255,0)', 18, 2), c.x - 18, c.y - 18); }
+    ctx.font = (rare ? '18px' : '14px') + ' sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(it.icon, c.x, c.y); ctx.textBaseline = 'alphabetic';
+  }
   drawHeart(ctx, x, y) { ctx.fillStyle = '#ff4a6a'; ctx.beginPath(); ctx.arc(x - 4, y - 2, 4.5, 0, 6.283); ctx.arc(x + 4, y - 2, 4.5, 0, 6.283); ctx.moveTo(x - 8.5, y - 1); ctx.lineTo(x, y + 8); ctx.lineTo(x + 8.5, y - 1); ctx.fill(); ctx.fillStyle = '#ffc0cc'; ctx.fillRect(x - 6, y - 5, 2, 2); }
   drawProj(ctx, pr) {
     const d = pr.def;
@@ -880,6 +927,8 @@ class Game {
       else if (d.proc === 'bolt') { ctx.fillRect(pr.x - 10, pr.y - 1, 20, 2); ctx.fillStyle = '#e0e0e0'; ctx.beginPath(); const tip = pr.x + U.sign(pr.vx) * 12; ctx.moveTo(tip, pr.y); ctx.lineTo(tip - U.sign(pr.vx) * 5, pr.y - 3); ctx.lineTo(tip - U.sign(pr.vx) * 5, pr.y + 3); ctx.fill(); }
       else if (d.proc === 'drop') { ctx.beginPath(); ctx.moveTo(pr.x, pr.y - 8); ctx.quadraticCurveTo(pr.x + 6, pr.y + 2, pr.x, pr.y + 6); ctx.quadraticCurveTo(pr.x - 6, pr.y + 2, pr.x, pr.y - 8); ctx.fill(); }
       else if (d.proc === 'rock') { ctx.save(); ctx.translate(pr.x, pr.y); ctx.rotate(pr.t * .1); ctx.fillRect(-8, -8, 16, 16); ctx.fillStyle = '#5a4a3a'; ctx.fillRect(-8, 2, 16, 6); ctx.restore(); }
+      else if (d.proc === 'bomb') { ctx.save(); ctx.translate(pr.x, pr.y); ctx.rotate(pr.t * .25); ctx.beginPath(); ctx.arc(0, 0, 8, 0, 6.283); ctx.fill(); ctx.fillStyle = '#ffd060'; ctx.fillRect(-1, -12, 2, 5); if (pr.t % 6 < 3) { ctx.fillStyle = '#ff5a2a'; ctx.fillRect(-2, -14, 4, 3); } ctx.restore(); }
+      else if (d.proc === 'meteor') { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite('rgba(255,140,40,.9)', 'rgba(255,60,0,0)', 22, 2), pr.x - 22, pr.y - 22); ctx.restore(); ctx.fillStyle = '#5a2a1a'; ctx.beginPath(); ctx.arc(pr.x, pr.y, 8, 0, 6.283); ctx.fill(); this.burst(pr.x - 4, pr.y - 6, '#ff8a2a', 1, .6); }
       else if (d.proc === 'shock') { ctx.globalAlpha = .9; ctx.beginPath(); ctx.ellipse(pr.x, pr.y - 6, 12, 14 + Math.sin(pr.t / 2) * 3, 0, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#fff8c0'; ctx.fillRect(pr.x - 2, pr.y - 18, 4, 14); ctx.globalAlpha = 1; }
       return;
     }
@@ -909,6 +958,16 @@ class Game {
     ctx.fillStyle = 'rgba(255,220,120,.9)'; ctx.beginPath(); ctx.arc(face > 0 ? b.x0 : b.x0, b.y, hh * .9, 0, 6.283); ctx.fill();
     ctx.restore();
     if (b.t % 3 === 0) this.burst(face > 0 ? b.x0 + b.len : b.x0 - b.len, b.y, '#bfe0ff', 2, 2);
+  }
+  // relic: THUNDER — a jagged lightning bolt from the top of the screen onto the target
+  drawBolts(ctx) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const b of this.bolts) {
+      ctx.globalAlpha = b.t / 12; ctx.strokeStyle = b.t % 2 ? '#fff6a0' : '#ffffff'; ctx.lineWidth = 3 + b.t * .3; ctx.beginPath();
+      let x = b.x + U.rnd(-6, 6), y = this.cam.y - 10; ctx.moveTo(x, y);
+      while (y < b.y) { y += 22; x = b.x + U.rnd(-14, 14); ctx.lineTo(x, Math.min(y, b.y)); } ctx.stroke(); b.t--;
+    }
+    ctx.restore(); compact(this.bolts, b => b.t > 0);
   }
   drawStars(ctx, x, y, t) { ctx.fillStyle = '#ffe36a'; for (let i = 0; i < 3; i++) { const a = t / 10 + i * 2.1; ctx.fillRect(x + Math.cos(a) * 10 - 1.5, y + Math.sin(a) * 3 - 1.5, 3, 3); } }
   drawTexts(ctx) {

@@ -32,7 +32,7 @@ class Player {
     const h = this.hero = PLAT.HEROES[heroId]; this.id = heroId; this.g = g;
     this.anim = new PLAT.Anim(sheet, h.poses);
     this.w = h.box[0]; this.h = h.box[1];
-    this.maxHp = h.hp; this.hp = h.hp; this.en = 100;
+    this.maxHp = h.hp * PLAT.HPU + (PLAT.relicOn('dragon') ? 40 : 0); this.hp = this.maxHp; this.en = 100;   // v96: HP bar (1 old heart = HPU)
     this.reset(spawn);
   }
   reset(spawn) {
@@ -42,7 +42,7 @@ class Player {
     this.inv = 0; this.hurtT = 0; this.dead = false; this.deadT = 0; this.act = null; this.cd = { dash: 0, shot: 0 };
     this.combo = 0; this.comboWin = 0; this.queued = false; this.floating = false; this.wallDir = 0; this.wallLock = 0;
     this.ball = false; this.mouth = null; this.charge = 0; this.airDash = true; this.rocketUsed = false; this.heat = 0;
-    this.mover = null; this.dashJump = false; this.parryT = 0; this.parryCd = 0; this.parryOk = 0; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
+    this.mover = null; this.dashJump = false; this.parryT = 0; this.parryCd = 0; this.parryOk = 0; this.aegisCd = this.aegisCd || 0; this.itemCd = 0; this.sq = { x: 1, y: 1 }; this.guarding = false; this.bodyHit = null; this.streak = 0; this.streakT = 0;
     this.t = 0; this.airT = 0; this.landT = 0; this.lastSafe = { x: spawn.x, y: spawn.y };
     this.ult = this.ult || 0; this.superT = 0; this.pend = null; this.holdS = null; this.holdA = null; this.pressAt = {};
     this.anim.play('idle', null, true);
@@ -76,11 +76,14 @@ class Player {
 
     const ax = (inp.isHeld('right') ? 1 : 0) - (inp.isHeld('left') ? 1 : 0);
     if (inp.wasPressed('jump')) this.buffer = C.BUFFER; else if (this.buffer > 0) this.buffer--;
-    if (this.onGround) { this.coyote = C.COYOTE; this.airJumps = h.airJumps || 0; this.airDash = true; this.rocketUsed = false; this.floating = false; }
+    if (this.onGround) { this.coyote = C.COYOTE; this.airJumps = this.maxAirJumps(); this.airDash = true; this.rocketUsed = false; this.floating = false; }
     else if (this.coyote > 0) this.coyote--;
 
     const md = h.mod, busy = md && md.update ? md.update(this, inp, ax) : false;   // hero module: forms, hover, beam-in …
+    this.relicTick();
     if (this.parryCd > 0) this.parryCd--; if (this.parryOk > 0) this.parryOk--;
+    if (inp.wasPressed('potion')) this.usePotion();
+    if (inp.wasPressed('item')) this.useItem();
     if (this.parryT > 0) this.parryT--;
     else if (inp.wasPressed('parry') && this.parryCd <= 0 && this.hurtT === 0 && !busy) this.startParry();
     if (this.hurtT > 0) { this.hurtT--; if (this.onGround) this.vx *= .86; }
@@ -120,7 +123,7 @@ class Player {
     if (this.bodyHit) {
       const n = this.g.hit(this.bodyBox(), this.bodyHit.dmg, { id: this.bodyHit.id, kb: this.bodyHit.kb || 3, dir: this.face, from: this, body: true });
       if (n && this.bodyHit.ball) { this.vy = Math.min(this.vy, -7.5); this.jumping = false; this.ballId = newSwing(); this.airDash = true; }
-      if (n && this.bodyHit.dive && this.act) { this.endAct(); this.vy = -(this.hero.moves.downAir.bounce || 7); this.jumping = false; this.airJumps = this.hero.airJumps || 0; }
+      if (n && this.bodyHit.dive && this.act) { this.endAct(); this.vy = -(this.hero.moves.downAir.bounce || 7); this.jumping = false; this.airJumps = this.maxAirJumps(); }
     }
     this.pose(); this.anim.update();
   }
@@ -193,7 +196,7 @@ class Player {
     // springs
     for (const s of L.springs) if (this.vy >= 0 && U.overlap({ x: this.x, y: this.feet - 6, w: this.w, h: 8 }, s)) {
       this.vy = -C.SPRING; this.jumping = true; this.cutOK = false;   // holding jump on a spring = higher bounce
-      this.onGround = false; this.coyote = 0; s.sq = 14; this.airJumps = this.hero.airJumps || 0; this.airDash = true; this.rocketUsed = false;
+      this.onGround = false; this.coyote = 0; s.sq = 14; this.airJumps = this.maxAirJumps(); this.airDash = true; this.rocketUsed = false;
       this.floating = false; this.ball = !!this.hero.ballJump; this.springT = 30; sfx().spring(); this.sq = { x: .8, y: 1.25 };
       if (this.act && this.act.kind === 'pogo') this.endAct();
     }
@@ -746,7 +749,7 @@ class Player {
           const box = { x: self.x + 1, y: self.feet - 4, w: self.w - 2, h: 16 };
           const n = g.hit(box, 1, { id: sw, kb: 0, dir: 0, from: self, pogo: true });
           const spikes = W.tilesIn(g.L, box, PLAT.TILE.SPIKE).length;
-          if (n || spikes) { sw = newSwing(); self.vy = -8.6; this.fallT = 0; self.jumping = false; self.airDash = true; self.airJumps = self.hero.airJumps || 0; self.inv = Math.max(self.inv, 8); g.burst(self.cx, self.feet, '#ffffff', 5, 1.5); if (spikes) sfx().clang(); }
+          if (n || spikes) { sw = newSwing(); self.vy = -8.6; this.fallT = 0; self.jumping = false; self.airDash = true; self.airJumps = self.maxAirJumps(); self.inv = Math.max(self.inv, 8); g.burst(self.cx, self.feet, '#ffffff', 5, 1.5); if (spikes) sfx().clang(); }
         }
       },
       onLand() {
@@ -768,7 +771,7 @@ class Player {
           const box = { x: self.x + 1, y: self.feet - 4, w: self.w - 2, h: 16 };
           const n = g.hit(box, 1, { id: newSwing(), kb: 0, dir: 0, from: self, pogo: true });
           const spikes = W.tilesIn(g.L, box, PLAT.TILE.SPIKE).length;
-          if (n || spikes) { self.vy = -8.6; self.jumping = false; self.airDash = true; self.airJumps = self.hero.airJumps || 0; self.inv = Math.max(self.inv, 8); g.burst(self.cx, self.feet, '#ffffff', 5, 1.5); if (spikes) sfx().clang(); }
+          if (n || spikes) { self.vy = -8.6; self.jumping = false; self.airDash = true; self.airJumps = self.maxAirJumps(); self.inv = Math.max(self.inv, 8); g.burst(self.cx, self.feet, '#ffffff', 5, 1.5); if (spikes) sfx().clang(); }
         }
       }, onLand() { self.endAct(); } };
   }
@@ -873,7 +876,7 @@ class Player {
     if (this.act) this.endAct();
     this.parryOk = 0; this.counterTarget = null; this.inv = Math.max(this.inv, 50); this.cancelHeld();
     if (e) this.face = U.sign(e.cx - this.cx) || this.face;
-    const pose = this.counterPose(), sw = newSwing(), dmg = perfect ? COUNTER_PERFECT_DMG : COUNTER_DMG, col = perfect ? '#ffe36a' : '#ffffff';
+    const pose = this.counterPose(), sw = newSwing(), dmg = (perfect ? COUNTER_PERFECT_DMG : COUNTER_DMG) * (PLAT.relicOn('shadow') ? 1.5 : 1), col = perfect ? '#ffe36a' : '#ffffff';
     const goal = e ? e.cx - this.face * (e.w / 2 + this.w / 2 + 6) : this.cx + this.face * 56;
     this.anim.play(pose, 30, true); sfx().dash(); g.hitstop(3);
     g.text(this.cx, this.y - 16, perfect ? 'PERFECT COUNTER!' : 'COUNTER!', perfect ? '#ffe36a' : '#ff5a6a', 70, true);
@@ -909,10 +912,10 @@ class Player {
     if (a && /^(ult|beam|transform|nova|meteor|bigshot)$/.test(a.kind)) return;       // big committed moves cannot be cancelled
     if (a) this.endAct();
     this.cancelHeld();
-    this.parryT = PARRY_WIN; this.parryCd = PARRY_CD;
+    this.parryWin = PARRY_WIN + (PLAT.relicOn('shadow') ? 6 : 0); this.parryT = this.parryWin; this.parryCd = PARRY_CD;
     sfx().swing(); this.g.burst(this.cx + this.face * 12, this.y + this.h * .4, '#cfe8ff', 4, 1.2);
   }
-  parryPerfect() { return this.parryT > PARRY_WIN - PARRY_PERFECT - 1; }
+  parryPerfect() { return this.parryT > (this.parryWin || PARRY_WIN) - PARRY_PERFECT - 1; }
   onParry(e, fromX, perfect) {
     const g = this.g; if (perfect == null) perfect = this.parryPerfect();
     if (e && e.parried) e.parried(perfect, this.cx);
@@ -926,6 +929,7 @@ class Player {
     g.spark(x, y, perfect ? 2.2 : 1.5); g.burst(x, y, perfect ? '#ffe36a' : '#cfe8ff', perfect ? 16 : 10, 3);
     g.text(this.cx, this.y - 12, perfect ? 'PERFECT PARRY!' : 'ปัด!', perfect ? '#ffe36a' : '#bfe8ff', perfect ? 50 : 36, perfect);
     g.stats.parries = (g.stats.parries || 0) + 1;
+    if (PLAT.relicOn('halo')) { this.heal(15); g.text(this.cx, this.y - 26, '+15 😇', '#fff4a0', 30); }
   }
   // returns 'hit' | 'blocked' | 'ignored' | 'parried'
   hurt(dmg, fromX, o) {
@@ -937,6 +941,11 @@ class Player {
       this.onParry(e, fromX); return 'parried';
     }
     if (this.inv > 0) return 'ignored';
+    if (!o.raw) dmg = Math.round(dmg * PLAT.HPU);                          // enemy damage is in old hearts
+    if (PLAT.relicOn('aegis') && this.aegisCd <= 0 && !o.unblockable) {   // relic: the barrier eats one hit
+      this.aegisCd = 900; this.inv = 40; sfx().clang(); PLAT.haptic('hit');
+      this.g.burst(this.cx, this.y + this.h / 2, '#9fe8ff', 16, 3); this.g.text(this.cx, this.y - 10, 'BARRIER!', '#9fe8ff', 40, true); return 'blocked';
+    }
     const dir = fromX < this.cx ? 1 : -1;      // pushed away from the source
     if (this.guarding && Math.sign(fromX - this.cx) === this.face && !o.unblockable) {
       this.vx = dir * 2; sfx().clang(); this.g.burst(this.cx + this.face * 10, this.y + 20, '#e0f0ff', 6, 2); this.inv = 12; this.g.text(this.cx, this.y - 4, 'กันได้!', '#bfe8ff', 30); return 'blocked';
@@ -951,6 +960,7 @@ class Player {
     if (dmg > 0) this.g.text(this.cx, this.y - 6, '-' + dmg, '#ff6a7a', 40);
     this.g.stats.hits++; this.gainUlt(8); this.g.hurtT = 18; this.g.chain = 0; this.g.chainT = 0; this.queued = false;
     if (this.hero.mod && this.hero.mod.onHurt) this.hero.mod.onHurt(this, dmg);
+    if (this.hp <= 0 && PLAT.relicOn('phoenix') && !this.g.phoenixUsed) { this.g.phoenixUsed = true; this.rebirth(); return 'hit'; }
     if (this.hp <= 0) this.die();
     return 'hit';
   }
@@ -962,7 +972,71 @@ class Player {
     if (this.hero.mod && this.hero.mod.die) this.hero.mod.die(this);
   }
   heal(n) { this.hp = Math.min(this.maxHp, this.hp + n); }
+  maxAirJumps() { return (this.hero.airJumps || 0) + (PLAT.relicOn('wind') ? 1 : 0); }
+  // relic: PHOENIX — rise from the ashes once per level
+  rebirth() {
+    const g = this.g; this.hp = Math.ceil(this.maxHp * .5); this.inv = 150; this.hurtT = 0; this.vy = -6;
+    g.flashT = 16; g.shake(8); g.hitstop(14); sfx().boom(); sfx().gem(); PLAT.haptic('boss');
+    g.text(this.cx, this.y - 20, '🔥 REBIRTH! 🔥', '#ff9a3a', 90, true);
+    g.hit({ x: this.cx - 130, y: this.feet - 110, w: 260, h: 120 }, 10, { id: newSwing(), kb: 9, dir: 0, at: this.cx, from: this, heavy: true, up: true });
+    for (let i = 0; i < 40; i++) g.burst(this.cx, this.y + this.h / 2, i % 2 ? '#ff6a1a' : '#ffd060', 1, 5);
+  }
+  /* POTION (H · pad Select · 🧪): drinks the smallest potion that covers most of what is missing */
+  usePotion() {
+    const g = this.g, B = PLAT.bag; if (this.dead) return false;
+    if (this.hp >= this.maxHp) { g.text(this.cx, this.y - 8, 'HP เต็มแล้ว', '#c8ffd0', 30); sfx().denied(); return false; }
+    const miss = (this.maxHp - this.hp) / this.maxHp, order = ['potS', 'potL', 'elixir'].filter(k => B.count(k) > 0);
+    if (!order.length) { g.text(this.cx, this.y - 8, 'ไม่มียา! (ซื้อที่ร้านค้า)', '#ff9a9a', 40); sfx().denied(); return false; }
+    const id = order.find(k => PLAT.ITEMS[k].heal >= miss * .6) || order[order.length - 1], it = PLAT.ITEMS[id];
+    B.take(id); const n = Math.ceil(this.maxHp * it.heal); this.heal(n); if (it.inv) this.inv = Math.max(this.inv, it.inv);
+    sfx().heart(); g.text(this.cx, this.y - 10, `${it.icon} +${n} HP`, '#7aff9a', 50, true);
+    for (let i = 0; i < 18; i++) g.parts.push({ x: this.cx + U.rnd(-12, 12), y: this.feet - U.rnd(0, this.h), vx: U.rnd(-.4, .4), vy: U.rnd(-2.2, -.8), life: 30, col: i % 2 ? '#7aff9a' : '#ffffff', size: 3, grav: -.02, fade: true });
+    g.emit('bag', {}); return true;
+  }
+  /* QUICK ITEM (G · pad R3 · HUD button) */
+  useItem() {
+    const g = this.g, B = PLAT.bag, id = B.d().quick, it = PLAT.ITEMS[id]; if (this.dead || !it) return false;
+    if ((this.itemCd || 0) > 0) return false;
+    if (!B.count(id)) { g.text(this.cx, this.y - 8, `ไม่มี ${it.icon} (ซื้อที่ร้านค้า)`, '#ff9a9a', 40); sfx().denied(); return false; }
+    B.take(id); this.itemCd = 40; g.emit('bag', {});
+    if (id === 'bomb') {
+      const pd = { proc: 'bomb', col: '#2a2a3a', speed: 0, grav: .32, dmg: 2, life: 160, box: [16, 16], spin: .25, explode: { r: 80, dmg: 12 } };
+      g.spawnProj(pd, this.cx + this.face * 10, this.feet - 30, this.face, { owner: this, vx: this.face * 4.6 + this.vx * .5, vy: -6.4 }); sfx().swing();
+    } else if (id === 'frost') {
+      let n = 0; const x0 = g.cam.x - 20, x1 = g.cam.x + PLAT.C.VW + 20;
+      for (const e of g.enemies) if (!e.dead && e.cx > x0 && e.cx < x1) { e.frozenT = e.boss ? 60 : 180; e.release && e.release(); n++; }
+      for (const pr of g.projs) if (pr.enemy) pr.dead = true;
+      g.flashT = 10; g.shake(3); sfx().gem(); g.text(this.cx, this.y - 14, `❄️ FREEZE ×${n}`, '#bfe8ff', 60, true);
+    } else if (id === 'meteor') {
+      const x0 = g.cam.x, x1 = g.cam.x + PLAT.C.VW, tg = g.enemies.filter(e => !e.dead && e.cx > x0 && e.cx < x1);
+      for (let i = 0; i < 8; i++) {
+        const e = tg.length ? tg[i % tg.length] : null, tx = e ? e.cx + U.rnd(-20, 20) : U.rnd(x0 + 40, x1 - 40);
+        g.warn(tx, g.floorBelow(tx, g.cam.y + 40), 20 + i * 7, () => g.spawnProj({ proc: 'meteor', col: '#ff7a2a', speed: 0, grav: .45, dmg: 8, life: 120, box: [24, 24], explode: { r: 44, dmg: 4 } }, tx - 60, g.cam.y - 10, 1, { owner: this, vx: 2.2, vy: 5 }));
+      }
+      sfx().roar(); g.shake(4); g.text(this.cx, this.y - 14, '☄️ METEOR RAIN!', '#ffb04a', 60, true);
+    }
+    return true;
+  }
+  // relic effects that run every frame
+  relicTick() {
+    const g = this.g;
+    if (this.aegisCd > 0 && --this.aegisCd === 0) { g.text(this.cx, this.y - 8, '🛡️ บาเรียพร้อม', '#9fe8ff', 30); }
+    if (this.itemCd > 0) this.itemCd--;
+    if (this.dead) return;
+    if (PLAT.relicOn('halo') && this.t % 30 === 0 && this.hp < this.maxHp) this.heal(1);
+    if (PLAT.relicOn('berserk') && this.hp < this.maxHp * .4 && this.t % 3 === 0) g.burst(this.cx + U.rnd(-8, 8), this.feet - U.rnd(4, this.h), '#ff3a2a', 1, .6);
+    if (PLAT.relicOn('dragon')) {
+      if (this.t % 4 === 0) g.burst(this.cx + U.rnd(-30, 30), this.feet - U.rnd(0, 30), '#ff8a2a', 1, .5);
+      if (this.t % 30 === 0) g.hit({ x: this.cx - 52, y: this.feet - 60, w: 104, h: 64 }, 1, { id: newSwing(), kb: 1, dir: 0, at: this.cx, from: this, multi: true, aura: true, noBreak: true });
+    }
+  }
   onHitLanded(n) {
+    if (PLAT.relicOn('thunder') && (this.thunderN = (this.thunderN || 0) + n) >= 6 && this.lastTarget && !this.lastTarget.dead) {
+      this.thunderN = 0; const e = this.lastTarget, g = this.g;
+      g.bolts = g.bolts || []; g.bolts.push({ x: e.cx, y: e.y + e.h / 2, t: 12 });
+      g.hit({ x: e.cx - 18, y: e.y - 10, w: 36, h: e.h + 20 }, 6, { id: newSwing(), kb: 3, dir: 0, from: this, proc: 'thunder', noBreak: true, heavy: true });
+      sfx().boom(); g.flashT = 4; g.text(e.cx, e.y - 18, '⚡ THUNDER!', '#fff36a', 36);
+    }
     this.en = Math.min(100, this.en + 3 * n);
     this.gainUlt(4 * n);
     this.streak += n; this.streakT = 180;

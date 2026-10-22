@@ -59,7 +59,7 @@ const TELE = { bite: 1, crouch: 1, aim: 1, rev: 1, tele: 1 };
 /* v94 — HARDER ENEMIES (developer: "too weak"). One place to tune. Telegraph wind-ups ("!") keep their length
    so attacks stay readable — and parryable — but enemies are tougher, see further, move and recover faster,
    attack more often and three may attack at once. Bosses get more HP and shorter rests. */
-const TUNE = PLAT.ENEMY_TUNE = { hp: 1.6, armor: 1.3, bossHp: 1.3, speed: 1.25, chase: 1.3, sight: 1.35, cool: .55, rate: .6, wait: .6, recover: .65, shot: 1.3, swoop: 1.25, rest: .6, tokens: 3, bossRest: .7 };
+const TUNE = PLAT.ENEMY_TUNE = { hp: 1.6, armor: 1.3, bossHp: 3.5, speed: 1.25, chase: 1.3, sight: 1.35, cool: .55, rate: .6, wait: .6, recover: .65, shot: 1.3, swoop: 1.25, rest: .6, tokens: 3, bossRest: .7 };
 function tuneDef(d) {
   if (d.boss) return Object.assign({}, d, { hp: Math.round(d.hp * TUNE.bossHp) });
   const o = Object.assign({}, d, { hp: Math.max(2, Math.round(d.hp * TUNE.hp)) });
@@ -112,6 +112,7 @@ class Enemy {
     if (this.flash > 0) this.flash--; if (this.cool > 0) this.cool--; if (this.stunT > 0) this.stunT--;
     if (this.dead) { this.deadT++; this.vy = Math.min(this.vy + C.GRAV, C.MAX_FALL); if (!d.ghost && !this.inhaled) W.moveBody(g.L, this, this.vx *= .9, this.vy); if (this.deadT > 50) this.gone = true; this.anim.update(); return; }
     if (this.inhaled) return;
+    if (this.frozenT > 0) { this.frozenT--; this.vx = 0; if (d.ai !== 'flyer') { this.vy = Math.min(this.vy + C.GRAV, C.MAX_FALL); W.moveBody(g.L, this, 0, this.vy); } return; }   // ❄️ frost orb
     if (this.kbT > 0) { this.kbT--; this.vx *= .86; }
     else if (this.st === 'dizzy') { this.vx *= .7; this.anim.play('idle'); if (this.stT > this.dizzyFor) { this.set('walk'); this.cool = coolT(40); this.dizzyFor = 80; if (p) this.face(U.sign(p.cx - this.cx)); } }
     else this.think(p);
@@ -270,7 +271,7 @@ class Enemy {
     const g = this.g, d = this.def;
     // frontal block (charging chainsaw) — jump over it and hit its back, or wait for the crash
     if (this.blocking && o.dir && U.sign(o.dir) === -this.dir && !o.pogo) { this.reject = 'blocked'; sfx().clang(); g.burst(this.cx + this.dir * 12, this.y + 14, '#ffffff', 6, 2); g.text(this.cx, this.y - 6, 'กัน!', '#d0d8e0', 26); return false; }
-    if (this.st === 'dizzy' || this.vulnerable) dmg *= 2;
+    if (this.st === 'dizzy' || this.vulnerable || this.frozenT > 0) dmg *= 2;
     this.lastDmg = 0;
     if (this.armor > 0) {
       const ad = d.heavyArmor && !o.pogo && !o.body ? Math.max(1, dmg - 1) : dmg;
@@ -345,7 +346,7 @@ class Enemy {
     if (this.dead && !this.anim.sheet.anims.dead) alpha = Math.max(0, 1 - this.deadT / 30);
     else if (this.dead && this.deadT > 34) alpha = Math.max(0, 1 - (this.deadT - 34) / 16);
     if (d.ghost) alpha *= .72 + Math.sin(this.t / 9) * .2;
-    const o = { alpha, flash: this.flash > 0 && this.flash % 2 ? .9 : 0, sy: 1, sx: 1 };
+    const o = { alpha, flash: this.flash > 0 && this.flash % 2 ? .9 : this.frozenT > 0 ? .55 : 0, sy: 1, sx: 1 };
     if (this.st === 'crouch') { o.sy = .82; o.sx = 1.12; }
     if (this.st === 'dizzy' && this.t % 20 < 10) o.rot = .06;
     const face = -this.dir;    // sheets face left
@@ -382,6 +383,7 @@ class Boss extends Enemy {
     if (this.dead) { this.deadT++; if (this.deadT % 8 === 0 && this.deadT < 90) { g.fx('boom', this.cx + U.rnd(-this.w / 2, this.w / 2), this.y + U.rnd(0, this.h), { scale: 1.3 }); sfx().boom(); g.shake(4); } if (this.flying) { this.vy += .2; this.y = Math.min(this.y + this.vy, this.groundY - this.h); } this.anim.update(); if (this.deadT > 120) this.gone = true; return; }
     if (!this.groundY) this.groundY = this.feet;
     if (this.stunT > 0) this.stunT--;
+    if (this.frozenT > 0) { this.frozenT--; this.vx = 0; this.anim.update(); return; }   // ❄️ frost orb (bosses: 1 s)
     const before = this.phase; this.phase = this.hp <= this.maxHp * .25 ? 3 : this.phase2 ? 2 : 1;
     if (this.phase !== before) {
       // PHASE CHANGE: a readable pause — roar, blast the player back (no damage), clear the field, then new patterns

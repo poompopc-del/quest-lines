@@ -288,7 +288,7 @@ H.mod = {
     }
     s.runT = 0; s.runPh = 0;
     if (aim) { a.show('shoot', s.fireT < 3 ? 1 : 0); return true; }
-    if (p.hp <= 1) { if (a.pose !== 'tired') a.play('tired'); return true; }
+    if (p.hp <= p.maxHp * .2) { if (a.pose !== 'tired') a.play('tired'); return true; }
     if (a.pose === 'blink' && !a.done) return true;
     if (--s.blinkT <= 0) { s.blinkT = 160 + Math.floor(Math.random() * 120); a.play('blink', 30, true); return true; }
     if (a.pose !== 'idle' || a.manual != null) a.play('idle', null, true);

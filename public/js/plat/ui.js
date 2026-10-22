@@ -39,6 +39,10 @@ function boot() {
   document.addEventListener('fullscreenchange', () => { setTimeout(resize, 120); refreshFullBtn(); });
   $$('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
   $('#hPause').addEventListener('click', () => pause());
+  // v96: potion / quick item buttons on the HUD (also H / G on the keyboard, Select / R3 on a pad)
+  const useBtn = (sel, fn) => $(sel).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); const g = app.game; if (g && g.mode === 'play' && g.player) g.player[fn](); });
+  useBtn('#hPot', 'usePotion'); useBtn('#hItem', 'useItem');
+  $$('#shTabs button').forEach(b => b.addEventListener('click', () => { app.shopTab = b.dataset.t; PLAT.sfx.select(); renderShop(); }));
   document.addEventListener('pointerdown', () => PLAT.sfx.unlock(), { once: true });
   // iOS Safari ignores user-scalable=no: block pinch / double-tap zoom so a two-finger press never zooms the game
   document.addEventListener('gesturestart', e => e.preventDefault()); document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
@@ -56,7 +60,7 @@ function boot() {
 }
 
 /* -------------------------------- screens -------------------------------- */
-const SCREENS = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', endless: 'sEndless', over: 'sOver', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings', loading: 'sLoading' };
+const SCREENS = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', endless: 'sEndless', over: 'sOver', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings', loading: 'sLoading', shop: 'sShop' };
 function show(name, push) {
   if (name !== app.screen) input.reset('screen');                     // switching screens never leaves a button held
   if (push && app.screen !== name) app.prev.push(app.screen);
@@ -72,6 +76,7 @@ function show(name, push) {
   if (name === 'endless') renderEndless();
   if (name === 'title') refreshTitle();
   if (name === 'settings') { renderPadStatus(); renderPadMap(); }
+  if (name === 'shop') renderShop();
   if (name !== 'settings' && input.capture) stopListen();
   const first = id && $('#' + id + ' .btn.red, #' + id + ' .btn');
   if (first && (input.lastDevice === 'pad' || input.lastDevice === 'key')) setTimeout(() => first.focus({ preventScroll: true }), 30);
@@ -87,6 +92,7 @@ function go(where) {
     case 'endlessSeed': if (app.game && app.game.endlessWorld) { app.game.restart(app.game.seed); setupHud(app.game); show('game'); toast('∞ ' + app.game.spec.name, 'เล่นซ้ำด่านเดิม (ซีด ' + app.game.seed + ')'); } break;
     case 'heroes': show('heroes', true); break;
     case 'settings': show('settings', true); break;
+    case 'shop': S.persist(); show('shop', true); break;
     case 'title': show('title'); break;
     case 'back': show(app.prev.pop() || 'title'); break;
     case 'main': quitGame(); input.detach(); location.href = 'index.html'; break;
@@ -102,7 +108,7 @@ function menuKeys(e) {
   // ` toggles the combat debug overlay — only for developers (main game's dev mode, or ?debug=1 in the URL)
   if (e.code === 'Backquote' && (S.devOn() || /[?&]debug=1\b/.test(location.search))) { PLAT.debug.on = !PLAT.debug.on; PLAT.debug.boxes = []; PLAT.debug.log = []; notify('🛠 Debug ' + (PLAT.debug.on ? 'ON' : 'OFF'), PLAT.debug.on ? 'กล่องโจมตี / กล่องรับดาเมจ / สถานะ / เหตุผลที่ตีไม่เข้า' : ''); return; }
   if (app.screen === 'game') return;
-  if (e.code === 'Escape') { e.preventDefault(); if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes') go('back'); else if (app.screen === 'map' || app.screen === 'endless') show('title'); }
+  if (e.code === 'Escape') { e.preventDefault(); if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes' || app.screen === 'shop') go('back'); else if (app.screen === 'map' || app.screen === 'endless') show('title'); }
 }
 function pause() {
   const g = app.game; if (!g || g.mode !== 'play') return; g.mode = 'paused';
@@ -116,7 +122,7 @@ function resume() { if (!app.game) return; if (app.game.mode === 'paused') app.g
 /* ---------------------------- menu navigation ----------------------------
    D-pad / stick / arrow keys move the focus to the nearest button in that direction,
    A / Enter presses it, B / Backspace goes back — every menu works without touching the screen. */
-function screenEl() { const id = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings' }[app.screen]; return id && $('#' + id); }
+function screenEl() { const id = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', endless: 'sEndless', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings', shop: 'sShop', over: 'sOver' }[app.screen]; return id && $('#' + id); }
 function focusables(root) { return [...root.querySelectorAll('button:not([disabled]), input[type=range]')].filter(el => el.offsetParent !== null && el.getBoundingClientRect().width > 0); }
 function moveFocus(dx, dy) {
   const root = screenEl(); if (!root) return;
@@ -144,7 +150,7 @@ function menuNav() {
   if (P('up')) moveFocus(0, -1); else if (P('down')) moveFocus(0, 1); else if (P('left')) moveFocus(-1, 0); else if (P('right')) moveFocus(1, 0);
   else if (P('ok')) { const root = screenEl(); if (root && cur && root.contains(cur) && cur.tagName === 'BUTTON') cur.click(); else moveFocus(0, 1); }
   else if (P('back') || (P('pause') && app.screen === 'pause')) {
-    if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes') go('back');
+    if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes' || app.screen === 'shop') go('back');
     else if (app.screen === 'map' || app.screen === 'endless') show('title'); else if (app.screen === 'dead') go('retryCp');
   }
   else return;
@@ -167,10 +173,10 @@ function refreshFullBtn() {
 /* ------------------------- controls: glyphs & pad info ------------------------- */
 // the pad glyphs follow the player's own button mapping (Settings → จอยเกม)
 const shortPad = a => { const b = (input.padMap[a] || [])[0]; return b == null ? '—' : PLAT.PAD.name(b, !input.pad || input.pad.standard).split(' / ')[0].split(' (')[0]; };
-const GLYPH = { key: { a: 'J', p: 'O', s: 'I', d: 'L', j: 'Space' }, get pad() { return { a: shortPad('attack'), p: shortPad('parry'), s: shortPad('skill'), d: shortPad('dash'), j: shortPad('jump') }; } };
+const GLYPH = { key: { a: 'J', p: 'O', h: 'H', g: 'G', s: 'I', d: 'L', j: 'Space' }, get pad() { return { a: shortPad('attack'), p: shortPad('parry'), h: shortPad('potion'), g: shortPad('item'), s: shortPad('skill'), d: shortPad('dash'), j: shortPad('jump') }; } };
 function refreshGlyphs() {
   const g = input.lastDevice === 'pad' || (input.pad && input.lastDevice !== 'touch' && input.lastDevice !== 'key') ? GLYPH.pad : GLYPH.key;
-  $$('#hAbil kbd').forEach((k, i) => k.textContent = [g.a, g.p, g.s, g.d][i] || k.textContent);
+  $$('#hAbil kbd').forEach((k, i) => k.textContent = [g.a, g.p, g.h, g.g, g.s, g.d][i] || k.textContent);
 }
 function renderPadStatus() {
   const el = $('#padStatus'); if (!el) return;
@@ -180,7 +186,7 @@ function renderPadStatus() {
     : '🎮 ยังไม่พบจอย — ต่อ Bluetooth/USB แล้ว<b>กดปุ่มใดก็ได้ 1 ครั้ง</b> เกมจะเจอเอง (เบราว์เซอร์จะไม่บอกว่ามีจอยจนกว่าจะกดปุ่ม)';
 }
 /* ------------------------------ controller remap ------------------------------ */
-const PAD_LABEL = { jump: 'กระโดด', attack: 'โจมตี / ยิง (ค้าง = ชาร์จ)', parry: 'ปัดป้อง (Parry)', skill: 'สกิล', dash: 'พุ่ง / แดช', swap: 'เปลี่ยนเกราะ (X)', pause: 'หยุดเกม' };
+const PAD_LABEL = { jump: 'กระโดด', attack: 'โจมตี / ยิง (ค้าง = ชาร์จ)', parry: 'ปัดป้อง (Parry)', skill: 'สกิล', dash: 'พุ่ง / แดช', potion: 'ดื่มยา 🧪', item: 'ไอเทมด่วน 💣', swap: 'เปลี่ยนเกราะ (X)', pause: 'หยุดเกม' };
 function renderPadMap() {
   const box = $('#padRemap'); if (!box) return;
   const std = !input.pad || input.pad.standard;
@@ -254,7 +260,7 @@ const heroList = () => PLAT.HERO_ORDER.filter(id => PLAT.HEROES[id] && !PLAT.HER
 
 /* --------------------------------- title --------------------------------- */
 function refreshTitle() {
-  $('#tHero').textContent = PLAT.HEROES[S.data.hero].name;
+  $('#tHero').textContent = PLAT.HEROES[S.data.hero].name; $('#tWallet').textContent = '🪙 ' + PLAT.bag.coins().toLocaleString();
   const cleared = PLAT.LEVEL_ORDER.filter(id => S.level(id) && S.level(id).cleared).length;
   const gems = PLAT.LEVEL_ORDER.reduce((n, id) => n + ((S.level(id) || {}).gems || []).length, 0);
   $('#tNote').textContent = (input.pad ? '🎮 จอยพร้อมใช้ · ' : '') + `ผ่านแล้ว ${cleared}/${PLAT.LEVEL_ORDER.length} ด่าน · 💎 ${gems}/18 · ทองที่ได้เข้าเกมหลักรวม ${S.data.goldEarned || 0}` + (S.devOn() ? ' · 🛠 โหมดผู้พัฒนา: ปลดล็อกทุกอย่าง' : '');
@@ -311,7 +317,7 @@ function renderHeroInfo(id) {
     <div><div class="nm" style="color:${h.color}">${h.name}</div><div class="th">${h.th} · <span class="chip">${h.role}</span></div>
       <p style="font-size:13px;margin:6px 0">${h.desc}</p>
       <div class="moves">${moveList(h).map(m => `<div class="${m.cls || ''}"><kbd>${m.k}</kbd>${m.n}${m.c ? ` <span class="chip">พลัง ${m.c}</span>` : ''}</div>`).join('')}${extra.length ? `<div><kbd>★</kbd>${extra.join(' · ')}</div>` : ''}</div>
-      <div class="stat">HP ${h.hp} ${bar(h.hp, 6)}</div><div class="stat">ความเร็ว ${bar(h.speed || 1, 1.3)}</div>
+      <div class="stat">HP ${h.hp * PLAT.HPU} ${bar(h.hp, 6)}</div><div class="stat">ความเร็ว ${bar(h.speed || 1, 1.3)}</div>
       <div class="row" style="margin-top:10px">${ok ? `<button class="btn red" id="hPick">${id === S.data.hero ? '✓ ใช้อยู่' : 'ใช้ฮีโร่นี้'}</button>` : `<button class="btn" disabled>🔒 ${heroLockText(id)}</button>`}</div></div>`;
   const cv = box.querySelector('canvas'); heroSheet(id).then(() => app.previews.push({ cv, id, off: 0, big: true }));
   const pick = $('#hPick'); if (pick) pick.addEventListener('click', () => { S.data.hero = id; S.persist(); PLAT.sfx.checkpoint(); renderHeroes(); refreshTitle(); });
@@ -403,7 +409,7 @@ async function startEndless(world, seed) {
   } finally { app.busy = false; }
 }
 function quitGame() {
-  const g = app.game;
+  const g = app.game; S.persist();
   if (g) { if (g.endlessWorld && (g.mode === 'play' || g.mode === 'paused')) recordEndless(g.result(), true); g.dispose(); app.game = null; }
   $('#hud').classList.remove('on'); $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on');
   app.idleOf = null; app.stillOf = null;                               // menus repaint their plain backdrop once
@@ -416,6 +422,7 @@ function onGameEvent(type, d) {
     case 'boss': $('#hBoss').classList.toggle('on', !!d); if (d) { $('#hBossNm').textContent = `${d.name} · ${d.th}`; $('#hBossBar').style.width = '100%'; toast(d.name, d.th); } break;
     case 'bossHit': $('#hBossBar').style.width = (d.hp / d.max * 100) + '%'; break;
     case 'toast': toast(d.text, d.sub); break;
+    case 'bag': hudCache.bag = null; break;
     case 'dead': S.data.stats.deaths++; S.persist(); $('#dRetry').textContent = g.spec.boss ? '↺ ท้าบอสอีกครั้ง' : '↺ เกิดใหม่ที่เช็กพอยต์'; show('dead'); break;
     case 'clear': finishLevel(d); break;
     case 'over': finishEndless(d); break;
@@ -424,16 +431,71 @@ function onGameEvent(type, d) {
 let toastT = 0;
 function toast(a, b) { $('#hToast1').textContent = a || ''; $('#hToast2').textContent = b || ''; $('#hToast').classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => $('#hToast').classList.remove('on'), 2600); }
 
+/* ------------------------------- SHOP (v96) -------------------------------
+   buy potions / quick items / relics · sell treasure · bag: equip relics (max 3), pick the quick item */
+function lootLine(r) {
+  const l = r.loot || []; if (!l.length) return '';
+  const c = {}; l.forEach(id => c[id] = (c[id] || 0) + 1);
+  return `<div class="lootline">ของที่ได้: ${Object.entries(c).map(([id, n]) => { const it = PLAT.ITEMS[id]; return `<span class="${it.type === 'relic' ? (it.legend ? 'leg' : 'rel') : ''}">${it.icon}${n > 1 ? '×' + n : ''}</span>`; }).join(' ')} <small>· ขาย/ใส่ได้ที่ 🛒 ร้านค้า</small></div>`;
+}
+function renderShop() {
+  const B = PLAT.bag, I = PLAT.ITEMS, d = B.d(), tab = app.shopTab || 'buy', box = $('#shGrid');
+  const keep = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.k;
+  $('#shWallet').textContent = B.coins().toLocaleString();
+  $$('#shTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  const card = (it, right, extra, cls) => `<div class="sh-card ${cls || ''} t-${it.type}${it.legend ? ' legend' : ''}"><div class="ic">${it.icon}</div><div class="tx"><b>${it.name}</b><span>${it.desc || ('ขายได้ 🪙 ' + it.sell)}</span>${extra || ''}</div><div class="act">${right}</div></div>`;
+  let html = '', sub = '';
+  if (tab === 'buy') {
+    sub = 'ยาต้องกดดื่มเอง (H / 🧪) · ไอเทมด่วนกด G · เรลิกใส่ได้ 3 ชิ้น (แท็บกระเป๋า) · ไอเทมเทพ 🗡️😇🐉 ไม่มีขาย — ต้องล่าจากศัตรู (บอสดรอปบ่อยสุด)';
+    const sec = (title, ids) => `<h3>${title}</h3>` + ids.map(id => { const it = I[id], owned = it.type === 'relic' && B.owns(id), poor = B.coins() < it.price;
+      const have = it.type === 'relic' ? (owned ? '<em class="own">✓ มีแล้ว</em>' : '') : `<em>มี ${B.count(id)}</em>`;
+      return card(it, owned ? '<button class="btn" disabled>มีแล้ว</button>' : `<button class="btn ${poor ? '' : 'gold'}" data-k="buy:${id}" ${poor ? 'disabled' : ''}>🪙 ${it.price}</button>`, have); }).join('');
+    html = sec('🧪 ยาฟื้นฟู', ['potS', 'potL', 'elixir']) + sec('💥 ไอเทมด่วน', ['bomb', 'frost', 'meteor']) + sec('✨ เรลิก (พลังติดตัว)', PLAT.SHOP_ORDER.filter(k => I[k].type === 'relic'));
+  } else if (tab === 'sell') {
+    const tr = Object.keys(I).filter(k => I[k].type === 'treasure' && B.count(k) > 0), total = tr.reduce((n, k) => n + I[k].sell * B.count(k), 0);
+    sub = 'สมบัติที่ศัตรูดรอป (ตัวเก่ง/บอสดรอปของแพง) · ขายเป็นเหรียญไปซื้อของ';
+    html = tr.length ? `<div class="row" style="margin:4px 0 8px"><button class="btn gold" data-k="sellall">💰 ขายสมบัติทั้งหมด · 🪙 ${total.toLocaleString()}</button></div>` + tr.map(id => card(I[id], `<button class="btn" data-k="sell:${id}">ขาย 1 · 🪙 ${I[id].sell}</button>`, `<em>มี ${B.count(id)}</em>`)).join('')
+      : '<p class="note">ยังไม่มีสมบัติ — ปราบศัตรู (โดยเฉพาะตัวเรืองแสง/บอส) และเปิดหีบสมบัติในด่าน</p>';
+    const legs = d.owned.filter(k => I[k].legend);
+    if (legs.length) html += '<h3>ไอเทมเทพ (ขายได้แต่หาใหม่ยากมาก!)</h3>' + legs.map(id => card(I[id], `<button class="btn" data-k="sellr:${id}">ขาย · 🪙 ${I[id].sell}</button>`)).join('');
+  } else {
+    sub = `เรลิกที่ใส่ ${d.relics.length}/${PLAT.RELIC_SLOTS} · มีผลทันที (ระหว่างหยุดเกมก็เปลี่ยนได้) · เลือกไอเทมด่วนสำหรับปุ่ม G`;
+    const cons = ['potS', 'potL', 'elixir', 'bomb', 'frost', 'meteor'];
+    html = '<h3>ของใช้</h3>' + cons.map(id => { const it = I[id], q = it.type === 'use';
+      return card(it, q ? (d.quick === id ? '<button class="btn gold" disabled>★ ไอเทมด่วน</button>' : `<button class="btn" data-k="quick:${id}">ตั้งเป็นไอเทมด่วน</button>`) : '', `<em>มี ${B.count(id)}</em>`, B.count(id) ? '' : 'none'); }).join('');
+    html += '<h3>เรลิก</h3>' + (d.owned.length ? d.owned.map(id => { const on = d.relics.includes(id);
+      return card(I[id], `<button class="btn ${on ? 'red' : ''}" data-k="eq:${id}">${on ? '✓ ใส่อยู่ · ถอด' : 'ใส่'}</button>`, '', on ? 'on' : ''); }).join('') : '<p class="note">ยังไม่มีเรลิก — ซื้อในแท็บ "ซื้อของ" หรือล่าจากศัตรู</p>');
+  }
+  $('#shSub').textContent = sub; box.innerHTML = html;
+  box.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => shopAct(b.dataset.k)));
+  const f = keep && box.querySelector(`[data-k="${keep}"]`); if (f) f.focus({ preventScroll: true });
+}
+function shopAct(k) {
+  const B = PLAT.bag, I = PLAT.ITEMS, [a, id] = k.split(':'), it = I[id];
+  if (a === 'buy') { const r = B.buy(id); if (r === 'ok') { PLAT.sfx.coin(); notify(`${it.icon} ซื้อ ${it.name} แล้ว`, it.type === 'relic' ? 'ไปที่แท็บ "กระเป๋า" เพื่อใส่' : `มี ${B.count(id)}`); if (it.type === 'relic' && B.d().relics.length < PLAT.RELIC_SLOTS) { B.toggleRelic(id); relicChanged(); } } else { PLAT.sfx.denied(); notify(r === 'money' ? '🪙 เหรียญไม่พอ' : 'ซื้อไม่ได้'); } }
+  else if (a === 'sell') { if (B.sell(id)) PLAT.sfx.coin(); }
+  else if (a === 'sellall') { let n = 0; for (const t of Object.keys(I)) if (I[t].type === 'treasure') while (B.count(t)) { n += I[t].sell; B.sell(t); } PLAT.sfx.gem(); notify(`💰 ขายสมบัติได้ 🪙 ${n.toLocaleString()}`); }
+  else if (a === 'sellr') { if (B.sellRelic(id)) { PLAT.sfx.coin(); relicChanged(); } }
+  else if (a === 'quick') { B.setQuick(id); PLAT.sfx.select(); }
+  else if (a === 'eq') { const r = B.toggleRelic(id); if (r === 'full') { PLAT.sfx.denied(); notify(`ใส่เรลิกได้สูงสุด ${PLAT.RELIC_SLOTS} ชิ้น`, 'ถอดชิ้นอื่นออกก่อน'); } else { PLAT.sfx.checkpoint(); relicChanged(); } }
+  hudCache.bag = null; hudCache.wallet = null; renderShop(); refreshTitle();
+}
+// equipping / removing a relic mid-run: max HP (dragon) follows at once
+function relicChanged() {
+  const g = app.game, p = g && g.player; if (!p) return;
+  p.maxHp = p.hero.hp * PLAT.HPU + (PLAT.relicOn('dragon') ? 40 : 0); p.hp = Math.min(p.hp, p.maxHp); hudCache.hp = null;
+}
+
 /* ---------------------------------- HUD ---------------------------------- */
 let hudCache = {};
 function setupHud(g) {
   const h = PLAT.HEROES[g.heroId];
   $('#hLv').textContent = g.endlessWorld ? `∞ ${g.spec.name}` : `${g.levelId} ${g.spec.name}`;
   $('#hDist').classList.toggle('on', !!g.endlessWorld); $('#hTime').style.display = g.endlessWorld ? 'none' : '';
-  $('#hHearts').innerHTML = Array.from({ length: g.player.maxHp }, () => '<i></i>').join('');
+  $('#hHpL').style.width = '100%';
   $('#hGems').innerHTML = g.spec.boss || g.endlessWorld ? '' : Array.from({ length: g.L.gems.length }, () => '<i>💎</i>').join('');
   $('#hEnMark').style.left = (h.skill.cost || 0) + '%'; $('#hEnMark').style.display = h.skill.cost ? '' : 'none';
-  $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abP"><kbd>O</kbd>ปัด</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
+  $('#hAbil').innerHTML = `<span id="abA"><kbd>J</kbd>${h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'}</span><span id="abP"><kbd>O</kbd>ปัด</span><span><kbd>H</kbd>ยา</span><span><kbd>G</kbd>ไอเทม</span><span id="abS"><kbd>I</kbd>${h.skill.name}</span><span id="abD"><kbd>L</kbd>${h.dash.name}</span>`;
   $('#tA').textContent = h.attack.kind === 'shot' ? 'ยิง' : 'โจมตี'; $('#tS').textContent = shortName(h.skill.name); $('#tD').textContent = shortName(h.dash.name);
   $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on'); $('#hUltHint').classList.remove('on'); $('#tU').classList.remove('ready'); $('#tW').classList.toggle('on2', !!h.forms); $('#hUltB span').textContent = h.chargeBar ? 'CHARGE' : 'ULT'; $('#hUltB').classList.toggle('charge', !!h.chargeBar); $('#hUltB').style.display = h.ult || h.chargeBar ? '' : 'none';
   hudCache = {}; refreshGlyphs();
@@ -443,9 +505,14 @@ function setupHud(g) {
 const shortName = n => n.length > 9 ? n.split(/[ (/]/)[0].slice(0, 9) : n;
 function updateHud(d) {
   const set = (k, v, fn) => { if (hudCache[k] !== v) { hudCache[k] = v; fn(v); } };
-  set('hp', d.hp + '/' + d.maxHp, () => $$('#hHearts i').forEach((el, i) => el.classList.toggle('on', i < d.hp)));
+  set('hp', d.hp + '/' + d.maxHp, () => {
+    const pc = U.clamp(d.hp / d.maxHp, 0, 1) * 100; $('#hHpB').style.width = pc + '%'; $('#hHpT').textContent = `${Math.max(0, Math.ceil(d.hp))} / ${d.maxHp}`;
+    $('#hHp').classList.toggle('low', pc <= 30); setTimeout(() => { const l = $('#hHpL'); if (l) l.style.width = pc + '%'; }, 260);     // the pale "lost HP" trail catches up a moment later
+  });
+  { const B = PLAT.bag, q = B.d().quick, pot = B.count('potS') + B.count('potL') + B.count('elixir'), qi = PLAT.ITEMS[q];
+    set('bag', pot + '|' + q + '|' + B.count(q), () => { $('#hPotN').textContent = pot; $('#hPot').classList.toggle('empty', !pot); $('#hItemI').textContent = qi ? qi.icon : '—'; $('#hItemN').textContent = B.count(q); $('#hItem').classList.toggle('empty', !B.count(q)); }); }
+  set('wallet', d.coins, () => $('#hCoins').textContent = PLAT.bag.coins().toLocaleString());
   set('en', Math.round(d.en), v => $('#hEn').style.width = v + '%');
-  set('coins', d.coins, v => $('#hCoins').textContent = v);
   set('gems', d.gems.join(','), () => $$('#hGems i').forEach((el, i) => el.classList.toggle('on', d.gems.includes(i))));
   if (d.endless) set('dist', d.dist + '|' + d.tier + '|' + d.score, () => $('#hDist').innerHTML = `<b>${d.dist}</b> ม. · ${d.score.toLocaleString()} แต้ม<i>LV ${d.tier}</i>`);
   else set('time', Math.floor(d.frames / 6), () => $('#hTime').textContent = U.fmtTime(d.frames));
@@ -493,7 +560,7 @@ function finishLevel(r) {
     <p class="sub" style="text-align:center;margin:0">${id} ${PLAT.LEVELS[id].name}</p>
     <div class="res-rank rk ${r.rank}">${r.rank}</div>
     <div class="checks">${r.checks.map(c => `<div><span>${c.th}</span><span class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'}</span></div>`).join('')}</div>
-    <div class="kv"><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div>${PLAT.LEVELS[id].boss ? '' : `<div>💎<b>${r.gems.length}/${r.gemTotal}</b></div>`}<div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>ตาย<b>${r.deaths}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div><div>ปัดสำเร็จ<b>🛡 ${r.parries || 0}</b></div></div>
+    <div class="kv"><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div>${PLAT.LEVELS[id].boss ? '' : `<div>💎<b>${r.gems.length}/${r.gemTotal}</b></div>`}<div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>ตาย<b>${r.deaths}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div><div>ปัดสำเร็จ<b>🛡 ${r.parries || 0}</b></div></div>${lootLine(r)}
     ${newBest ? '<p class="note" style="text-align:center;color:#8aff8a">★ สถิติใหม่!</p>' : ''}
     <div class="reward">${paid ? `🪙 ทองเข้ากระเป๋าเกมหลัก +${gold}` : gold ? `🪙 ได้ทอง ${gold} — แต่ยังไม่มีเซฟเกมหลักในเครื่องนี้ (เริ่มเกมหลักก่อนแล้วทองจะเข้าครั้งถัดไป)` : '🪙 ทองให้เฉพาะผ่านครั้งแรก / 💎 ใหม่ / แรงก์ S ครั้งแรก'}
       <div class="note">${first ? 'ผ่านครั้งแรก' : 'เล่นซ้ำ (ได้จากเหรียญที่เก็บ)'}${newGems.length ? ` · 💎 ใหม่ ${newGems.length}` : ''}${firstS ? ' · แรงก์ S ครั้งแรก' : ''}</div></div>
@@ -540,7 +607,7 @@ function finishEndless(r) {
     <p class="sub" style="text-align:center;margin:0">∞ ${W.name} · ${PLAT.HEROES[r.heroId].name}</p>
     <div class="bigdist">${r.dist}<small> ม.</small></div>
     ${res.newBest ? '<div class="newbest">★ สถิติใหม่!</div>' : ''}
-    <div class="kv"><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>ระดับ<b>LV ${r.tier}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div><div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div><div>ปัดสำเร็จ<b>🛡 ${r.parries || 0}</b></div></div>
+    <div class="kv"><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>ระดับ<b>LV ${r.tier}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div><div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div><div>ปัดสำเร็จ<b>🛡 ${r.parries || 0}</b></div></div>${lootLine(r)}
     <div class="reward" style="color:var(--ink)">สถิติโลกนี้ · แต้มสูงสุด <b>${(rec.best || 0).toLocaleString()}</b> · ไกลสุด <b>${rec.bestDist || 0} ม.</b> · LV สูงสุด <b>${rec.bestTier || 1}</b> · เล่น ${rec.runs || 0} รอบ</div>
     <p class="note" style="text-align:center">ซีดด่าน ${r.seed}${dev && r.gen ? ` · สร้าง ${r.gen.built} ชิ้น · ไม่ผ่านตรวจ ${r.gen.failed} · สำรอง ${r.gen.fallback}` : ''}</p>
     <div class="menu" style="margin-top:6px"><button class="btn red" data-go2="endlessAgain">▶ เล่นอีกครั้ง (ด่านใหม่)</button><button class="btn" data-go2="endlessSeed">🎲 เล่นซ้ำด่านเดิม</button><button class="btn" data-go2="endless">∞ เลือกโลก</button><button class="btn" data-go2="map">🗺 แผนที่</button></div>`;

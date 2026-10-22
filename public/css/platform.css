@@ -15,9 +15,18 @@ button{font-family:var(--font)}
 .h-face{width:clamp(30px,5.4vw,46px);height:clamp(30px,5.4vw,46px);border-radius:50%;background:radial-gradient(circle at 50% 38%,#4a2a5a,#150f24);border:2px solid var(--k-gold);box-shadow:0 0 0 2px #07060d,0 0 0 3.5px var(--k-red);overflow:hidden;display:grid;place-items:center}
 .h-face canvas{width:100%;height:100%;image-rendering:pixelated}
 .h-bars{display:flex;flex-direction:column;gap:4px}
-.hearts{display:flex;gap:3px}
-.hearts i{width:clamp(11px,1.9vw,16px);height:clamp(10px,1.7vw,14px);background:#3a2230;clip-path:polygon(50% 100%,0 40%,10% 8%,32% 0,50% 18%,68% 0,90% 8%,100% 40%);filter:drop-shadow(0 1px 0 #000)}
-.hearts i.on{background:linear-gradient(#ff7a8a,#ff2a4a)}
+/* v96: HP bar (was hearts) — red fill, a pale trail shows the HP just lost, pulses when low */
+.hpbar{width:clamp(110px,20vw,190px);height:clamp(11px,1.8vw,15px);background:#2a0a14;border:1px solid #000;position:relative;transform:skewX(-20deg);box-shadow:0 0 0 1px #ff3b4e55,0 2px 0 #000;overflow:hidden}
+.hpbar b,.hpbar i{position:absolute;left:0;top:0;bottom:0}
+.hpbar i{background:#ffe0e4;opacity:.75;transition:width .5s ease-out}
+.hpbar b{background:linear-gradient(#ff8a96,#ff2a4a 55%,#b0102a);transition:width .12s}
+.hpbar span{position:absolute;inset:0;display:grid;place-items:center;transform:skewX(20deg);font-size:clamp(8px,1.25vw,11px);font-weight:800;color:#fff;text-shadow:0 1px 0 #000,0 0 3px #000;font-variant-numeric:tabular-nums}
+.hpbar.low b{animation:hplow .6s ease-in-out infinite alternate}
+@keyframes hplow{from{filter:brightness(1)}to{filter:brightness(1.8)}}
+.pbtn.ib{position:relative;font-size:clamp(15px,2.3vw,20px)}
+.pbtn.ib em{font-style:normal}
+.pbtn.ib sub{position:absolute;right:-3px;bottom:-4px;font-size:11px;font-weight:800;background:#111;border:1px solid #ffd84a;color:#ffd84a;border-radius:8px;padding:0 4px;line-height:14px}
+.pbtn.ib.empty{opacity:.45;filter:grayscale(.8)}
 .en{width:clamp(70px,13vw,120px);height:7px;background:#12203a;border:1px solid #000;position:relative;transform:skewX(-20deg)}
 .en b{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#2a8aff,#6ad8ff);transition:width .1s}
 .en s{position:absolute;top:-2px;bottom:-2px;width:2px;background:#fff8}
@@ -245,3 +254,29 @@ html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:
 /* v94 parry button: between attack and dash, easy for the right thumb */
 #btns .bp{width:25%;height:29%;right:76%;bottom:52%;background:rgba(120,200,255,.32);border-color:#9fe8ff}
 #btns .bp.on{background:rgba(255,230,120,.55);border-color:#ffe36a}
+
+/* ---------------- v96 SHOP ---------------- */
+.btn.gold2{border-color:#ffd84a;box-shadow:0 0 12px #ffd84a33 inset}
+.wallet{font-weight:800;font-size:18px;color:#ffd84a;text-shadow:0 2px 0 #000;margin-right:8px}
+.shtabs{margin:6px 0 2px;display:flex;flex-wrap:wrap}
+.shtabs button.on{background:#ffd84a;color:#1a1020}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:8px;max-height:min(58vh,520px);overflow:auto;padding-right:4px}
+.shop-grid h3{grid-column:1/-1;margin:8px 0 0;font-size:14px;color:#ffd84a}
+.shop-grid .note{grid-column:1/-1}
+.sh-card{display:flex;gap:10px;align-items:center;background:#15112a;border:1px solid #2c2547;border-radius:10px;padding:8px 10px}
+.sh-card .ic{font-size:30px;width:42px;text-align:center;filter:drop-shadow(0 2px 0 #000)}
+.sh-card .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sh-card .tx b{font-size:14px}
+.sh-card .tx span{font-size:12px;opacity:.82;line-height:1.35}
+.sh-card .tx em{font-style:normal;font-size:11px;color:#ffd84a}
+.sh-card .tx em.own{color:#8aff8a}
+.sh-card .act .btn{white-space:nowrap;padding:6px 10px;font-size:13px}
+.sh-card.t-relic{border-color:#6a4aa8;background:linear-gradient(135deg,#1c1436,#15112a)}
+.sh-card.legend{border-color:#ffd84a;background:linear-gradient(135deg,#3a2a08,#15112a);box-shadow:0 0 14px #ffd84a33}
+.sh-card.on{outline:2px solid #ff5a6a}
+.sh-card.none{opacity:.5}
+.lootline{margin:8px 0;font-size:15px;text-align:center}
+.lootline span{display:inline-block;margin:0 2px;font-size:20px}
+.lootline span.rel{filter:drop-shadow(0 0 6px #c8a0ff)}
+.lootline span.leg{filter:drop-shadow(0 0 8px #ffe36a);animation:hplow .5s infinite alternate}
+.lootline small{opacity:.7;font-size:11px}

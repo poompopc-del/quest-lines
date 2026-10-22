@@ -117,7 +117,7 @@ PLAT.assets = {
 // sources never fight: lifting one finger cannot release a key that is still down, and vice versa.
 const KEYMAP = {                          // ↑ / W are aim only — they never jump
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
-  jump: ['Space', 'KeyK'], attack: ['KeyJ', 'KeyX'], parry: ['KeyO', 'KeyF'], skill: ['KeyI', 'KeyC'], dash: ['KeyL', 'ShiftLeft', 'ShiftRight'], swap: ['KeyQ', 'KeyU'],
+  jump: ['Space', 'KeyK'], attack: ['KeyJ', 'KeyX'], parry: ['KeyO', 'KeyF'], skill: ['KeyI', 'KeyC'], dash: ['KeyL', 'ShiftLeft', 'ShiftRight'], swap: ['KeyQ', 'KeyU'], potion: ['KeyH', 'Digit1'], item: ['KeyG', 'Digit2'],
   pause: ['Escape', 'KeyP'], ok: ['Enter', 'NumpadEnter'], back: ['Backspace'], ult: [],
 };
 const ACTIONS = Object.keys(KEYMAP); PLAT.KEYMAP = KEYMAP;
@@ -128,8 +128,8 @@ const ACTIONS = Object.keys(KEYMAP); PLAT.KEYMAP = KEYMAP;
    Movement (d-pad + left stick) and menu keys (A = choose · B = back · Start) are FIXED, so a bad
    mapping can never lock the player out of the menus. */
 // v94: PARRY takes LB (it used to double as skill) — listed before skill so an older saved mapping hands LB over to it
-const PAD_ACTIONS = ['jump', 'attack', 'parry', 'skill', 'dash', 'swap', 'pause'];
-const PAD_DEFAULT = { jump: [0], attack: [2], parry: [4], skill: [3, 6], dash: [1, 5, 7], swap: [10, 11], pause: [9, 8] };
+const PAD_ACTIONS = ['jump', 'attack', 'parry', 'skill', 'dash', 'potion', 'item', 'swap', 'pause'];   // new actions go before the ones whose old buttons they take
+const PAD_DEFAULT = { jump: [0], attack: [2], parry: [4], skill: [3, 6], dash: [1, 5, 7], potion: [8], item: [11], swap: [10], pause: [9] };
 const PAD_CRITICAL = ['jump', 'attack', 'pause'];            // must always keep at least one button
 const PAD_RESERVED = { 12: 'ปุ่มทิศทางใช้เดิน', 13: 'ปุ่มทิศทางใช้เดิน', 14: 'ปุ่มทิศทางใช้เดิน', 15: 'ปุ่มทิศทางใช้เดิน', 16: 'ปุ่ม Home สงวนไว้ให้ระบบ' };
 // some pads (mostly non-standard ones on Android / Firefox) report LT / RT as AXES, not buttons: an axis
@@ -286,7 +286,7 @@ const input = PLAT.input = {
     const M = this.padMap, any_ = l => { for (const i of l) if (b(i)) return true; return false; };
     const want = {
       left: b(14) || sx < -.4 || hx < 0, right: b(15) || sx > .4 || hx > 0, up: b(12) || sy < -.6 || hy < 0, down: b(13) || sy > .6 || hy > 0,
-      jump: any_(M.jump), attack: any_(M.attack), parry: any_(M.parry || []), skill: any_(M.skill), dash: any_(M.dash), swap: any_(M.swap), pause: any_(M.pause),
+      jump: any_(M.jump), attack: any_(M.attack), parry: any_(M.parry || []), skill: any_(M.skill), dash: any_(M.dash), potion: any_(M.potion || []), item: any_(M.item || []), swap: any_(M.swap), pause: any_(M.pause),
       ok: b(0) || b(9), back: b(1),
     };
     const raw = (p.buttons || []).map((_, i) => b(i));
