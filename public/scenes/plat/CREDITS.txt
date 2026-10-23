@@ -25,3 +25,7 @@ swamp/      Gothicvania Swamp — artwork by Luis Zuno (@ansimuz). Public domain
             Monsters Creatures Fantasy + Version 1.3 + Monsters Creatures Fantasy 2 — by LuizMelo. CC0. Credit not required.
             https://luizmelo.itch.io/monsters-creatures-fantasy · https://luizmelo.itch.io/monsters-creatures-fantasy-2
             (skeleton knight, goblin + bomb, mushroom + spore, flying eye + bolt, rat, bat, slime, mimic — mirrored to face left)
+
+World-4 boss (v114): Evil Wizard 2 + Evil Wizard 3 — by LuizMelo. CC0. Credit not required.
+            https://luizmelo.itch.io/evil-wizard-2 · https://luizmelo.itch.io/evil-wizard-3
+            (enemies/mcf/wiz2.png, wiz3.png, fx/wbolt.png, fx/wboom.png — mirrored to face left)

@@ -39,8 +39,10 @@ class Game {
     const L = this.L0spec = this.spec;
     const types = new Set(this.endlessWorld ? PLAT.Endless.enemyTypes(this.endlessWorld) : W.buildLevel(L).spawns.map(s => s.type)); if (L.boss) types.add(L.boss);
     const imgs = [...this.heroSheet.srcs()];
+    for (const t of [...types]) { const d = this.enemyDef(t); (d && d.minions || []).forEach(m => types.add(m)); }   // v114: bosses that summon
     for (const t of types) {
       const d = this.enemyDef(t);
+      if (d.sheet2) { this.sheets.set(t + ':2', new PLAT.Sheet(d.sheet2)); imgs.push(d.sheet2.img); }       // v114: a boss's second form
       this.sheets.set(t, new PLAT.Sheet(d.sheet)); imgs.push(d.sheet.img); (d.states || []).forEach(s => imgs.push(s)); if (d.after) imgs.push(d.after); if (d.afterSheet) imgs.push(d.afterSheet.img);
     }
     // projectiles / effects this hero and these enemies can make

@@ -414,6 +414,9 @@ PLAT.BOSSES = {
   dragon: { elem: 'fire', name: 'BLACK DRAGON', th: 'มังกรทมิฬ เปลวนรก', boss: true, hp: 72, dmg: 1, poise: 16, scale: 1.2, box: [112, 82],
     sheet: { kind: 'grid', img: 'bosses/dragon/blackdragon.png', cols: 37, fw: 246, fh: 134, ax: 128, by: 134,
       anims: { idle: range(0, 12), breath: range(13, 19), hurt: [20, 21, 22, 23], dead: range(24, 28), fly: range(29, 36) } }, fps: 8, heavy: true },
+  // v114 WORLD 4 BOSS — Evil Wizard 2 → (50 % HP) transforms into Evil Wizard 3 (LuizMelo, CC0; monster-sheets.js)
+  wizard: { elem: 'poison', name: 'MARSH WARLOCK', th: 'จอมเวทหนองพิษ', boss: true, hp: 64, dmg: 1, poise: 14, scale: .95, box: [30, 60],
+    sheet: MS.wiz2, sheet2: MS.wiz3, scale2: 1.55, proj: 'wbolt', minions: ['bat', 'goo'], fps: 10, heavy: true },
 };
 
 class Boss extends Enemy {
@@ -564,6 +567,119 @@ class Boss extends Enemy {
     }
     return ok;
   }
+  /* ---------------- v114 MARSH WARLOCK (world 4) ----------------
+     phase 1 (Evil Wizard 2): keeps its distance, warps behind you, sweeping staff blows (telegraphed "!", PARRY them),
+       homing-ish bolt volleys (parry = reflect). Rests after every move (vulnerable).
+     phase 2 (50 %): transforms into Evil Wizard 3 — faster, bolt fans, bolt rain from the sky, a dash through the arena,
+       summons bats / swamp goo (max 3), and the arena's gas vents start erupting.
+     phase 3 (25 %): shorter telegraphs and rests, slash combos, bigger fans. */
+  wizard() {
+    const g = this.g, p = g.player, A = this.arena(), d = this.def, ph = this.phase, fast = ph >= 2, toP = U.sign(p.cx - this.cx) || this.dir;
+    this.vulnerable = false;
+    if (fast && !this.form2 && this.st !== 'phase' && this.st !== 'xform' && this.st !== 'intro') { this.set('xform'); }
+    const bolt = (x, y, vx, vy, k) => g.spawnProj(d.proj, x, y, U.sign(vx) || this.dir, { vx, vy, scale: k || 1.7 });
+    switch (this.st) {
+      case 'intro': this.intro(); break;
+      case 'xform': {                                    // the transformation: invulnerable, a column of poison light
+        this.vx = 0; this.alpha = 1;
+        if (this.stT === 1) { g.text(this.cx, this.y - 24, 'ร่างที่สอง!!', '#c86aff', 80, true); sfx().roar(); g.shake(6); g.clearHostile(); }
+        if (this.stT % 2 === 0) for (let i = 0; i < 3; i++) g.parts.push({ x: this.cx + U.rnd(-30, 30), y: this.feet - U.rnd(0, 110), vx: U.rnd(-.5, .5), vy: U.rnd(-3, -1), life: 30, col: i ? '#c86aff' : '#7aff8a', size: 4, fade: true });
+        if (this.stT < 40 && this.stT % 4 < 2) this.flash = 3;
+        if (this.stT === 40) { this.form2 = true; this.anim = new PLAT.Anim(g.sheets.get(this.type + ':2'), {}); this.drawScale = d.scale2; this.cOff = 0; g.flashT = 14; sfx().boom(); g.burst(this.cx, this.y + this.h / 2, '#c86aff', 30, 4); }
+        this.anim.play('idle');
+        if (this.stT > 70) this.set('move');
+        break;
+      }
+      case 'move': {
+        this.face(toP); const want = p.cx - toP * (fast ? 115 : 150);
+        this.vx = U.clamp((want - this.cx) * .03, -1.6, 1.6) * (fast ? 1.35 : 1);
+        if (this.x < A.x0 + 4 && this.vx < 0 || this.x + this.w > A.x1 - 4 && this.vx > 0) this.vx = 0;
+        this.anim.play(Math.abs(this.vx) > .3 ? 'move' : 'idle');
+        if (this.stT > (ph >= 3 ? 30 : fast ? 46 : 70)) {
+          const near = Math.abs(p.cx - this.cx) < 120, minions = g.enemies.filter(e => !e.dead && !e.boss).length;
+          if (!fast) this.pick(near ? ['slash', 'warp', 'slash2', 'bolts'] : ['bolts', 'warp', 'slash', 'bolts']);
+          else this.pick(near ? ['slash2', minions < 3 ? 'summon' : 'cast', 'dash', 'cast', 'warp', 'rain'] : ['cast', 'rain', 'dash', minions < 3 ? 'summon' : 'cast', 'warp', 'slash2']);
+        }
+        break;
+      }
+      case 'slash': case 'slash2': {                      // staff sweep: "!" + flash → lunge + big arc in front (parry it!)
+        const wind = ph >= 3 ? 14 : fast ? 18 : 24, two = this.st === 'slash2';
+        if (this.stT === 1) { this.face(toP); this.anim.play(two && !this.form2 ? 'atk2' : 'atk', wind + 24, true); g.text(this.cx, this.y - 16, '!', '#ff5a9a', 26, true); }
+        this.vx = this.stT > wind && this.stT < wind + 8 ? this.dir * (fast ? 4.2 : 3) : 0;
+        if (this.stT < wind && this.stT % 6 < 3) this.flash = 2;
+        if (this.stT === wind + 6) {
+          const reach = fast ? 120 : 104, hb = { x: this.dir > 0 ? this.cx - 10 : this.cx - reach, y: this.feet - 92, w: reach + 10, h: 92 };
+          if (U.overlap(hb, p)) p.hurt(2, this.cx, { src: this, elem: 'poison' });
+          sfx().big(); g.shake(3); g.burst(this.cx + this.dir * 60, this.feet - 50, '#c86aff', 10, 3);
+        }
+        if (this.stT >= wind + 24) { if (two && !this.again) { this.again = true; this.set('slash'); } else { this.again = false; this.set('rest'); } }
+        break;
+      }
+      case 'bolts': {                                      // raise the staff, a volley of bolts aimed at where you ARE (parry = reflect)
+        this.vx = 0; this.face(toP); const n = ph >= 3 ? 5 : fast ? 4 : 3;
+        this.anim.play('atk2', 26 + n * 12, false);
+        if (this.stT < 20 && this.stT % 6 < 3) this.flash = 2;
+        if (this.stT >= 22 && (this.stT - 22) % 12 === 0 && this.stT < 22 + n * 12) {
+          const sx = this.cx + this.dir * 34, sy = this.feet - 60, a = Math.atan2((p.y + p.h / 2) - sy, (p.cx - sx)), sp = 3.6;
+          bolt(sx, sy, Math.cos(a) * sp, Math.sin(a) * sp); sfx().shoot();
+        }
+        if (this.stT > 30 + n * 12) this.set('rest');
+        break;
+      }
+      case 'cast': {                                       // phase 2: a fan of bolts
+        this.vx = 0; this.face(toP); this.anim.play('atk', 54, false);
+        if (this.stT < 22 && this.stT % 6 < 3) this.flash = 2;
+        if (this.stT === 26 || (ph >= 3 && this.stT === 40)) {
+          const sx = this.cx + this.dir * 30, sy = this.feet - 50, base = Math.atan2((p.y + p.h / 2) - sy, Math.abs(p.cx - sx)), k = ph >= 3 ? 3 : 2;
+          for (let i = -k; i <= k; i++) { const a = U.clamp(base, -.6, .6) + i * .2; bolt(sx, sy, this.dir * Math.cos(a) * 3.4, Math.sin(a) * 3.4); }
+          sfx().big();
+        }
+        if (this.stT > 56) this.set('rest');
+        break;
+      }
+      case 'rain': {                                       // phase 2: marked spots, bolts fall from the sky
+        this.vx = 0; this.anim.play('idle'); const n = ph >= 3 ? 8 : 6;
+        if (this.stT === 6) { g.text(this.cx, this.y - 16, 'ฝนเวทพิษ!', '#c86aff', 50); sfx().big(); }
+        if (this.stT >= 12 && this.stT < 12 + n * 9 && (this.stT - 12) % 9 === 0) {
+          const x = U.clamp(p.cx + U.rnd(-130, 130), A.x0 + 12, A.x1 - 12);
+          g.warn(x, g.floorBelow(x, p.y), 36, () => bolt(x, g.cam.y - 10, 0, 4.2, 1.9));
+        }
+        if (this.stT > 30 + n * 9) this.set('rest');
+        break;
+      }
+      case 'warp': {                                       // fade out → reappear BEHIND you → slash at once
+        this.vx = 0;
+        if (this.stT < 22) this.alpha = 1 - this.stT / 22;
+        else if (this.stT === 22) { const side = -(p.face || 1), x = U.clamp(p.cx + side * 80, A.x0 + 30, A.x1 - 30); this.x = x - this.w / 2; this.alpha = 0; this.face(U.sign(p.cx - x) || 1); for (let i = 0; i < 12; i++) g.burst(x, this.feet - U.rnd(0, 80), '#c86aff', 1, 2); }
+        else if (this.stT < 40) this.alpha = (this.stT - 22) / 18;
+        else { this.alpha = 1; this.set(fast ? 'slash2' : 'slash'); }
+        break;
+      }
+      case 'summon': {                                     // phase 2: bats from the dark, goo from the mud
+        this.vx = 0; this.anim.play('atk', 40, false);
+        if (this.stT === 1) g.text(this.cx, this.y - 16, 'อัญเชิญ!', '#c86aff', 50);
+        if (this.stT === 24) {
+          const n = Math.min(2, 3 - g.enemies.filter(e => !e.dead && !e.boss).length);
+          for (let i = 0; i < n; i++) { const type = d.minions[(this.pat + i) % d.minions.length], x = U.clamp(this.cx + (i ? 90 : -90), A.x0 + 30, A.x1 - 30), fly = type === 'bat';
+            const e = PLAT.makeEnemy(g, type, x, fly ? this.feet - 90 : this.feet); e.cool = 40; g.enemies.push(e); for (let k = 0; k < 10; k++) g.burst(x, (fly ? this.feet - 100 : this.feet) - U.rnd(0, 30), '#7aff8a', 1, 2); }
+          sfx().big();
+        }
+        if (this.stT > 44) this.set('rest');
+        break;
+      }
+      case 'dash': {                                       // phase 2: crouch (telegraph) → run straight through the arena
+        if (this.stT < 22) { this.vx = 0; this.face(toP); this.anim.play('idle'); if (this.stT % 6 < 3) this.flash = 2; if (this.stT === 1) g.text(this.cx, this.y - 16, '!', '#ff5a9a', 26, true); break; }
+        this.anim.play(this.anim.sheet.anims.run ? 'run' : 'move'); this.vx = this.dir * (ph >= 3 ? 7 : 6);
+        if (this.stT % 2 === 0) g.afterimage(this);
+        const hb = { x: this.x, y: this.y, w: this.w, h: this.h };
+        if (U.overlap(hb, p)) p.hurt(2, this.cx, { src: this, elem: 'poison' });
+        if (this.x < A.x0 + 8 || this.x + this.w > A.x1 - 8 || this.stT > 90) { this.vx = 0; g.shake(4); sfx().heavy(); this.set('tired'); g.text(this.cx, this.y - 16, 'หอบ! โจมตีเลย!', '#8aff8a', 50); }
+        break;
+      }
+      case 'tired': this.vx = 0; this.vulnerable = true; this.anim.play('idle'); if (this.stT > (ph >= 3 ? 50 : 70)) this.set('move'); break;
+      case 'rest': this.vx = 0; this.anim.play('idle'); this.vulnerable = true; if (this.stT > (ph >= 3 ? 26 : fast ? 34 : 50) * TUNE.bossRest) this.set('move'); break;
+    }
+  }
   breakPoise() {
     if (!this.dead && this.poise <= 0 && this.st !== 'stagger' && this.st !== 'intro' && this.st !== 'phase') {
       this.poise = this.maxPoise; this.alpha = 1;
@@ -582,7 +698,7 @@ class Boss extends Enemy {
     let alpha = this.alpha != null ? this.alpha : 1; if (this.dead && this.deadT > 90) alpha *= Math.max(0, 1 - (this.deadT - 90) / 30);
     const o = { alpha, flash: this.flash > 0 && this.flash % 2 ? .8 : 0 };
     if (this.vulnerable && this.t % 16 < 8) o.flash = Math.max(o.flash, .25);
-    if (!PLAT.drawFrame(ctx, fr, this.cx - this.cOff * this.sc * face, this.feet, face, d.scale, o)) { ctx.fillStyle = '#a33'; ctx.fillRect(this.x, this.y, this.w, this.h); }
+    if (!PLAT.drawFrame(ctx, fr, this.cx - this.cOff * this.sc * face, this.feet, face, this.drawScale || d.scale, o)) { ctx.fillStyle = '#a33'; ctx.fillRect(this.x, this.y, this.w, this.h); }
     if (this.st === 'stagger') this.g.drawStars(ctx, this.cx, this.y - 10, this.t);
   }
 }

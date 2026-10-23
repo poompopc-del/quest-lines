@@ -31,7 +31,9 @@ class Gimmicks {
   /* ------------------------------------------------------------------ step */
   step() {
     const g = this.g, p = g.player;
+    const armed = !g.spec.ventsFrom || (g.boss && !g.boss.dead && g.boss.phase >= g.spec.ventsFrom);   // v114 boss arena: vents wake in phase 2
     for (const v of this.vents) {
+      if (!armed) { v.t = 0; continue; }
       v.t = (v.t + 1) % v.period; const on = this.ventOn(v);
       if (v.t % 9 === 0) g.parts.push({ x: v.x + U.rnd(-8, 8), y: v.y - 2, vx: 0, vy: U.rnd(-1.2, -.5), life: 22, col: 'rgba(150,230,110,.7)', size: 3, fade: true });
       if (this.ventWarn(v) && v.t % 3 === 0) g.parts.push({ x: v.x + U.rnd(-10, 10), y: v.y - 2, vx: U.rnd(-.4, .4), vy: U.rnd(-2.2, -1), life: 18, col: '#b8ff7a', size: 3 });

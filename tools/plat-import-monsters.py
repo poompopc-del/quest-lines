@@ -8,6 +8,7 @@
     mcf13/Monster_Creatures_Fantasy(Version 1.3)/...  (LuizMelo, CC0)
     mcf2/Monsters Creatures Fantasy 2/...             (LuizMelo, CC0)
     swamp/Gothicvania Swamp files/...                 (ansimuz, CC0)
+    ew2/EVil Wizard 2/..., ew3/Evil Wizard 3/...      (LuizMelo, CC0 — the world-4 boss)
 
 Writes
     public/enemies/mcf/<monster>.png      one-row strip per monster: every animation, frames cropped to the
@@ -26,6 +27,8 @@ MCF = os.path.join(SRC, 'mcf', 'Monsters_Creatures_Fantasy')
 M13 = os.path.join(SRC, 'mcf13', 'Monster_Creatures_Fantasy(Version 1.3)')
 MC2 = os.path.join(SRC, 'mcf2', 'Monsters Creatures Fantasy 2')
 SW = os.path.join(SRC, 'swamp', 'Gothicvania Swamp files')
+EW2 = os.path.join(SRC, 'ew2', 'EVil Wizard 2', 'Sprites')
+EW3 = os.path.join(SRC, 'ew3', 'Evil Wizard 3', 'Sprites')
 
 def strip(path, cw):
     im = Image.open(path).convert('RGBA'); n = im.width // cw
@@ -58,6 +61,9 @@ MONSTERS = {
                        'move': strip(os.path.join(MC2, 'Mimic', 'walk.png'), 146), 'atk': strip(os.path.join(MC2, 'Mimic', 'attack_1.png'), 146),
                        'atk2': strip(os.path.join(MC2, 'Mimic', 'attack_2.png'), 146), 'hurt': strip(os.path.join(MC2, 'Mimic', 'hurt.png'), 146),
                        'dead': strip(os.path.join(MC2, 'Mimic', 'death.png'), 146)}),
+    # boss: Evil Wizard 2 (phase 1) and Evil Wizard 3 (phase 2) by LuizMelo, CC0
+    'wiz2':    (True, {k: strip(os.path.join(EW2, f + '.png'), 250) for k, f in [('idle', 'Idle'), ('move', 'Run'), ('atk', 'Attack1'), ('atk2', 'Attack2'), ('jump', 'Jump'), ('fall', 'Fall'), ('hurt', 'Take hit'), ('dead', 'Death')]}),
+    'wiz3':    (True, {k: strip(os.path.join(EW3, f + '.png'), 140) for k, f in [('idle', 'Idle'), ('move', 'Walk'), ('run', 'Run'), ('atk', 'Attack'), ('jump', 'Jump'), ('fall', 'Fall'), ('hurt', 'Get hit'), ('dead', 'Death')]}),
     # Gothicvania Swamp creatures (single frames, already facing LEFT)
     'spider':  (False, {'move': files([os.path.join(SW, 'Sprites', 'Spider', 'walk', f'spider{i}.png') for i in range(1, 5)])}),
     'thing':   (False, {'move': files([os.path.join(SW, 'Sprites', 'Thing', 'walk thing', f'thing{i}.png') for i in range(1, 5)])}),
@@ -82,6 +88,7 @@ for key, (face_right, anims) in MONSTERS.items():
     ref = anims.get('idle') or anims.get('move')
     feet = max(f.getbbox()[3] for f in ref if f.getbbox())
     ax = cw / 2 - x0; by = feet - y0
+    if key == 'wiz2': feet = max(f.getbbox()[3] for f in ref if f.getbbox())   # the staff's flame never reaches below the feet
     sheet = Image.new('RGBA', (w * len(allf), h), (0, 0, 0, 0)); idx = {}; i = 0
     for k in order:
         idx[k] = []
@@ -102,6 +109,8 @@ PROJ = {
     'spore': (os.path.join(M13, 'Mushroom', 'Projectile_sprite.png'), 50),
     'bolt':  (os.path.join(M13, 'Flying eye', 'projectile_sprite.png'), 48),
     'blade': (os.path.join(M13, 'Skeleton', 'Sword_sprite.png'), 92),
+    'wbolt': (os.path.join(EW3, 'Projectile', 'Moving.png'), 50),
+    'wboom': (os.path.join(EW3, 'Projectile', 'Explode.png'), 50),
 }
 for key, (path, cw) in PROJ.items():
     fr = strip(path, cw); x0, y0, x1, y1 = union_box(fr); w, h = x1 - x0, y1 - y0

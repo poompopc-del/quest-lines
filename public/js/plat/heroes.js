@@ -48,6 +48,7 @@ const PROJ = PLAT.PROJ = {
   drop:      { proc: 'drop', col: '#7ad8ff', speed: 0, grav: .22, dmg: 1, life: 200, box: [8, 12], enemy: true, elem: 'ice' },
   rock:      { proc: 'rock', col: '#8a7a6a', speed: 0, grav: .3, dmg: 1, life: 200, box: [16, 16], enemy: true },
   // v108 monster shots (CC0 strips from Monsters Creatures Fantasy 1.3 — PLAT.MONSTER_FX)
+  wbolt:     { img: 'enemies/mcf/fx/wbolt.png', fw: 30, fh: 11, n: 4, rate: 4, scale: 1.7, speed: 3.6, dmg: 1, life: 170, box: [16, 10], enemy: true, elem: 'poison', glow: '#c86aff', pixel: true },
   gbomb:     { img: 'enemies/mcf/fx/bomb.png', fw: 54, fh: 62, n: 19, rate: 3, loopFrom: 0, scale: .5, speed: 0, dmg: 1, life: 160, box: [14, 14], enemy: true, elem: 'fire', explode: { r: 34, dmg: 1 } },
   spore:     { img: 'enemies/mcf/fx/spore.png', fw: 20, fh: 18, n: 8, rate: 4, scale: 1, speed: 0, dmg: 1, life: 160, box: [12, 12], enemy: true, elem: 'poison', pixel: true },
   ebolt:     { img: 'enemies/mcf/fx/bolt.png', fw: 44, fh: 44, n: 8, rate: 3, scale: .55, speed: 3.4, dmg: 1, life: 120, box: [14, 14], enemy: true },
