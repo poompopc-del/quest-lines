@@ -474,6 +474,10 @@ PLAT.BOSSES = {
   scribe: { name: 'THE NAMELESS SCRIBE', th: 'ผู้จารึกไร้นาม', boss: true, hp: 84, dmg: 1, poise: 16, scale: 1.6, box: [30, 66], ink: true,
     sheet: MS.wiz3, proj: 'wbolt', projs: ['wave', 'shock', 'fireball', 'cball', 'rock'], minions: ['inkbat', 'inkskel'], fps: 10, heavy: true },
 };
+// v125 SECRET BOSS (7-2) — the Ink Dragon: every erased name's ink pooled into the shape of the forge dragon.
+// The Black Dragon's moves (dragon brain) + it calls ink shadows and rains ink (phase 2+).
+PLAT.BOSSES.inkdragon = Object.assign({}, PLAT.BOSSES.dragon, { name: 'THE UNWRITTEN', th: 'มังกรหมึก · เงาของนามที่ถูกลบ', hp: 92, poise: 18, ink: true, elem: null,
+  minions: ['inkbat', 'inkeye'], projs: ['wbolt'] });
 
 class Boss extends Enemy {
   constructor(g, type, x, y) { super(g, type, x, y); this.boss = true; this.phase = 1; this.set('intro'); this.anim.play('idle'); this.pat = 0; }
@@ -1045,6 +1049,22 @@ class Boss extends Enemy {
       default: this.set('move');
     }
   }
+  /* v125 INK DRAGON: the dragon's own fight, plus ink shadows (phase 2) and ink rain (phase 3) between its moves */
+  inkdragon() {
+    const g = this.g, p = g.player, A = this.arena(), d = this.def;
+    this.dragon();
+    if (this.st === 'intro' || this.st === 'phase' || this.dead) return;
+    this.inkT = (this.inkT || 0) + 1;
+    if (this.phase >= 2 && this.inkT % 420 === 200 && g.enemies.filter(e => !e.dead && !e.boss).length < 3) {
+      g.text(this.cx, this.y - 20, 'จงถูกลบ!', '#c8a0ff', 60, true); sfx().roar();
+      for (let i = 0; i < 2; i++) { const type = d.minions[i % 2], x = U.clamp(p.cx + (i ? 120 : -120), A.x0 + 30, A.x1 - 30), y = this.groundY - 110;
+        const e = PLAT.makeEnemy(g, type, x, y); e.cool = 60; g.enemies.push(e); g.fx('void', x, y, { scale: 1.3 }); }
+    }
+    if (this.phase >= 3 && this.inkT % 300 === 120) {
+      g.text(this.cx, this.y - 20, 'ฝนหมึก!', '#c8a0ff', 50);
+      for (let i = 0; i < 6; i++) { const x = U.clamp(p.cx + U.rnd(-160, 160), A.x0 + 12, A.x1 - 12); g.warn(x, g.floorBelow(x, p.y), 36 + i * 8, () => g.spawnProj('wbolt', x, g.cam.y - 10, 0, { vx: 0, vy: 4.4, scale: 1.9 })); }
+    }
+  }
   /* ---------------- v115 SNAIL TANK (world 5, 5-2) ----------------
      crawls at you · MORTAR: raises its cannon ("!"), shells fall on marked spots · CANNON: two/three low cannonballs (jump them) ·
      ROLL: hides in its shell (hits bounce off) and rolls wall to wall — jump over it; after the last bounce it is dizzy (×2 damage).
@@ -1282,7 +1302,7 @@ class Boss extends Enemy {
   kill(o) {
     this.dead = true; this.deadT = 0; this.vx = 0; sfx().roar(); this.g.hitstop(8); this.g.shake(10);
     this.beam = null; this.alpha = 1;
-    if (this.type === 'scribe') for (const e of this.g.enemies) if (!e.dead && !e.boss) e.kill({});      // his ink fades with him
+    if (this.type === 'scribe' || this.type === 'inkdragon') for (const e of this.g.enemies) if (!e.dead && !e.boss) e.kill({});      // his ink fades with him
     if (this.anim.sheet.anims.dead) this.anim.play('dead', 80, true);
     this.g.onEnemyKilled(this);
   }

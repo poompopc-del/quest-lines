@@ -33,6 +33,9 @@ function sd() {
 const seen = k => !!sd().seen[k];
 const mark = k => { sd().seen[k] = 1; S.persist(); };
 const worldOf = id => PLAT.WORLDS.find(w => w.levels.includes(id));
+// v125 TRUE ending: every memory fragment of the main story (worlds 1-6) + the ending seen
+function fragCount() { const s = sd(); let got = 0, all = 0; for (const id of PLAT.LEVEL_ORDER) { const F = ST.gems[id]; if (!F) continue; all += F.length; got += (s.frags[id] || []).filter(i => i < F.length).length; } return { got, all }; }
+function trueOpen() { const f = fragCount(); return seen('ending') && f.got >= f.all; }
 
 /* ------------------------------------------------------------------ the scene player */
 let cur = null;
@@ -95,7 +98,7 @@ function drawFace(who, now) {
   let sh = null, ink = false, sc = 1;
   const g = app.game;
   if (who === 'hero') { sh = (g && g.heroSheet) || heroSh; if (!sh && !drawFace.req) { drawFace.req = true; A().heroSheet(S.data.hero).then(s => { heroSh = s; drawFace.req = false; }); } }
-  else if (g && g.sheets) { const k = who === 'arun' ? 'scribe' : who; sh = g.sheets.get(k + ':2') && k === 'wizard' ? g.sheets.get(k + ':2') : g.sheets.get(k); ink = who === 'scribe'; }
+  else if (g && g.sheets) { const k = who === 'arun' ? 'scribe' : who; sh = g.sheets.get(k + ':2') && k === 'wizard' ? g.sheets.get(k + ':2') : g.sheets.get(k); ink = who === 'scribe' || who === 'inkdragon'; }
   const fr = sh && (sh.frames('idle') || sh.frames('move') || [])[Math.floor(t * 6) % ((sh.frames('idle') || sh.frames('move') || [1]).length)];
   const b = fr && sh.bounds && sh.bounds(fr);
   if (fr && b && PLAT.assets.img(fr.src)) {
@@ -149,6 +152,11 @@ async function after(id) {
     mark('ending'); await play(ST.ending, { title: 'บทส่งท้าย', sub: 'รุ่งอรุณ' });
     await credits();
     M.track('storyEnd');
+  }
+  if (id === '7-2' && !seen('trueEnding')) {
+    mark('trueEnding'); await play(ST.trueEnding, { title: 'รุ่งอรุณที่แท้จริง', sub: 'จบอย่างแท้จริง' });
+    await credits();
+    M.track('trueEnd');
   }
 }
 app.storyAfter = (id, cb) => { after(id).then(cb, e => { console.error(e); cb(); }); };
@@ -208,6 +216,7 @@ function scenes() {
     if (W.outro && W.outro.length) out.push({ k: 'w' + w.n + 'out', name: 'จบ' + W.name.replace(/^บท(ที่ \d+|สุดท้าย)/, m => m), lines: W.outro });
   }
   out.push({ k: 'ending', name: '🌅 บทส่งท้าย · รุ่งอรุณ', lines: ST.ending, end: true });
+  if (ST.trueEnding) out.push({ k: 'trueEnding', name: '✨ รุ่งอรุณที่แท้จริง', lines: ST.trueEnding, end: true });
   return out;
 }
 function renderJournal() {
@@ -270,5 +279,5 @@ app.onShow.title = () => { if (onTitle0) onTitle0(); refreshTile(); };
 
 const boot0 = app.onBoot;
 app.onBoot = () => { if (boot0) boot0(); sd(); bindPlayer(); refreshTile(); };
-app.story = { play, credits, before, after, seen, sd, resetStory, scenes };
+app.story = { play, credits, before, after, seen, sd, resetStory, scenes, trueOpen, fragCount };
 })();

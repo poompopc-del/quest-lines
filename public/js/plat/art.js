@@ -179,7 +179,7 @@ const ART = PLAT.ART = {
   },
 };
 for (const k in ART) if (PLAT.THEMES[k]) PLAT.THEMES[k].art = ART[k];
-if (PLAT.THEMES.ink) PLAT.THEMES.ink.art = ART.tower;          // v121 world 6 reuses the church art (tinted in game.js)
+if (PLAT.THEMES.ink) PLAT.THEMES.ink.art = Object.assign({}, ART.tower, { tiles: Object.assign({}, ART.tower.tiles, { liquidTop: P + 'swamp/water-top.png', liquid: P + 'swamp/water.png', liquidTint: 'rgba(110,50,220,.42)' }) });   // v125: ink pools          // v121 world 6 reuses the church art (tinted in game.js)
 
 /* ----------------------------------------------------------------- enemy skins
    Per theme: enemy type → new LOOK only. AI, HP, damage, speed, armour, coins,

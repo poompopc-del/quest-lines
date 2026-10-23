@@ -103,7 +103,7 @@ function go(where) {
     case 'retryCp': if (app.game && !app.game.endlessWorld) { app.game.respawn(); show('game'); } break;
     case 'restart': if (app.game) { if (app.game.endlessWorld) { recordEndless(app.game.result(), true); go2('endlessAgain'); } else startLevel(app.game.levelId); } break;
     default: if (app.go2 && app.go2(where)) break; break;
-    case 'next': { const i = PLAT.LEVEL_ORDER.indexOf(app.game && app.game.levelId); const n = PLAT.LEVEL_ORDER[i + 1]; if (n && levelUnlocked(n)) startLevel(n); else { quitGame(); show('map'); } break; }
+    case 'next': { const i = PLAT.ALL_ORDER.indexOf(app.game && app.game.levelId); const n = PLAT.ALL_ORDER[i + 1]; if (n && levelUnlocked(n)) startLevel(n); else { quitGame(); show('map'); } break; }
   }
 }
 function go2(w) { app.lastGo = 0; go(w); }
@@ -258,6 +258,11 @@ function heroLockText(id) {
   return need ? `ผ่านด่าน ${PLAT.levelLabel(need)} หรือมีในเกมหลัก` : 'มีในเกมหลักก่อน';
 }
 function levelUnlocked(id) {
+  if (PLAT.LEVELS[id] && PLAT.LEVELS[id].secret) {          // v125 secret world: opens with the true-ending condition, then in order
+    if (!(S.devOn() || (app.story && app.story.trueOpen()))) return false;
+    const w = PLAT.WORLDS.find(w => w.levels.includes(id)), k = w.levels.indexOf(id); if (k <= 0) return true;
+    const pv = S.level(w.levels[k - 1]); return !!(pv && pv.cleared) || !!(S.level(id) && S.level(id).cleared);
+  }
   const i = PLAT.LEVEL_ORDER.indexOf(id); if (i <= 0 || S.devOn()) return true;
   const own = S.level(id); if (own && own.cleared) return true;               // v115: new levels were inserted between old ones — nothing you cleared re-locks
   const prev = S.level(PLAT.LEVEL_ORDER[i - 1]); return !!(prev && prev.cleared);
@@ -355,6 +360,11 @@ function renderMap() {
   $('#mSub').textContent = 'ผ่านด่านเพื่อปลดล็อกด่านถัดไป · เก็บ 💎 3 เม็ดต่อด่าน · แรงก์ S = ครบ 4 เงื่อนไข' + (mg != null ? ` · ทองในเกมหลัก ${mg.toLocaleString()}` : '');
   const box = $('#worlds'); box.innerHTML = '';
   for (const w of PLAT.WORLDS) {
+    if (w.secret && !S.devOn() && !(app.story && app.story.trueOpen())) {     // v125: the secret chapter — a teaser after the ending
+      if (app.story && app.story.seen('ending')) { const t = document.createElement('div'); t.className = 'world secret'; const f = app.story.fragCount();
+        t.innerHTML = `<div class="wn"><span>✨ ??? · บทที่ยังไม่ถูกเขียน</span><span class="chip">💎 ${f.got}/${f.all}</span></div><p class="sub" style="margin:4px 0 0">เก็บเศษความทรงจำ 💎 ให้ครบทุกชิ้น แล้วหน้าสุดท้ายจะเปิดออก…</p>`; box.appendChild(t); }
+      continue;
+    }
     const div = document.createElement('div'); div.className = 'world';
     const g = w.levels.reduce((n, id) => n + ((S.level(id) || {}).gems || []).length, 0);
     div.innerHTML = `<div class="wn"><span>โลก ${w.n} · ${w.name}</span><span class="chip">💎 ${g}/${w.levels.filter(id => !PLAT.LEVELS[id].boss).length * 3}</span></div><div class="lvls"></div>`;
@@ -573,7 +583,7 @@ function finishLevel(r) {
     if (PLAT.LEVELS[id].boss) MT.medal(id, MT.grade(r.hits, r.frames), r.frames);
   }
   S.persist();
-  const next = PLAT.LEVEL_ORDER[idx + 1];
+  const nx = PLAT.ALL_ORDER[PLAT.ALL_ORDER.indexOf(id) + 1], next = nx && levelUnlocked(nx) ? nx : null;   // v125: the secret world only when it is open
   const newBest = !first && rec.bestScore === r.score && r.score > (prev.bestScore || 0);
   $('#clearBox').innerHTML = `
     <h2 class="kick" style="text-align:center">${PLAT.LEVELS[id].boss ? 'ปราบบอสสำเร็จ!' : 'ผ่านด่าน!'}</h2>

@@ -951,6 +951,7 @@ class Game {
       if (t === TL.LIQUID && liqArt) {             // world-art lava: the pack's lava tiles, the surface bobs a little
         const top = W.tileAt(L, tx, ty - 1) !== TL.LIQUID;
         ctx.drawImage(top ? liqArt[0] : liqArt[1], x, top ? y + Math.round(Math.sin((this.frame + tx * 9) / 14) * 1.5) : y, T, T);
+        if (at.liquidTint) { ctx.fillStyle = at.liquidTint; ctx.fillRect(x, top ? y + 3 : y, T, top ? T - 3 : T); }
         if (top && (th.poison || at.acid)) {                    // v109 poison swamp: a glowing green surface so the water reads as "danger", never as floor
           const wy = y + 3 + Math.sin((this.frame + tx * 9) / 14) * 1.5;
           ctx.fillStyle = 'rgba(70,200,80,.38)'; ctx.fillRect(x, wy, T, T - 3);

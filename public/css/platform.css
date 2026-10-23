@@ -448,3 +448,6 @@ html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:
 .jreset{padding:6px 2px}.jreset ul{margin:8px 0 12px;padding-left:20px;line-height:1.6;font-size:13px}
 .jreset .btn{margin-right:6px}
 @media (max-height:460px){.st-box{min-height:90px;padding:10px 12px 22px}.st-title{top:6%}.st-text{font-size:14px}}
+/* v125 secret chapter teaser on the map */
+.world.secret{border:1px dashed #c8a0ff66;background:linear-gradient(135deg,rgba(80,40,140,.25),rgba(20,10,40,.4))}
+.world.secret .wn span:first-child{color:#d8c0ff}

@@ -8,7 +8,7 @@ import { loadPlat } from './plat-vm.mjs';
 import { bfsValidate } from './plat-bfs.mjs';
 const PLAT = loadPlat(['core', 'world', 'anim', 'heroes', 'x4-sheet', 'xmod', 'player', 'monster-sheets', 'enemies', 'levels', 'items']);
 const only = process.argv[2]; let bad = 0;
-for (const id of PLAT.LEVEL_ORDER) {
+for (const id of PLAT.ALL_ORDER || PLAT.LEVEL_ORDER) {
   if (only && id !== only) continue;
   const r = bfsValidate(PLAT, PLAT.LEVELS[id]); bad += r.errs.length;
   console.log(`${r.errs.length ? '✗' : '✓'} ${id}  nodes:${r.nodes} sims:${r.sims}${r.errs.length ? '\n    ' + r.errs.join('\n    ') : ''}`);
