@@ -491,6 +491,26 @@ PLAT.sfx = {
   denied() { tone('square', 160, 120, .14, .1); },
 };
 
+/* v126 REAL SOUND SAMPLES (public/audio/plat/sfx — CC0 Kenney + Godot demo sounds, see CREDITS.txt there).
+   Loaded (tiny mp3s) the first time audio starts; until a sample is decoded — or if it fails — the synthesized
+   version above plays, so the game is never silent. Each entry: [gain, min ms between plays]. */
+const SAMPLES = { jump: [.55, 40], airjump: [.6, 40], land: [1, 90], coin: [.7, 35], break: [.6, 60], crumble: [.5, 120], hit: [.55, 35],
+  kill: [.5, 50], shoot: [.32, 45], boom: [.55, 60], heavy: [.6, 60], hurt: [.55, 80], select: [.5, 30], back: [.45, 30] };
+const BUF = PLAT.sfxSamples = {}; let sampLoad = false;
+function loadSamples() {
+  if (sampLoad || !HAS_DOM || !AC || typeof fetch === 'undefined') return; sampLoad = true;
+  for (const k of Object.keys(SAMPLES)) fetch('audio/plat/sfx/' + k + '.mp3').then(r => r.ok ? r.arrayBuffer() : null)
+    .then(a => a && new Promise((ok, no) => AC.decodeAudioData(a, ok, no))).then(b => { if (b) BUF[k] = b; }).catch(() => {});
+}
+function sample(k) {
+  const b = BUF[k], cfg = SAMPLES[k]; if (!b || !AC || PLAT.sfx.vol <= 0 || VOICES >= MAX_VOICES) return false;
+  if (!limit('s_' + k, cfg[1])) return true;
+  const src = AC.createBufferSource(), g = AC.createGain(); src.buffer = b; src.playbackRate.value = 1 + (Math.random() - .5) * .08;   // a little pitch variety
+  g.gain.value = cfg[0] * PLAT.sfx.vol; src.connect(g); g.connect(MASTER); voice(src); src.start(); return true;
+}
+for (const k of Object.keys(SAMPLES)) { const synth = PLAT.sfx[k]; PLAT.sfx[k] = function () { if (ac()) loadSamples(); if (sample(k)) return; synth.apply(this, arguments); }; }
+const unlock0 = PLAT.sfx.unlock; PLAT.sfx.unlock = function () { unlock0(); if (AC) loadSamples(); };
+
 /* ---------------------------------- save ---------------------------------- */
 // Platform Mode progress lives in its own key. The main save is only READ (owned heroes,
 // sound volume, dev flag) — and written in exactly one place: addMainGold(), which re-reads

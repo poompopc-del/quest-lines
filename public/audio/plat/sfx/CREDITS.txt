@@ -1,0 +1,10 @@
+Sound effects (converted to short mono mp3 by ffmpeg; silence trimmed)
+
+CC0 (public domain) — Kenney (www.kenney.nl):
+  jump, land, coin, break, crumble(fall)   Starter Kit 3D Platformer  https://github.com/KenneyNL/Starter-Kit-3D-Platformer  ("Sound effects (CC0 licensed)")
+  airjump(jump_b), hit(enemy_hurt), kill(enemy_destroy)   Starter Kit FPS  https://github.com/KenneyNL/Starter-Kit-FPS
+  select(click1), back(switch2)   UI Audio  https://github.com/Calinou/kenney-ui-audio
+CC0 — FFeller: heavy (impact_small)   from godot-demo-projects 3d/ragdoll_physics
+MIT — Godot Engine demo projects (c) Godot Engine contributors: shoot, boom(explode), hurt(hit)
+  https://github.com/godotengine/godot-demo-projects (2d/platformer)
+Everything else (gem, checkpoint, clear jingles, charge, roar, inhale …) is still synthesized in js/plat/core.js.

@@ -241,6 +241,7 @@ PLAT.STORY = {
     ['เอฟเฟกต์', 'PVFX Foundry — nerijs, CC0', 'Animated Fire — BenHickling, CC0'],
     ['ไอเทม', '16x16 Assorted RPG Icons — Shade, CC0', 'Pixel Platformer — Kenney, CC0 · Sunny Land items — ansimuz, CC0'],
     ['เพลง', 'rpg_village02_loop — Pascal Belisle', '8-bit Battle Loop — Wolfgang_, CC0'],
+    ['เสียงประกอบ', 'Kenney Starter Kits · UI Audio — CC0', 'Godot Engine demo projects — MIT', 'impact — FFeller, CC0'],
     ['ขอบคุณที่เล่น', 'ทุกครั้งที่เห็นหิ่งห้อย… เรียกชื่อเธอดังๆ นะ'],
   ],
 };
