@@ -913,8 +913,8 @@ class Game {
     for (const m of L.movers) {
       if (this.theme.lily) {                       // v109 swamp lily pad: a big round leaf with a notch; sinks (with ripples) while stood on
         const cxm = m.x + m.w / 2, rw = m.w / 2 + 4, f = this.frame, k = m.sink ? m.off / m.sink : 0;
-        const bob = Math.sin(f / 18 + m.id * 1.7) * (m.load ? .3 : 1.2), cy = m.y + 5 + bob;
-        const surf = m.y0 + 2;                     // the water line the pad floats on
+        const grace = m.load && m.hold <= 24, bob = grace ? Math.sin(f * 1.3) * 1.2 : Math.sin(f / 18 + m.id * 1.7) * (m.load ? .3 : 1.2), cy = m.y + 5 + bob;   // stepped on: it trembles first
+        const surf = m.wy || m.y0 + 2;             // the water line the pad floats on
         if (m.load || k > .05) for (let r = 0; r < 2; r++) { const ph = ((f + r * 18) % 36) / 36; ctx.strokeStyle = `rgba(160,255,120,${.6 * (1 - ph)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(cxm, surf + 4, rw + ph * 16, 3 + ph * 3, 0, 0, 6.283); ctx.stroke(); }
         ctx.fillStyle = '#0f2a12'; ctx.beginPath(); ctx.ellipse(cxm, cy + 1.5, rw + 1.5, 8.5, 0, 0, 6.283); ctx.fill();
         ctx.fillStyle = k > .45 ? '#4a7a2a' : '#3f9a3a'; ctx.beginPath(); ctx.ellipse(cxm, cy, rw, 7, 0, 0, 6.283); ctx.fill();

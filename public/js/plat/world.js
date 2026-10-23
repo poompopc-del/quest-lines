@@ -51,8 +51,8 @@ function buildLevel(spec) {
     }
   }
   (spec.movers || []).forEach((m, i) => {
-    const x = m.tx * T, y = m.ty * T;
-    L.movers.push({ id: i, x, y, w: (m.w || 3) * T, h: 12, x0: x, y0: y, axis: m.axis || 'x', range: (m.range || 3) * T, speed: m.speed || 1, t: (m.phase || 0) * Math.PI * 2, dx: 0, dy: 0, prevY: y, sink: m.sink ? (m.sink === true ? 1.6 : m.sink) * T : 0, off: 0, load: 0 });
+    const LIFT = m.sink ? 12 : 0, x = m.tx * T, y = m.ty * T - LIFT;     // v110: a lily pad floats 12 px ABOVE the water line (ty)
+    L.movers.push({ id: i, x, y, w: (m.w || 3) * T, h: 12, x0: x, y0: y, axis: m.axis || 'x', range: (m.range || 3) * T, speed: m.speed || 1, t: (m.phase || 0) * Math.PI * 2, dx: 0, dy: 0, prevY: y, sink: m.sink ? (m.sink === true ? 1.6 : m.sink) * T : 0, off: 0, load: 0, hold: 0, wy: m.ty * T });
   });
   return L;
 }
@@ -157,11 +157,13 @@ function clearLine(L, x0, y0, x1, y1) {
 }
 
 /* ------------------------------ moving platforms ------------------------------ */
+const SINK_GRACE = 24;
 function stepMovers(L) {
   for (const m of L.movers) {
     if (m.sink) {                                  // v108 lily pad: sinks while stood on (load), floats back up
-      m.off = m.load > 0 ? Math.min(m.sink, m.off + .32 * m.speed) : Math.max(0, m.off - .7);
-      if (m.load > 0) m.load--;
+      // stood on: it wobbles for SINK_GRACE frames, then goes down; your feet reach the water after ~1–1.5 s
+      if (m.load > 0) { m.hold++; if (m.hold > SINK_GRACE) m.off = Math.min(m.sink, m.off + .3 * m.speed); m.load--; }
+      else { m.hold = 0; m.off = Math.max(0, m.off - .7); }
       const ny = m.y0 + m.off; m.dx = 0; m.dy = ny - m.y; m.prevY = m.y; m.y = ny; continue;
     }
     m.t += m.speed * 0.02;
