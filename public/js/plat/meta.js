@@ -66,6 +66,8 @@ const ACH = M.ACH = [
   { id: 'copy20', icon: '🌟', name: 'นักลอกเลียน', desc: 'เคอร์บี้ได้พลังลอกเลียน 20 ครั้ง', key: 'copy', need: 20, coins: 300, title: 'นักลอกเลียน' },
   { id: 'lantern', icon: '🏮', name: 'ผู้จุดตะเกียง', desc: 'จบเนื้อเรื่อง «ห้าตะเกียงแห่งนาม»', key: 'storyEnd', need: 1, coins: 1000, title: 'ผู้จุดตะเกียง' },
   { id: 'trueend', icon: '✨', name: 'รุ่งอรุณที่แท้จริง', desc: 'ปลดล็อกบทพิเศษและเห็นฉากจบที่แท้จริง', key: 'trueEnd', need: 1, coins: 2000, title: 'ผู้เขียนนามคืน' },
+  { id: 'hard1', icon: '🔥', name: 'กล้าท้าราตรี', desc: 'ผ่านด่านในโหมดยาก NG+ ครั้งแรก', key: 'hardClear', need: 1, coins: 200 },
+  { id: 'hardall', icon: '🌑', name: 'ผู้พิชิตราตรี', desc: 'ผ่านทุกด่านในโหมดยาก NG+', key: 'hardCleared', need: (PLAT.LEVEL_ORDER || []).length || 22, best: true, coins: 3000, title: 'ผู้พิชิตราตรี' },
   { id: 'allclear', icon: '🏆', name: 'พิชิตทุกโลก', desc: 'ผ่านทุกด่านในเนื้อเรื่อง', key: 'levelsCleared', need: (PLAT.LEVEL_ORDER || []).length || 22, best: true, coins: 1200, title: 'ผู้พิชิตทุกโลก' },
   { id: 'rankS5', icon: '🅢', name: 'มือโปร', desc: 'ได้แรงก์ S 5 ครั้ง', key: 'rankS', need: 5, coins: 250 },
   { id: 'rankS30', icon: '🔱', name: 'ตำนาน', desc: 'ได้แรงก์ S 30 ครั้ง', key: 'rankS', need: 30, coins: 900, title: 'ตำนาน' },

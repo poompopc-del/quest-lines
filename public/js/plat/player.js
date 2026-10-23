@@ -1081,6 +1081,7 @@ class Player {
     }
     if (this.inv > 0) return 'ignored';
     if (!o.raw) dmg = Math.round(dmg * PLAT.HPU);                          // enemy damage is in old hearts
+    if (this.g.hard && PLAT.HARD) dmg = Math.round(dmg * PLAT.HARD.dmg);   // v127 NG+
     if (PLAT.meta) { const a = PLAT.meta.assist().dmg; if (a < 1) dmg = Math.round(dmg * a); }      // v118 assist mode: less (or no) damage
     if (PLAT.relicOn('aegis') && this.aegisCd <= 0 && !o.unblockable) {   // relic: the barrier eats one hit
       this.aegisCd = 900; this.inv = 40; sfx().clang(); PLAT.haptic('hit');

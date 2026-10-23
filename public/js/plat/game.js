@@ -24,7 +24,7 @@ class Game {
   constructor(opt) {
     this.opt = opt; this.heroId = opt.heroId;
     if (opt.endless) { this.endlessWorld = opt.endless; this.seed = (opt.seed >>> 0) || ((Math.random() * 4294967296) >>> 0); this.spec = PLAT.Endless.spec(opt.endless); this.levelId = this.spec.id; }
-    else { this.levelId = opt.levelId; this.spec = PLAT.LEVELS[opt.levelId]; }
+    else { this.levelId = opt.levelId; this.spec = PLAT.LEVELS[opt.levelId]; this.hard = !!opt.hard; }   // v127 NG+
     this.theme = PLAT.THEMES[this.spec.theme]; this.input = PLAT.input; this.emitFn = opt.onEvent || (() => {});
     this.daily = opt.daily || null; this.rush = opt.rush || null;                          // v118 daily challenge rules / boss rush run
     this.sheets = new Map(); this.frame = 0; this.mode = 'loading';
@@ -40,7 +40,7 @@ class Game {
     this.heroSheet = new PLAT.Sheet(hdef);
     const L = this.L0spec = this.spec;
     const built = this.endlessWorld ? null : W.buildLevel(L);
-    const types = new Set(this.endlessWorld ? PLAT.Endless.enemyTypes(this.endlessWorld) : built.spawns.map(s => s.type)); if (L.boss) types.add(L.boss);
+    const types = new Set(this.endlessWorld ? PLAT.Endless.enemyTypes(this.endlessWorld) : built.spawns.map(s => this.hard ? PLAT.hardSpawn(s).type : s.type)); if (L.boss) types.add(L.boss);
     const npcImgs = [];
     if (built && built.npcs && PLAT.MONSTER_SHEETS) for (const k of ['vOld', 'vWoman', 'vHat', 'vBeard']) { const d = PLAT.MONSTER_SHEETS[k]; if (d) { this.sheets.set('npc:' + k, new PLAT.Sheet(d)); npcImgs.push(d.img); } }   // v115 villagers
     const imgs = [...this.heroSheet.srcs(), ...npcImgs];
@@ -57,7 +57,8 @@ class Game {
     [A.proj, A.mouthful && A.mouthful.proj, A.combo && A.combo.proj, S && S.proj, hero.float && hero.float.puff].forEach(n => n && projNames.add(n));
     (A.charge || []).forEach(c => projNames.add(c.proj));
     for (const t of types) { const d = this.enemyDef(t); if (d && d.proj) projNames.add(d.proj); (d && d.projs || []).forEach(n => projNames.add(n)); }   // v121: the Scribe borrows every keeper's shots
-    if (hero.copy) ['kfire', 'kice', 'kbomb', 'arc'].forEach(n => projNames.add(n));   // v124 Kirby copy abilities
+    if (hero.copy) ['kfire', 'kice', 'kbomb', 'arc'].forEach(n => projNames.add(n));
+    if (this.hard) projNames.add('wbolt');   // v124 Kirby copy abilities
     if (PLAT.FXDEF.puff) imgs.push(PLAT.FXDEF.puff.img);
     for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); if (p && p.spr) imgs.push(p.spr.img); }
     for (const k of ['coin', 'gem', 'sparkle', 'spring', 'flag', 'sign', 'door', 'door-closed', 'rock']) imgs.push(PROPS + k + '.png'); imgs.push('scenes/plat/town/street-lamp.png');   // v122 level props
@@ -86,7 +87,7 @@ class Game {
     this.checkpoint = { x: L.start.x, y: L.start.y };
     this.tokens = new Set();
     this.measureEnemies();
-    this.enemies = L.spawns.map(s => PLAT.makeEnemy(this, s.type, s.x, s.y, s.elite));
+    this.enemies = L.spawns.map(s => this.hard ? PLAT.hardSpawn(s) : s).map(s => PLAT.makeEnemy(this, s.type, s.x, s.y, s.elite));
     this.gim = PLAT.Gimmicks ? new PLAT.Gimmicks(this) : null; if (this.gim && !this.gim.active) this.gim = null;   // v108 world-4 level gimmicks
     this.enemyTotal = this.enemies.length;
     this.decor = [];
@@ -631,7 +632,7 @@ class Game {
     ];
     const n = checks.filter(c => c.ok).length, rank = n === 4 ? 'S' : n === 3 ? 'A' : n === 2 ? 'B' : 'C';
     const score = s.coins * 10 + s.kills * 50 + s.gems.size * 500 + Math.max(0, Math.round((par - s.frames) / 60)) * 10 + (s.hits === 0 ? 1000 : 0);
-    return { levelId: this.levelId, heroId: this.heroId, frames: s.frames, coins: s.coins, gems: [...s.gems], gemTotal: L.gems.length, kills: s.kills, enemyTotal: this.enemyTotal, hits: s.hits, deaths: s.deaths, maxChain: s.maxChain || 0, parries: s.parries || 0, loot: (s.loot || []).slice(), checks, rank, score };
+    return { hard: !!this.hard, levelId: this.levelId, heroId: this.heroId, frames: s.frames, coins: s.coins, gems: [...s.gems], gemTotal: L.gems.length, kills: s.kills, enemyTotal: this.enemyTotal, hits: s.hits, deaths: s.deaths, maxChain: s.maxChain || 0, parries: s.parries || 0, loot: (s.loot || []).slice(), checks, rank, score };
   }
   hudState() {
     const p = this.player, L = this.L, h = p.hero;

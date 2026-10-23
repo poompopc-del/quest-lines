@@ -98,6 +98,14 @@ function tuneDef(d) {
   return o;
 }
 const coolT = n => Math.round(n * TUNE.cool);
+/* v127 NG+ / HARD MODE (story levels, after the ending): monsters with an ink form come back in ink, ~30 % turn ELITE,
+   everything is tougher, you take more damage, and every boss calls ink rain in its later phases. */
+const HARD = PLAT.HARD = { hp: 1.5, bossHp: 1.35, dmg: 1.25, elite: .3,
+  ink: { skel: 'inkskel', eye: 'inkeye', bat: 'inkbat', hound: 'inkhound', zombie: 'inkskel', ghost: 'inkeye' } };
+PLAT.hardSpawn = s => {
+  const type = HARD.ink[s.type] || s.type, roll = ((Math.floor(s.x / 32) * 7 + Math.floor(s.y / 32) * 13) % 10) / 10;   // stable per spawn point
+  return Object.assign({}, s, { type, elite: s.elite || (!PLAT.BOSSES[type] && type !== 'golden' && type !== 'mimic' && roll < HARD.elite) });
+};
 class Enemy {
   constructor(g, type, x, y, elite) {
     // the theme's skin (art.js) replaces only the look; AI / HP / damage stay the type's own
@@ -107,7 +115,7 @@ class Enemy {
     const geo = g.geom && g.geom[type], k = this.sc / d.scale;
     this.w = Math.round((geo ? geo.w : d.box[0]) * k); this.h = Math.round((geo ? geo.h : d.box[1]) * k); this.cOff = geo ? geo.c / d.scale : 0;
     this.x = x - this.w / 2; this.y = y - this.h; this.home = { x: this.x, y: this.y };
-    this.vx = 0; this.vy = 0; this.dir = -1; this.hp = d.hp * (this.elite ? 2 : 1) + (this.elite ? 1 : 0); this.maxHp = this.hp; this.armor = d.armor || 0;
+    this.vx = 0; this.vy = 0; this.dir = -1; this.hp = d.hp * (this.elite ? 2 : 1) + (this.elite ? 1 : 0); if (g.hard) this.hp = Math.round(this.hp * (d.boss ? HARD.bossHp : HARD.hp)); this.maxHp = this.hp; this.armor = d.armor || 0;
     this.maxPoise = (d.poise || 1) * (this.elite ? 2 : 1); this.poise = this.maxPoise;
     this.t = U.rint(0, 60); this.st = 'idle'; this.stT = 0; this.flash = 0; this.kbT = 0; this.stunT = 0; this.cool = U.rint(10, 40); this.dizzyFor = 80;
     this.lastHit = new Set(); this.dead = false; this.deadT = 0; this.gone = false; this.stuckT = 0; this.lastX = this.x; this.combo = 0;
@@ -499,11 +507,19 @@ class Boss extends Enemy {
     }
     if (this.st === 'phase') { this.vx = 0; this.anim.play(this.flying ? 'fly' : 'idle'); if (this.flying) this.y = Math.min(this.y + 2, this.groundY - this.h); if (this.t % 4 === 0) g.burst(this.cx + U.rnd(-this.w / 2, this.w / 2), this.y + U.rnd(0, this.h), '#ff4a4a', 1, 2); if (this.stT > 60) { if (this.flying && this.y + this.h < this.groundY - 2) this.set('land'); else { this.flying = false; this.set('move'); } } }
     else if (this.st === 'stagger') { this.vx = 0; this.vulnerable = true; this.anim.play(this.anim.sheet.anims.hurt ? 'hurt' : 'idle'); if (this.stT > 80) { this.vulnerable = false; this.set('move'); } }
-    else { this.sense(); this[this.type](); }                                   // v117: the boss brain watches you first
+    else { this.sense(); this[this.type](); if (g.hard) this.hardExtra(); }      // v117: the boss brain watches you first · v127 NG+ ink rain
     if (!this.flying) { this.vy = Math.min(this.vy + C.GRAV, C.MAX_FALL); W.moveBody(g.L, this, this.vx, this.vy); }
     this.anim.update();
   }
   pick(list) { const n = list[this.pat++ % list.length]; this.set(n); return n; }
+  hardExtra() {                                          // v127 NG+: ink falls on marked spots now and then (phase 2+)
+    const g = this.g, p = g.player; if (this.phase < 2 || this.dead || this.type === 'inkdragon' || this.type === 'scribe' || this.st === 'intro' || this.st === 'phase') return;
+    this.hardT = (this.hardT || 0) + 1;
+    if (this.hardT % (this.phase >= 3 ? 280 : 400) === 150 && p && !p.dead) {
+      const A = this.arena(); g.text(this.cx, this.y - 24, 'ฝนหมึก!', '#c8a0ff', 50);
+      for (let i = 0; i < (this.phase >= 3 ? 6 : 4); i++) { const x = U.clamp(p.cx + U.rnd(-150, 150), A.x0 + 12, A.x1 - 12); g.warn(x, g.floorBelow(x, p.y), 40 + i * 9, () => g.spawnProj('wbolt', x, g.cam.y - 10, 0, { vx: 0, vy: 4.2, scale: 1.8 })); }
+    }
+  }
   intro(name) { if (this.stT === 1) { PLAT.sfx.roar(); this.g.shake(5); this.g.bossIntro(this); } if (this.stT > 80) this.set('move'); }
   arena() { return this.g.L.arena || { x0: T, x1: this.g.L.pw - T }; }
 

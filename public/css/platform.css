@@ -451,3 +451,8 @@ html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:
 /* v125 secret chapter teaser on the map */
 .world.secret{border:1px dashed #c8a0ff66;background:linear-gradient(135deg,rgba(80,40,140,.25),rgba(20,10,40,.4))}
 .world.secret .wn span:first-child{color:#d8c0ff}
+
+/* v127 NG+ */
+#mHard.on{background:linear-gradient(135deg,#8a2aff,#3a0a6a);border-color:#c8a0ff;color:#fff}
+#sMap.hard .panel{box-shadow:0 0 0 2px #8a4aff88,0 0 40px #6a2aff55}
+.lvl .hardmark{position:absolute;left:6px;bottom:4px;font-size:10px;font-weight:800;color:#d8b0ff;text-shadow:0 0 6px #8a4aff}

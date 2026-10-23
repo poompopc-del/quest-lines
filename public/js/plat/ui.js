@@ -257,6 +257,7 @@ function heroLockText(id) {
   const need = PLAT.HERO_UNLOCK[id];
   return need ? `ผ่านด่าน ${PLAT.levelLabel(need)} หรือมีในเกมหลัก` : 'มีในเกมหลักก่อน';
 }
+const hardOpen = () => S.devOn() || !!(app.story && app.story.seen('ending'));        // v127 NG+ opens after the ending
 function levelUnlocked(id) {
   if (PLAT.LEVELS[id] && PLAT.LEVELS[id].secret) {          // v125 secret world: opens with the true-ending condition, then in order
     if (!(S.devOn() || (app.story && app.story.trueOpen()))) return false;
@@ -354,10 +355,14 @@ function moveList(h) {
   return L;
 }
 /* ---------------------------------- map ---------------------------------- */
+function toggleHard() { S.data.hard = !S.data.hard; S.persist(); PLAT.sfx.select(); renderMap(); toast(S.data.hard ? '🔥 โหมดยาก NG+ เปิด' : 'โหมดปกติ', S.data.hard ? 'ศัตรูหมึก · ELITE มากขึ้น · โดนแรงขึ้น · บอสเรียกฝนหมึก' : ''); }
 function renderMap() {
+  const hbtn = $('#mHard'); if (hbtn && !hbtn._b) { hbtn._b = true; hbtn.addEventListener('click', toggleHard); }
   $('#mHero').textContent = PLAT.HEROES[S.data.hero].name;
   const mg = S.mainGold();
-  $('#mSub').textContent = 'ผ่านด่านเพื่อปลดล็อกด่านถัดไป · เก็บ 💎 3 เม็ดต่อด่าน · แรงก์ S = ครบ 4 เงื่อนไข' + (mg != null ? ` · ทองในเกมหลัก ${mg.toLocaleString()}` : '');
+  const hb = $('#mHard'); if (hb) { hb.style.display = hardOpen() ? '' : 'none'; hb.classList.toggle('on', !!S.data.hard); hb.textContent = S.data.hard ? '🔥 NG+ เปิดอยู่' : '🔥 NG+ ปิด'; }
+  $('#sMap').classList.toggle('hard', !!S.data.hard && hardOpen());
+  $('#mSub').textContent = (S.data.hard && hardOpen() ? '🔥 โหมดยาก NG+: ศัตรูหมึก · ELITE มากขึ้น · โดนแรงขึ้น · บอสเรียกฝนหมึก — เคลียร์ได้ ★ สีม่วง · ' : '') + 'ผ่านด่านเพื่อปลดล็อกด่านถัดไป · เก็บ 💎 3 เม็ดต่อด่าน · แรงก์ S = ครบ 4 เงื่อนไข' + (mg != null ? ` · ทองในเกมหลัก ${mg.toLocaleString()}` : '');
   const box = $('#worlds'); box.innerHTML = '';
   for (const w of PLAT.WORLDS) {
     if (w.secret && !S.devOn() && !(app.story && app.story.trueOpen())) {     // v125: the secret chapter — a teaser after the ending
@@ -373,7 +378,8 @@ function renderMap() {
       const L = PLAT.LEVELS[id], rec = S.level(id) || {}, open = levelUnlocked(id);
       const b = document.createElement('button'); b.className = 'lvl' + (open ? '' : ' lock') + (L.boss ? ' boss' : '');
       const gemTxt = L.boss ? '👑 บอส' : `💎 ${(rec.gems || []).length}/3`;
-      b.innerHTML = `<div class="id">${PLAT.levelLabel(id)}</div><div class="nm">${L.name}</div><div class="meta">${open ? (rec.cleared ? `${gemTxt} · ⏱ ${U.fmtTime(rec.bestTime)} · ${rec.bestScore || 0} แต้ม` : `${gemTxt} · ยังไม่ผ่าน`) : '🔒 ผ่านด่านก่อนหน้า'}</div>${rec.bestRank ? `<div class="rk ${rec.bestRank}">${rec.bestRank}</div>` : ''}`;
+      const hr = (S.data.hardLevels || {})[id];
+      b.innerHTML = `${hr ? `<div class="hardmark" title="ผ่านโหมดยากแล้ว">🔥${hr.bestRank}</div>` : ''}<div class="id">${PLAT.levelLabel(id)}</div><div class="nm">${L.name}</div><div class="meta">${open ? (rec.cleared ? `${gemTxt} · ⏱ ${U.fmtTime(rec.bestTime)} · ${rec.bestScore || 0} แต้ม` : `${gemTxt} · ยังไม่ผ่าน`) : '🔒 ผ่านด่านก่อนหน้า'}</div>${rec.bestRank ? `<div class="rk ${rec.bestRank}">${rec.bestRank}</div>` : ''}`;
       if (open) b.addEventListener('click', () => startLevel(id));
       else b.disabled = true;
       lv.appendChild(b);
@@ -398,7 +404,8 @@ async function startLevel_(id, opts) {
   const L = PLAT.LEVELS[id], heroId = heroAvailable(S.data.hero) ? S.data.hero : 'knight';
   $('#lTitle').textContent = `${PLAT.levelLabel(id)} · ${L.name}`; $('#lSub').textContent = L.teach || ''; $('#lBar').style.width = '0%';
   show('loading');
-  const g = new PLAT.Game({ levelId: id, heroId, onEvent: onGameEvent, rush: opts.rush || null });
+  const hard = !opts.rush && !!S.data.hard && hardOpen();
+  const g = new PLAT.Game({ levelId: id, heroId, onEvent: onGameEvent, rush: opts.rush || null, hard });
   app.game = g;
   try { await g.load((d, n) => { $('#lBar').style.width = Math.round(d / n * 100) + '%'; }); }
   catch (e) { console.error(e); $('#lTitle').textContent = 'โหลดด่านไม่สำเร็จ'; $('#lSub').textContent = String(e.message || e); app.game = null; setTimeout(() => show('map'), 2200); return; }
@@ -407,7 +414,7 @@ async function startLevel_(id, opts) {
   if (opts.hp != null) { g.player.hp = Math.min(g.player.maxHp, Math.max(1, opts.hp)); }            // v118 boss rush: HP carries over
   if (app.storyBefore && !opts.rush) { try { await app.storyBefore(id); } catch (e) { console.error(e); } if (app.game !== g) return; }   // v121 story scenes
   input.clearAll(); app.acc = 0; app.last = performance.now(); show('game');
-  toast(`${PLAT.levelLabel(id)} ${L.name}`, L.teach);
+  toast(`${hard ? '🔥 NG+ · ' : ''}${PLAT.levelLabel(id)} ${L.name}`, hard ? 'โหมดยาก: ศัตรูเป็นหมึก แข็งแกร่งขึ้น บอสเรียกฝนหมึก' : L.teach);
   if (PLAT.assets.failed.length) console.warn('[platform] missing assets:', PLAT.assets.failed);
 }
 /* ENDLESS: one run per world. Loading uses the same loader / hero as the story levels. */
@@ -571,12 +578,19 @@ function finishLevel(r) {
   // hero unlocks granted by this clear
   const before = new Set(heroList().filter(heroAvailable));
   S.data.levels[id] = rec;
+  let hardFirst = false;
+  if (r.hard) {                                                          // v127 NG+ record (its own ★ on the map)
+    const H = S.data.hardLevels || (S.data.hardLevels = {}), hp = H[id] || {}; hardFirst = !hp.cleared;
+    H[id] = { cleared: true, bestRank: !hp.bestRank || RANKV[r.rank] > RANKV[hp.bestRank] ? r.rank : hp.bestRank, bestTime: hp.bestTime ? Math.min(hp.bestTime, r.frames) : r.frames };
+    if (hardFirst) gold += 60 + Math.max(0, idx) * 20;
+  }
   const unlocked = heroList().filter(h => heroAvailable(h) && !before.has(h));
   S.data.stats.kills += r.kills; S.data.stats.coins += r.coins; S.data.stats.playFrames += r.frames;
   const paid = S.addMainGold(gold);
   const MT = PLAT.meta;
   if (MT) {                                                              // v118 counters → missions / achievements
     MT.track('clear'); if (r.rank === 'S') MT.track('rankS');
+    if (r.hard) { MT.track('hardClear'); MT.best('hardCleared', PLAT.LEVEL_ORDER.filter(l => (S.data.hardLevels || {})[l]).length); }
     if (PLAT.LEVELS[id].boss && r.hits === 0 && r.deaths === 0 && !MT.invincible()) MT.track('noHitBoss');
     MT.best('levelsCleared', PLAT.LEVEL_ORDER.filter(l => S.level(l) && S.level(l).cleared).length);
     MT.best('gems', PLAT.LEVEL_ORDER.reduce((n, l) => n + ((S.level(l) || {}).gems || []).length, 0));
