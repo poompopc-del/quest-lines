@@ -194,7 +194,7 @@ class Player {
     if (this.ceil && this.vy < 0) this.vy = 0;
     const m = W.landOnMovers(L, this, prevBottom);
     this.mover = null;
-    if (m && !(this.drop > 0)) { this.onGround = true; this.vy = 0; this.mover = m; this.groundTile = { t: -1 }; }
+    if (m && !(this.drop > 0)) { this.onGround = true; this.vy = 0; this.mover = m; this.groundTile = { t: -1 }; if (m.sink) m.load = 3; }
     if (this.onGround && this.vy > 0) this.vy = 0;
     if (this.onGround && !wasGround) this.land(preVy);
     if (!this.onGround) this.airT++; else this.airT = 0;

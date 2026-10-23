@@ -82,6 +82,25 @@ const ART = PLAT.ART = {
     decor: [{ img: P + 'volcano/v59.png', s: .4, w: 1 }, { img: P + 'volcano/v70.png', s: .3, w: 2 }, { img: P + 'volcano/v71.png', s: .3, w: 2 }, { img: P + 'volcano/v73.png', s: .3, w: 2 },
       { img: P + 'volcano/v66.png', s: .3, w: 1 }, { img: P + 'volcano/v68.png', s: .35, w: .7 }, { img: P + 'volcano/v65.png', s: .3, w: .7 }, { img: P + 'volcano/v72.png', s: .3, w: .7 }],
   },
+  // v108 WORLD 4 swamp — Gothicvania Swamp by ansimuz (CC0). Its tileset has no spikes / ledges / crates,
+  // so those borrow the cemetery + church packs (same artist, same palette family).
+  swamp: {
+    layers: [
+      { img: P + 'swamp/background.png', s: 1.45, f: .02, fy: .02, y: -10, below: '#1c2a20' },
+      { img: P + 'swamp/mid-layer-01.png', s: 1.45, f: .1, fy: .06, y: 0, below: '#141f18' },
+      { img: P + 'swamp/mid-layer-02.png', s: 1.45, f: .22, fy: .12, y: 10, below: '#0e1712' },
+    ],
+    tiles: { img: P + 'swamp/tileset.png', unit: 16,
+      top: [[48, 0, 16, 16], [64, 0, 16, 16], [80, 0, 16, 16], [240, 0, 16, 16], [256, 0, 16, 16]], topL: [32, 0, 16, 16], topR: [96, 0, 16, 16],
+      fill: [[48, 16, 16, 16], [64, 16, 16, 16], [80, 16, 16, 16], [48, 32, 16, 16], [64, 32, 16, 16]], fillL: [32, 16, 16, 16], fillR: [96, 16, 16, 16], deep: [[48, 48, 16, 16], [64, 48, 16, 16]],
+      brickTop: [[144, 0, 16, 16], [160, 0, 16, 16], [176, 0, 16, 16]], brick: [[144, 16, 16, 16], [160, 16, 16, 16], [176, 16, 16, 16], [160, 32, 16, 16]],
+      oneway: [{ r: [48, 2, 16, 10] }, { r: [64, 2, 16, 10] }, { r: [80, 2, 16, 10] }], onewayL: { r: [32, 2, 16, 10] }, onewayR: { r: [96, 2, 16, 10] },
+      spike: { img: P + 'cemetery/tileset.png', r: [128, 80, 16, 16] },
+      liquidTop: P + 'swamp/water-top.png', liquid: P + 'swamp/water.png',
+      breakable: [[160, 0, 16, 16]], crumble: [[256, 16, 16, 16]] },
+    decor: [{ img: P + 'swamp/plant-1.png', s: 1.6, w: 3 }, { img: P + 'swamp/plant-2.png', s: 1.6, w: 2 }, { img: P + 'swamp/plant-3.png', s: 1.6, w: 3 },
+      { img: P + 'swamp/prop-1.png', s: 1.5, w: 1 }, { img: P + 'swamp/prop-2.png', s: 1.5, w: 1 }, { img: P + 'swamp/prop-3.png', s: 1.5, w: 1 }],
+  },
 };
 for (const k in ART) if (PLAT.THEMES[k]) PLAT.THEMES[k].art = ART[k];
 
@@ -90,6 +109,7 @@ for (const k in ART) if (PLAT.THEMES[k]) PLAT.THEMES[k].art = ART[k];
    "small" (Kirby can inhale) — everything that decides the fight — stay the
    type's own, so difficulty does not change. Types without a skin in a theme
    keep their old sprite (golden slime, every lava enemy, all bosses). */
+const MSS = PLAT.MONSTER_SHEETS || {}, MSk = (name, scale, extra) => MSS[name] ? Object.assign({ sheet: MSS[name], scale, box: null, fps: 8 }, extra || {}) : null;
 const S = PLAT.ART_SHEETS || {}, sk = (name, scale, extra) => S[name] ? Object.assign({ sheet: S[name], scale, box: null, fps: 8 }, extra || {}) : null;
 PLAT.SKINS = {
   meadow: { slime: sk('opossum', 1, { fps: 10 }), hopper: sk('frog', 1.15, { fps: 6 }) },
@@ -98,6 +118,12 @@ PLAT.SKINS = {
     cone: sk('skeletonClothed', 1, { fps: 8, states: null, afterSheet: S.skeleton }),
     bucket: sk('skeletonClothed', 1, { fps: 7, states: null, afterSheet: S.skeleton }),
     ghost: sk('spectre', .9, { fps: 6 }),
+  },
+  // v108 swamp: the Gothicvania Swamp creatures (strips in PLAT.MONSTER_SHEETS)
+  swamp: {
+    slime: MSk('spider', 1.2, { fps: 10 }),
+    zombie: MSk('thing', 1.15, { fps: 6 }),
+    ghost: MSk('wraith', 1, { fps: 8 }),
   },
   tower: {
     zombie: sk('ghoul', .82, { fps: 10 }),

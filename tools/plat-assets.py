@@ -10,7 +10,7 @@ from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public')
 dump = subprocess.run(['node', '-e', """
-for (const f of ['core','world','anim','heroes','x4-sheet','xmod','player','enemies','art-sheets','levels','art']) require('./public/js/plat/' + f + '.js');
+for (const f of ['core','world','anim','heroes','x4-sheet','xmod','player','monster-sheets','enemies','art-sheets','levels','art']) require('./public/js/plat/' + f + '.js');
 const skins = {}; for (const t in PLAT.SKINS) for (const k in PLAT.SKINS[t]) skins[t + ':' + k] = PLAT.enemyDef(k, t);
 const themes = {}; for (const t in PLAT.THEMES) themes[t] = PLAT.themeImages(PLAT.THEMES[t]);
 console.log(JSON.stringify({ heroes: PLAT.HEROES, enemies: Object.assign({}, PLAT.ENEMIES, skins), bosses: PLAT.BOSSES, proj: PLAT.PROJ, fx: PLAT.FXDEF, themes, levelThemes: Object.fromEntries(PLAT.LEVEL_ORDER.map(id => [id, PLAT.LEVELS[id].theme])) }));

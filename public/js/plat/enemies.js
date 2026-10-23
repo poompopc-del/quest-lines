@@ -24,12 +24,15 @@ const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 const row = (r, n) => range(r * 10, r * 10 + n - 1);
 const slimeSheet = (k, big) => ({ kind: 'grid', img: `enemies/slime2/${k}.png`, cols: 16, fw: big ? 84 : 75, fh: big ? 87 : 84, ax: big ? 36 : 39, by: big ? 87 : 84,
   anims: { idle: [0, 1, 2, 1], move: [0, 1, 2, 1], hop: range(3, 9), hurt: [11], dead: range(12, 15) } });
+const MS = PLAT.MONSTER_SHEETS || {};          // v108: CC0 monster strips (monster-sheets.js, loaded before this file)
 const zSheet = (img, tall) => ({ kind: 'grid', img, cols: 10, fw: tall ? 52 : 51, fh: tall ? 75 : 59, ax: 31, by: tall ? 64 : 51,
   anims: { idle: row(0, 10), move: row(1, 10), atk: row(2, 10), dead: row(3, 10), hurt: [20] } });
 
-PLAT.ENEMY_CODES = { s: 'slime', j: 'hopper', g: 'golden', m: 'magma', z: 'zombie', c: 'cone', b: 'bucket', w: 'ghost', l: 'licker', t: 'tyrant', h: 'salvador' };
+PLAT.ENEMY_CODES = { s: 'slime', j: 'hopper', g: 'golden', m: 'magma', z: 'zombie', c: 'cone', b: 'bucket', w: 'ghost', l: 'licker', t: 'tyrant', h: 'salvador',
+  // v108 CC0 monsters (Monsters Creatures Fantasy 1 + 2 by LuizMelo — js/plat/monster-sheets.js)
+  k: 'skel', q: 'goblin', n: 'shroom', e: 'eye', r: 'rat', v: 'bat', d: 'goo', x: 'mimic' };
 // ELITE versions (upper case): more HP and poise, a pink aura, and one extra trick each (see think())
-PLAT.ELITE_CODES = { Z: 'zombie', J: 'hopper', M: 'magma', W: 'ghost', L: 'licker', T: 'tyrant' };
+PLAT.ELITE_CODES = { Z: 'zombie', J: 'hopper', M: 'magma', W: 'ghost', L: 'licker', T: 'tyrant', I: 'skel', Q: 'goblin', N: 'shroom', V: 'bat', D: 'goo' };
 const E = PLAT.ENEMIES = {
   slime:  { name: 'Green Slime', sheet: slimeSheet('green'), scale: .5, box: [26, 22], hp: 2, dmg: 1, ai: 'patrol', speed: .55, coins: 1, small: true, fps: 6 },
   hopper: { name: 'Devil Slime', sheet: slimeSheet('devil', true), scale: .55, box: [30, 24], hp: 3, dmg: 1, ai: 'hopper', jumpV: 7.6, jumpX: 2.4, wait: 54, sight: 210, coins: 2, small: true, fps: 6 },
@@ -46,6 +49,15 @@ const E = PLAT.ENEMIES = {
             scale: .95, box: [36, 20], hp: 4, dmg: 1, ai: 'leaper', speed: .7, sight: 190, coins: 3, fps: 5 },
   tyrant: { name: 'Tyrant', sheet: { kind: 'grid', img: 'enemies/re/tyrant.png', cols: 14, fw: 83, fh: 58, ax: 45, by: 57, anims: { idle: [0, 1], move: [0, 1], atk: [6, 7, 8, 8], hurt: [9], dead: range(10, 13) } },
             scale: .95, box: [24, 46], hp: 7, dmg: 1, ai: 'shooter', speed: .35, sight: 300, rate: 120, coins: 5, fps: 3, heavy: true, poise: 4 },
+  // ---- v108 CC0 monsters (sheets: tools/plat-import-monsters.py) ----
+  skel:   { name: 'Skeleton Knight', sheet: MS.skel, scale: .82, box: [22, 44], hp: 5, dmg: 1, ai: 'patrol', bite: { wind: 22, recover: 32, reach: 36 }, speed: .45, chase: 1.05, sight: 190, coins: 3, fps: 9, shield: .45, poise: 2 },
+  goblin: { name: 'Goblin Bomber', sheet: MS.goblin, scale: .9, box: [20, 36], hp: 3, dmg: 1, ai: 'shooter', proj: 'gbomb', lob: true, aimAnim: 'throw', aimT: 34, speed: 1.1, sight: 260, rate: 110, coins: 3, fps: 10, small: true },
+  shroom: { name: 'Spore Mushroom', sheet: MS.shroom, scale: .85, box: [22, 34], hp: 4, dmg: 1, ai: 'shooter', proj: 'spore', lob: true, aimAnim: 'spit', aimT: 40, speed: .35, sight: 230, rate: 130, coins: 3, fps: 8, small: true, elem: 'poison' },
+  eye:    { name: 'Flying Eye', sheet: MS.eye, scale: .85, box: [26, 24], hp: 3, dmg: 1, ai: 'flyer', speed: 1, sight: 220, coins: 2, fps: 12, small: true },
+  rat:    { name: 'Plague Rat', sheet: MS.rat, scale: .85, box: [26, 14], hp: 2, dmg: 1, ai: 'patrol', bite: { wind: 14, recover: 26, reach: 22 }, speed: 1.1, chase: 2.1, sight: 170, coins: 1, fps: 14, small: true },
+  bat:    { name: 'Vampire Bat', sheet: MS.bat, scale: .7, box: [24, 20], hp: 2, dmg: 1, ai: 'flyer', speed: 1.2, sight: 230, coins: 2, fps: 14, small: true },
+  goo:    { name: 'Swamp Goo', sheet: MS.goo, scale: .7, box: [32, 18], hp: 3, dmg: 1, ai: 'leaper', speed: .5, sight: 170, coins: 2, fps: 10, small: true, elem: 'poison' },
+  mimic:  { name: 'Mimic', sheet: MS.mimic, scale: .75, box: [28, 28], hp: 7, dmg: 1, ai: 'mimic', bite: { wind: 18, recover: 30, reach: 34 }, speed: .9, chase: 1.7, sight: 220, wake: 74, coins: 12, fps: 12, poise: 3 },
   salvador: { name: 'Chainsaw Man', sheet: { kind: 'grid', img: 'enemies/re/salvador.png', cols: 7, fw: 56, fh: 72, ax: 40, by: 71, anims: { idle: [0, 1], move: [0, 1], atk: [2, 3], rev: [4, 5], dead: [6] } },
             scale: .85, box: [26, 34], hp: 6, dmg: 2, ai: 'charger', speed: .5, sight: 230, coins: 5, fps: 6, poise: 3 },
 };
@@ -206,6 +218,18 @@ class Enemy {
         this.anim.play('move');
         break;
       }
+      case 'mimic': {                                      // v108: sits as a treasure chest → wakes when you come close → chases and bites
+        if (this.st === 'idle' || this.st === 'sleep') {
+          if (this.st === 'idle') this.set('sleep');
+          this.vx = 0; this.sleeping = true; this.anim.play('closed');
+          if (p && Math.abs(p.cx - this.cx) < d.wake && Math.abs(p.feet - this.feet) < 60) { this.face(toP); this.wakeUp(); }
+          break;
+        }
+        if (this.st === 'wake') { this.vx = 0; if (this.stT === 22) this.anim.play('transform', 22, true); if (this.stT % 6 < 3) this.flash = 2; if (this.stT >= 44) { this.sleeping = false; this.set('walk'); this.cool = coolT(20); } break; }
+        this.sleeping = false;
+        d.ai = 'patrol'; this.think(p); d.ai = 'mimic';     // awake: a fast biting patrol
+        break;
+      }
       case 'leaper': {
         if (this.st === 'crouch') {
           this.vx = 0; if (this.stT % 6 < 3) this.flash = 2;
@@ -222,13 +246,17 @@ class Enemy {
       case 'shooter': {
         if (this.st === 'aim') {
           this.vx = 0; this.face(toP); if (this.stT % 8 < 4) this.flash = 1;
-          if (this.stT === 28) {
+          const fireAt = d.aimT ? Math.round(d.aimT * .7) : 28;
+          if (this.stT === fireAt) {
             const sx = this.cx + this.dir * 18, sy = this.y + 16, a = Math.atan2((p.y + p.h / 2) - sy, Math.abs(p.cx - sx));
             const base = U.clamp(a, -.5, .5), shots = this.elite ? [-.22, 0, .22] : [0];
-            for (const o of shots) g.spawnProj('fireball', sx, sy, this.dir, { vx: this.dir * Math.cos(base + o) * 3.2 * TUNE.shot, vy: Math.sin(base + o) * 3.2 * TUNE.shot });
+            if (d.lob) {                                   // v108: arcing throw that lands where the player stands (goblin bombs, spores)
+              const dx = p.cx - sx, tFl = 46;
+              for (const o of shots) g.spawnProj(d.proj, sx, sy, this.dir, { vx: dx / tFl * (1 + o), vy: -5.4 + o * 3, grav: .24 });
+            } else for (const o of shots) g.spawnProj(d.proj || 'fireball', sx, sy, this.dir, { vx: this.dir * Math.cos(base + o) * 3.2 * TUNE.shot, vy: Math.sin(base + o) * 3.2 * TUNE.shot });
             sfx().shoot();
           }
-          if (this.stT > 48) { this.set('walk'); this.release(); this.cool = d.rate; }
+          if (this.stT > (d.aimT || 48)) { this.set('walk'); this.release(); this.cool = d.rate; }
           break;
         }
         const sees = this.seesPlayer(d.sight, 140) && W.clearLine(L, this.cx, this.y + 14, p.cx, p.y + p.h / 2);
@@ -238,7 +266,7 @@ class Enemy {
           const tooClose = Math.abs(p.cx - this.cx) < 90 && Math.abs(p.feet - this.feet) < 40;
           if (tooClose && this.onGround && W.floorAhead(L, this, -this.dir) && !W.wallAhead(L, this, -this.dir)) { this.vx = -this.dir * .7; this.anim.play('move'); }
           else { this.vx = 0; this.anim.play('idle'); }
-          if (this.cool <= 0 && this.token()) { this.set('aim'); this.anim.play('atk', 48, true); }
+          if (this.cool <= 0 && this.token()) { this.set('aim'); this.anim.play(d.aimAnim && this.anim.sheet.anims[d.aimAnim] ? d.aimAnim : 'atk', d.aimT || 48, true); }
         } else { this.walkTurn(L); this.vx = this.dir * d.speed; this.anim.play('move'); }
         break;
       }
@@ -259,6 +287,10 @@ class Enemy {
       }
     }
   }
+  wakeUp() {                                             // mimic: the lid flies open
+    if (this.st === 'wake' || !this.sleeping) return;
+    this.set('wake'); this.anim.play('open', 22, true); this.sleeping = true; this.g.text(this.cx, this.y - 12, 'MIMIC!', '#ff6a8a', 50, true); sfx().heavy(); this.g.shake(2);
+  }
   // returns true if the hit counted (for hit-stop / energy)
   /* DAMAGE PROCESSING (the only place an enemy's HP / armour changes).
      Returns true if the blow counted. When it does not, this.reject says why
@@ -271,6 +303,10 @@ class Enemy {
     const g = this.g, d = this.def;
     // frontal block (charging chainsaw) — jump over it and hit its back, or wait for the crash
     if (this.blocking && o.dir && U.sign(o.dir) === -this.dir && !o.pogo) { this.reject = 'blocked'; sfx().clang(); g.burst(this.cx + this.dir * 12, this.y + 14, '#ffffff', 6, 2); g.text(this.cx, this.y - 6, 'กัน!', '#d0d8e0', 26); return false; }
+    if (d.shield && !o.pogo && !o.unblock && o.dir && U.sign(o.dir) === -this.dir && this.st !== 'bite' && this.st !== 'dizzy' && this.stunT <= 0 && Math.random() < d.shield) {
+      this.reject = 'blocked'; this.anim.play('shield', 16, true); this.stunT = 10; sfx().clang(); g.burst(this.cx + this.dir * 10, this.y + 14, '#e0e8ff', 6, 2); g.text(this.cx, this.y - 6, 'โล่!', '#d0d8e0', 26); return false;   // v108 skeleton knight: raises its shield
+    }
+    if (this.sleeping) this.wakeUp();                                    // v108 mimic: hitting the "chest" wakes it
     if (this.st === 'dizzy' || this.vulnerable || this.frozenT > 0) dmg *= 2;
     this.lastDmg = 0;
     if (this.armor > 0) {
@@ -338,11 +374,16 @@ class Enemy {
     const g = this.g, d = this.def;
     this.dead = true; this.deadT = 0; this.vx = (o && o.dir || 0) * 2; this.vy = -3; this.blocking = false; this.release();
     if (this.anim.sheet.anims.dead) this.anim.play('dead', 40, true);
+    else if (PLAT.FXDEF.puff) g.fx('puff', this.cx, this.y + this.h / 2, { scale: Math.max(.7, this.h / 40) });   // v108: swamp creatures pop
     sfx().kill(); g.burst(this.cx, this.y + this.h / 2, d.ghost ? '#c8d0ff' : '#ffffff', 14, 2.6);
     g.onEnemyKilled(this);
   }
   draw(ctx) {
     const d = this.def; if (this.inhaled) return;
+    if (this.sleeping && this.st === 'sleep' && PLAT.drawIcon && PLAT.ICON_CELL) {     // v108 mimic: looks EXACTLY like a treasure chest… except for a twitch now and then
+      const tw = this.t % 240 < 10 ? Math.sin(this.t * 1.7) * 1.5 : 0;
+      if (PLAT.drawIcon(ctx, PLAT.ICON_CELL.chest, this.cx + tw, this.feet - 13, 26)) return;
+    }
     let alpha = 1;
     if (this.dead && !this.anim.sheet.anims.dead) alpha = Math.max(0, 1 - this.deadT / 30);
     else if (this.dead && this.deadT > 34) alpha = Math.max(0, 1 - (this.deadT - 34) / 16);

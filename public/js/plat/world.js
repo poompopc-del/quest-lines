@@ -7,6 +7,7 @@
      B  breakable block  C  crumbling block       F  fake wall (secret, walk through)
      S  spring           o  coin                  G  gem (3 per level)
      H  heart            P  player start          K  checkpoint flag
+     U  poison gas vent  Y  lantern (dark levels)  (v108, js/plat/gimmicks.js)
      E  exit door        1-9 hint sign (text in level.signs)
      enemy letters: see PLAT.ENEMY_CODES (enemies.js)
    Pure logic — no DOM, so tools/plat-validate.mjs can run it in Node.
@@ -39,6 +40,8 @@ function buildLevel(spec) {
         case 'P': L.start = { x: cx, y: by }; break;
         case 'K': L.checkpoints.push({ x: cx, y: by, on: false }); break;
         case 'A': L.bossSpawn = { x: cx, y: by }; break;
+        case 'U': (L.vents || (L.vents = [])).push({ tx, ty }); break;              // v108 poison gas vent (gimmicks.js)
+        case 'Y': (L.lights || (L.lights = [])).push({ x: cx, y: ty * T + T / 2 }); break;   // v108 lantern (dark levels)
         case 'E': L.exit = { x: tx * T, y: by - T * 2, w: T, h: T * 2, open: !spec.boss }; break;
         default:
           if (ch >= '1' && ch <= '9') L.signs.push({ x: cx, y: by, text: (spec.signs || {})[ch] || '' });
@@ -49,7 +52,7 @@ function buildLevel(spec) {
   }
   (spec.movers || []).forEach((m, i) => {
     const x = m.tx * T, y = m.ty * T;
-    L.movers.push({ id: i, x, y, w: (m.w || 3) * T, h: 12, x0: x, y0: y, axis: m.axis || 'x', range: (m.range || 3) * T, speed: m.speed || 1, t: (m.phase || 0) * Math.PI * 2, dx: 0, dy: 0, prevY: y });
+    L.movers.push({ id: i, x, y, w: (m.w || 3) * T, h: 12, x0: x, y0: y, axis: m.axis || 'x', range: (m.range || 3) * T, speed: m.speed || 1, t: (m.phase || 0) * Math.PI * 2, dx: 0, dy: 0, prevY: y, sink: m.sink ? (m.sink === true ? 1.6 : m.sink) * T : 0, off: 0, load: 0 });
   });
   return L;
 }
@@ -156,6 +159,11 @@ function clearLine(L, x0, y0, x1, y1) {
 /* ------------------------------ moving platforms ------------------------------ */
 function stepMovers(L) {
   for (const m of L.movers) {
+    if (m.sink) {                                  // v108 lily pad: sinks while stood on (load), floats back up
+      m.off = m.load > 0 ? Math.min(m.sink, m.off + .32 * m.speed) : Math.max(0, m.off - .7);
+      if (m.load > 0) m.load--;
+      const ny = m.y0 + m.off; m.dx = 0; m.dy = ny - m.y; m.prevY = m.y; m.y = ny; continue;
+    }
     m.t += m.speed * 0.02;
     const off = (Math.sin(m.t) * .5 + .5) * m.range;
     const nx = m.axis === 'x' ? m.x0 + off : m.x0, ny = m.axis === 'y' ? m.y0 + off : m.y0;

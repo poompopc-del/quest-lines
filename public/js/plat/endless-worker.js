@@ -3,7 +3,7 @@
    build itself — the worker only moves the build + validation off the main thread (no frame hitch).
    init: rebuild the run up to `upTo` (the page already placed those) · next: build + validate chunk gi. */
 const V = self.location.search || '';
-importScripts(...['core', 'world', 'anim', 'heroes', 'x4-sheet', 'xmod', 'player', 'enemies', 'levels', 'items', 'endless'].map(f => f + '.js' + V));
+importScripts(...['core', 'world', 'anim', 'heroes', 'x4-sheet', 'xmod', 'player', 'monster-sheets', 'enemies', 'levels', 'items', 'endless'].map(f => f + '.js' + V));
 let gen = null;
 const ser = c => ({ gi: c.gi, inRow: c.inRow, outRow: c.outRow, tier: c.tier, tiles: c.tiles.slice(), coins: c.coins, hearts: c.hearts, springs: c.springs, movers: c.movers, spawns: c.spawns, signs: c.signs, pats: c.pats });
 onmessage = e => {

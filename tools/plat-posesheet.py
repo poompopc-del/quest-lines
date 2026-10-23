@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public')
 hid = sys.argv[1]; out = sys.argv[2] if len(sys.argv) > 2 else f'/tmp/pose_{hid}.png'
 dump = subprocess.run(['node', '-e', """
-for (const f of ['core','world','anim','heroes','x4-sheet','xmod','player','enemies','art-sheets','levels','art']) require('./public/js/plat/' + f + '.js');
+for (const f of ['core','world','anim','heroes','x4-sheet','xmod','player','monster-sheets','enemies','art-sheets','levels','art']) require('./public/js/plat/' + f + '.js');
 console.log(JSON.stringify(PLAT.HEROES[process.argv[1]]));
 """, hid], capture_output=True, text=True, cwd=os.path.join(ROOT, '..'))
 if dump.returncode: sys.exit(dump.stderr)

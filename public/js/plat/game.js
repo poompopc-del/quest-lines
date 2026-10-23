@@ -48,6 +48,8 @@ class Game {
     const A = hero.attack, S = hero.skill, D = hero.dash;
     [A.proj, A.mouthful && A.mouthful.proj, A.combo && A.combo.proj, S && S.proj, hero.float && hero.float.puff].forEach(n => n && projNames.add(n));
     (A.charge || []).forEach(c => projNames.add(c.proj));
+    for (const t of types) { const d = this.enemyDef(t); if (d && d.proj) projNames.add(d.proj); }
+    if (PLAT.FXDEF.puff) imgs.push(PLAT.FXDEF.puff.img);
     for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); }
     for (const k of ['boom', 'impact', 'spark', 'orb', 'craura', 'ground', 'kick', 'aura']) imgs.push(PLAT.FXDEF[k].img);
     (hero.preload || []).forEach(s => s && imgs.push(s));
@@ -68,6 +70,7 @@ class Game {
     this.tokens = new Set();
     this.measureEnemies();
     this.enemies = L.spawns.map(s => PLAT.makeEnemy(this, s.type, s.x, s.y, s.elite));
+    this.gim = PLAT.Gimmicks ? new PLAT.Gimmicks(this) : null; if (this.gim && !this.gim.active) this.gim = null;   // v108 world-4 level gimmicks
     this.enemyTotal = this.enemies.length;
     this.decor = [];
     if (this.runner) for (const ch of L.chunks) this.runner.spawnChunk(ch);
@@ -148,6 +151,7 @@ class Game {
     if (this.mode === 'clear') { this.stepClear(); this.stepParts(); this.updateCamera(); return; }
     p.update(this.input);
     this.playerHazards();
+    if (this.gim) this.gim.step();
     if (this.runner) this.runner.step();
     if (this.spec.boss && !this.boss && !p.dead && p.cx > (L.arena ? L.arena.x0 + 5 * T : 6 * T)) this.spawnBoss();
     // enemies far from the camera sleep (no AI / physics) — bosses and dying enemies always update
@@ -173,7 +177,7 @@ class Game {
   contacts() {
     const p = this.player; if (p.dead) return;
     for (const e of this.enemies) {
-      if (e.dead || e.inhaled || !e.def.dmg) continue;
+      if (e.dead || e.inhaled || !e.def.dmg || e.sleeping) continue;              // a sleeping mimic is just a chest
       if (e.boss && (e.st === 'intro' || e.alpha === 0)) continue;
       if (e.st === 'dizzy' || e.stunT > 0 || e.st === 'phase') continue;          // a reeling enemy cannot hurt you
       if (e.boss && (e.vulnerable || e.st === 'stagger')) continue;              // a boss's punish window (stuck pole / tired / stagger / rest) is safe to stand in
@@ -552,6 +556,7 @@ class Game {
     // a retry starts clean: no shots, warnings, effects, pending hit-stop or buffered presses from the run that ended
     this.projs = []; this.warns = []; this.tokens.clear(); this.fxs = []; this.ghosts = []; this.freeze = 0; this.held_ = null; this.chain = 0; this.chainT = 0; this.shakeT = 0; this.shakeMag = 0;
     if (this.spec.boss) { this.enemies = this.enemies.filter(e => !e.boss); this.boss = null; this.bossActive = false; this.emit('boss', null); if (this.L.exit) this.L.exit.open = false; }
+    if (this.gim) this.gim.onRespawn();
     this.mode = 'play'; this.snapCam(); this.emit('hud', this.hudState());
   }
   beginClear() {
@@ -664,11 +669,13 @@ class Game {
       if (q.line) ctx.fillRect(q.x, q.y, 10, 1.5); else ctx.fillRect(q.x - q.size / 2, q.y - q.size / 2, q.size, q.size);
     }
     ctx.globalAlpha = 1;
+    if (this.gim) this.gim.draw(ctx);
     for (const w of this.warns) { const a = (w.t % 10 < 5) ? .9 : .4; ctx.fillStyle = `rgba(255,60,60,${a})`; ctx.beginPath(); ctx.ellipse(w.x, w.y - 2, 12 + w.t / w.frames * 6, 4, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = `rgba(255,220,120,${a})`; ctx.font = '700 14px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('!', w.x, w.y - 10); }
     this.drawTexts(ctx);
     if (PLAT.debug.on) this.drawDebug(ctx);
     ctx.restore();
     if (PLAT.debug.on) this.drawDebugLog(ctx);
+    if (this.gim) this.gim.drawDark(ctx, cx, cy);
     if (th.embers) this.drawEmbers(ctx);
     if (this.flashT > 0) { ctx.fillStyle = `rgba(255,255,255,${this.flashT / 30})`; ctx.fillRect(0, 0, VW, VH); }
     if (this.cut) {
@@ -898,6 +905,15 @@ class Game {
     }
     // moving platforms
     for (const m of L.movers) {
+      if (this.theme.lily) {                       // v108 swamp: a lily pad (sinks while you stand on it)
+        const cxm = m.x + m.w / 2, wob = m.sink ? Math.sin(this.frame / 9 + m.id) * .8 : 0;
+        ctx.fillStyle = '#1e3a1a'; ctx.beginPath(); ctx.ellipse(cxm, m.y + 6 + wob, m.w / 2 + 2, 7, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = m.load ? '#6aa83a' : '#5a9a34'; ctx.beginPath(); ctx.ellipse(cxm, m.y + 4 + wob, m.w / 2, 6, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = '#8acb4a'; ctx.beginPath(); ctx.ellipse(cxm - m.w / 6, m.y + 2.5 + wob, m.w / 5, 2.2, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = '#1e3a1a'; ctx.beginPath(); ctx.moveTo(cxm, m.y + 4 + wob); ctx.lineTo(cxm + m.w / 2, m.y + wob); ctx.lineTo(cxm + m.w / 2, m.y + 8 + wob); ctx.fill();
+        if (m.sink && m.off > 4) { ctx.fillStyle = 'rgba(122,208,90,.7)'; ctx.fillRect(m.x - 2, m.y + 8 + wob, m.w + 4, 2); }
+        continue;
+      }
       ctx.fillStyle = '#3a2a1a'; ctx.fillRect(m.x, m.y + 2, m.w, m.h); ctx.fillStyle = '#c8a060'; ctx.fillRect(m.x, m.y, m.w, 4); ctx.fillStyle = '#8a6a3a'; ctx.fillRect(m.x, m.y + 4, m.w, 5);
       ctx.fillStyle = '#ffd060'; ctx.fillRect(m.x + 4, m.y + 5, 3, 3); ctx.fillRect(m.x + m.w - 7, m.y + 5, 3, 3);
     }

@@ -6,7 +6,7 @@
 // usage: node tools/plat-validate.mjs [levelId]   (npm run validate:levels)
 import { loadPlat } from './plat-vm.mjs';
 import { bfsValidate } from './plat-bfs.mjs';
-const PLAT = loadPlat(['core', 'world', 'anim', 'heroes', 'x4-sheet', 'xmod', 'player', 'enemies', 'levels', 'items']);
+const PLAT = loadPlat(['core', 'world', 'anim', 'heroes', 'x4-sheet', 'xmod', 'player', 'monster-sheets', 'enemies', 'levels', 'items']);
 const only = process.argv[2]; let bad = 0;
 for (const id of PLAT.LEVEL_ORDER) {
   if (only && id !== only) continue;

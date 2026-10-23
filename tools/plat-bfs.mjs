@@ -17,7 +17,7 @@ export function bfsValidate(PLAT, spec, opt) {
   // breakable blocks are assumed broken (any hero can break them)
   for (let i = 0; i < base.tiles.length; i++) if (base.tiles[i] === TILE.BREAK) base.tiles[i] = 0;
   const phases = base.movers.length ? 8 : 1;
-  const freeze = (L, k) => { for (const m of L.movers) { const off = (Math.sin(m.t0 + k / phases * Math.PI * 2) * .5 + .5) * m.range; m.x = m.axis === 'x' ? m.x0 + off : m.x0; m.y = m.axis === 'y' ? m.y0 + off : m.y0; m.prevY = m.y; m.dx = 0; m.dy = 0; } };
+  const freeze = (L, k) => { for (const m of L.movers) { if (m.sink) { m.x = m.x0; m.y = m.y0; m.prevY = m.y; m.dx = 0; m.dy = 0; continue; }   /* v108 lily pad: floats in place until stood on */ const off = (Math.sin(m.t0 + k / phases * Math.PI * 2) * .5 + .5) * m.range; m.x = m.axis === 'x' ? m.x0 + off : m.x0; m.y = m.axis === 'y' ? m.y0 + off : m.y0; m.prevY = m.y; m.dx = 0; m.dy = 0; } };
   base.movers.forEach(m => m.t0 = m.t);
   const hazard = p => W.tilesIn(base, { x: p.x + 2, y: p.y + 4, w: p.w - 4, h: p.h - 4 }, TILE.SPIKE).length || W.tilesIn(base, p, TILE.LIQUID).length || p.y > base.ph + 40;
   const gemsGot = new Set(); let exitOk = false, maxCol = 0;
@@ -67,7 +67,7 @@ export function bfsValidate(PLAT, spec, opt) {
     }
   }
   PLAT.skipIntro = skip;
-  if (!exitOk) errs.push('exit NOT reachable (got to column ' + maxCol + ')');
+  if (!exitOk) errs.push('exit NOT reachable (got to column ' + maxCol + ')' + (opt.dump ? '\n' + spec.map.map((r, ty) => r.split('').map((c, tx) => seen.has(`${tx},${ty + 1}`) ? (c === '.' ? '*' : c) : c).join('')).join('\n') : ''));
   const missing = base.gems.filter(g => !gemsGot.has(g.i)).map(g => `(${Math.floor(g.x / T)},${Math.floor(g.y / T)})`);
   if (missing.length) errs.push('gems NOT reachable: ' + missing.join(' '));
   return { id: spec.id, errs, nodes: seen.size, sims, maxCol };

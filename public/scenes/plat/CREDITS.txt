@@ -16,3 +16,12 @@ pasted into one row; ghost frames are mirrored so every sheet faces left like th
 Item icons (public/items/plat/icons.png, built by tools/plat-icons.py)
             16x16 Assorted RPG Icons — artwork by Shade. Public domain (CC0). Credit not required.
             https://opengameart.org/content/16x16-assorted-rpg-icons
+
+World 4 + new monsters (v108, imported by tools/plat-import-monsters.py)
+swamp/      Gothicvania Swamp — artwork by Luis Zuno (@ansimuz). Public domain (CC0). Credit not required.
+            https://opengameart.org/content/gotthicvania-swamp
+            (layers, tileset, water tiles, plants, props, spider / thing / wraith strips, enemy death puff)
+../../enemies/mcf/
+            Monsters Creatures Fantasy + Version 1.3 + Monsters Creatures Fantasy 2 — by LuizMelo. CC0. Credit not required.
+            https://luizmelo.itch.io/monsters-creatures-fantasy · https://luizmelo.itch.io/monsters-creatures-fantasy-2
+            (skeleton knight, goblin + bomb, mushroom + spore, flying eye + bolt, rat, bat, slime, mimic — mirrored to face left)

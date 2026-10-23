@@ -605,7 +605,7 @@ const ck = async (name, fn) => { try { const ok = await fn(); flow.push({ name: 
 const scr = () => ui.evaluate(() => PLAT.app.screen);
 await ck('title shows', async () => (await scr()) === 'title');
 await ui.click('#sTitle [data-go="map"]');
-await ck('map shows 9 levels', async () => (await scr()) === 'map' && (await ui.locator('#worlds .lvl').count()) === 9);
+await ck('map shows every level', async () => (await scr()) === 'map' && (await ui.locator('#worlds .lvl').count()) === await ui.evaluate(() => PLAT.LEVEL_ORDER.length));
 await ui.click('#worlds .lvl >> nth=0');
 await ui.waitForFunction(() => PLAT.app.screen === 'game', null, { timeout: 15000 });
 await ck('level 1-1 starts', async () => (await ui.evaluate(() => PLAT.app.game && PLAT.app.game.mode)) === 'play');
