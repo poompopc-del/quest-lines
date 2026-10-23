@@ -192,10 +192,10 @@ function renderDaily() {
       <div class="dc-l"><div class="dc-date">${dl.key}</div><div class="dc-world">โลก ${dl.world} · ${esc(W.name)}</div><div class="dc-mod"><em>${dl.mod.icon}</em><div><b>${dl.mod.name}</b><span>${dl.mod.desc}</span></div></div></div>
       <div class="dc-r"><div>คะแนนดีสุดวันนี้<b>${rec.best.toLocaleString()}</b></div><div>ระยะ<b>${rec.dist || 0} ม.</b></div><div>เล่นแล้ว<b>${rec.runs} รอบ</b></div></div>
     </div>
-    <div class="menu" style="width:min(420px,100%)"><button class="btn red" data-x="play">▶ เริ่มท้าทายวันนี้</button>${rec.runs ? '<button class="btn" data-x="share">📤 แชร์คะแนนให้เพื่อน</button>' : ''}</div>
+    <div class="menu" style="width:min(420px,100%)"><button class="btn red" data-x="play">▶ เริ่มท้าทายวันนี้</button><button class="btn" data-x="board">🏆 อันดับออนไลน์วันนี้</button>${rec.runs ? '<button class="btn" data-x="share">📤 แชร์คะแนนให้เพื่อน</button>' : ''}</div>
     <h3>6 วันที่ผ่านมา</h3><div class="hist">${hist.join('')}</div>
     <p class="note">ภารกิจ "เล่นท้าทายรายวัน" นับครั้งแรกของแต่ละวัน · ความสำเร็จ 📅 สม่ำเสมอ = เล่นครบ 10 วัน</p>`;
-  bindX('#dailyBox', { play: () => A().startEndless(dl.world, dl.seed, { daily: dl }), share: () => shareDaily(dl, rec) });
+  bindX('#dailyBox', { play: () => A().startEndless(dl.world, dl.seed, { daily: dl }), share: () => shareDaily(dl, rec), board: () => app.openBoard && app.openBoard('daily:' + dl.key) });
 }
 function shareDaily(dl, rec) {
   const txt = `📅 Quest Lines ท้าทายรายวัน ${dl.key}\n${dl.mod.icon} ${dl.mod.name} · โลก ${dl.world}\nคะแนน ${rec.best.toLocaleString()} · ${rec.dist} ม. — มาแข่งกัน!`;
@@ -278,15 +278,16 @@ function renderRush() {
   $('#rushBox').innerHTML = `<div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">⚔️ ล่าบอส</h2><button class="btn" data-x="back">✕ ปิด</button></div>
     <p class="sub">ท้าดวลบอสตัวไหนก็ได้เพื่อเก็บเกรด (S = ไม่โดนตีเลย · A ≤ 2 · B ≤ 5) · <b>ล่าบอสต่อเนื่อง</b> = สู้ 6 ตัวรวด เลือดไม่เต็มระหว่างด่าน (ฟื้น 30%) จับเวลารวม</p>
     <div class="rushhead"><div>เวลาดีที่สุด<b>${R.best ? fmtT(R.best) : '—'}</b></div><div>ผ่านแล้ว<b>${R.clears || 0} ครั้ง</b></div><div>เกรดรวมดีสุด<b>${R.bestGrades ? R.bestGrades.join(' ') : '—'}</b></div></div>
-    <div class="menu" style="width:min(420px,100%)"><button class="btn red" data-x="rush" ${un ? '' : 'disabled'}>${un ? '▶ เริ่มล่าบอสต่อเนื่อง (6 ตัว)' : '🔒 ล้มบอสทั้ง 6 ตัวในเนื้อเรื่องก่อน'}</button></div>
+    <div class="menu" style="width:min(420px,100%)"><button class="btn" data-x="board">🏆 อันดับออนไลน์ (ล่าบอสต่อเนื่อง)</button><button class="btn red" data-x="rush" ${un ? '' : 'disabled'}>${un ? '▶ เริ่มล่าบอสต่อเนื่อง (6 ตัว)' : '🔒 ล้มบอสทั้ง 6 ตัวในเนื้อเรื่องก่อน'}</button></div>
     <h3>บอสทั้งหมด · เหรียญเกรด</h3><div class="rrows">${rows}</div>`;
   $$('#rushBox [data-duel]').forEach(b => b.onclick = () => { PLAT.sfx.select(); A().startLevel(b.dataset.duel); });
-  bindX('#rushBox', { rush: startRush });
+  bindX('#rushBox', { rush: startRush, board: () => app.openBoard && app.openBoard('rush') });
 }
 function startRush() { app.rushRun = { i: 0, list: M.RUSH.slice(), total: 0, hits: 0, res: [], hp: null }; rushStep(); }
 function rushStep() { const R = app.rushRun; A().startLevel(R.list[R.i], { rush: true, hp: R.hp }); }
 function rushEnd(win) {
   const R = app.rushRun; app.rushRun = null; if (!R) return;
+  if (app.onRushEnd) app.onRushEnd(win, R);                // v129 online board
   battle(false);
   const m = M.d(), RR = m.rush; let nb = false;
   if (win) {

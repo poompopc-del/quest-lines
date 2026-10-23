@@ -456,3 +456,16 @@ html[data-dev=pad] .btn:focus,html[data-dev=key] .btn:focus{outline:none;filter:
 #mHard.on{background:linear-gradient(135deg,#8a2aff,#3a0a6a);border-color:#c8a0ff;color:#fff}
 #sMap.hard .panel{box-shadow:0 0 0 2px #8a4aff88,0 0 40px #6a2aff55}
 .lvl .hardmark{position:absolute;left:6px;bottom:4px;font-size:10px;font-weight:800;color:#d8b0ff;text-shadow:0 0 6px #8a4aff}
+
+/* v129 online: leaderboards + cloud save */
+#boardBox .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+#boardBox .tabs .btn.on{border-color:var(--k-gold);color:var(--k-gold)}
+.lbrows{display:flex;flex-direction:column;gap:3px;max-height:48vh;overflow:auto}
+.lbrow{display:grid;grid-template-columns:42px 1fr auto;gap:8px;align-items:center;padding:6px 10px;border-radius:8px;background:#ffffff0a;border:1px solid #ffffff12}
+.lbrow.me{border-color:var(--k-gold);background:#ffd84a18}
+.lbrow .rk{font-weight:900;color:#ffd84a;text-align:center}.lbrow:nth-child(n+4) .rk{color:#cfc6ee}
+.lbrow b{font-size:14px}.lbrow small{color:#ffffff88;margin-left:6px}.lbrow .sc{font-weight:800;color:#9af0ff}
+.lbme{margin-top:8px;padding:8px 12px;border-radius:10px;background:#ffd84a14;border:1px dashed #ffd84a66}
+#setLbName{width:150px;padding:6px 8px;border-radius:8px;border:1px solid #ffffff33;background:#0008;color:#fff;font:inherit}
+.cloudbox{margin:4px 0 10px;font-size:13px;color:#e8e0ff}.cloudbox code{font-size:20px;letter-spacing:.15em;color:#ffd84a;background:#0006;padding:2px 8px;border-radius:6px}
+.cloudbox input{width:170px;padding:6px 8px;border-radius:8px;border:1px solid #ffffff33;background:#0008;color:#fff;font:inherit;letter-spacing:.1em;text-transform:uppercase}

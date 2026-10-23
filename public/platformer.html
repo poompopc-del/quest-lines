@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/platform.css?v=42">
+<link rel="stylesheet" href="css/platform.css?v=43">
 </head>
 <body>
 <div id="stage">
@@ -82,6 +82,7 @@
   </div>
   <div class="st-btns"><button class="btn" id="stSkip">ข้าม ⏭</button><button class="btn red" id="stNext">ต่อ ▶</button></div>
 </section>
+<section class="screen" id="sBoard"><div class="panel" id="boardBox"></div></section>
 <section class="screen" id="sJournal"><div class="panel" id="journalBox"></div></section>
 <div class="st-note" id="stNote"></div>
 <section class="screen" id="sDaily"><div class="panel" id="dailyBox"></div></section>
@@ -112,7 +113,7 @@
 <section class="screen" id="sEndless">
   <div class="panel">
     <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">∞ โหมดไม่สิ้นสุด</h2>
-      <div class="row"><button class="btn" data-go="shop">🛒</button><button class="btn" data-go="heroes">🦸 <span id="eHero"></span></button><button class="btn" data-go="title">✕</button></div></div>
+      <div class="row"><button class="btn" data-go="board">🏆 อันดับ</button><button class="btn" data-go="shop">🛒</button><button class="btn" data-go="heroes">🦸 <span id="eHero"></span></button><button class="btn" data-go="title">✕</button></div></div>
     <p class="sub">ด่านสร้างใหม่ทุกครั้ง ไม่ซ้ำ และตรวจแล้วว่าผ่านได้จริงทุกช่วง · ยิ่งไกลยิ่งยาก (LV 1–10) · HP หมด = จบรอบ · เหว/ลาวา −20 HP</p>
     <div class="eworlds" id="eWorlds"></div>
   </div>
@@ -176,6 +177,10 @@
     <div class="set-row"><span>📳 สั่นเมื่อโดนตี (มือถือ/จอย)</span><div class="seg" id="setVib"><button data-v="1">เปิด</button><button data-v="0">ปิด</button></div></div>
     <h3>🤝 โหมดช่วยเหลือ (Assist)</h3>
     <div class="set-row"><span>🐢 ความเร็วเกม<br><small class="note">ช้าลง = มีเวลาตอบสนองมากขึ้น</small></span><div class="seg" id="setAsSpeed"><button data-v="1">100%</button><button data-v="0.85">85%</button><button data-v="0.7">70%</button></div></div>
+    <h3>🌐 ออนไลน์</h3>
+    <div class="set-row"><span>🏷 ชื่อในกระดานอันดับ</span><div class="row"><input id="setLbName" maxlength="16" placeholder="ผู้กล้า"><button class="btn" id="setLbSave">บันทึก</button></div></div>
+    <div class="set-row"><span>☁️ เซฟออนไลน์<br><small class="note">อัปโหลดแล้วได้รหัส 10 ตัว — ใส่รหัสนี้ในอีกเครื่องเพื่อเล่นต่อ (เก็บรหัสเป็นความลับ)</small></span><div class="row"><button class="btn" id="cloudUp">⬆ อัปโหลด</button><button class="btn" id="cloudDown">⬇ โหลดจากรหัส</button></div></div>
+    <div id="cloudBox" class="cloudbox"></div>
     <div class="set-row"><span>💗 ความแรงที่โดนตี<br><small class="note">อมตะ = ไม่เสียเลือด (ปิดการปลดล็อกความสำเร็จ)</small></span><div class="seg" id="setAsDmg"><button data-v="1">ปกติ</button><button data-v="0.5">ครึ่งเดียว</button><button data-v="0">อมตะ</button></div></div>
     <h3>จอยเกม · ตั้งปุ่ม</h3>
     <p class="keys" id="padStatus"></p>
@@ -200,28 +205,29 @@
   <div style="text-align:center"><div class="kick" id="lTitle">กำลังโหลด…</div><div class="sub" id="lSub"></div><div class="loadbar"><b id="lBar"></b></div></div>
 </section>
 
-<script src="js/plat/core.js?v=42"></script>
-<script src="js/plat/world.js?v=42"></script>
-<script src="js/plat/anim.js?v=42"></script>
-<script src="js/plat/fx-sheets.js?v=42"></script>
-<script src="js/plat/heroes.js?v=42"></script>
-<script src="js/plat/x4-sheet.js?v=42"></script>
-<script src="js/plat/xmod.js?v=42"></script>
-<script src="js/plat/player.js?v=42"></script>
-<script src="js/plat/kirby-copy.js?v=42"></script>
-<script src="js/plat/monster-sheets.js?v=42"></script>
-<script src="js/plat/enemies.js?v=42"></script>
-<script src="js/plat/art-sheets.js?v=42"></script>
-<script src="js/plat/levels.js?v=42"></script>
-<script src="js/plat/items.js?v=42"></script>
-<script src="js/plat/meta.js?v=42"></script>
-<script src="js/plat/endless.js?v=42"></script>
-<script src="js/plat/art.js?v=42"></script>
-<script src="js/plat/gimmicks.js?v=42"></script>
-<script src="js/plat/game.js?v=42"></script>
-<script src="js/plat/ui.js?v=42"></script>
-<script src="js/plat/hub.js?v=42"></script>
-<script src="js/plat/story-data.js?v=42"></script>
-<script src="js/plat/story.js?v=42"></script>
+<script src="js/plat/core.js?v=43"></script>
+<script src="js/plat/world.js?v=43"></script>
+<script src="js/plat/anim.js?v=43"></script>
+<script src="js/plat/fx-sheets.js?v=43"></script>
+<script src="js/plat/heroes.js?v=43"></script>
+<script src="js/plat/x4-sheet.js?v=43"></script>
+<script src="js/plat/xmod.js?v=43"></script>
+<script src="js/plat/player.js?v=43"></script>
+<script src="js/plat/kirby-copy.js?v=43"></script>
+<script src="js/plat/monster-sheets.js?v=43"></script>
+<script src="js/plat/enemies.js?v=43"></script>
+<script src="js/plat/art-sheets.js?v=43"></script>
+<script src="js/plat/levels.js?v=43"></script>
+<script src="js/plat/items.js?v=43"></script>
+<script src="js/plat/meta.js?v=43"></script>
+<script src="js/plat/endless.js?v=43"></script>
+<script src="js/plat/art.js?v=43"></script>
+<script src="js/plat/gimmicks.js?v=43"></script>
+<script src="js/plat/game.js?v=43"></script>
+<script src="js/plat/ui.js?v=43"></script>
+<script src="js/plat/hub.js?v=43"></script>
+<script src="js/plat/story-data.js?v=43"></script>
+<script src="js/plat/story.js?v=43"></script>
+<script src="js/plat/online.js?v=43"></script>
 </body>
 </html>

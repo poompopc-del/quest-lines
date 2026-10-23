@@ -557,3 +557,17 @@ public/
   icons/              ไอคอนแอป
 server.mjs            เซิร์ฟเวอร์ static สำหรับรันในเครื่อง
 ```
+
+## Platform Mode — online features (v129)
+
+Leaderboards (daily challenge · endless per world · boss rush) and cloud save codes run on two tiny
+Vercel functions: `api/lb.js` and `api/save.js` (storage helper `api/_store.js`).
+
+To switch them on in production (free, ~2 minutes):
+
+1. Vercel dashboard → this project → **Storage** → **Create Database** → **Upstash for Redis** (free plan) → connect it to the project.
+   This adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`) automatically.
+2. Redeploy.
+
+Until then the game shows "ยังไม่ได้เชื่อมฐานข้อมูลออนไลน์" on those screens and everything else works as before.
+Locally, `npm start` serves the same API with an in-memory store, so you can try it without any keys.
