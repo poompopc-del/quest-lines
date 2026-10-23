@@ -1,0 +1,12 @@
+Effect sprites (imported by tools/plat-import-fx.py)
+
+PVFX Foundry — by nerijs. CC0 1.0 (public domain). Credit appreciated, not required.
+  https://nerijs.itch.io/pvfx-foundry
+  wexp (warm-explosion) · zap (electric-impact) · aparry (arcane-parry) · fnova (frost-nova) · shrap (solar-shrapnel)
+  ldust (landing-dust) · smoke (smoke-puff) · heal (radiant-heal) · fcharge (focus-charge) · void (void-implosion)
+  splash (splash-crown) · acid (acid-splash) · rupture (earth-rupture)
+  Changes: frames re-laid into one row, cropped around the frame centre.
+
+Animated Fire — by BenHickling. CC0 (public domain).
+  https://opengameart.org/content/animated-fire
+  fire (fire1_64.png) — every 2nd of the 60 frames, cropped around the centre.

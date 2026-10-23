@@ -273,11 +273,14 @@ M.applyMods = g => { const p = g.player; if (!p) return; p.maxHp = M.maxHpOf(p, 
 /* ------------------------------------------------------------------ effects (hooks) */
 const newSwing = () => PLAT.newSwing();
 // a quick lightning bolt drawn as particles between two points
+// v120: lightning = a thin jagged arc + the electric-impact sprite where it lands (PVFX Foundry, CC0)
 function bolt(g, x0, y0, x1, y1) {
-  const n = Math.max(4, Math.round(Math.hypot(x1 - x0, y1 - y0) / 10));
-  for (let i = 0; i <= n; i++) { const k = i / n; g.parts.push({ x: x0 + (x1 - x0) * k + U.rnd(-5, 5), y: y0 + (y1 - y0) * k + U.rnd(-5, 5), vx: 0, vy: 0, life: 10, col: i % 2 ? '#ffffff' : '#8ae0ff', size: 3 }); }
+  const n = Math.max(3, Math.round(Math.hypot(x1 - x0, y1 - y0) / 16));
+  for (let i = 0; i <= n; i++) { const k = i / n; g.parts.push({ x: x0 + (x1 - x0) * k + U.rnd(-4, 4), y: y0 + (y1 - y0) * k + U.rnd(-4, 4), vx: 0, vy: 0, life: 7, col: i % 2 ? '#ffffff' : '#8ae0ff', size: 2 }); }
+  g.fx('zap', x1, y1, { scale: .8 });
 }
-function ring(g, x, y, r, col) { for (let i = 0; i < 22; i++) { const a = i / 22 * 6.283; g.parts.push({ x: x + Math.cos(a) * r * .3, y: y + Math.sin(a) * r * .2, vx: Math.cos(a) * r / 14, vy: Math.sin(a) * r / 26, life: 16, col, size: 4, fade: true }); } }
+// shockwaves are sprites now: frost-nova (parry wave), solar-shrapnel (counter), warm-explosion (lava armour)
+function ring(g, x, y, r, fx) { g.fx(fx || 'fnova', x, y, { scale: Math.max(.8, r / 60) }); }
 const procHit = (g, box, dmg, o) => g.hit(box, dmg, Object.assign({ id: newSwing(), from: g.player, proc: true, kb: 3, dir: 0, at: g.player.cx }, o || {}));
 function chain(g, from, n, dmg) {
   let src = from; const hit = new Set([from]);
@@ -285,7 +288,7 @@ function chain(g, from, n, dmg) {
     let best = null, bd = 170;
     for (const e of g.enemies) { if (e.dead || hit.has(e)) continue; const d = Math.hypot(e.cx - src.cx, e.y - src.y); if (d < bd) { bd = d; best = e; } }
     if (!best) break; hit.add(best); bolt(g, src.cx, src.y + src.h / 2, best.cx, best.y + best.h / 2);
-    if (g.mods.firestorm && best.burnT > 0) { procHit(g, { x: best.cx - 60, y: best.y + best.h / 2 - 50, w: 120, h: 100 }, 8, { at: best.cx }); g.fx('boom', best.cx, best.y + best.h / 2, { scale: 1.2 }); }
+    if (g.mods.firestorm && best.burnT > 0) { procHit(g, { x: best.cx - 60, y: best.y + best.h / 2 - 50, w: 120, h: 100 }, 8, { at: best.cx }); g.fx('wexp', best.cx, best.y + best.h / 2, { scale: 1.3 }); }
     best.takeHit(dmg, { id: -1, dir: 0 }); src = best;
   }
   if (hit.size > 1) sfx().clang();
@@ -308,40 +311,42 @@ M.dmgMul = (g, e, p) => {
 M.onParry = (g, p, perfect) => {
   const m = g.mods; if (!m) return;
   const wave = (r, dmg, col) => { procHit(g, { x: p.cx - r, y: p.y + p.h / 2 - r * .6, w: r * 2, h: r * 1.2 }, dmg, { kb: 6, heavy: true }); ring(g, p.cx, p.y + p.h / 2, r, col); g.shake(3); };
-  if (m.pwave) wave(70 + 15 * m.pwave, 2 + 3 * m.pwave, '#7ad0ff');
-  if (m.counterWave && perfect) { wave(110, 8, '#ffd84a'); g.text(p.cx, p.y - 24, 'สวนกลับ!', '#ffd84a', 40); }
+  if (m.pwave) wave(70 + 15 * m.pwave, 2 + 3 * m.pwave, 'fnova');
+  if (m.counterWave && perfect) { wave(110, 8, 'shrap'); g.text(p.cx, p.y - 24, 'สวนกลับ!', '#ffd84a', 40); }
   if (m.stormparry) for (const e of g.enemies) if (!e.dead && Math.hypot(e.cx - p.cx, e.y - p.y) < 200) { bolt(g, p.cx, p.y, e.cx, e.y + e.h / 2); e.takeHit(6, { id: -1, dir: 0 }); }
 };
 M.onKill = (g, e) => {
   const m = g.mods, p = g.player; if (!m || !p || p.dead) return;
-  if (m.leech) { const hv = m.leech * (m.bloodmoon && e.burnT > 0 ? 3 : 1); if (p.hp < p.maxHp) { p.heal(hv); g.text(p.cx, p.y - 18, '+' + hv, '#ff8aa8', 26); } }
-  if (m.bloodmoon && e.burnT > 0) { procHit(g, { x: e.cx - 55, y: e.y + e.h / 2 - 45, w: 110, h: 90 }, 6, { at: e.cx }); g.fx('boom', e.cx, e.y + e.h / 2, { scale: 1 }); }
+  if (m.leech) { const hv = m.leech * (m.bloodmoon && e.burnT > 0 ? 3 : 1); if (p.hp < p.maxHp) { p.heal(hv); g.text(p.cx, p.y - 18, '+' + hv, '#ff8aa8', 26); if (!(g.frame - (p._healFx || -99) < 40)) { p._healFx = g.frame; g.fx('heal', p.cx, p.y + p.h / 2, { scale: .7, follow: () => ({ x: p.cx, y: p.y + p.h / 2 }) }); } } }
+  if (m.bloodmoon && e.burnT > 0) { procHit(g, { x: e.cx - 55, y: e.y + e.h / 2 - 45, w: 110, h: 90 }, 6, { at: e.cx }); g.fx('wexp', e.cx, e.y + e.h / 2, { scale: 1.1 }); }
 };
 // the player got hurt by `src` (an enemy) — thorns / lava armour
 M.onHurt = (g, p, src) => {
   const m = g.mods; if (!m) return;
   if (m.thorns && src && src.takeHit && !src.dead) { src.takeHit(m.thorns, { id: -1, dir: U.sign(src.cx - p.cx) }); g.burst(src.cx, src.y + src.h / 2, '#8ad06a', 6, 2); }
-  if (m.lavaarmor) { procHit(g, { x: p.cx - 70, y: p.y - 30, w: 140, h: p.h + 50 }, 6, { kb: 5 }); for (let i = 0; i < 16; i++) g.burst(p.cx, p.y + p.h / 2, i % 2 ? '#ff6a1a' : '#ffd060', 1, 4); }
+  if (m.lavaarmor) { procHit(g, { x: p.cx - 70, y: p.y - 30, w: 140, h: p.h + 50 }, 6, { kb: 5 }); g.fx('wexp', p.cx, p.y + p.h / 2, { scale: 1.6 }); }
 };
 // every frame: burning enemies, fire trails
 M.step = g => {
   const m = g.mods; if (!m) return;
   for (const e of g.enemies) {
-    if (!(e.burnT > 0) || e.dead) continue;
-    e.burnT--; if (g.frame % 4 === 0) g.parts.push({ x: e.cx + U.rnd(-e.w / 2, e.w / 2), y: e.y + U.rnd(0, e.h), vx: 0, vy: -1.2, life: 16, col: g.frame % 8 ? '#ff8a2a' : '#ffd060', size: 3, fade: true });
+    if (!(e.burnT > 0) || e.dead || e.gone) { if (e.burnFx) { e.burnFx.dead = true; e.burnFx = null; } continue; }
+    e.burnT--;
+    if (!e.burnFx || e.burnFx.dead) { const sc = U.clamp(e.h / 44, .6, 1.6); e.burnFx = g.fx('fire', e.cx, e.y, { loop: true, scale: sc, alpha: .9, follow: () => ({ x: e.cx, y: e.y + e.h - 31 * .6 * sc }) }); }
+    if (e.burnT <= 0) { e.burnFx.dead = true; e.burnFx = null; }
     if (e.burnT % 30 === 0) { e.takeHit((e.burnLv || 1) + 1, { id: -1, dir: 0 }); }
   }
   const p = g.player;
   if (m.dfire && p && !p.dead) {
     const dashing = p.act && /^(dash|roll|rocket|homing|spindash|bash)$/.test(p.act.kind);
-    if (dashing && g.frame % 4 === 0 && p.onGround) (g.fires || (g.fires = [])).push({ x: p.cx, y: p.feet, t: (m.lavaarmor ? 240 : 120), id: newSwing() });
+    if (dashing && g.frame % 5 === 0 && p.onGround) { const f = { x: p.cx, y: p.feet, t: (m.lavaarmor ? 240 : 120), id: newSwing() }; f.fx = g.fxGround('fire', f.x, f.y, { loop: true, scale: .55 }); (g.fires || (g.fires = [])).push(f); }
   }
   if (g.fires && g.fires.length) {
     for (const f of g.fires) {
-      f.t--; if (g.frame % 3 === 0) g.parts.push({ x: f.x + U.rnd(-10, 10), y: f.y - 2, vx: 0, vy: U.rnd(-1.6, -.6), life: 14, col: g.frame % 6 ? '#ff6a1a' : '#ffd060', size: 4, fade: true });
+      f.t--; if (f.fx) { f.fx.alpha = Math.min(1, f.t / 30); if (f.t <= 0) f.fx.dead = true; }
       if (g.frame % 15 === 0) procHit(g, { x: f.x - 16, y: f.y - 30, w: 32, h: 30 }, (m.dfire || 1) * 2, { id: newSwing(), kb: 0 });
     }
-    g.fires = g.fires.filter(f => f.t > 0); if (g.fires.length > 60) g.fires.splice(0, g.fires.length - 60);
+    g.fires = g.fires.filter(f => f.t > 0); if (g.fires.length > 60) g.fires.splice(0, g.fires.length - 60).forEach(f => { if (f.fx) f.fx.dead = true; });
   }
 };
 

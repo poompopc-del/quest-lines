@@ -682,7 +682,7 @@ class Runner {
     e.cool = 40; e.face(-1);
     g.enemies.push(e); g.enemyTotal++; this.champ = e;
     g.text(x, y - e.h - 30, '⚠ บอสปรากฏตัว! LV ' + n, '#ff5a8a', 120, true); PLAT.sfx.roar(); g.shake(6); PLAT.haptic('boss');
-    for (let i = 0; i < 24; i++) g.burst(e.cx + U.rnd(-e.w / 2, e.w / 2), e.y + U.rnd(0, e.h), '#ff5ad8', 1, 3);
+    g.fx('void', e.cx, e.y + e.h / 2, { scale: 2.2 });                            // v120: it rises out of a rift
     g.emit('boss', { name: 'BOSS LV ' + n, th: d.name.replace('👑 ', ''), hp: e.hp, max: e.maxHp });
   }
   score(st) { return this.dist * 10 + st.kills * 50 + st.coins * 10; }

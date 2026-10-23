@@ -53,7 +53,8 @@ class Gimmicks {
       if (on && v.t % 2 === 0) for (let i = 0; i < 2; i++) g.parts.push({ x: v.x + U.rnd(-12, 12), y: v.y - U.rnd(0, VENT_H * T), vx: U.rnd(-.6, .6), vy: U.rnd(-2.6, -1.2), life: 26, col: F ? (i ? 'rgba(255,200,60,.7)' : 'rgba(255,90,30,.65)') : 'rgba(120,220,90,.55)', size: 7, grav: -.02, fade: true });
       if (on && !p.dead && U.overlap(this.ventBox(v), p)) p.hurt(1, v.x, { unblockable: true, elem: this.fire ? 'fire' : 'poison' });
       if (on) for (const e of g.enemies) if (!e.dead && !e.boss && !e.def.ghost && U.overlap(this.ventBox(v), e) && g.frame % 20 === 0) e.takeHit(1, { id: -1, dir: 0 });
-      if (v.t === v.period - VENT_ON && Math.abs(v.x - p.cx) < 360) sfx().shoot();
+      if (v.t === v.period - VENT_ON && Math.abs(v.x - p.cx) < 360) { sfx().shoot(); if (!F) g.fxGround('acid', v.x, v.y, { scale: .9 }); }     // v120 sprite effects
+      if (v.t === v.period - VENT_ON - VENT_WARN && Math.abs(v.x - p.cx) < 360) g.fxGround('smoke', v.x, v.y, { scale: .6 });
     }
     const R = this.rise;
     if (R && g.mode === 'play' && !p.dead) {
@@ -75,6 +76,7 @@ class Gimmicks {
         n.st = 'saved'; n.t = 0; this.saved++; if (PLAT.meta) PLAT.meta.track('villager'); const all = this.saved === this.npcs.length;
         sfx().checkpoint(); g.text(n.x, n.y - 58, all ? 'ช่วยครบทุกคนแล้ว! 🎉' : `ขอบคุณ! (${this.saved}/${this.npcs.length})`, '#8aff8a', 70, all);
         if (p.hp < p.maxHp) { p.heal(PLAT.HPU); g.text(p.cx, p.y - 20, '+' + PLAT.HPU + ' ❤', '#ff8aa8', 50); }
+        g.fx('heal', p.cx, p.y + p.h / 2, { follow: () => ({ x: p.cx, y: p.y + p.h / 2 }) });
         const coins = all ? 15 : 5;
         for (let i = 0; i < coins; i++) g.loose.push({ x: n.x, y: n.y - 30, vx: U.rnd(-2, 2), vy: U.rnd(-6, -2.5), kind: 'coin', t: 0 });
         for (let i = 0; i < 10; i++) g.burst(n.x + U.rnd(-12, 12), n.y - U.rnd(0, 40), '#fff6a0', 1, 1.6);
@@ -86,6 +88,7 @@ class Gimmicks {
       n.alpha = Math.max(0, 1 - Math.max(0, n.t - 90) / 50);
     }
   }
+  fireFrames() { if (this._ff === undefined) { const d = PLAT.FXDEF && PLAT.FXDEF.fire; this._ff = d && PLAT.assets.img(d.img) ? PLAT.fxSheet(d).map(q => Object.assign({}, q, { by: q.sh - 3 })) : null; } return this._ff; }   // bottom-anchored copies
   ventOn(v) { return v.t >= v.period - VENT_ON; }
   ventWarn(v) { return v.t >= v.period - VENT_ON - VENT_WARN && !this.ventOn(v); }
   ventBox(v) { return { x: v.x - 12, y: v.y - VENT_H * T, w: 24, h: VENT_H * T }; }
@@ -118,7 +121,11 @@ class Gimmicks {
       const F = this.fire;
       ctx.fillStyle = '#2a2a1a'; ctx.fillRect(v.x - 13, v.y - 6, 26, 6); ctx.fillStyle = warn || on ? (F ? '#ffb04a' : '#b8ff7a') : (F ? '#7a3a1a' : '#5a7a3a'); ctx.fillRect(v.x - 9, v.y - 5, 18, 3);
       if (warn && f % 10 < 6) { ctx.fillStyle = '#ffe36a'; ctx.font = '900 16px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('!', v.x, v.y - 12); }
-      if (on) {
+      if (on && F && this.fireFrames()) {                // v120: a column of real flames (Animated Fire, CC0)
+        const fr = this.fireFrames(), k = (v.t - (v.period - VENT_ON)) / VENT_ON, grow = Math.min(1, k * 5), fade = Math.min(1, (1 - k) * 6);
+        for (let i = 0; i < 3; i++) { const q = fr[Math.floor(f / 3 + i * 9) % fr.length], sc = (.95 - i * .15) * grow;
+          PLAT.drawFrame(ctx, q, v.x + Math.sin(f / 5 + i) * 2, v.y - i * 26 * grow, i % 2 ? -1 : 1, sc, { alpha: fade, smooth: false }); }
+      } else if (on) {
         const gr = ctx.createLinearGradient(0, v.y - VENT_H * T, 0, v.y);
         if (F) { gr.addColorStop(0, 'rgba(255,120,30,0)'); gr.addColorStop(.6, 'rgba(255,150,40,.6)'); gr.addColorStop(1, 'rgba(255,240,140,.85)'); }
         else { gr.addColorStop(0, 'rgba(120,220,90,0)'); gr.addColorStop(1, 'rgba(140,240,100,.55)'); }

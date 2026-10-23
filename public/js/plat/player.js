@@ -639,7 +639,7 @@ class Player {
               this.held += (self.chargeMul || 1) * (1 + ((g.mods && g.mods.charge) || 0)); self.vx *= .6;
               if (this.t % 12 === 0) sfx().charge();
               if (this.t % 3 === 0) g.burst(self.cx + self.face * 14, self.feet - 34, this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0', 1, .6);
-              if (lvlUp(this.held, self.chargeMul || 1)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + ((S.base + this.held * S.perFrame) / 60).toFixed(1) + ' วิ', '#ffd060', 40); sfx().gem(); }
+              if (lvlUp(this.held, self.chargeMul || 1)) { g.fx('fcharge', self.cx, self.y + self.h / 2, { scale: .9 }); g.text(self.cx, self.y - 14, 'ชาร์จ! ' + ((S.base + this.held * S.perFrame) / 60).toFixed(1) + ' วิ', '#ffd060', 40); sfx().gem(); }
               if (!g.input.isHeld('attack') || self.hurtT > 0) { this.phase = 'go'; this.dur = Math.round(S.base + this.held * S.perFrame); this.dmg = S.dmg + Math.floor(this.held / 120); self.anim.play(S.loop, null, true); this.pose = S.loop; this.canTurn = false; this.sw = newSwing(); }
               return;
             }
@@ -671,7 +671,7 @@ class Player {
                 if (front) g.parts.push({ x: self.cx + self.face * U.rnd(20, w), y: self.feet + S.y + U.rnd(-10, 10), vx: -self.face * 1.5, vy: 0, life: 12, col, size: 2, line: true });
                 else g.parts.push({ x: self.cx + U.rnd(-w / 2, w / 2), y: self.feet - 1, vx: 0, vy: U.rnd(-1.4, -.4), life: 14, col, size: 2 });
               }
-              if (lvlUp(this.held, self.chargeMul || 1)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + (front ? 'ไกล ' : 'กว้าง ') + Math.round(w) + 'px', '#ffd060', 40); sfx().gem(); }
+              if (lvlUp(this.held, self.chargeMul || 1)) { g.fx('fcharge', self.cx, self.y + self.h / 2, { scale: .9 }); g.text(self.cx, self.y - 14, 'ชาร์จ! ' + (front ? 'ไกล ' : 'กว้าง ') + Math.round(w) + 'px', '#ffd060', 40); sfx().gem(); }
               if (!g.input.isHeld(S.btn || 'skill') || self.hurtT > 0) { this.phase = 'go'; this.w = w; self.anim.play(S.go, S.goDur, true); this.pose = S.go; }
               return;
             }
@@ -920,7 +920,7 @@ class Player {
   gainUlt(n) {
     if (this.superT > 0 || !this.hero.ult) return;
     const was = this.ult >= 100; this.ult = Math.min(100, this.ult + n * (1 + ((this.g.mods && this.g.mods.ult) || 0)));
-    if (!was && this.ult >= 100) { this.g.text(this.cx, this.y - 14, 'ULT พร้อม!', '#ffd84a', 70, true); sfx().gem(); }
+    if (!was && this.ult >= 100) { this.g.text(this.cx, this.y - 14, 'ULT พร้อม!', '#ffd84a', 70, true); sfx().gem(); const me = this; this.g.fx('fcharge', this.cx, this.y + this.h / 2, { follow: () => ({ x: me.cx, y: me.y + me.h / 2 }) }); }
   }
   startUlt() {
     const h = this.hero, U_ = h.ult, g = this.g, self = this;
@@ -1046,6 +1046,7 @@ class Player {
     g.hitstop(perfect ? 10 : 6); g.shake(perfect ? 4 : 2); g.flashT = perfect ? 8 : 4; sfx().clang(); if (perfect) sfx().gem(); PLAT.haptic(perfect ? 'big' : 'hit');
     const x = this.cx + this.face * 14, y = this.y + this.h * .4;
     g.spark(x, y, perfect ? 2.2 : 1.5); g.burst(x, y, perfect ? '#ffe36a' : '#cfe8ff', perfect ? 16 : 10, 3);
+    g.fx('aparry', x, y, { scale: perfect ? 1 : .7 });                               // v120 parry burst sprite
     g.text(this.cx, this.y - 12, perfect ? 'PERFECT PARRY!' : 'ปัด!', perfect ? '#ffe36a' : '#bfe8ff', perfect ? 50 : 36, perfect);
     g.stats.parries = (g.stats.parries || 0) + 1;
     if (PLAT.meta) { PLAT.meta.track('parry'); if (perfect) PLAT.meta.track('perfectParry'); PLAT.meta.onParry(g, this, perfect); }
@@ -1113,6 +1114,7 @@ class Player {
     const id = order.find(k => PLAT.ITEMS[k].heal >= miss * .6) || order[order.length - 1], it = PLAT.ITEMS[id];
     B.take(id); const n = Math.ceil(this.maxHp * it.heal * (1 + ((g.mods && g.mods.potion) || 0))); this.heal(n); if (it.inv) this.inv = Math.max(this.inv, it.inv);
     sfx().heart(); g.text(this.cx, this.y - 10, `${it.icon} +${n} HP`, '#7aff9a', 50, true);
+    const me = this; g.fx('heal', this.cx, this.y + this.h / 2, { follow: () => ({ x: me.cx, y: me.y + me.h / 2 }) });
     for (let i = 0; i < 18; i++) g.parts.push({ x: this.cx + U.rnd(-12, 12), y: this.feet - U.rnd(0, this.h), vx: U.rnd(-.4, .4), vy: U.rnd(-2.2, -.8), life: 30, col: i % 2 ? '#7aff9a' : '#ffffff', size: 3, grav: -.02, fade: true });
     g.emit('bag', {}); return true;
   }
@@ -1123,13 +1125,14 @@ class Player {
     if (!B.count(id)) { g.text(this.cx, this.y - 8, `ไม่มี ${it.icon} (ซื้อที่ร้านค้า)`, '#ff9a9a', 40); sfx().denied(); return false; }
     B.take(id); this.itemCd = 40; g.emit('bag', {});
     if (id === 'bomb') {
-      const pd = { proc: 'bomb', col: '#2a2a3a', speed: 0, grav: .32, dmg: 2, life: 160, box: [16, 16], spin: .25, explode: { r: 80, dmg: 12 } };
+      const pd = { proc: 'bomb', col: '#2a2a3a', speed: 0, grav: .32, dmg: 2, life: 160, box: [16, 16], spin: .25, explode: { r: 80, dmg: 12, fx: 'wexp' } };
       g.spawnProj(pd, this.cx + this.face * 10, this.feet - 30, this.face, { owner: this, vx: this.face * 4.6 + this.vx * .5, vy: -6.4 }); sfx().swing();
     } else if (id === 'frost') {
       let n = 0; const x0 = g.cam.x - 20, x1 = g.cam.x + PLAT.C.VW + 20;
       for (const e of g.enemies) if (!e.dead && e.cx > x0 && e.cx < x1) { e.frozenT = e.boss ? 60 : 180; e.release && e.release(); n++; }
       for (const pr of g.projs) if (pr.enemy) pr.dead = true;
       g.flashT = 10; g.shake(3); sfx().gem(); g.text(this.cx, this.y - 14, `❄️ FREEZE ×${n}`, '#bfe8ff', 60, true);
+      g.fx('fnova', this.cx, this.y + this.h / 2, { scale: 2.2 }); for (const e of g.enemies) if (e.frozenT > 0 && !e.dead) g.fx('fnova', e.cx, e.y + e.h / 2, { scale: .8 });
     } else if (id === 'meteor') {
       const x0 = g.cam.x, x1 = g.cam.x + PLAT.C.VW, tg = g.enemies.filter(e => !e.dead && e.cx > x0 && e.cx < x1);
       for (let i = 0; i < 8; i++) {

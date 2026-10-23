@@ -59,6 +59,7 @@ class Game {
     if (PLAT.FXDEF.puff) imgs.push(PLAT.FXDEF.puff.img);
     for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); }
     for (const k of ['boom', 'impact', 'spark', 'orb', 'craura', 'ground', 'kick', 'aura']) imgs.push(PLAT.FXDEF[k].img);
+    for (const k in (PLAT.FX_SHEETS || {})) imgs.push(PLAT.FX_SHEETS[k].img);            // v120 effect sprites (small, always loaded)
     (hero.preload || []).forEach(s => s && imgs.push(s));
     const th = this.theme; [th.bg, th.wall, th.block, ...(th.decor || [])].forEach(s => s && imgs.push(s));
     if (PLAT.themeImages) imgs.push(...PLAT.themeImages(th));            // world art (art.js): layers, tileset, decor
@@ -345,7 +346,7 @@ class Game {
     if (MT) { MT.track('kill'); if (e.elite && !e.champion) MT.track('eliteKill'); if (e.champion) MT.track('champKill'); if (d.boss) MT.track('bossKill'); if (e.inhaled) MT.track('inhale'); MT.onKill(this, e); }
     if (e.champion && this.runner) this.runner.boonDue = true;                    // v118: a beaten endless boss grants a boon
     if (e.champion) {                       // v116 endless boss beaten
-      this.emit('boss', null); PLAT.haptic('boss'); this.shake(8); this.hitstop(8); sfx().roar();
+      this.emit('boss', null); PLAT.haptic('boss'); this.shake(8); this.hitstop(8); sfx().roar(); this.fx('shrap', e.cx, e.y + e.h / 2, { scale: 2 });
       this.text(e.cx, e.y - 20, e.fell ? 'บอสตกเหว!' : '👑 ปราบบอสแล้ว!', '#ffd84a', 100, true);
       const n = 25 + 10 * (e.champN || 1);
       for (let i = 0; i < n; i++) this.loose.push({ x: e.cx, y: Math.min(e.y + e.h / 2, this.L.ph - T * 3), vx: U.rnd(-3, 3), vy: U.rnd(-8, -3), kind: 'coin', t: 0 });
@@ -498,6 +499,7 @@ class Game {
     if (d.hitFx && !pr.enemy && pr.life > 0 && !pr.didFx) { this.fx(d.hitFx, pr.x, pr.y, { flip: (pr.vx || pr.dir) < 0 }); return; }   // shot stopped by a wall
     if (ex) {
       if (ex.atlasAnim) this.fx({ frames: this.heroSheet.frames(ex.atlasAnim), rate: 3, scale: 2 }, pr.x, pr.y, {});
+      else if (ex.fx && PLAT.FXDEF[ex.fx]) this.fx(ex.fx, pr.x, pr.y, { scale: ex.r ? ex.r / 34 : .8 });                // v120 sprite explosions
       else if (ex.r > 0 || pr.enemy) this.fx('boom', pr.x, pr.y, { scale: ex.r ? ex.r / 30 : .7 });
       if (ex.r > 0) {
         const area = { x: pr.x - ex.r, y: pr.y - ex.r, w: ex.r * 2, h: ex.r * 2 };
@@ -652,6 +654,8 @@ class Game {
     if (frames && frames.length) this.fxs.push(f); else f.dead = true;
     return f;
   }
+  // v120: an effect that sits ON the ground (its lowest pixel on floorY), e.g. dust, ground ruptures, fire patches
+  fxGround(name, x, floorY, o) { const d = PLAT.FXDEF[name]; if (!d) return { dead: true }; const sc = ((o && o.scale) || 1) * d.scale; return this.fx(name, x, floorY - (d.foot || 0) * sc, o); }
   stepParts() {
     for (const q of this.parts) { q.x += q.vx; q.y += q.vy; q.vy += q.grav != null ? q.grav : .1; q.life--; }
     compact(this.parts, alive);

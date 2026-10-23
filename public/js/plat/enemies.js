@@ -578,7 +578,7 @@ class Boss extends Enemy {
       case 'warp':
         this.vx = 0;
         if (this.stT < 30) this.alpha = 1 - this.stT / 30;
-        else if (this.stT === 30) { const left = p.cx > (A.x0 + A.x1) / 2; this.x = (left ? A.x0 + 40 : A.x1 - 40) - this.w / 2; this.alpha = 0; }
+        else if (this.stT === 30) { g.fx('splash', this.cx, this.y + this.h / 2, { scale: 1.3 }); const left = p.cx > (A.x0 + A.x1) / 2; this.x = (left ? A.x0 + 40 : A.x1 - 40) - this.w / 2; this.alpha = 0; g.fx('splash', this.cx, this.y + this.h / 2, { scale: 1.3 }); }
         else if (this.stT < 56) this.alpha = (this.stT - 30) / 26;
         else { this.alpha = 1; this.set(ph2 ? 'wave2' : 'wave'); }
         break;
@@ -613,7 +613,7 @@ class Boss extends Enemy {
           const hb = { x: this.dir > 0 ? this.cx : this.cx - 96, y: this.feet - 70, w: 96, h: 70 };
           if (U.overlap(hb, p)) p.hurt(2, this.cx, { elem: 'shock' });
           g.spawnProj('shock', this.cx + this.dir * 70, this.feet, this.dir, {}); g.spawnProj('shock', this.cx - this.dir * 10, this.feet, -this.dir, {});
-          g.dust(this.cx + this.dir * 60, this.feet, 12);
+          g.fxGround('rupture', this.cx + this.dir * 60, this.feet, { scale: 1.3 });
           if (fast) { for (let i = 0; i < (this.phase >= 3 ? 7 : 5); i++) { const x = i < 2 ? U.clamp(p.cx + (m.vx || 0) * (30 + i * 20), A.x0 + 16, A.x1 - 16) : U.rnd(A.x0 + 16, A.x1 - 16); g.warn(x, g.floorBelow(x, p.y), 46 + i * 9, () => g.spawnProj('rock', x, g.cam.y - 10, 0, {})); } }
         }
         if (this.stT >= 32) { this.set('stuck'); g.text(this.cx, this.y - 16, 'เสาติดพื้น! โจมตีเลย!', '#8aff8a', 50); }
@@ -624,7 +624,7 @@ class Boss extends Enemy {
         if (this.stT === 22) { const tx = this.lead(this.cx, 5, 1.1); this.leapX = tx; this.vy = -10.5; this.vx = (tx - this.cx) / 42; g.warn(tx, g.floorBelow(tx, this.y), 40); sfx().heavy(); }
         this.anim.play('smash');
         if (this.stT > 26 && this.onGround) {
-          this.vx = 0; sfx().boom(); g.shake(9); g.hitstop(3); g.dust(this.cx, this.feet, 16);
+          this.vx = 0; sfx().boom(); g.shake(9); g.hitstop(3); g.fxGround('rupture', this.cx, this.feet, { scale: 1.7 }); g.fxGround('ldust', this.cx, this.feet, { scale: 1.6 });
           g.spawnProj('shock', this.cx + 40, this.feet, 1, {}); g.spawnProj('shock', this.cx - 40, this.feet, -1, {});
           if (U.overlap({ x: this.x - 20, y: this.feet - 60, w: this.w + 40, h: 60 }, p)) p.hurt(2, this.cx, { elem: 'shock' });
           this.set('stuck'); g.text(this.cx, this.y - 16, 'ลงพื้นแรง! โจมตีเลย!', '#8aff8a', 50);
@@ -646,7 +646,7 @@ class Boss extends Enemy {
       case 'swat': {                                       // a quick upward swipe: the answer to jumping over it
         this.vx = 0; this.face(toP); this.anim.play('raise', 12);
         if (this.stT < 10) { if (this.stT % 4 < 2) this.flash = 2; break; }
-        if (this.stT === 10) { const hb = { x: this.cx - 80, y: this.y - 100, w: 160, h: 120 }; if (U.overlap(hb, p)) p.hurt(2, this.cx, { elem: 'shock' }); g.burst(this.cx, this.y - 30, '#ffd060', 14, 3); sfx().big(); g.shake(3); }
+        if (this.stT === 10) { const hb = { x: this.cx - 80, y: this.y - 100, w: 160, h: 120 }; if (U.overlap(hb, p)) p.hurt(2, this.cx, { elem: 'shock' }); g.fx('zap', this.cx, this.y - 30, { scale: 1.6 }); sfx().big(); g.shake(3); }
         if (this.stT > 28) this.set('stuck');
         break;
       }
@@ -676,7 +676,7 @@ class Boss extends Enemy {
       case 'stomp':
         if (this.stT < 18) { this.vx = 0; this.face(toP); if (this.stT % 6 < 3) this.flash = 2; break; }          // crouch = warning
         if (this.stT === 18) { this.vy = -7; const tx = this.lead(this.cx, 4); this.vx = U.clamp((tx - this.cx) / 36, -3.2, 3.2); g.warn(tx, this.groundY, 30); }
-        if ((this.stT > 26 && this.onGround) || this.stT > 140) { sfx().boom(); g.shake(7); g.spawnProj('shock', this.cx + 50, this.feet, 1, {}); g.spawnProj('shock', this.cx - 50, this.feet, -1, {}); this.vx = 0; this.set('rest'); }
+        if ((this.stT > 26 && this.onGround) || this.stT > 140) { sfx().boom(); g.shake(7); g.fxGround('rupture', this.cx, this.feet, { scale: 2 }); g.spawnProj('shock', this.cx + 50, this.feet, 1, {}); g.spawnProj('shock', this.cx - 50, this.feet, -1, {}); this.vx = 0; this.set('rest'); }
         break;
       case 'breath': {
         this.vx = 0; this.face(toP);
@@ -711,7 +711,7 @@ class Boss extends Enemy {
         if (this.stT < 34 && !this.dropFast) { this.y += Math.sin(this.stT / 5) * .4; this.x += U.clamp((this.landX - this.cx) * .12, -5, 5); break; }
         this.y += this.dropFast ? 6 : 4;
         if (this.y + this.h >= this.groundY - 1) { const p2 = g.player; if (p2 && U.overlap(this, p2)) p2.hurt(1, this.cx, { elem: 'fire' }); }
-        if (this.y + this.h >= this.groundY) { this.y = this.groundY - this.h; this.flying = false; this.dropFast = false; sfx().boom(); g.shake(6); g.dust(this.cx, this.feet, 14); this.set('tired'); g.text(this.cx, this.y - 14, 'มังกรเหนื่อย! โจมตี!', '#8aff8a', 60); }
+        if (this.y + this.h >= this.groundY) { this.y = this.groundY - this.h; this.flying = false; this.dropFast = false; sfx().boom(); g.shake(6); g.fxGround('ldust', this.cx, this.feet, { scale: 2.2 }); this.set('tired'); g.text(this.cx, this.y - 14, 'มังกรเหนื่อย! โจมตี!', '#8aff8a', 60); }
         break;
       case 'tired': this.vx = 0; this.anim.play('hurt'); this.vulnerable = true; if (this.stT > 90) this.set('move'); break;
       case 'rest': this.vx = 0; this.anim.play('idle'); if (this.stT > 40) this.set('move'); break;
@@ -751,7 +751,7 @@ class Boss extends Enemy {
         if (this.stT === 1) { g.text(this.cx, this.y - 24, 'ร่างที่สอง!!', '#c86aff', 80, true); sfx().roar(); g.shake(6); g.clearHostile(); }
         if (this.stT % 2 === 0) for (let i = 0; i < 3; i++) g.parts.push({ x: this.cx + U.rnd(-30, 30), y: this.feet - U.rnd(0, 110), vx: U.rnd(-.5, .5), vy: U.rnd(-3, -1), life: 30, col: i ? '#c86aff' : '#7aff8a', size: 4, fade: true });
         if (this.stT < 40 && this.stT % 4 < 2) this.flash = 3;
-        if (this.stT === 40) { this.form2 = true; this.anim = new PLAT.Anim(g.sheets.get(this.type + ':2'), {}); this.drawScale = d.scale2; this.cOff = 0; g.flashT = 14; sfx().boom(); g.burst(this.cx, this.y + this.h / 2, '#c86aff', 30, 4); }
+        if (this.stT === 40) { this.form2 = true; this.anim = new PLAT.Anim(g.sheets.get(this.type + ':2'), {}); this.drawScale = d.scale2; this.cOff = 0; g.flashT = 14; sfx().boom(); g.fx('void', this.cx, this.y + this.h / 2, { scale: 2.6 }); }
         this.anim.play('idle');
         if (this.stT > 70) this.set('move');
         break;
@@ -825,7 +825,7 @@ class Boss extends Enemy {
       case 'warp': {                                       // fade out → reappear BEHIND you → slash at once
         this.vx = 0;
         if (this.stT < 22) this.alpha = 1 - this.stT / 22;
-        else if (this.stT === 22) { const side = -(p.face || 1), x = U.clamp(p.cx + side * 80, A.x0 + 30, A.x1 - 30); this.x = x - this.w / 2; this.alpha = 0; this.face(U.sign(p.cx - x) || 1); for (let i = 0; i < 12; i++) g.burst(x, this.feet - U.rnd(0, 80), '#c86aff', 1, 2); }
+        else if (this.stT === 22) { const side = -(p.face || 1), x = U.clamp(p.cx + side * 80, A.x0 + 30, A.x1 - 30); this.x = x - this.w / 2; this.alpha = 0; this.face(U.sign(p.cx - x) || 1); g.fx('void', x, this.feet - 50, { scale: 1.4 }); }
         else if (this.stT < 40) this.alpha = (this.stT - 22) / 18;
         else { this.alpha = 1; this.set(fast ? 'slash2' : 'slash'); }
         break;
@@ -833,7 +833,7 @@ class Boss extends Enemy {
       case 'blink': {                                      // v117: you are too close — it vanishes and reappears on the far side, then fires
         this.vx = 0;
         if (this.stT < 14) this.alpha = 1 - this.stT / 14;
-        else if (this.stT === 14) { const x = p.cx < (A.x0 + A.x1) / 2 ? A.x1 - 50 : A.x0 + 50; this.x = x - this.w / 2; this.alpha = 0; this.face(U.sign(p.cx - x) || 1); for (let i = 0; i < 12; i++) g.burst(x, this.feet - U.rnd(0, 80), '#c86aff', 1, 2); }
+        else if (this.stT === 14) { const x = p.cx < (A.x0 + A.x1) / 2 ? A.x1 - 50 : A.x0 + 50; this.x = x - this.w / 2; this.alpha = 0; this.face(U.sign(p.cx - x) || 1); g.fx('void', x, this.feet - 50, { scale: 1.4 }); }
         else if (this.stT < 28) this.alpha = (this.stT - 14) / 14;
         else { this.alpha = 1; this.set(fast ? (this.mind.parries >= 2 ? 'rain' : 'cast') : 'bolts'); }
         break;
@@ -844,7 +844,7 @@ class Boss extends Enemy {
         if (this.stT === 24) {
           const n = Math.min(2, 3 - g.enemies.filter(e => !e.dead && !e.boss).length);
           for (let i = 0; i < n; i++) { const type = d.minions[(this.pat + i) % d.minions.length], x = U.clamp(this.cx + (i ? 90 : -90), A.x0 + 30, A.x1 - 30), fly = type === 'bat';
-            const e = PLAT.makeEnemy(g, type, x, fly ? this.feet - 90 : this.feet); e.cool = 40; g.enemies.push(e); for (let k = 0; k < 10; k++) g.burst(x, (fly ? this.feet - 100 : this.feet) - U.rnd(0, 30), '#7aff8a', 1, 2); }
+            const e = PLAT.makeEnemy(g, type, x, fly ? this.feet - 90 : this.feet); e.cool = 40; g.enemies.push(e); g.fx('void', x, (fly ? this.feet - 100 : this.feet - 30), { scale: 1.2 }); }
           sfx().big();
         }
         if (this.stT > 44) this.set('rest');
@@ -871,7 +871,7 @@ class Boss extends Enemy {
     const g = this.g, p = g.player, A = this.arena(), ph = this.phase, toP = U.sign(p.cx - this.cx) || this.dir;
     this.vulnerable = false; this.armored = false; this.rollA = this.st === 'roll' ? this.rollA : 0;
     const muzzle = () => ({ x: this.cx + this.dir * -20 * this.def.scale / 2.1, y: this.y + 4 });           // the cannon sits on the shell's back
-    const smoke = (x, y) => { for (let i = 0; i < 6; i++) g.parts.push({ x: x + U.rnd(-6, 6), y: y + U.rnd(-4, 4), vx: U.rnd(-.6, .6), vy: U.rnd(-1.6, -.4), life: 26, col: i % 2 ? '#5a6a4a' : '#8a9a7a', size: 6, fade: true }); };
+    const smoke = (x, y) => g.fx('smoke', x, y, { scale: .9 });                                              // v120 smoke sprite
     switch (this.st) {
       case 'intro': this.intro(); break;
       case 'move':
@@ -928,7 +928,7 @@ class Boss extends Enemy {
         if (this.stT % 3 === 0) g.dust(this.cx - this.dir * 20, this.feet, 1);
         if (U.overlap({ x: this.x + 6, y: this.y + 6, w: this.w - 12, h: this.h - 6 }, p) && !p.dead) p.hurt(2, this.cx, { src: this });
         if ((this.dir < 0 && this.x < A.x0 + 6) || (this.dir > 0 && this.x + this.w > A.x1 - 6) || this.wall) {
-          this.dir = -this.dir; this.bounces++; g.shake(5); sfx().clang(); g.dust(this.cx, this.feet, 8);
+          this.dir = -this.dir; this.bounces++; g.shake(5); sfx().clang(); g.fxGround('ldust', this.cx, this.feet, { scale: 1.5 });
           if (ph >= 2) for (let i = 0; i < 2; i++) { const x = U.clamp(U.rnd(A.x0 + 20, A.x1 - 20), A.x0, A.x1); g.warn(x, g.floorBelow(x, p.y), 40 + i * 8, () => g.spawnProj('rock', x, g.cam.y - 10, 0, {})); }
           if (this.bounces >= (ph >= 2 ? 3 : 2)) { this.vx = 0; this.rollA = 0; this.set('tired'); g.text(this.cx, this.y - 16, 'มึน! โจมตีเลย!', '#8aff8a', 60); }
         }
