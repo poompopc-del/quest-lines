@@ -63,6 +63,7 @@ const ACH = M.ACH = [
   { id: 'boss12', icon: '👑', name: 'นักปราบบอส', desc: 'ปราบบอส 12 ครั้ง', key: 'bossKill', need: 12, coins: 400 },
   { id: 'nohit1', icon: '🌟', name: 'ไร้รอยขีดข่วน', desc: 'ปราบบอสโดยไม่โดนตีเลย', key: 'noHitBoss', need: 1, coins: 500, title: 'ไร้รอยขีดข่วน' },
   { id: 'clear10', icon: '🗺️', name: 'นักผจญภัย', desc: 'ผ่านด่าน 10 ครั้ง', key: 'clear', need: 10, coins: 150 },
+  { id: 'copy20', icon: '🌟', name: 'นักลอกเลียน', desc: 'เคอร์บี้ได้พลังลอกเลียน 20 ครั้ง', key: 'copy', need: 20, coins: 300, title: 'นักลอกเลียน' },
   { id: 'lantern', icon: '🏮', name: 'ผู้จุดตะเกียง', desc: 'จบเนื้อเรื่อง «ห้าตะเกียงแห่งนาม»', key: 'storyEnd', need: 1, coins: 1000, title: 'ผู้จุดตะเกียง' },
   { id: 'allclear', icon: '🏆', name: 'พิชิตทุกโลก', desc: 'ผ่านทุกด่านในเนื้อเรื่อง', key: 'levelsCleared', need: (PLAT.LEVEL_ORDER || []).length || 22, best: true, coins: 1200, title: 'ผู้พิชิตทุกโลก' },
   { id: 'rankS5', icon: '🅢', name: 'มือโปร', desc: 'ได้แรงก์ S 5 ครั้ง', key: 'rankS', need: 5, coins: 250 },

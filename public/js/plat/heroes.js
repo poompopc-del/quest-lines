@@ -49,6 +49,10 @@ const PROJ = PLAT.PROJ = {
   rock:      { spr: { img: 'items/plat/props/rock.png', fw: 28, fh: 15, scale: .85, spin: .1 }, proc: 'rock', col: '#8a7a6a', speed: 0, grav: .3, dmg: 1, life: 200, box: [16, 16], enemy: true },
   // v108 monster shots (CC0 strips from Monsters Creatures Fantasy 1.3 — PLAT.MONSTER_FX)
   wbolt:     { img: 'enemies/mcf/fx/wbolt.png', fw: 30, fh: 11, n: 4, rate: 4, scale: 1.7, speed: 3.6, dmg: 1, life: 170, box: [16, 10], enemy: true, elem: 'poison', glow: '#c86aff', pixel: true },
+  // v124 Kirby copy abilities (kirby-copy.js)
+  kfire:     { img: 'fx/fire.png', fw: 30, fh: 62, n: 30, rate: 1, loopFrom: 0, scale: .62, speed: 5.4, dmg: 1, pierce: 2, life: 18, box: [20, 16], pixel: true, rotFwd: true, kb: 1.5, fade: true },
+  kice:      { img: 'fx/fnova.png', fw: 76, fh: 60, n: 13, rate: 2, scale: .42, speed: 4.6, dmg: 1, pierce: 2, life: 20, box: [20, 18], pixel: true, freeze: 120, kb: 1, fade: true },
+  kbomb:     { img: 'enemies/mcf/fx/bomb.png', fw: 54, fh: 62, n: 19, rate: 3, loopFrom: 0, scale: .5, speed: 0, dmg: 2, life: 110, box: [14, 14], kbomb: true, explode: { r: 46, dmg: 5, fx: 'wexp' } },
   gbomb:     { img: 'enemies/mcf/fx/bomb.png', fw: 54, fh: 62, n: 19, rate: 3, loopFrom: 0, scale: .5, speed: 0, dmg: 1, life: 160, box: [14, 14], enemy: true, elem: 'fire', explode: { r: 34, dmg: 1, fx: 'wexp' } },
   spore:     { img: 'enemies/mcf/fx/spore.png', fw: 20, fh: 18, n: 8, rate: 4, scale: 1, speed: 0, dmg: 1, life: 160, box: [12, 12], enemy: true, elem: 'poison', pixel: true },
   ebolt:     { img: 'enemies/mcf/fx/bolt.png', fw: 44, fh: 44, n: 8, rate: 3, scale: .55, speed: 3.4, dmg: 1, life: 120, box: [14, 14], enemy: true },
@@ -126,7 +130,7 @@ H.pip = {
 
 H.puff = {
   name: 'Kirby', th: 'เคอร์บี้ ก้อนชมพูจอมดูด', role: 'ลอยตัว · ดูดแล้วพ่น', color: '#ff8ac8',
-  desc: 'โจมตีค้าง = ดูด (ตัวใหญ่ต้องปัดก่อนถึงดูดได้ · ปัดศัตรู = ดาวหล่น (บอส 3 · ELITE 2 · ทั่วไป 1)) · อมแล้วกด = พ่นดาว / ค้าง = ดูดเพิ่ม ยิ่งอมเยอะดาวยิ่งใหญ่ · อมแล้วกดสกิล = กลืน: ดาวทุกดวงเก็บสะสม (สูงสุด 30) แล้วพ่นออกมาพร้อมอัลติ STAR STORM · ↓+โจมตี = เตะสไลด์ · กดกระโดดกลางอากาศ = ลอย 5 ครั้ง · กลางอากาศโจมตี = ตีลังกา · ↓+โจมตีกลางอากาศ = กลิ้งทิ่มลง · ↓ ค้าง = ตั้งการ์ด',
+  desc: 'โจมตีค้าง = ดูด (ตัวใหญ่ต้องปัดก่อนถึงดูดได้ · ปัดศัตรู = ดาวหล่น (บอส 3 · ELITE 2 · ทั่วไป 1)) · อมแล้วกด = พ่นดาว / ค้าง = ดูดเพิ่ม ยิ่งอมเยอะดาวยิ่งใหญ่ · อมแล้วกดสกิล = กลืน: ดาวทุกดวงเก็บสะสม (สูงสุด 30) แล้วพ่นออกมาพร้อมอัลติ STAR STORM · กลืนมอนสเตอร์บางตัว = ได้พลังลอกเลียน 🔥❄️⚔️⚡💣🪨 (โจมตี = ใช้พลัง · สกิลตอนปากว่าง = ทิ้งพลัง) · ↓+โจมตี = เตะสไลด์ · กดกระโดดกลางอากาศ = ลอย 5 ครั้ง · กลางอากาศโจมตี = ตีลังกา · ↓+โจมตีกลางอากาศ = กลิ้งทิ่มลง · ↓ ค้าง = ตั้งการ์ด',
   sprite: strip('heroes/kirby/', 34, {
     idle: { n: 10, cw: 26, ax: 13 }, walk: { n: 7, cw: 28, ax: 14 }, hurt: { n: 4, cw: 26, ax: 13 }, dead: { n: 4, cw: 36, ax: 18 },
     atk1: { n: 5, cw: 32, ax: 16 }, atk2: { n: 8, cw: 30, ax: 15 }, atk3: { n: 7, cw: 34, ax: 17 }, inhale: { n: 8, cw: 31, ax: 15 },
@@ -155,7 +159,15 @@ H.puff = {
     atk1: { a: 'atk1', f: [2, 3, 4, 4, 4, 4, 4, 4, 4, 3, 2] },
     // air attack: a double somersault (the strip's frames 4–6 are the back-view puff-up)
     atk3: { a: 'atk3', f: [0, 1, 2, 3, 0, 1, 2, 3] } },
-  mod: { drawFront(ctx, p) {                         // v100: mouthful stack counter over Kirby's head
+  mod: { drawOpts(p, o) { if (p.act && p.act.stone) o.hide = true; },          // v124 stone: only the rock is drawn
+  drawFront(ctx, p) {                         // v100: mouthful stack counter over Kirby's head
+    const cp = p.copy && PLAT.COPY && PLAT.COPY[p.copy];
+    if (cp && !p.dead) {                                // v124: the copied power — a glowing badge over the head
+      const t = p.g.frame, x = p.cx + p.face * -10, y = p.y - 2 + Math.sin(t / 9) * 1.5;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .45; ctx.fillStyle = cp.col; ctx.beginPath(); ctx.arc(x, y, 9 + Math.sin(t / 6), 0, 6.283); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.font = '13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(cp.icon, x, y + 1); ctx.restore();
+      if (t % 5 === 0) p.g.parts.push({ x: p.cx + PLAT.U.rnd(-10, 10), y: p.y + PLAT.U.rnd(0, p.h), vx: 0, vy: -.6, life: 18, col: cp.col, size: 2, fade: true });
+    }
     if (p.starBank && !p.dead && !(p.mouth && (p.mouth.n || 1) >= 2)) {       // v123: swallowed stars waiting for STAR STORM
       const t = p.g.frame, y = p.y - 14 + Math.sin(t / 10) * 1.5; ctx.save(); ctx.font = '800 10px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#2a0a1a';
       const txt = '🌟' + p.starBank; ctx.strokeText(txt, p.cx, y); ctx.fillStyle = p.starBank >= 10 ? '#ffe36a' : '#fff0a0'; ctx.fillText(txt, p.cx, y); ctx.restore();
@@ -199,7 +211,7 @@ H.puff = {
   attack: { kind: 'inhale', name: 'ดูด! (ค้าง) · อมแล้วกด = พ่นดาว · อมแล้วค้าง = ดูดเพิ่ม',
     suck: { pose: 'inhaling', range: 104, height: 44, pull: 2.6 }, holdToSuck: 10,
     mouthful: { pose: 'fspit', dur: 18, fireAt: 6, proj: 'star', y: -18 } },
-  counterInhale: true, parryStars: 3,
+  counterInhale: true, parryStars: 3, copy: true,     // v124: copy abilities (kirby-copy.js)
   moves: {
     down:    { name: 'เตะสไลด์', pose: 'atk1', dur: 22, hit: [3, 17], box: [-6, -16, 32, 16], dmg: 2, kb: 4, lunge: 5.5, slide: true },
     air:     { name: 'ตีลังกากลางอากาศ', pose: 'atk3', dur: 22, auto: false, hit: [3, 18], box: [-16, -32, 34, 34], dmg: 2, kb: 4 },

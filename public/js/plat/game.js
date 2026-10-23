@@ -57,9 +57,10 @@ class Game {
     [A.proj, A.mouthful && A.mouthful.proj, A.combo && A.combo.proj, S && S.proj, hero.float && hero.float.puff].forEach(n => n && projNames.add(n));
     (A.charge || []).forEach(c => projNames.add(c.proj));
     for (const t of types) { const d = this.enemyDef(t); if (d && d.proj) projNames.add(d.proj); (d && d.projs || []).forEach(n => projNames.add(n)); }   // v121: the Scribe borrows every keeper's shots
+    if (hero.copy) ['kfire', 'kice', 'kbomb', 'arc'].forEach(n => projNames.add(n));   // v124 Kirby copy abilities
     if (PLAT.FXDEF.puff) imgs.push(PLAT.FXDEF.puff.img);
     for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); if (p && p.spr) imgs.push(p.spr.img); }
-    for (const k of ['coin', 'gem', 'sparkle', 'spring', 'flag', 'sign', 'door', 'door-closed']) imgs.push(PROPS + k + '.png'); imgs.push('scenes/plat/town/street-lamp.png');   // v122 level props
+    for (const k of ['coin', 'gem', 'sparkle', 'spring', 'flag', 'sign', 'door', 'door-closed', 'rock']) imgs.push(PROPS + k + '.png'); imgs.push('scenes/plat/town/street-lamp.png');   // v122 level props
     for (const k of ['boom', 'impact', 'spark', 'orb', 'craura', 'ground', 'kick', 'aura']) imgs.push(PLAT.FXDEF[k].img);
     for (const k in (PLAT.FX_SHEETS || {})) imgs.push(PLAT.FX_SHEETS[k].img);            // v120 effect sprites (small, always loaded)
     (hero.preload || []).forEach(s => s && imgs.push(s));
@@ -480,6 +481,7 @@ class Game {
         const sx = Math.min(b.x, b.x - (pr.x - pr.px)), sy = Math.min(b.y, b.y - (pr.y - pr.py));
         const sweep = { x: sx, y: sy, w: b.w + Math.abs(pr.x - pr.px), h: b.h + Math.abs(pr.y - pr.py) };
         const n = this.hit(sweep, d.dmg, { id: pr.id, dir: U.sign(pr.vx) || pr.dir, kb: d.kb != null ? d.kb : 3, from: pr.owner, proj: true });
+        if (n && d.freeze) for (const e of this.enemies) if (!e.dead && U.overlap(sweep, e)) { e.frozenT = Math.max(e.frozenT || 0, e.boss ? 40 : d.freeze); e.release && e.release(); }   // v124 Kirby ICE
         if (n) { if (d.hitFx) { this.fx(d.hitFx, pr.x + U.sign(pr.vx || pr.dir) * b.w * .4, pr.y, { flip: (pr.vx || pr.dir) < 0 }); pr.didFx = true; } pr.pierce -= n; if (pr.pierce < 0) this.killProj(pr); }
       }
     }
@@ -1117,9 +1119,10 @@ class Game {
     const fr = frames[i], dir = U.sign(pr.vx) || pr.dir || 1;
     const o = { smooth: pr.scale < 1 && !d.pixel, alpha: d.fade ? Math.min(1, pr.life / 14) : 1 };
     if (d.spin) o.rot = pr.t * d.spin;
+    if (d.rotFwd) o.rot = dir > 0 ? Math.PI / 2 : -Math.PI / 2;            // v124: an upright flame sprite turned to point where it flies
     if (!d.ground && pr.enemy && d.img && d.img.includes('fireball') && (pr.vy || pr.vx)) { o.rot = Math.atan2(pr.vy, Math.abs(pr.vx)) * dir; }
     const y = (d.ground ? pr.y - fr.sh * pr.scale / 2 : pr.y) + (fr.by - fr.sh / 2) * pr.scale;   // centre any frame on the projectile
-    PLAT.drawFrame(ctx, fr, pr.x, y, d.img && d.img.includes('aqua/wave') ? -dir : dir, pr.scale, o);
+    PLAT.drawFrame(ctx, fr, pr.x, y, d.rotFwd ? 1 : d.img && d.img.includes('aqua/wave') ? -dir : dir, pr.scale, o);
   }
   drawFx(ctx, f) {
     if (f.star) { const a = Math.max(0, 1 - f.t / f.life); ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#fff'; const r = (4 + f.t * 2) * (f.s || 1), th = f.s > 1 ? 3 : 2; ctx.fillRect(f.x - r, f.y - th / 2, r * 2, th); ctx.fillRect(f.x - th / 2, f.y - r, th, r * 2); ctx.restore(); return; }

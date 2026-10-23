@@ -6,7 +6,7 @@ const APP_SHELL = ['./', './index.html', './manifest.json', './scenes/hub/cave.p
   ...MODULES.map((m) => `./js/ql2/${m}.js${V}`),
   // Platform Mode (offline copy; scripts/pages are network-first anyway)
   './platformer.html', './css/platform.css?v=38',
-  ...['core', 'world', 'anim', 'fx-sheets', 'heroes', 'x4-sheet', 'xmod', 'player', 'monster-sheets', 'enemies', 'art-sheets', 'levels', 'items', 'meta', 'endless', 'endless-worker', 'art', 'gimmicks', 'game', 'ui', 'hub', 'story-data', 'story'].map((m) => `./js/plat/${m}.js?v=38`)];
+  ...['core', 'world', 'anim', 'fx-sheets', 'heroes', 'x4-sheet', 'xmod', 'player', 'kirby-copy', 'monster-sheets', 'enemies', 'art-sheets', 'levels', 'items', 'meta', 'endless', 'endless-worker', 'art', 'gimmicks', 'game', 'ui', 'hub', 'story-data', 'story'].map((m) => `./js/plat/${m}.js?v=38`)];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)).catch(() => {}));

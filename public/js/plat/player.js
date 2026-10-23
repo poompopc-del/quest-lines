@@ -60,7 +60,7 @@ class Player {
 
   /* --------------------------------- update --------------------------------- */
   update(inp) {
-    const h = this.hero, g = this.g; this.t++;
+    const h = this.hero, g = this.g; this.t++; if (this.copyTick) this.copyTick();
     if (this.inv > 0) this.inv--; if (this.cd.dash > 0) this.cd.dash--; if (this.cd.shot > 0) this.cd.shot--;
     if (this.comboWin > 0 && --this.comboWin === 0) this.combo = 0;
     if (this.streakT > 0 && --this.streakT === 0) this.streak = 0;
@@ -335,6 +335,7 @@ class Player {
     const h = this.hero, A = h.attack, g = this.g;
     if (this.mouth && A.mouthful) return A.kind === 'inhale' ? this.startSpitHold(A) : this.shoot(A.mouthful, { mouth: true });
     if (this.floating && h.float.puff) { this.floating = false; this.airJumps = 0; g.spawnProj(h.float.puff, this.cx + this.face * 14, this.feet - 16, this.face, { owner: this }); sfx().shoot(); return; }
+    if (this.copy && this.startCopy) { if (this.act) this.endAct(); return this.startCopy(inp); }   // v124 Kirby copy ability
     const M = h.moves || {}, run = this.onGround && Math.abs(this.vx) > C.RUN * (h.speed || 1) * .8;
     let mv = null;
     if (!this.onGround && inp.isHeld('down') && M.downAir) mv = M.downAir;
@@ -557,7 +558,7 @@ class Player {
         const got = g.inhale(self, S);
         if (got) {
           const n = (self.mouth ? self.mouth.n || 1 : 0) + (got.n || 1);
-          self.mouth = Object.assign({}, got, { n }); sfx().heart(); self.sq = { x: 1.2, y: .88 };
+          self.mouth = Object.assign({}, got, { n, types: ((self.mouth && self.mouth.types) || []).concat(got.type ? [got.type] : []) }); sfx().heart(); self.sq = { x: 1.2, y: .88 };
           g.text(self.cx, self.y - 8, n > 1 ? 'อม! ×' + n : 'อม!', '#ff9ad8', 40, n >= 5);
           if (btn !== 'attack') { self.endAct(); return; }                      // J: keep hoovering while it is held
         }
@@ -578,11 +579,13 @@ class Player {
     else if (h.skills && inp.isHeld('down') && h.skills.down) S = h.skills.down;
     else if (S.air && !this.onGround) S = S.air;
     if (this.mouth) {                                  // v123 Kirby: swallowing keeps the stars — they all come out in STAR STORM
-      const n = this.mouth.n || 1; this.mouth = null; this.en = Math.min(100, this.en + 30);
+      const n = this.mouth.n || 1, power = PLAT.copyOf && this.hero.copy ? PLAT.copyOf(this.mouth.types) : null; this.mouth = null; this.en = Math.min(100, this.en + 30);
+      if (power) this.gainCopy(power);
       this.starBank = Math.min(STAR_BANK_MAX, (this.starBank || 0) + n);
       g.text(this.cx, this.y - 6, `กลืน! 🌟${this.starBank} · +30 พลัง`, '#ffb0e0', 60, n >= 3); sfx().heart();
       g.fx('sparkle', this.cx, this.y + 6, { scale: 1.2 }); return;
     }
+    if (this.copy && this.dropCopy) { this.dropCopy(); return; }   // v124: SKILL with an empty mouth throws the power away
     this.useSkill(S, inp);
   }
   // free normal moves share the skill machinery (cost 0) — see heroes.js moves{}
@@ -1104,7 +1107,7 @@ class Player {
     return 'hit';
   }
   die() {
-    if (this.dead) return; this.dead = true; this.deadT = 0; if (this.act) this.endAct(); this.hurtT = 0; this.vy = -6; this.vx = -this.face * 1.2;
+    if (this.dead) return; this.dead = true; this.deadT = 0; if (this.act) this.endAct(); this.copy = null; this.hurtT = 0; this.vy = -6; this.vx = -this.face * 1.2;
     // a charge / held move must not survive death (X kept flashing his charge palette while dying)
     this.charge = 0; this.holdS = null; this.holdA = null; this.queued = false; this.pend = null; this.dashBuf = 0; this.skillBuf = 0;
     sfx().die(); this.anim.play('dead', null, true);
