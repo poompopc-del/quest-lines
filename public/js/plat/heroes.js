@@ -50,7 +50,7 @@ const PROJ = PLAT.PROJ = {
   // v108 monster shots (CC0 strips from Monsters Creatures Fantasy 1.3 — PLAT.MONSTER_FX)
   wbolt:     { img: 'enemies/mcf/fx/wbolt.png', fw: 30, fh: 11, n: 4, rate: 4, scale: 1.7, speed: 3.6, dmg: 1, life: 170, box: [16, 10], enemy: true, elem: 'poison', glow: '#c86aff', pixel: true },
   // v124 Kirby copy abilities (kirby-copy.js)
-  kfire:     { img: 'fx/fire.png', fw: 30, fh: 62, n: 30, rate: 1, loopFrom: 0, scale: .62, speed: 5.4, dmg: 1, pierce: 2, life: 18, box: [20, 16], pixel: true, rotFwd: true, kb: 1.5, fade: true },
+  kfire:     { img: 'fx/fire.png', fw: 30, fh: 62, n: 30, rate: 1, loopFrom: 0, scale: .62, speed: 5.4, dmg: 1, pierce: 2, life: 18, box: [20, 16], pixel: true, rotFwd: true, kb: 1.5, fade: true, hitFx: 'ember' },
   kice:      { img: 'fx/fnova.png', fw: 76, fh: 60, n: 13, rate: 2, scale: .42, speed: 4.6, dmg: 1, pierce: 2, life: 20, box: [20, 18], pixel: true, freeze: 120, kb: 1, fade: true },
   kbomb:     { img: 'enemies/mcf/fx/bomb.png', fw: 54, fh: 62, n: 19, rate: 3, loopFrom: 0, scale: .5, speed: 0, dmg: 2, life: 110, box: [14, 14], kbomb: true, explode: { r: 46, dmg: 5, fx: 'wexp' } },
   gbomb:     { img: 'enemies/mcf/fx/bomb.png', fw: 54, fh: 62, n: 19, rate: 3, loopFrom: 0, scale: .5, speed: 0, dmg: 1, life: 160, box: [14, 14], enemy: true, elem: 'fire', explode: { r: 34, dmg: 1, fx: 'wexp' } },

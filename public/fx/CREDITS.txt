@@ -5,6 +5,8 @@ PVFX Foundry — by nerijs. CC0 1.0 (public domain). Credit appreciated, not req
   wexp (warm-explosion) · zap (electric-impact) · aparry (arcane-parry) · fnova (frost-nova) · shrap (solar-shrapnel)
   ldust (landing-dust) · smoke (smoke-puff) · heal (radiant-heal) · fcharge (focus-charge) · void (void-implosion)
   splash (splash-crown) · acid (acid-splash) · rupture (earth-rupture)
+  v128: crescent (crescent-slash) · ember (ember-jet) · foldstep · mass (mass-release) · rift (rift-portal)
+        resonant (resonant-break) · bloom (spectral-bloom) · tether (tether-catch)
   Changes: frames re-laid into one row, cropped around the frame centre.
 
 Animated Fire — by BenHickling. CC0 (public domain).

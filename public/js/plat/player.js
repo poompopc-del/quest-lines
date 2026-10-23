@@ -495,6 +495,7 @@ class Player {
     const h = this.hero, D = D0 || h.dash, g = this.g, self = this;
     if (!D) return;
     if (!D0 && h.mod && h.mod.dash && h.mod.dash(this, D)) return;
+    if (PLAT.FXDEF.foldstep && (!this.cd || !(this.cd.dash > 0))) g.fx('foldstep', this.cx - this.face * 8, this.y + this.h / 2, { flip: this.face > 0, scale: .9 });   // v128
     if (D.kind === 'homing') return this.startHoming(D);
     if (D.kind === 'rocket') {
       if (this.rocketUsed) return; this.rocketUsed = true;
@@ -557,6 +558,7 @@ class Player {
       update() { this.t++; if (this.t % 30 === 0) sfx().inhale();
         const got = g.inhale(self, S);
         if (got) {
+          if (PLAT.FXDEF.tether) g.fx('tether', self.cx + self.face * 14, self.feet - 16, { flip: self.face < 0, scale: .8 });
           const n = (self.mouth ? self.mouth.n || 1 : 0) + (got.n || 1);
           self.mouth = Object.assign({}, got, { n, types: ((self.mouth && self.mouth.types) || []).concat(got.type ? [got.type] : []) }); sfx().heart(); self.sq = { x: 1.2, y: .88 };
           g.text(self.cx, self.y - 8, n > 1 ? 'อม! ×' + n : 'อม!', '#ff9ad8', 40, n >= 5);
@@ -939,6 +941,7 @@ class Player {
     this.inv = Math.max(this.inv, U_.inv || 70); this.floating = false;
     if (h.mod && h.mod.ult && h.mod.ult(this)) return;
     g.ultCut(this, U_.name);
+    if (PLAT.FXDEF.mass) g.fxGround('mass', this.cx, this.feet, { scale: 1.2 });   // v128 ULT burst
     switch (U_.kind) {
       case 'arcs': {                                   // Knight: three huge crescents (up · straight · down)
         this.anim.play(U_.pose, U_.dur, true); const ang = [-.22, 0, .22];

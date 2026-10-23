@@ -1313,6 +1313,7 @@ class Boss extends Enemy {
       if (this.flying) { this.passes = 0; this.set('land'); this.dropFast = true; }
       else this.set('stagger');
       this.g.text(this.cx, this.y - 16, 'เสียหลัก! ตีแรง ×2', '#8aff8a', 60, true); sfx().heavy(); this.g.shake(4);
+      if (PLAT.FXDEF.resonant) this.g.fx('resonant', this.cx, this.y + this.h / 2, { scale: 1.4 });
     }
   }
   kill(o) {

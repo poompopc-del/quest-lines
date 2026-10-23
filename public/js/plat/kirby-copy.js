@@ -32,7 +32,7 @@ P.gainCopy = function (id) {
   const c = COPY[id]; if (!c) return;
   const had = this.copy; this.copy = id; this.copyCd = 0; this.swordN = 0;
   this.g.ultCut(this, `${c.icon} ${c.name} · ${c.th}`);
-  this.g.fx('sparkle', this.cx, this.y + 10, { scale: 2 }); sfx().gem(); this.sq = { x: 1.25, y: .8 };
+  this.g.fx('bloom', this.cx, this.y + 10, { scale: 1.3 }); sfx().gem(); this.sq = { x: 1.25, y: .8 };
   if (PLAT.meta) PLAT.meta.track('copy');
   if (!had) this.g.text(this.cx, this.y - 30, 'สกิล (ตอนปากว่าง) = ทิ้งพลัง', '#ffe0f0', 90);
 };

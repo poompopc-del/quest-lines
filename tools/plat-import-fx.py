@@ -31,6 +31,15 @@ PVFX = {
     'splash':  ('splash-crown', 1.0, 1),      # aqua spirit warps, water
     'acid':    ('acid-splash', 1.0, 1),       # poison vents erupting
     'rupture': ('earth-rupture', 1.2, 1),     # ground pounds (gargantuar, dragon stomp, snail)
+    # v128 hero moves
+    'crescent': ('crescent-slash', 1.1, 1),   # combo finishers
+    'ember':   ('ember-jet', .8, 1),          # Kirby fire breath hits
+    'foldstep': ('foldstep', .7, 1),          # every dash
+    'mass':    ('mass-release', 1.4, 2),      # ULT activation (ground burst)
+    'rift':    ('rift-portal', .9, 1),        # level start / checkpoint respawn
+    'resonant': ('resonant-break', 1.3, 2),   # boss poise break (stagger)
+    'bloom':   ('spectral-bloom', 1.0, 1),    # boon taken, Kirby copies a power
+    'tether':  ('tether-catch', .7, 2),       # Kirby swallows something
 }
 def union(frames):
     x0 = y0 = 10 ** 9; x1 = y1 = -1

@@ -108,6 +108,7 @@ class Game {
     if (this.mode !== 'boon') return; PLAT.meta.pickBoon(this, id); this.mode = 'play'; this.boonChoices = null;
     const p = this.player, b = PLAT.meta.BOONS[id]; sfx().gem(); this.text(p.cx, p.y - 30, `${b.icon} ${b.name}${this.boons[id] > 1 ? ' Lv' + this.boons[id] : ''}`, b.col || '#ffd84a', 80, true);
     for (let i = 0; i < 24; i++) this.burst(p.cx, p.y + p.h / 2, b.col || '#ffd84a', 1, 3);
+    this.fx('bloom', p.cx, p.y + p.h / 2, { scale: 1.2 });
     this.emit('hud', this.hudState());
   }
   /* ENDLESS: a new run in place (same loaded assets, new seed) — Game Over → "play again" is instant */
@@ -300,6 +301,7 @@ class Game {
     if (n) {
       const heavy = o.heavy || dmg >= 3, stop = o.multi ? 1 : o.pogo ? 2 : heavy ? 5 : dmg >= 2 ? 3 : 2;
       this.hitstop(stop + (o.finisher ? 1 : 0) + (kills ? 1 : 0));
+      if (o.finisher && PLAT.FXDEF.crescent) this.fx('crescent', cxs, cys, { flip: (o.dir || 1) < 0, scale: 1.1 });   // v128 combo finisher slash
       if (heavy) sfx().heavy(); else sfx().hit();
       if (o.from === this.player) PLAT.haptic(heavy ? 'big' : 'hit');
       if (o.shake) this.shake(o.shake); else if (heavy) this.shake(2);
@@ -603,6 +605,7 @@ class Game {
     if (this.spec.boss) { this.enemies = this.enemies.filter(e => !e.boss); this.boss = null; this.bossActive = false; this.emit('boss', null); if (this.L.exit) this.L.exit.open = false; }
     if (this.gim) this.gim.onRespawn();
     this.mode = 'play'; this.snapCam(); this.emit('hud', this.hudState());
+    if (PLAT.FXDEF.rift) this.fx('rift', p.cx, p.y + p.h / 2, { scale: 1 });   // v128 back through a portal
   }
   beginClear() {
     if (this.mode !== 'play') return;
