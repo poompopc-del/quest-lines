@@ -398,7 +398,18 @@ const results = await page.evaluate(async (filter) => {
     const { g, p, e } = await setup(hid, 'zombie', 60, 1, { hp: 99 }); p.inv = 0; e.def = Object.assign({}, e.def, { small: false });
     press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e });
     let counter = false; step(g, 4); press('attack'); step(g, 70, () => { shield(p); if (p.act && p.act.kind === 'counter') counter = true; }); rel('attack'); step(g, 5);
-    return { ok: !counter && e.inhaled && p.mouth && p.mouth.n === 2, detail: `counter ${counter} inhaled ${!!e.inhaled} mouth ${p.mouth && p.mouth.n}` };
+    return { ok: !counter && e.inhaled && p.mouth && p.mouth.n >= 2, detail: `counter ${counter} inhaled ${!!e.inhaled} mouth ${p.mouth && p.mouth.n}` };   // v116: + the parry's star
+  });
+  // v116: holding a CHARGE turns the hero to the direction pressed (the release goes that way)
+  for (const [hid, btn] of [['luffy', 'skill'], ['x', 'attack'], ['shovel', 'skill']]) await t(`v116 charging turns with the direction pressed · ${hid} ${btn}`, async () => {
+    const { g, p } = await setup(hid, null, 0, 1); press(btn); step(g, 50, () => shield(p));
+    const charging = p.charging(); press('left'); step(g, 6, () => shield(p)); const face = p.face; rel('left'); rel(btn); step(g, 40, () => shield(p));
+    return { ok: charging && face === -1, detail: `charging ${charging} face ${face}` };
+  });
+  await t('v116 a parried NORMAL enemy drops a star for Kirby (bosses 3, elites 2) · puff', async () => {
+    const { g, p, e } = await setup('puff', 'zombie', 60, 1, { hp: 99 }); p.inv = 0;
+    press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e });
+    return { ok: g.mstars.length === 1, detail: `stars ${g.mstars.length}` };
   });
   await t('a big enemy cannot be inhaled without a parry · puff', async () => {
     const { g, p, e } = await setup('puff', 'zombie', 60, 1, { hp: 99 }); p.inv = 0; e.def = Object.assign({}, e.def, { small: false });

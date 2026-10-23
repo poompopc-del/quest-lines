@@ -347,6 +347,7 @@ class Enemy {
       return true;
     }
     this.hp -= dmg; this.flash = 8; this.lastDmg = dmg;
+    if (this.champion) g.bossHit(this);                                 // v116 endless boss bar
     g.text(this.cx, this.y - 4, String(dmg), dmg >= 4 ? '#ffd84a' : '#ffffff', 32);
     if (this.hp <= 0) { this.kill(o); return true; }
     this.poise -= dmg;
@@ -427,7 +428,7 @@ class Enemy {
     if (this.st === 'dizzy') this.g.drawStars(ctx, this.cx, this.y - 6, this.t);
     // wind-up warning above the head
     if (!this.dead && TELE[this.st] && this.st !== 'charge') { ctx.font = '800 14px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000a'; ctx.strokeText('!', this.cx, this.y - 8); ctx.fillStyle = this.t % 8 < 4 ? '#ff4a4a' : '#ffd84a'; ctx.fillText('!', this.cx, this.y - 8); }
-    if (this.elite && !this.dead) { ctx.font = '800 10px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ff8ae8'; ctx.fillText('★ ELITE', this.cx, this.y - (TELE[this.st] ? 22 : 8)); }
+    if (this.elite && !this.dead) { ctx.font = '800 10px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = this.champion ? '#ffd84a' : '#ff8ae8'; ctx.fillText(this.champion ? '👑 BOSS LV ' + this.champN : '★ ELITE', this.cx, this.y - (TELE[this.st] ? 22 : 8)); }
     if (this.armor > 0 && d.armor && !this.dead) { const w = 22, f = this.armor / d.armor; ctx.fillStyle = '#0008'; ctx.fillRect(this.cx - w / 2, this.y - 8, w, 3); ctx.fillStyle = '#c8d0e0'; ctx.fillRect(this.cx - w / 2, this.y - 8, w * f, 3); }
   }
 }

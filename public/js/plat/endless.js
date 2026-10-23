@@ -65,6 +65,7 @@ const WORLDS = PLAT.ENDLESS_WORLDS = {
          { t: 'ghost', w: 1.4, d: .2, fly: true }, { t: 'bat', w: 1.2, d: .35, fly: true }, { t: 'mimic', w: .7, d: .4, wide: true }, { t: 'goo', w: .8, d: .55, elite: true }, { t: 'shroom', w: .6, d: .65, elite: true, wide: true }],
        pat: { flat: 2, hill: 2.2, steps: 1.4, gap: 1.6, lily: 3.2, ledges: 1.8, tomb: 1.6, spring: .7, crumble: [1.3, .2], arena: [1.4, .2] } },
 };
+const CHAMP_FIRST = 180, CHAMP_EVERY = 320;             // v116 endless boss: first at 180 m, then 320 m after each one is beaten
 const enemyTypes = world => [...new Set(WORLDS[world].pool.map(p => p.t))];
 
 /* ------------------------------------------------------------------ chunk */
@@ -572,6 +573,7 @@ class Runner {
     placeChunk(L, gen.start(), 0);
     for (let k = 1; k < WIN; k++) placeChunk(L, gen.next(k), k);
     this.nextGi = WIN; this.startX = L.start.x; this.maxX = L.start.x; this.dist = 0; this.tier = 1;
+    this.champ = null; this.champN = 0; this.nextChamp = CHAMP_FIRST; g.emit('boss', null);
     this.startWorker();
     this.request(this.nextGi);
     return L;
@@ -624,6 +626,50 @@ class Runner {
     if (p.cx > this.maxX) this.maxX = p.cx;
     this.dist = Math.max(0, Math.floor((this.maxX - this.startX) / T));
     const cur = L.chunks.find(c => (c.gi + 1) * CW * T > p.cx); this.tier = cur && cur.tier || this.tier;
+    this.stepChampion();
+  }
+  /* v116 ENDLESS BOSSES: every so often one of this world's own enemies comes back as a giant CHAMPION —
+     ×1.7 size, lots of HP (a boss bar), heavier hits, faster, it does not flinch until its poise breaks, it hunts you
+     (never left behind) and every new one is stronger. Beating it: a coin fountain + loot. */
+  stepChampion() {
+    const g = this.g, p = g.player, L = g.L;
+    const c = this.champ;
+    if (c) {
+      if (c.dead || c.gone) { this.champ = null; this.nextChamp = this.dist + CHAMP_EVERY; return; }
+      if (c.cx < p.cx - 13 * T && !p.dead) {                       // left behind → it catches up (lands just behind you)
+        const x = p.cx - 7 * T, fl = g.floorBelow(x, p.y - 4 * T);
+        if (fl < L.ph && !W.tilesIn(L, { x: x - 8, y: fl, w: 16, h: 8 }, TL.LIQUID).length) { c.x = x - c.w / 2; c.y = (c.def.ai === 'flyer' ? fl - 4 * T : fl) - c.h; c.vx = 0; c.vy = 0; c.home = { x: c.x, y: c.y }; g.burst(c.cx, c.y + c.h / 2, '#ff5ad8', 12, 2.4); }
+      }
+      return;
+    }
+    if (this.dist < this.nextChamp || p.dead) return;
+    const pool = this.Wd().pool.filter(q => q.t !== 'golden' && q.t !== 'mimic' && (q.d || 0) <= .2 + this.champN * .2);
+    const pick = pool[Math.floor(Math.random() * pool.length)] || this.Wd().pool[0];
+    for (let k = 10; k <= 17; k++) {                               // a spot on solid ground ahead of you
+      const x = p.cx + k * T, fl = g.floorBelow(x, p.y - 5 * T);
+      if (fl >= L.ph || fl < p.y - 6 * T) continue;
+      if (W.tilesIn(L, { x: x - 30, y: fl, w: 60, h: 8 }, TL.LIQUID).length || W.tilesIn(L, { x: x - 30, y: fl - 8, w: 60, h: 10 }, TL.SPIKE).length) continue;
+      this.spawnChampion(pick, x, pick.fly ? fl - 4 * T : fl); return;
+    }
+  }
+  Wd() { return WORLDS[this.world]; }
+  spawnChampion(q, x, y) {
+    const g = this.g, U = PLAT.U, n = ++this.champN, e = PLAT.makeEnemy(g, q.t, x, y, true), d = e.def, k = 1.7;
+    e.champion = true; e.champN = n;
+    e.sc *= k; const fw = Math.round(e.w * k), fh = Math.round(e.h * k); e.x -= (fw - e.w) / 2; e.y -= fh - e.h; e.w = fw; e.h = fh; e.home = { x: e.x, y: e.y };
+    const more = 1 + .35 * (n - 1);
+    e.hp = e.maxHp = Math.round((40 + d.hp * 8) * more); if (e.armor) e.armor = Math.round(e.armor * 2 * more);
+    e.maxPoise = e.poise = Math.round(8 + 2 * n);
+    d.heavy = true; d.small = false; d.dmg = 2; d.coins = 0;
+    d.name = '👑 ' + (d.name || q.t);
+    for (const s of ['speed', 'chase']) if (d[s]) d[s] *= 1.2 + .05 * n;
+    if (d.sight) d.sight *= 1.6; if (d.rate) d.rate = Math.round(d.rate * .7); if (d.wait) d.wait = Math.round(d.wait * .7);
+    if (d.jumpV) { d.jumpV *= 1.1; d.jumpX *= 1.3; }
+    e.cool = 40; e.face(-1);
+    g.enemies.push(e); g.enemyTotal++; this.champ = e;
+    g.text(x, y - e.h - 30, '⚠ บอสปรากฏตัว! LV ' + n, '#ff5a8a', 120, true); PLAT.sfx.roar(); g.shake(6); PLAT.haptic('boss');
+    for (let i = 0; i < 24; i++) g.burst(e.cx + U.rnd(-e.w / 2, e.w / 2), e.y + U.rnd(0, e.h), '#ff5ad8', 1, 3);
+    g.emit('boss', { name: 'BOSS LV ' + n, th: d.name.replace('👑 ', ''), hp: e.hp, max: e.maxHp });
   }
   score(st) { return this.dist * 10 + st.kills * 50 + st.coins * 10; }
 }

@@ -27,7 +27,7 @@ window.QT = (() => {
     const g = await game(hid); I.clearAll();
     g.L.tiles.set(W0(g));                     // restore the room (tests may add walls)
     g.tileCache = null;
-    g.enemies = []; g.projs = []; g.fxs = []; g.loose = []; g.freeze = 0; g.held_ = null; g.mode = 'play'; g.boss = null; g.bossActive = false; g.tokens.clear(); g.chain = 0; g.chainT = 0;
+    g.enemies = []; g.projs = []; g.fxs = []; g.loose = []; g.mstars = []; g.warns = []; g.freeze = 0; g.held_ = null; g.mode = 'play'; g.boss = null; g.bossActive = false; g.tokens.clear(); g.chain = 0; g.chainT = 0;
     const p = g.player; p.ult = 0; p.reset({ x: 20 * T, y: GY }); p.face = dir; p.en = 100; p.inv = 0; p.hp = p.maxHp; p.dead = false;
     step(g, 2);
     const log = [];

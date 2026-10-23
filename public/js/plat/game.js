@@ -111,7 +111,7 @@ class Game {
   // ENDLESS: the window slid one chunk — forget everything that was left behind (memory stays flat)
   onWindowShift(dropped, added) {
     const px0 = this.L.px0;
-    for (const e of this.enemies) if (!e.boss && e.x + e.w < px0 + 8) { e.gone = true; this.tokens.delete(e); }
+    for (const e of this.enemies) if (!e.boss && !e.champion && e.x + e.w < px0 + 8) { e.gone = true; this.tokens.delete(e); }
     compact(this.enemies, notGone);
     compact(this.decor, d => d.x > px0 - 64);
     compact(this.loose, c => c.x > px0);
@@ -162,7 +162,7 @@ class Game {
     if (this.spec.boss && !this.boss && !p.dead && p.cx > (L.arena ? L.arena.x0 + (this.spec.arena.trigger || 5) * T : 6 * T)) this.spawnBoss();   // v115: arena.trigger (tiles) for a narrow arena
     // enemies far from the camera sleep (no AI / physics) — bosses and dying enemies always update
     const camC = this.cam.x + C.VW / 2;
-    for (const e of this.enemies) { if (!e.boss && !e.dead && Math.abs(e.cx - camC) > SLEEP_X) continue; e.update(); }
+    for (const e of this.enemies) { if (!e.boss && !e.champion && !e.dead && Math.abs(e.cx - camC) > SLEEP_X) continue; e.update(); }
     this.separate();
     for (const e of this.tokens) if (e.dead || e.gone || !this.enemies.includes(e)) this.tokens.delete(e);
     this.contacts();
@@ -323,6 +323,15 @@ class Game {
   onEnemyKilled(e) {
     this.stats.kills++;
     const d = e.def;
+    if (e.champion) {                       // v116 endless boss beaten
+      this.emit('boss', null); PLAT.haptic('boss'); this.shake(8); this.hitstop(8); sfx().roar();
+      this.text(e.cx, e.y - 20, e.fell ? 'บอสตกเหว!' : '👑 ปราบบอสแล้ว!', '#ffd84a', 100, true);
+      const n = 25 + 10 * (e.champN || 1);
+      for (let i = 0; i < n; i++) this.loose.push({ x: e.cx, y: Math.min(e.y + e.h / 2, this.L.ph - T * 3), vx: U.rnd(-3, 3), vy: U.rnd(-8, -3), kind: 'coin', t: 0 });
+      for (const id of PLAT.rollLoot(e).concat(PLAT.rollLoot(e), PLAT.rollLoot(e))) this.loose.push({ x: e.cx, y: e.y + e.h / 3, vx: U.rnd(-1.6, 1.6), vy: U.rnd(-7, -4.5), kind: 'item', id, t: 0 });
+      if (this.player && !this.player.dead) this.player.heal(PLAT.HPU * 2);
+      return;
+    }
     if (e.inhaled) return;
     if (e.fell) return;                     // fell into a pit / lava: no loot raining into the hole
     // v96: no hearts any more — coins (fly to you), plus a chance of treasure / potions / relics (items.js rollLoot)
@@ -361,7 +370,7 @@ class Game {
     for (const e of this.enemies) {
       if (e.dead || e.inhaled || !U.overlap(zone, e)) continue;
       const opened = !e.boss && e.suckUntil > this.frame;                       // v100: a parried (reeling) enemy can be inhaled
-      if ((!e.def.small && !opened) || e.boss) { if (e._heavyMsg !== this.frame >> 7) { e._heavyMsg = this.frame >> 7; this.text(e.cx, e.y - 6, e.boss ? 'หนักเกิน! ปัดให้ดาวหล่น' : 'หนักเกิน! ปัดก่อน', '#ffb0b0', 40); } continue; }
+      if ((!e.def.small && !opened) || e.boss || e.champion) { if (e._heavyMsg !== this.frame >> 7) { e._heavyMsg = this.frame >> 7; this.text(e.cx, e.y - 6, 'หนักเกิน! ปัดให้ดาวหล่น', '#ffb0b0', 40); } continue; }
       e.kbT = 3; e.vx = U.sign(mx - e.cx) * S.pull; e.x += U.sign(mx - e.cx) * S.pull; const dy = U.sign(my - (e.y + e.h / 2)) * 1.2; if (!(dy > 0 && e.onGround)) e.y += dy;   // never push a tall one into the floor
       if (Math.abs(e.cx - mx) < 16 + (e.def.small ? 0 : e.w / 3)) { e.inhaled = true; e.dead = true; e.gone = true; this.onEnemyKilled(e); this.burst(mx, my, '#ffb0e0', 8, 1.5); return { type: e.type, n: e.def.small ? 1 : e.elite ? 3 : 2 }; }
     }

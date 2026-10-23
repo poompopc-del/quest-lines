@@ -106,6 +106,7 @@ class Player {
       if (!this.act || !this.act.ownsMove) this.walk(inp, ax);
       if (!this.act || !this.act.noJump) this.jumpLogic(inp, ax);
     }
+    if (ax && this.hurtT === 0 && this.charging()) this.face = ax;          // v116: every CHARGE turns to the direction you press (the release goes that way)
     // gravity
     const ownsY = this.act && this.act.ownsY;
     // variable jump height: letting go early cuts the rise (springs / bounces are never cut)
@@ -462,6 +463,22 @@ class Player {
     if (this.act && this.act.kind === 'rev') this.endAct();
     if (this.act && this.act.kind === 'flareCharge') this.endAct();     // Shovel Knight's charging fireball is dropped, not thrown          // Sonic's spin-dash rev would launch on "release"
   }
+  /* v116: is the hero building up a charge right now? (X buster / ult, held attack, Luffy's charges, Shovel's flare,
+     Sonic's rev, Mao's heat, a beam's wind-up) — while it is, the hero faces whichever way you press */
+  charging() {
+    const h = this.hero, a = this.act;
+    if (this.holdS != null) return true;
+    if (this.holdA != null && this.holdA >= 12 && !(a && a.kind === 'step')) return true;   // not mid-swing
+    if (this.charge > 0 && h.attack.charge && this.charge >= h.attack.charge[0].t) return true;
+    if (!a) return false;
+    switch (a.kind) {
+      case 'chargeBlast': return a.phase === 'up';
+      case 'gatlingCharge': return a.phase === 'wind';
+      case 'flareCharge': case 'rev': case 'heat': return true;
+      case 'beam': return a.t < (a.chargeT || 0);
+    }
+    return false;
+  }
   releaseCharge() {
     const A = this.hero.attack; if (!A.charge) return;
     let lv = null; for (const c of A.charge) if (this.charge >= c.t) lv = c;
@@ -739,7 +756,7 @@ class Player {
         if (!this.spend(S.cost)) return;
         this.anim.play(S.chargePose, null, true); sfx().charge();
         const fx = g.fx('orb', 0, 0, { follow: () => ({ x: self.cx + self.face * 22, y: self.feet + S.y }), loop: true });
-        this.act = { kind: 'beam', t: 0, pose: S.chargePose, slow: 0, canTurn: false,
+        this.act = { kind: 'beam', t: 0, pose: S.chargePose, slow: 0, canTurn: false, chargeT: S.charge,
           update() {
             this.t++;
             if (this.t < S.charge) { if (this.t % 6 === 0) sfx().charge(); return; }
@@ -1015,9 +1032,10 @@ class Player {
   onParry(e, fromX, perfect) {
     const g = this.g; if (perfect == null) perfect = this.parryPerfect();
     if (e && e.parried) e.parried(perfect, this.cx);
-    if (this.hero.parryStars) {                       // v100 Kirby: a parried boss (or its shot) drops stars to inhale
-      const B = e && e.boss ? e : (!e && g.bossActive && g.boss && !g.boss.dead ? g.boss : null);
-      if (B) g.dropMouthStars(B.cx, B.y + B.h * .3, this.hero.parryStars);
+    if (this.hero.parryStars) {                       // v100 Kirby: a parried enemy (or its shot) drops stars to inhale — v116: EVERY enemy, not just bosses
+      const B = e && !e.dead ? e : (!e && g.bossActive && g.boss && !g.boss.dead ? g.boss : null);
+      if (B) g.dropMouthStars(B.cx, B.y + B.h * .3, B.boss ? this.hero.parryStars : B.elite ? 2 : 1);
+      else if (fromX != null) g.dropMouthStars(fromX, this.y + this.h * .3, 1);   // a parried shot from a normal enemy
     }
     this.parryT = 0; this.parryCd = 6; this.parryOk = COUNTER_WIN;        // a successful parry is ready again almost at once (chains)
     this.counterTarget = e && !e.dead ? e : null; this.counterPerfect = perfect;
