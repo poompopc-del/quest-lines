@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/platform.css?v=35">
+<link rel="stylesheet" href="css/platform.css?v=36">
 </head>
 <body>
 <div id="stage">
@@ -56,12 +56,13 @@
     <div class="t-prof"><span class="t-wallet" id="tWallet"></span><button class="tbtn" id="tFull">⛶</button><button class="tbtn" data-go="main" title="กลับเกมหลัก">↩</button></div>
   </div>
   <div class="t-main">
-    <h1 class="logo2"><span class="l1">QUEST LINES</span><span class="l2">PLATFORM</span><small>แอ็กชันแพลตฟอร์ม · 5 โลก · 6 บอส · ไม่สิ้นสุด</small></h1>
+    <h1 class="logo2"><span class="l1">QUEST LINES</span><span class="l2">PLATFORM</span><small>แอ็กชันแพลตฟอร์ม · 6 โลก · 7 บอส · เนื้อเรื่อง «ห้าตะเกียงแห่งนาม»</small></h1>
     <div class="t-grid">
       <button class="tile big red" data-go="map"><em>▶</em><span>เนื้อเรื่อง</span><small id="tStory"></small></button>
       <button class="tile big gold" data-go="endless"><em>∞</em><span>โหมดไม่สิ้นสุด</span><small id="tEndless"></small></button>
       <button class="tile cyan" data-go="daily"><em>📅</em><span>ท้าทายรายวัน</span><small id="tDaily"></small><i class="dot" id="tDailyDot"></i></button>
       <button class="tile violet" data-go="rush"><em>⚔️</em><span>ล่าบอส</span><small id="tRush"></small></button>
+      <button class="tile amber" data-go="journal"><em>📖</em><span>ตำนาน</span><small id="tJournal"></small></button>
       <button class="tile" data-go="quests"><em>📜</em><span>ภารกิจ · ความสำเร็จ</span><small id="tQuests"></small><i class="badge" id="tQuestBadge"></i></button>
       <button class="tile green" data-go="talents"><em>🌳</em><span>พรสวรรค์</span><small id="tTalents"></small></button>
       <button class="tile" data-go="heroes"><em>🦸</em><span>ฮีโร่</span><small id="tHeroes"></small></button>
@@ -72,6 +73,17 @@
   </div>
 </section>
 
+<section class="screen story" id="sStory">
+  <div class="st-title" id="stTitle"></div>
+  <div class="st-credits" id="stCredits"></div>
+  <div class="st-box" id="stBox">
+    <canvas id="stFace" width="112" height="112"></canvas>
+    <div class="st-body"><div class="st-name" id="stName"></div><div class="st-text" id="stText"></div><div class="st-step" id="stStep"></div></div>
+  </div>
+  <div class="st-btns"><button class="btn" id="stSkip">ข้าม ⏭</button><button class="btn red" id="stNext">ต่อ ▶</button></div>
+</section>
+<section class="screen" id="sJournal"><div class="panel" id="journalBox"></div></section>
+<div class="st-note" id="stNote"></div>
 <section class="screen" id="sDaily"><div class="panel" id="dailyBox"></div></section>
 <section class="screen" id="sQuests"><div class="panel" id="questBox"></div></section>
 <section class="screen" id="sTalents"><div class="panel" id="talentBox"></div></section>
@@ -188,25 +200,27 @@
   <div style="text-align:center"><div class="kick" id="lTitle">กำลังโหลด…</div><div class="sub" id="lSub"></div><div class="loadbar"><b id="lBar"></b></div></div>
 </section>
 
-<script src="js/plat/core.js?v=35"></script>
-<script src="js/plat/world.js?v=35"></script>
-<script src="js/plat/anim.js?v=35"></script>
-<script src="js/plat/fx-sheets.js?v=35"></script>
-<script src="js/plat/heroes.js?v=35"></script>
-<script src="js/plat/x4-sheet.js?v=35"></script>
-<script src="js/plat/xmod.js?v=35"></script>
-<script src="js/plat/player.js?v=35"></script>
-<script src="js/plat/monster-sheets.js?v=35"></script>
-<script src="js/plat/enemies.js?v=35"></script>
-<script src="js/plat/art-sheets.js?v=35"></script>
-<script src="js/plat/levels.js?v=35"></script>
-<script src="js/plat/items.js?v=35"></script>
-<script src="js/plat/meta.js?v=35"></script>
-<script src="js/plat/endless.js?v=35"></script>
-<script src="js/plat/art.js?v=35"></script>
-<script src="js/plat/gimmicks.js?v=35"></script>
-<script src="js/plat/game.js?v=35"></script>
-<script src="js/plat/ui.js?v=35"></script>
-<script src="js/plat/hub.js?v=35"></script>
+<script src="js/plat/core.js?v=36"></script>
+<script src="js/plat/world.js?v=36"></script>
+<script src="js/plat/anim.js?v=36"></script>
+<script src="js/plat/fx-sheets.js?v=36"></script>
+<script src="js/plat/heroes.js?v=36"></script>
+<script src="js/plat/x4-sheet.js?v=36"></script>
+<script src="js/plat/xmod.js?v=36"></script>
+<script src="js/plat/player.js?v=36"></script>
+<script src="js/plat/monster-sheets.js?v=36"></script>
+<script src="js/plat/enemies.js?v=36"></script>
+<script src="js/plat/art-sheets.js?v=36"></script>
+<script src="js/plat/levels.js?v=36"></script>
+<script src="js/plat/items.js?v=36"></script>
+<script src="js/plat/meta.js?v=36"></script>
+<script src="js/plat/endless.js?v=36"></script>
+<script src="js/plat/art.js?v=36"></script>
+<script src="js/plat/gimmicks.js?v=36"></script>
+<script src="js/plat/game.js?v=36"></script>
+<script src="js/plat/ui.js?v=36"></script>
+<script src="js/plat/hub.js?v=36"></script>
+<script src="js/plat/story-data.js?v=36"></script>
+<script src="js/plat/story.js?v=36"></script>
 </body>
 </html>

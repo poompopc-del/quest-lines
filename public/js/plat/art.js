@@ -175,6 +175,7 @@ const ART = PLAT.ART = {
   },
 };
 for (const k in ART) if (PLAT.THEMES[k]) PLAT.THEMES[k].art = ART[k];
+if (PLAT.THEMES.ink) PLAT.THEMES.ink.art = ART.tower;          // v121 world 6 reuses the church art (tinted in game.js)
 
 /* ----------------------------------------------------------------- enemy skins
    Per theme: enemy type → new LOOK only. AI, HP, damage, speed, armour, coins,

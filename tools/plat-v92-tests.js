@@ -2,6 +2,7 @@
    Game tests build their OWN Game objects and step them frame by frame (the UI loop keeps running, but it only
    drives PLAT.app.game). Input / UI tests go through the real DOM handlers with synthetic events. */
 window.V92 = async function (filter) {
+  if (PLAT.app.story) { const s = PLAT.app.story.sd(); for (const x of PLAT.app.story.scenes()) s.seen[x.k] = 1; }   // v121: these tests are not about the story scenes
   const P = window.PLAT, I = P.input, T = P.C.T, out = [], app = P.app;
   const t = async (name, fn) => {
     if (filter && !filter.split('|').some(f => name.includes(f))) return;

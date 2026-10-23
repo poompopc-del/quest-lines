@@ -55,7 +55,7 @@ class Game {
     const A = hero.attack, S = hero.skill, D = hero.dash;
     [A.proj, A.mouthful && A.mouthful.proj, A.combo && A.combo.proj, S && S.proj, hero.float && hero.float.puff].forEach(n => n && projNames.add(n));
     (A.charge || []).forEach(c => projNames.add(c.proj));
-    for (const t of types) { const d = this.enemyDef(t); if (d && d.proj) projNames.add(d.proj); }
+    for (const t of types) { const d = this.enemyDef(t); if (d && d.proj) projNames.add(d.proj); (d && d.projs || []).forEach(n => projNames.add(n)); }   // v121: the Scribe borrows every keeper's shots
     if (PLAT.FXDEF.puff) imgs.push(PLAT.FXDEF.puff.img);
     for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); }
     for (const k of ['boom', 'impact', 'spark', 'orb', 'craura', 'ground', 'kick', 'aura']) imgs.push(PLAT.FXDEF[k].img);
@@ -521,7 +521,7 @@ class Game {
     for (const g of L.gems) if (!g.got && near(g.x, g.y, 10)) {
       g.got = true; this.stats.gems.add(g.i); sfx().gem(); PLAT.haptic('gem'); this.flashT = 6;
       for (let i = 0; i < 18; i++) this.burst(g.x, g.y, i % 2 ? '#7af0ff' : '#ffffff', 1, 3);
-      this.text(g.x, g.y - 14, `💎 ${this.stats.gems.size}/${L.gems.length}`, '#9af0ff', 80, true); this.emit('gem', { n: this.stats.gems.size, of: L.gems.length });
+      this.text(g.x, g.y - 14, `💎 ${this.stats.gems.size}/${L.gems.length}`, '#9af0ff', 80, true); this.emit('gem', { n: this.stats.gems.size, of: L.gems.length, i: g.i });
     }
     for (const h of L.hearts) if (!h.got && near(h.x, h.y, 8)) { h.got = true; this.openChest(h.x, h.y); }     // map 'H' = treasure chest (v96)
     for (const k of L.checkpoints) if (!k.on && Math.abs(k.x - p.cx) < 22 && Math.abs(k.y - p.feet) < 40) {
@@ -694,6 +694,7 @@ class Game {
     if (this.shakeMag > 0) { sx = U.rnd(-1, 1) * this.shakeMag * (this.shakeT / 12); sy = U.rnd(-1, 1) * this.shakeMag * (this.shakeT / 12); }
     const cx = Math.round((this.cam.x + sx) * k) / k, cy = Math.round((this.cam.y + sy) * k) / k;
     this.drawBackground(ctx, cx, cy);
+    if (th.inkTint) { ctx.fillStyle = th.inkTint; ctx.fillRect(0, 0, VW, VH); }      // v121 world 6: the church art drowned in ink
     ctx.save(); ctx.translate(-cx, -cy);
     this.drawDecor(ctx, cx);
     this.drawTiles(ctx, cx, cy);

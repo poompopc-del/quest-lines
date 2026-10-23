@@ -123,6 +123,7 @@ function drawFrame(ctx, fr, x, y, face, scale, o) {
   o = o || {};
   let im = PLAT.assets.img(fr.src), sx0 = fr.sx, sy0 = fr.sy;
   if (o.pal && im) { const c = PLAT.assets.recolorFrame(fr, o.pal); if (c) { im = c; sx0 = 0; sy0 = 0; } }   // per-frame palette canvas (core.js)
+  else if (o.ink && im && PLAT.assets.inkFrame) { const c = PLAT.assets.inkFrame(fr); if (c) { im = c; sx0 = 0; sy0 = 0; } }   // v121 ink creatures
   if (!im) return false;
   const dev = (PLAT.viewScale || 1) * scale;
   ctx.save();

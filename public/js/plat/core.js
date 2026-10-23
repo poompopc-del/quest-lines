@@ -108,6 +108,29 @@ PLAT.assets = {
     if (C.size > this.PAL_MAX) C.delete(C.keys().next().value);          // drop the least recently used frame
     return c;
   },
+  /* v121 INK (the Nameless Scribe's creatures): the frame redrawn in ink — dark violet shadows, lilac light, glowing whites.
+     Per-frame, same LRU as the palettes (no ctx.filter: Safari < 18 has none). */
+  inkFrame(fr) {
+    const k = fr.src + '|' + fr.sx + ',' + fr.sy + ',' + fr.sw + ',' + fr.sh + '|ink', C = this._pal;
+    let c = C.get(k);
+    if (c !== undefined) { C.delete(k); C.set(k, c); return c; }
+    const im = this.img(fr.src); if (!im || !HAS_DOM) return null;
+    try {
+      c = document.createElement('canvas'); c.width = Math.max(1, fr.sw); c.height = Math.max(1, fr.sh);
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, fr.sx, fr.sy, fr.sw, fr.sh, 0, 0, fr.sw, fr.sh);
+      const d = x.getImageData(0, 0, c.width, c.height), a = d.data;
+      for (let i = 0; i < a.length; i += 4) {
+        if (!a[i + 3]) continue;
+        const l = (a[i] * .3 + a[i + 1] * .59 + a[i + 2] * .11) / 255, t = Math.pow(l, 1.25);
+        if (l > .82) { a[i] = 255; a[i + 1] = 214; a[i + 2] = 255; continue; }          // eyes / highlights glow
+        a[i] = 46 + t * 170; a[i + 1] = 22 + t * 120; a[i + 2] = 86 + t * 169;
+      }
+      x.putImageData(d, 0, 0);
+    } catch (e) { c = null; }
+    C.set(k, c);
+    if (C.size > this.PAL_MAX) C.delete(C.keys().next().value);
+    return c;
+  },
   // kept for older callers: the whole image recoloured (not cached — use recolorFrame)
   recolor(src, pal) { const im = this.img(src); if (!im) return null; return this.recolorFrame({ src, sx: 0, sy: 0, sw: im.width, sh: im.height }, pal) || im; },
 };

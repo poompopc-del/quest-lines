@@ -646,7 +646,12 @@ await ck('title shows', async () => (await scr()) === 'title');
 await ui.click('#sTitle [data-go="map"]');
 await ck('map shows every level', async () => (await scr()) === 'map' && (await ui.locator('#worlds .lvl').count()) === await ui.evaluate(() => PLAT.LEVEL_ORDER.length));
 await ui.click('#worlds .lvl >> nth=0');
+// v121 story: the prologue plays before 1-1 the first time — skip through every scene
+await ui.waitForFunction(() => PLAT.app.screen === 'story' || PLAT.app.screen === 'game', null, { timeout: 15000 });
+await ck('story · the prologue plays before 1-1', async () => (await scr()) === 'story' && (await ui.evaluate(() => document.querySelector('#stTitle').textContent.includes('ห้าตะเกียง'))));
+for (let i = 0; i < 6 && (await scr()) === 'story'; i++) { await ui.click('#stSkip'); await ui.waitForTimeout(250); }
 await ui.waitForFunction(() => PLAT.app.screen === 'game', null, { timeout: 15000 });
+await ck('story · scenes are remembered', async () => ui.evaluate(() => PLAT.app.story.seen('prologue') && PLAT.app.story.seen('w1in') && PLAT.app.story.seen('L1-1')));
 await ck('level 1-1 starts', async () => (await ui.evaluate(() => PLAT.app.game && PLAT.app.game.mode)) === 'play');
 await ui.keyboard.down('KeyD'); await ui.waitForTimeout(500); await ui.keyboard.press('KeyJ'); await ui.waitForTimeout(200); await ui.keyboard.press('KeyJ'); await ui.keyboard.up('KeyD');
 await ck('hero moved right with the keyboard', async () => (await ui.evaluate(() => PLAT.app.game.player.cx)) > (await ui.evaluate(() => PLAT.app.game.L.start.x)) + 20);
@@ -667,6 +672,9 @@ await ui.waitForFunction(() => PLAT.app.screen === 'clear', null, { timeout: 800
 await ck('reaching the exit shows results (rank, time, deaths, best combo)', async () => { const t = await ui.locator('#clearBox').innerText(); return /ผ่านด่าน/.test(t) && /คอมโบสูงสุด/.test(t) && /ตาย/.test(t); });
 await ck('clear is saved to the platform save', async () => ui.evaluate(() => { const d = JSON.parse(localStorage.getItem('ql_platform_v1')); return d.levels['1-1'] && d.levels['1-1'].cleared; }));
 await ui.click('#clearBox [data-go2="next"]');
+await ui.waitForFunction(() => PLAT.app.screen === 'story', null, { timeout: 15000 });
+await ck('story · 1-2 intro scene; ▶ / Enter step through the lines', async () => { const n = await ui.evaluate(() => PLAT.STORY.levels['1-2'].length);
+  for (let i = 0; i < n * 2 + 2 && (await scr()) === 'story'; i++) { await ui.keyboard.press('Enter'); await ui.waitForTimeout(200); } return (await scr()) === 'game'; });
 await ui.waitForFunction(() => PLAT.app.screen === 'game' && PLAT.app.game && PLAT.app.game.levelId === '1-2', null, { timeout: 15000 });
 await ck('next level (1-2) unlocked and starts', async () => true);
 await ui.screenshot({ path: path.join(process.env.SHOT_DIR || ROOT, '.combat-test-last.png') }).catch(() => {});

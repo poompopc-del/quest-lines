@@ -250,6 +250,7 @@ function heroAvailable(id) {
   if (h.devOnly && !S.devOn()) return false;
   if (h.free || S.devOn()) return true;
   if (S.ownedMain().has(id)) return true;
+  if (S.data.meta && (S.data.meta.keptHeroes || []).includes(id)) return true;     // v121: unlocked before a story reset
   const need = PLAT.HERO_UNLOCK[id]; return !!(need && S.level(need) && S.level(need).cleared);
 }
 function heroLockText(id) {
@@ -394,7 +395,8 @@ async function startLevel_(id, opts) {
   if (app.game !== g) return;
   setupHud(g);
   if (opts.hp != null) { g.player.hp = Math.min(g.player.maxHp, Math.max(1, opts.hp)); }            // v118 boss rush: HP carries over
-  input.clearAll(); show('game');
+  if (app.storyBefore && !opts.rush) { try { await app.storyBefore(id); } catch (e) { console.error(e); } if (app.game !== g) return; }   // v121 story scenes
+  input.clearAll(); app.acc = 0; app.last = performance.now(); show('game');
   toast(`${PLAT.levelLabel(id)} ${L.name}`, L.teach);
   if (PLAT.assets.failed.length) console.warn('[platform] missing assets:', PLAT.assets.failed);
 }
@@ -433,7 +435,7 @@ function onGameEvent(type, d) {
     case 'toast': toast(d.text, d.sub); break;
     case 'bag': hudCache.bag = null; break;
     case 'dead': S.data.stats.deaths++; S.persist(); if (g.rush && app.onEvent) { app.onEvent('rushDead', d); break; } $('#dRetry').textContent = g.spec.boss ? '↺ ท้าบอสอีกครั้ง' : '↺ เกิดใหม่ที่เช็กพอยต์'; show('dead'); break;
-    case 'clear': finishLevel(d); break;
+    case 'clear': if (app.storyAfter && !g.rush) app.storyAfter(g.levelId, () => { if (app.game === g) finishLevel(d); }); else finishLevel(d); break;   // v121: story scenes first
     case 'over': finishEndless(d); break;
     default: if (app.onEvent) app.onEvent(type, d);
   }

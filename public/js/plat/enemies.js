@@ -33,7 +33,9 @@ PLAT.ENEMY_CODES = { s: 'slime', j: 'hopper', g: 'golden', m: 'magma', z: 'zombi
   // v108 CC0 monsters (Monsters Creatures Fantasy 1 + 2 by LuizMelo — js/plat/monster-sheets.js)
   k: 'skel', q: 'goblin', n: 'shroom', e: 'eye', r: 'rat', v: 'bat', d: 'goo', x: 'mimic',
   // v115 Hell Hound by ansimuz (CC-BY 3.0)
-  f: 'hound' };
+  f: 'hound',
+  // v121 INK creatures of the Nameless Scribe (world 6): shadows of erased things — the same monsters, drawn in ink
+  a: 'inkskel', i: 'inkeye', u: 'inkbat', y: 'inkhound' };
 // ELITE versions (upper case): more HP and poise, a pink aura, and one extra trick each (see think())
 PLAT.ELITE_CODES = { Z: 'zombie', J: 'hopper', M: 'magma', W: 'ghost', L: 'licker', T: 'tyrant', I: 'skel', Q: 'goblin', N: 'shroom', V: 'bat', D: 'goo', X: 'hound' };
 const E = PLAT.ENEMIES = {
@@ -66,6 +68,15 @@ const E = PLAT.ENEMIES = {
   salvador: { name: 'Chainsaw Man', sheet: { kind: 'grid', img: 'enemies/re/salvador.png', cols: 7, fw: 56, fh: 72, ax: 40, by: 71, anims: { idle: [0, 1], move: [0, 1], atk: [2, 3], rev: [4, 5], dead: [6] } },
             scale: .85, box: [26, 34], hp: 6, dmg: 2, ai: 'charger', speed: .5, sight: 230, coins: 5, fps: 6, poise: 3 },
 };
+/* v121 ink creatures: tougher, faster versions of the world's monsters. Drawn through assets.inkFrame (core.js) with dripping ink;
+   they burst into a puff of ink when beaten. */
+const inkOf = (base, o) => Object.assign({}, E[base], { ink: true, elem: null, trail: null }, o);
+Object.assign(E, {
+  inkskel: inkOf('skel', { name: 'Ink Knight', hp: 6, speed: .55, chase: 1.2, shield: .35, coins: 4 }),
+  inkeye: inkOf('eye', { name: 'Ink Eye', hp: 3, speed: 1.15, coins: 3 }),
+  inkbat: inkOf('bat', { name: 'Ink Bat', hp: 2, speed: 1.35, coins: 2 }),
+  inkhound: inkOf('hound', { name: 'Ink Hound', hp: 5, chase: 2.5, coins: 4 }),
+});
 
 /* --------------------------------- enemy ---------------------------------
    Every damaging move follows WIND-UP (readable: flash + "!" + pose) → ACTIVE (the only frames
@@ -407,6 +418,7 @@ class Enemy {
     if (this.anim.sheet.anims.dead) this.anim.play('dead', 40, true);
     else if (PLAT.FXDEF.puff) g.fx('puff', this.cx, this.y + this.h / 2, { scale: Math.max(.7, this.h / 40) });   // v108: swamp creatures pop
     sfx().kill(); g.burst(this.cx, this.y + this.h / 2, d.ghost ? '#c8d0ff' : '#ffffff', 14, 2.6);
+    if (d.ink) { g.fx('void', this.cx, this.y + this.h / 2, { scale: Math.max(.8, this.h / 44) }); g.burst(this.cx, this.y + this.h / 2, '#6a3aba', 10, 2.2); }
     g.onEnemyKilled(this);
   }
   draw(ctx) {
@@ -420,10 +432,12 @@ class Enemy {
     else if (this.dead && this.deadT > 34) alpha = Math.max(0, 1 - (this.deadT - 34) / 16);
     if (d.ghost) alpha *= .72 + Math.sin(this.t / 9) * .2;
     const o = { alpha, flash: this.flash > 0 && this.flash % 2 ? .9 : this.frozenT > 0 ? .55 : 0, sy: 1, sx: 1 };
+    if (d.ink) { o.ink = true; if (!this.dead && this.t % 9 === 0) this.g.parts.push({ x: this.cx + U.rnd(-this.w / 2, this.w / 2), y: this.y + this.h * U.rnd(.3, .9), vx: 0, vy: .6, grav: .08, life: 26, col: this.t % 18 ? '#3a1a6a' : '#a07aff', size: 3, fade: true }); }
     if (this.st === 'crouch') { o.sy = .82; o.sx = 1.12; }
     if (this.st === 'dizzy' && this.t % 20 < 10) o.rot = .06;
     const face = -this.dir;    // sheets face left
     const fr = this.anim.frame(), x = this.cx - this.cOff * this.sc * face;
+    if (d.ink && !this.dead) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .28 + Math.sin(this.t / 7) * .1; PLAT.drawFrame(ctx, fr, x, this.feet + 1, face, this.sc * 1.08, { ink: true }); ctx.restore(); }   // v121 ink glow
     if (this.elite && !this.dead) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.sin(this.t / 6) * .15; PLAT.drawFrame(ctx, fr, x, this.feet + 1, face, this.sc * 1.06, { alpha: 1 }); ctx.restore(); }
     if (!PLAT.drawFrame(ctx, fr, x, this.feet + (d.ghost ? Math.sin(this.t / 14) * 3 : 0), face, this.sc, o)) { ctx.fillStyle = '#c33'; ctx.fillRect(this.x, this.y, this.w, this.h); }
     if (this.st === 'dizzy') this.g.drawStars(ctx, this.cx, this.y - 6, this.t);
@@ -455,6 +469,10 @@ PLAT.BOSSES = {
     sheet: { kind: 'grid', img: 'bosses/serpent/head0.png', cols: 1, fw: 30, fh: 22, ax: 15, by: 22, anims: { idle: [0], move: [0], fly: [0], hurt: [0] } },
     imgs: ['bosses/serpent/head1.png', 'bosses/serpent/head2.png', 'bosses/serpent/body.png', 'bosses/serpent/dead.png', 'bosses/serpent/fin1.png', 'bosses/serpent/fin2.png', 'bosses/serpent/fin3.png', 'bosses/serpent/fin4.png'],
     fps: 6, heavy: true },
+  // v121 FINAL BOSS (6-2) — the Nameless Scribe: Evil Wizard 3 (LuizMelo, CC0) drawn in ink. He fights with the stolen names
+  // of the five lantern keepers — every attack is one of theirs, called out by name.
+  scribe: { name: 'THE NAMELESS SCRIBE', th: 'ผู้จารึกไร้นาม', boss: true, hp: 84, dmg: 1, poise: 16, scale: 1.6, box: [30, 66], ink: true,
+    sheet: MS.wiz3, proj: 'wbolt', projs: ['wave', 'shock', 'fireball', 'cball', 'rock'], minions: ['inkbat', 'inkskel'], fps: 10, heavy: true },
 };
 
 class Boss extends Enemy {
@@ -863,6 +881,170 @@ class Boss extends Enemy {
       case 'rest': this.vx = 0; this.anim.play('idle'); this.vulnerable = true; if (this.stT > (ph >= 3 ? 26 : fast ? 34 : 50) * TUNE.bossRest) this.set('move'); break;
     }
   }
+  /* ---------------- v121 THE NAMELESS SCRIBE (6-2, final boss) ----------------
+     He has no attacks of his own — he writes with the names he erased: TIDE (the spring keeper's waves), QUAKE (the bell-ringer's
+     leap + shockwaves), FLAME (the forge dragon's fireballs, aimed where you run), HEX (the healer's bolt fan — parry = reflect),
+     MORTAR (machine No.7's shells on marked spots), LANCE (the serpent's beam: aim line → beam). Plus ink: summons, warp + slash.
+     The brain is the shared one: he reads your habits like every keeper did.
+     phase 2: chains two names back to back, ink minions · phase 3: ink rain, faster telegraphs, three-name chains. */
+  scribe() {
+    const g = this.g, p = g.player, A = this.arena(), d = this.def, ph = this.phase, fast = ph >= 2, toP = U.sign(p.cx - this.cx) || this.dir, m = this.mind;
+    this.vulnerable = false;
+    const KEEP = { tide: ['นามแห่งวารี!', '#7ad8ff'], quake: ['นามแห่งระฆัง!', '#e8d08a'], flame: ['นามแห่งเพลิง!', '#ff8a5a'], hex: ['นามแห่งการเยียวยา!', '#a8ff8a'],
+      mortar: ['เจ็ด… ขุด!', '#e8b86a'], lance: ['นามแรก!', '#d08aff'], rain: ['ฝนหมึก!', '#a07aff'], summon: ['จงถูกลบ!', '#a07aff'] };
+    const call = k => { const c = KEEP[k]; if (!c) return; g.text(this.cx, this.y - 30, c[0], c[1], 60, true); this.aura = c[1]; this.auraT = 50; };
+    const done = () => {                                  // phase 2+: chain the next name straight away (1 extra · 2 in phase 3)
+      const max = ph >= 3 ? 2 : fast ? 1 : 0;
+      if ((this.chainN || 0) < max && Math.random() < (ph >= 3 ? .75 : .55)) { this.chainN = (this.chainN || 0) + 1; this.set('move'); this.stT = 999; }
+      else { this.chainN = 0; this.set('rest'); }
+    };
+    const wind = ph >= 3 ? 16 : fast ? 20 : 26;
+    if (this.auraT > 0) this.auraT--;
+    if (m.streak >= 3 && (this.st === 'move' || this.st === 'rest')) { m.streak = 0; this.think('อย่าแตะหน้ากระดาษของข้า!'); this.set('warp'); }
+    switch (this.st) {
+      case 'intro': this.intro(); break;
+      case 'move': {
+        this.face(toP); const want = p.cx - toP * (fast ? 130 : 165);
+        this.vx = U.clamp((want - this.cx) * .03, -1.6, 1.6) * (fast ? 1.3 : 1);
+        if (this.x < A.x0 + 4 && this.vx < 0 || this.x + this.w > A.x1 - 4 && this.vx > 0) this.vx = 0;
+        this.anim.play(Math.abs(this.vx) > .3 ? 'move' : 'idle');
+        if (this.stT > (ph >= 3 ? 28 : fast ? 42 : 62)) {
+          const minions = g.enemies.filter(e => !e.dead && !e.boss).length, ledge = m.above > 40, camp = m.still > 40, far = m.far > 50, hug = m.near > 50, jumpy = m.air > .45;
+          const n = this.choose([['tide', 2 + (jumpy ? -1 : 1)], ['quake', 1.4 + (far ? 1.5 : 0)], ['flame', 1.6 + (far ? 2 : 0)], ['hex', 1.6 * (m.parries >= 2 ? .35 : 1) + (jumpy ? 1 : 0)],
+            ['mortar', 1.2 + (camp ? 2 : 0) + (ledge ? 2.5 : 0)], ['lance', fast ? 1.4 + (camp ? 2 : 0) + (ledge ? 1 : 0) : .6], ['warp', .8 + (hug ? 3 : 0)],
+            ['summon', fast && minions < 2 ? 1.3 : 0], ['rain', ph >= 3 ? 1.6 + (ledge ? 2 : 0) : 0]]);
+          if (m.parries >= 2 && !m.saidRef) { m.saidRef = true; this.think('เจ้าปัดคำของข้ากลับมาได้… งั้นข้าจะไม่เขียนคำที่ปัดได้'); }
+          else if (n === 'mortar' && ledge) this.think('ที่สูงก็ลบได้'); else if (n === 'warp' && hug) this.think('อย่าเข้ามาใกล้!'); else if (n === 'flame' && far) this.think('หนีไปไหน?');
+          this.set(n);
+        }
+        break;
+      }
+      case 'tide': {                                       // the spring keeper's waves: both ways, then one timed for your landing
+        this.vx = 0; this.face(toP); this.anim.play(this.stT < wind ? 'idle' : 'atk');
+        if (this.stT === 1) call('tide');
+        if (this.stT < wind && this.stT % 6 < 3) this.flash = 2;
+        if (this.stT === wind) { g.spawnProj('wave', this.cx + this.dir * 20, this.feet, this.dir, { speed: 3 }); g.spawnProj('wave', this.cx - this.dir * 20, this.feet, -this.dir, { speed: 2.4 }); g.fxGround('splash', this.cx, this.feet, { scale: 1.4 }); sfx().big(); }
+        if (this.stT === wind + 24 && (m.air > .3 || ph >= 3)) { this.face(U.sign(p.cx - this.cx) || this.dir); g.spawnProj('wave', this.cx + this.dir * 20, this.feet, this.dir, { speed: 3.4 }); sfx().big(); }
+        if (this.stT > wind + 44) done();
+        break;
+      }
+      case 'quake': {                                      // the bell-ringer's leap: crouch → lands where you run to → shockwaves
+        if (this.stT === 1) call('quake');
+        if (this.stT < wind) { this.vx = 0; this.anim.play('idle'); if (this.stT % 6 < 3) this.flash = 2; break; }
+        if (this.stT === wind) { const tx = this.lead(this.cx, 5, 1.05); this.vy = -10.5; this.vx = (tx - this.cx) / 42; g.warn(tx, g.floorBelow(tx, this.y), 40); sfx().heavy(); }
+        this.anim.play(this.vy < 0 ? 'jump' : 'fall');
+        if (this.stT > wind + 4 && this.onGround) {
+          this.vx = 0; sfx().boom(); g.shake(8); g.hitstop(3); g.fxGround('rupture', this.cx, this.feet, { scale: 1.5 });
+          g.spawnProj('shock', this.cx + 40, this.feet, 1, {}); g.spawnProj('shock', this.cx - 40, this.feet, -1, {});
+          if (U.overlap({ x: this.x - 20, y: this.feet - 60, w: this.w + 40, h: 60 }, p)) p.hurt(2, this.cx, { src: this });
+          this.set('tired'); g.text(this.cx, this.y - 16, 'ลงพื้นแรง! โจมตีเลย!', '#8aff8a', 50);
+        }
+        if (this.stT > 150) this.set('move');
+        break;
+      }
+      case 'flame': {                                      // the forge dragon's fireballs: every other one aimed where you are GOING
+        this.vx = 0; this.face(toP); this.anim.play('atk', 40, false); const n = ph >= 3 ? 5 : fast ? 4 : 3;
+        if (this.stT === 1) call('flame');
+        if (this.stT < wind && this.stT % 6 < 3) this.flash = 2;
+        if (this.stT >= wind && (this.stT - wind) % 11 === 0 && this.stT < wind + n * 11) {
+          const i = (this.stT - wind) / 11, sx = this.cx + this.dir * 30, sy = this.feet - 56, sp = 3.6, tx = i % 2 ? this.lead(sx, sp) : p.cx, a = Math.atan2((p.y + p.h / 2) - sy, tx - sx);
+          g.spawnProj('fireball', sx, sy, U.sign(Math.cos(a)) || this.dir, { vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, scale: .8 }); sfx().shoot();
+        }
+        if (this.stT > wind + n * 11 + 14) done();
+        break;
+      }
+      case 'hex': {                                        // the healer's bolt fan (parry = reflect)
+        this.vx = 0; this.face(toP); this.anim.play('atk', 50, false);
+        if (this.stT === 1) call('hex');
+        if (this.stT < wind && this.stT % 6 < 3) this.flash = 2;
+        if (this.stT === wind || (ph >= 3 && this.stT === wind + 16)) {
+          const sx = this.cx + this.dir * 30, sy = this.feet - 56, base = Math.atan2((p.y + p.h / 2) - sy, Math.abs(p.cx - sx)), k = fast ? 2 : 1;
+          for (let i = -k; i <= k; i++) { const a = U.clamp(base, -.6, .6) + i * .22; g.spawnProj(d.proj, sx, sy, this.dir, { vx: this.dir * Math.cos(a) * 3.4, vy: Math.sin(a) * 3.4, scale: 1.7 }); }
+          sfx().big();
+        }
+        if (this.stT > wind + 36) done();
+        break;
+      }
+      case 'mortar': {                                     // machine No.7's shells: where you are, where you run to, and the way out
+        this.vx = 0; this.anim.play(this.stT < wind ? 'idle' : 'atk'); const n = ph >= 3 ? 6 : fast ? 5 : 3;
+        if (this.stT === 1) call('mortar');
+        if (this.stT < wind) { if (this.stT % 6 < 3) this.flash = 2; break; }
+        const k = this.stT - wind;
+        if (k % 10 === 0 && k < n * 10) {
+          const i = k / 10, ahead = U.clamp(p.cx + (m.vx || 0) * 46, A.x0 + 14, A.x1 - 14);
+          const x = U.clamp(i === 0 ? p.cx : i === 1 ? ahead : ahead + U.rnd(40, 120) * (i % 2 ? 1 : -1), A.x0 + 14, A.x1 - 14);
+          g.warn(x, g.floorBelow(x, p.y), 46, () => g.spawnProj('cball', x, g.cam.y - 12, 0, { vy: 3, grav: .2 })); sfx().shoot();
+          g.parts.push({ x: this.cx, y: this.y, vx: 0, vy: -6, life: 26, col: '#3a1a6a', size: 7 });
+        }
+        if (k > n * 10 + 20) done();
+        break;
+      }
+      case 'lance': {                                      // the serpent's beam: an aim line at where you WERE → the beam; phase 3 twice
+        this.vx = 0; this.face(toP); this.anim.play('atk', 30, false);
+        if (this.stT === 1) call('lance');
+        const second = ph >= 3 && this.stT >= 70, t = second ? this.stT - 69 : this.stT, w = ph >= 3 ? 28 : 36;
+        const sx = this.cx + this.dir * 22, sy = this.feet - 70;
+        if (t === 1) { this.aim = { x: p.cx, y: p.y + p.h / 2 }; sfx().charge(); }
+        const a = Math.atan2(this.aim.y - sy, this.aim.x - sx);
+        this.beam = { x: sx, y: sy, a, on: t > w && t <= w + 24, warn: t <= w };
+        if (this.beam.warn && t % 6 < 3) this.flash = 2;
+        if (this.beam.on) {
+          if (t === w + 1) { sfx().big(); g.shake(4); }
+          const ux = Math.cos(a), uy = Math.sin(a), px = p.cx - sx, py = p.y + p.h / 2 - sy, along = px * ux + py * uy, off = Math.abs(px * -uy + py * ux);
+          if (along > 0 && off < 9 + Math.min(p.w, p.h) / 2 && !p.dead) p.hurt(2, sx, { src: this });
+          if (t % 2 === 0) g.parts.push({ x: sx + ux * U.rnd(20, 400), y: sy + uy * U.rnd(20, 400), vx: U.rnd(-1, 1), vy: U.rnd(-1, 1), life: 12, col: '#e0b0ff', size: 3, fade: true });
+        }
+        if (t > w + 28) { this.beam = null; if (ph >= 3 && !second) this.stT = 69; else { this.set('tired'); g.text(this.cx, this.y - 16, 'หมึกหมด! โจมตีเลย!', '#8aff8a', 50); } }
+        break;
+      }
+      case 'rain': {                                       // phase 3: ink falls from the ceiling on marked spots
+        this.vx = 0; this.anim.play('idle'); const n = 8;
+        if (this.stT === 1) call('rain');
+        if (this.stT >= 12 && this.stT < 12 + n * 8 && (this.stT - 12) % 8 === 0) {
+          const x = U.clamp(p.cx + U.rnd(-140, 140), A.x0 + 12, A.x1 - 12);
+          g.warn(x, g.floorBelow(x, p.y), 34, () => g.spawnProj(d.proj, x, g.cam.y - 10, 0, { vx: 0, vy: 4.4, scale: 1.9 }));
+        }
+        if (this.stT > 30 + n * 8) done();
+        break;
+      }
+      case 'summon': {                                     // ink shadows of erased things
+        this.vx = 0; this.anim.play('atk', 40, false);
+        if (this.stT === 1) call('summon');
+        if (this.stT === 24) {
+          const n = Math.min(2, 3 - g.enemies.filter(e => !e.dead && !e.boss).length);
+          for (let i = 0; i < n; i++) { const type = d.minions[(this.pat + i) % d.minions.length], x = U.clamp(this.cx + (i ? 100 : -100), A.x0 + 30, A.x1 - 30), fly = type === 'inkbat';
+            const e = PLAT.makeEnemy(g, type, x, fly ? this.feet - 90 : this.feet); e.cool = 50; g.enemies.push(e); g.fx('void', x, fly ? this.feet - 100 : this.feet - 30, { scale: 1.2 }); }
+          sfx().big();
+        }
+        if (this.stT > 44) done();
+        break;
+      }
+      case 'warp': {                                       // dissolves into ink → reappears behind you → an ink slash (parry it!)
+        this.vx = 0;
+        if (this.stT < 20) this.alpha = 1 - this.stT / 20;
+        else if (this.stT === 20) { const side = -(p.face || 1), x = U.clamp(p.cx + side * 80, A.x0 + 30, A.x1 - 30); this.x = x - this.w / 2; this.alpha = 0; this.face(U.sign(p.cx - x) || 1); g.fx('void', x, this.feet - 50, { scale: 1.5 }); }
+        else if (this.stT < 36) this.alpha = (this.stT - 20) / 16;
+        else { this.alpha = 1; this.set('slash'); }
+        break;
+      }
+      case 'slash': {
+        const w = ph >= 3 ? 12 : 16;
+        if (this.stT === 1) { this.face(toP); this.anim.play('atk', w + 22, true); g.text(this.cx, this.y - 16, '!', '#ff5a9a', 26, true); }
+        this.vx = this.stT > w && this.stT < w + 8 ? this.dir * 3.6 : 0;
+        if (this.stT < w && this.stT % 6 < 3) this.flash = 2;
+        if (this.stT === w + 6) {
+          const reach = 110, hb = { x: this.dir > 0 ? this.cx - 10 : this.cx - reach, y: this.feet - 96, w: reach + 10, h: 96 };
+          if (U.overlap(hb, p)) p.hurt(2, this.cx, { src: this });
+          sfx().big(); g.shake(3); g.burst(this.cx + this.dir * 60, this.feet - 50, '#a07aff', 12, 3);
+        }
+        if (this.stT >= w + 24) done();
+        break;
+      }
+      case 'tired': this.vx = 0; this.vulnerable = true; this.anim.play('hurt'); if (this.stT > (ph >= 3 ? 50 : 70)) { this.chainN = 0; this.set('move'); } break;
+      case 'rest': this.vx = 0; this.anim.play('idle'); this.vulnerable = true; if (this.stT > (ph >= 3 ? 26 : fast ? 34 : 48) * TUNE.bossRest) this.set('move'); break;
+      default: this.set('move');
+    }
+  }
   /* ---------------- v115 SNAIL TANK (world 5, 5-2) ----------------
      crawls at you · MORTAR: raises its cannon ("!"), shells fall on marked spots · CANNON: two/three low cannonballs (jump them) ·
      ROLL: hides in its shell (hits bounce off) and rolls wall to wall — jump over it; after the last bounce it is dizzy (×2 damage).
@@ -1099,6 +1281,8 @@ class Boss extends Enemy {
   }
   kill(o) {
     this.dead = true; this.deadT = 0; this.vx = 0; sfx().roar(); this.g.hitstop(8); this.g.shake(10);
+    this.beam = null; this.alpha = 1;
+    if (this.type === 'scribe') for (const e of this.g.enemies) if (!e.dead && !e.boss) e.kill({});      // his ink fades with him
     if (this.anim.sheet.anims.dead) this.anim.play('dead', 80, true);
     this.g.onEnemyKilled(this);
   }
@@ -1114,8 +1298,23 @@ class Boss extends Enemy {
     let alpha = this.alpha != null ? this.alpha : 1; if (this.dead && this.deadT > 90) alpha *= Math.max(0, 1 - (this.deadT - 90) / 30);
     const o = { alpha, flash: this.flash > 0 && this.flash % 2 ? .8 : 0 };
     if (this.vulnerable && this.t % 16 < 8) o.flash = Math.max(o.flash, .25);
+    if (d.ink) {
+      o.ink = !(this.dead && this.deadT > 30);            // v121: as the Scribe falls, the ink washes off — the man underneath
+      if (this.auraT > 0 && !this.dead) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = this.auraT / 50 * .5; ctx.fillStyle = this.aura || '#a07aff';
+        ctx.beginPath(); ctx.ellipse(this.cx, this.feet - this.h * .55, this.w * 1.6, this.h * .8, 0, 0, 6.283); ctx.fill(); ctx.restore(); }
+      if (!this.dead && this.t % 6 === 0) this.g.parts.push({ x: this.cx + U.rnd(-14, 14), y: this.feet - U.rnd(10, 80), vx: U.rnd(-.3, .3), vy: .5, grav: .06, life: 30, col: this.t % 12 ? '#2a0e52' : '#a07aff', size: 3, fade: true });
+    }
     if (!PLAT.drawFrame(ctx, fr, this.cx - this.cOff * this.sc * face, this.feet, face, this.drawScale || d.scale, o)) { ctx.fillStyle = '#a33'; ctx.fillRect(this.x, this.y, this.w, this.h); }
     if (this.st === 'stagger') this.g.drawStars(ctx, this.cx, this.y - 10, this.t);
+    const b = this.beam;
+    if (b && !this.dead) {                                // the Scribe's lance (the serpent's beam, in violet)
+      const L = 900, ex = b.x + Math.cos(b.a) * L, ey = b.y + Math.sin(b.a) * L;
+      ctx.save(); ctx.lineCap = 'round';
+      if (b.warn) { ctx.strokeStyle = this.t % 8 < 4 ? 'rgba(200,120,255,.9)' : 'rgba(255,200,255,.6)'; ctx.lineWidth = 1.5; ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(ex, ey); ctx.stroke(); }
+      if (b.on) { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(150,60,255,.55)'; ctx.lineWidth = 18 + Math.sin(this.t) * 3; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(ex, ey); ctx.stroke();
+        ctx.strokeStyle = '#f6e8ff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(ex, ey); ctx.stroke(); }
+      ctx.restore();
+    }
   }
 }
 PLAT.Enemy = Enemy; PLAT.Boss = Boss;

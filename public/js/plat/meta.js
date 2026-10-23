@@ -63,7 +63,8 @@ const ACH = M.ACH = [
   { id: 'boss12', icon: '👑', name: 'นักปราบบอส', desc: 'ปราบบอส 12 ครั้ง', key: 'bossKill', need: 12, coins: 400 },
   { id: 'nohit1', icon: '🌟', name: 'ไร้รอยขีดข่วน', desc: 'ปราบบอสโดยไม่โดนตีเลย', key: 'noHitBoss', need: 1, coins: 500, title: 'ไร้รอยขีดข่วน' },
   { id: 'clear10', icon: '🗺️', name: 'นักผจญภัย', desc: 'ผ่านด่าน 10 ครั้ง', key: 'clear', need: 10, coins: 150 },
-  { id: 'allclear', icon: '🏆', name: 'พิชิตทุกโลก', desc: 'ผ่านทุกด่านในเนื้อเรื่อง', key: 'levelsCleared', need: 20, best: true, coins: 1200, title: 'ผู้พิชิตทุกโลก' },
+  { id: 'lantern', icon: '🏮', name: 'ผู้จุดตะเกียง', desc: 'จบเนื้อเรื่อง «ห้าตะเกียงแห่งนาม»', key: 'storyEnd', need: 1, coins: 1000, title: 'ผู้จุดตะเกียง' },
+  { id: 'allclear', icon: '🏆', name: 'พิชิตทุกโลก', desc: 'ผ่านทุกด่านในเนื้อเรื่อง', key: 'levelsCleared', need: (PLAT.LEVEL_ORDER || []).length || 22, best: true, coins: 1200, title: 'ผู้พิชิตทุกโลก' },
   { id: 'rankS5', icon: '🅢', name: 'มือโปร', desc: 'ได้แรงก์ S 5 ครั้ง', key: 'rankS', need: 5, coins: 250 },
   { id: 'rankS30', icon: '🔱', name: 'ตำนาน', desc: 'ได้แรงก์ S 30 ครั้ง', key: 'rankS', need: 30, coins: 900, title: 'ตำนาน' },
   { id: 'gems', icon: '💎', name: 'นักสะสมอัญมณี', desc: 'เก็บ 💎 ครบ 30 เม็ด', key: 'gems', need: 30, best: true, coins: 500 },
@@ -355,7 +356,7 @@ M.assist = () => M.d().assist;
 M.assistOn = () => { const a = M.assist(); return a.speed < 1 || a.dmg < 1; };
 
 /* ------------------------------------------------------------------ boss rush */
-M.RUSH = ['1-3', '2-3', '3-3', '4-4', '5-2', '5-4'];
+M.RUSH = ['1-3', '2-3', '3-3', '4-4', '5-2', '5-4', '6-2'];
 M.grade = (hits, frames, par) => hits === 0 ? 'S' : hits <= 2 ? 'A' : hits <= 5 ? 'B' : 'C';
 M.medal = (id, grade, frames) => {
   const md = M.d().medals, r = md[id] || (md[id] = {}), GV = { S: 4, A: 3, B: 2, C: 1 };
