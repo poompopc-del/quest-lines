@@ -9,6 +9,7 @@
    ========================================================================== */
 (function (G) {
 'use strict';
+const STAR_BANK_MAX = 30;                            // v123 Kirby: most stars STAR STORM can hold
 const PLAT = G.PLAT, C = PLAT.C, U = PLAT.U, W = PLAT.world;
 const sfx = () => PLAT.sfx;
 /* v94 PARRY (every hero) — press PARRY (O / F · pad LB · touch 🛡) just before an attack lands.
@@ -576,7 +577,12 @@ class Player {
     if (h.skills && inp.isHeld('up') && h.skills.up) S = h.skills.up;
     else if (h.skills && inp.isHeld('down') && h.skills.down) S = h.skills.down;
     else if (S.air && !this.onGround) S = S.air;
-    if (this.mouth) { this.mouth = null; this.en = Math.min(100, this.en + 30); g.text(this.cx, this.y - 6, 'กลืน! +30 พลัง', '#ffb0e0', 50); sfx().heart(); return; }
+    if (this.mouth) {                                  // v123 Kirby: swallowing keeps the stars — they all come out in STAR STORM
+      const n = this.mouth.n || 1; this.mouth = null; this.en = Math.min(100, this.en + 30);
+      this.starBank = Math.min(STAR_BANK_MAX, (this.starBank || 0) + n);
+      g.text(this.cx, this.y - 6, `กลืน! 🌟${this.starBank} · +30 พลัง`, '#ffb0e0', 60, n >= 3); sfx().heart();
+      g.fx('sparkle', this.cx, this.y + 6, { scale: 1.2 }); return;
+    }
     this.useSkill(S, inp);
   }
   // free normal moves share the skill machinery (cost 0) — see heroes.js moves{}
@@ -940,10 +946,19 @@ class Player {
       }
       case 'step': this.startStep(Object.assign({ ult: true }, U_.step), null); break;
       case 'stars': {                                  // Kirby: rise and spit a fan of giant stars
-        this.vy = U_.rise; this.anim.play(U_.pose, U_.dur, true); let k = 0;
+        // v123: + every star swallowed since the last STAR STORM (starBank) — a long volley sweeping up and down
+        const bank = this.starBank || 0; this.starBank = 0;
+        const total = U_.at.length + bank, step = bank ? Math.max(2, Math.round(5 - bank / 6)) : 6, last = U_.at[0] + (total - 1) * step, dur = Math.max(U_.dur, last + 16);
+        if (bank) g.text(this.cx, this.y - 24, `★ ×${total}!`, '#ffe36a', 70, true);
+        this.vy = U_.rise; this.anim.play(U_.pose, dur, true); let k = 0;
         this.act = { kind: 'ult', t: 0, pose: U_.pose, slow: 0, hover: true,
-          update() { if (U_.at.includes(++this.t)) { const a = (k++ - 2) * .2, pd = Object.assign({}, PLAT.PROJ[U_.proj], { dmg: U_.dmg, scale: U_.scale, box: [40, 40], pierce: 99 }); g.spawnProj(pd, self.cx + self.face * 16, self.feet - 18, self.face, { owner: self, vx: self.face * Math.cos(a) * 7, vy: Math.sin(a) * 7 }); sfx().shoot(); }
-            if (self.vy > .5) self.vy = .5; if (this.t >= U_.dur) self.endAct(); } };
+          update() {
+            if (++this.t >= U_.at[0] && k < total && (this.t - U_.at[0]) % step === 0) {
+              const a = bank ? Math.sin(k * .7) * .45 : (k - 2) * .2, big = bank && k === total - 1;      // the last star of a big bank is the biggest
+              const pd = Object.assign({}, PLAT.PROJ[U_.proj], { dmg: big ? U_.dmg * 2 : U_.dmg, scale: big ? U_.scale * 1.6 : U_.scale, box: big ? [64, 64] : [40, 40], pierce: 99 });
+              g.spawnProj(pd, self.cx + self.face * 16, self.feet - 18, self.face, { owner: self, vx: self.face * Math.cos(a) * 7, vy: Math.sin(a) * 7 }); sfx().shoot(); if (big) { g.shake(5); sfx().boom(); } k++;
+            }
+            if (self.vy > .5) self.vy = .5; if (this.t >= dur) self.endAct(); } };
         break;
       }
       case 'super': this.superT = U_.dur; this.superId = newSwing(); sfx().gem(); g.flashT = 14; break;

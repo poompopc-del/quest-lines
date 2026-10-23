@@ -126,7 +126,7 @@ H.pip = {
 
 H.puff = {
   name: 'Kirby', th: 'เคอร์บี้ ก้อนชมพูจอมดูด', role: 'ลอยตัว · ดูดแล้วพ่น', color: '#ff8ac8',
-  desc: 'โจมตีค้าง = ดูด (ตัวใหญ่ต้องปัดก่อนถึงดูดได้ · ปัดศัตรู = ดาวหล่น (บอส 3 · ELITE 2 · ทั่วไป 1)) · อมแล้วกด = พ่นดาว / ค้าง = ดูดเพิ่ม ยิ่งอมเยอะดาวยิ่งใหญ่ · ↓+โจมตี = เตะสไลด์ · กดกระโดดกลางอากาศ = ลอย 5 ครั้ง · กลางอากาศโจมตี = ตีลังกา · ↓+โจมตีกลางอากาศ = กลิ้งทิ่มลง · ↓ ค้าง = ตั้งการ์ด',
+  desc: 'โจมตีค้าง = ดูด (ตัวใหญ่ต้องปัดก่อนถึงดูดได้ · ปัดศัตรู = ดาวหล่น (บอส 3 · ELITE 2 · ทั่วไป 1)) · อมแล้วกด = พ่นดาว / ค้าง = ดูดเพิ่ม ยิ่งอมเยอะดาวยิ่งใหญ่ · อมแล้วกดสกิล = กลืน: ดาวทุกดวงเก็บสะสม (สูงสุด 30) แล้วพ่นออกมาพร้อมอัลติ STAR STORM · ↓+โจมตี = เตะสไลด์ · กดกระโดดกลางอากาศ = ลอย 5 ครั้ง · กลางอากาศโจมตี = ตีลังกา · ↓+โจมตีกลางอากาศ = กลิ้งทิ่มลง · ↓ ค้าง = ตั้งการ์ด',
   sprite: strip('heroes/kirby/', 34, {
     idle: { n: 10, cw: 26, ax: 13 }, walk: { n: 7, cw: 28, ax: 14 }, hurt: { n: 4, cw: 26, ax: 13 }, dead: { n: 4, cw: 36, ax: 18 },
     atk1: { n: 5, cw: 32, ax: 16 }, atk2: { n: 8, cw: 30, ax: 15 }, atk3: { n: 7, cw: 34, ax: 17 }, inhale: { n: 8, cw: 31, ax: 15 },
@@ -156,6 +156,10 @@ H.puff = {
     // air attack: a double somersault (the strip's frames 4–6 are the back-view puff-up)
     atk3: { a: 'atk3', f: [0, 1, 2, 3, 0, 1, 2, 3] } },
   mod: { drawFront(ctx, p) {                         // v100: mouthful stack counter over Kirby's head
+    if (p.starBank && !p.dead && !(p.mouth && (p.mouth.n || 1) >= 2)) {       // v123: swallowed stars waiting for STAR STORM
+      const t = p.g.frame, y = p.y - 14 + Math.sin(t / 10) * 1.5; ctx.save(); ctx.font = '800 10px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#2a0a1a';
+      const txt = '🌟' + p.starBank; ctx.strokeText(txt, p.cx, y); ctx.fillStyle = p.starBank >= 10 ? '#ffe36a' : '#fff0a0'; ctx.fillText(txt, p.cx, y); ctx.restore();
+    }
     if (!p.mouth || (p.mouth.n || 1) < 2 || p.dead) return;
     const n = p.mouth.n, t = p.g.frame, y = p.y - 18 + Math.sin(t / 8) * 2;
     ctx.save(); ctx.font = '900 ' + Math.min(22, 12 + n) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#2a0a1a';
@@ -201,9 +205,9 @@ H.puff = {
     air:     { name: 'ตีลังกากลางอากาศ', pose: 'atk3', dur: 22, auto: false, hit: [3, 18], box: [-16, -32, 34, 34], dmg: 2, kb: 4 },
     downAir: { name: 'กลิ้งทิ่มลง', kind: 'dive', pose: 'roll', vy: 8.5, dmg: 2, bounce: 7.5 },
   },
-  skill: { kind: 'inhale', name: 'ดูด! (แล้วโจมตี = พ่นดาว · สกิลอีกครั้ง = กลืน +พลัง)', cost: 0, pose: 'inhaling', range: 104, height: 44, pull: 2.6 },
+  skill: { kind: 'inhale', name: 'ดูด! (อมแล้วสกิล = กลืนเก็บดาวไว้ใช้ในอัลติ)', cost: 0, pose: 'inhaling', range: 104, height: 44, pull: 2.6 },
   dash: { kind: 'dash', name: 'กลิ้งพุ่ง', pose: 'roll', speed: 5.6, dur: 20, cd: 36, hit: { box: [-14, -26, 30, 26], dmg: 1 }, air: false },
-  ult: { input: 'u+S', name: 'STAR STORM · พายุดาวเคอร์บี้', kind: 'stars', pose: 'fspit', dur: 50, at: [10, 16, 22, 28, 34], rise: -5, proj: 'star', scale: 1.8, dmg: 7 },
+  ult: { input: 'u+S', name: 'STAR STORM · พายุดาวเคอร์บี้ (+ดาวที่กลืนสะสมไว้)', kind: 'stars', pose: 'fspit', dur: 50, at: [10, 16, 22, 28, 34], rise: -5, proj: 'star', scale: 1.8, dmg: 7 },
 };
 
 H.sonic = {
