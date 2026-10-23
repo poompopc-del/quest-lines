@@ -369,7 +369,7 @@ class Enemy {
   parried(perfect, fromX) {
     const g = this.g; if (this.dead) return;
     this.release(); this.blocking = false;
-    if (this.boss) { this.poise -= perfect ? 10 : 6; this.flash = 8; if (this.breakPoise) this.breakPoise(); return; }
+    if (this.boss) { this.poise -= perfect ? 10 : 6; this.flash = 8; if (this.noteParry) this.noteParry(); if (this.breakPoise) this.breakPoise(); return; }
     this.interrupt('dizzy'); this.set('dizzy'); this.dizzyFor = (perfect ? 110 : 75) * (this.elite ? .65 : 1);
     this.suckUntil = g.frame + this.dizzyFor;                                   // v100 Kirby: inhalable while it reels
     this.kbT = 8; this.vx = U.sign(this.cx - (fromX != null ? fromX : g.player.cx)) * 2.2; this.flash = 8;
@@ -476,7 +476,7 @@ class Boss extends Enemy {
     }
     if (this.st === 'phase') { this.vx = 0; this.anim.play(this.flying ? 'fly' : 'idle'); if (this.flying) this.y = Math.min(this.y + 2, this.groundY - this.h); if (this.t % 4 === 0) g.burst(this.cx + U.rnd(-this.w / 2, this.w / 2), this.y + U.rnd(0, this.h), '#ff4a4a', 1, 2); if (this.stT > 60) { if (this.flying && this.y + this.h < this.groundY - 2) this.set('land'); else { this.flying = false; this.set('move'); } } }
     else if (this.st === 'stagger') { this.vx = 0; this.vulnerable = true; this.anim.play(this.anim.sheet.anims.hurt ? 'hurt' : 'idle'); if (this.stT > 80) { this.vulnerable = false; this.set('move'); } }
-    else this[this.type]();
+    else { this.sense(); this[this.type](); }                                   // v117: the boss brain watches you first
     if (!this.flying) { this.vy = Math.min(this.vy + C.GRAV, C.MAX_FALL); W.moveBody(g.L, this, this.vx, this.vy); }
     this.anim.update();
   }
@@ -484,26 +484,94 @@ class Boss extends Enemy {
   intro(name) { if (this.stT === 1) { PLAT.sfx.roar(); this.g.shake(5); this.g.bossIntro(this); } if (this.stT > 80) this.set('move'); }
   arena() { return this.g.L.arena || { x0: T, x1: this.g.L.pw - T }; }
 
+  /* ---------------- v117 BOSS BRAIN (shared) ----------------
+     Every boss watches you all fight long: where you stand (ledge / ground / behind it / far away), whether you stand
+     still or jump a lot, how often you jump over it, parry it or land hits in a row — and it LEARNS which of its own
+     attacks connect (used more) and which you dodge (used less). Each boss uses this in its own way (see each one). */
+  sense() {
+    const g = this.g, p = g.player;
+    const m = this.mind || (this.mind = { hit: {}, miss: {}, air: 0, still: 0, above: 0, far: 0, near: 0, behind: 0, streak: 0, streakT: 0, overs: 0, parries: 0, php: p ? p.hp : 0, side: 0, vx: 0, last: null, landed: false, said: -999 });
+    if (!p || p.dead) return m;
+    m.vx += (p.vx - m.vx) * .15;
+    m.air += ((p.onGround ? 0 : 1) - m.air) * .03;
+    m.still = Math.abs(p.vx) < .4 && p.onGround ? m.still + 1 : 0;
+    const dx = p.cx - this.cx, dist = Math.abs(dx);
+    m.above = p.onGround && p.feet < (this.groundY || this.feet) - 48 ? m.above + 1 : Math.max(0, m.above - 2);
+    m.far = dist > 230 ? m.far + 1 : 0; m.near = dist < 90 ? m.near + 1 : 0;
+    m.behind = U.sign(dx) === -this.dir && dist < 170 ? m.behind + 1 : 0;
+    const side = U.sign(dx) || m.side; if (m.side && side !== m.side && !p.onGround && dist < 110) m.overs++; m.side = side;
+    if (p.hp < m.php && m.last && !m.landed) { m.hit[m.last] = (m.hit[m.last] || 0) + 1; m.landed = true; }
+    m.php = p.hp;
+    if (m.streakT > 0) m.streakT--; else m.streak = 0;
+    return m;
+  }
+  noteHit() { const m = this.mind; if (m) { m.streak++; m.streakT = 100; } }
+  noteParry() { const m = this.mind; if (m) m.parries++; }
+  // a weighted pick over [name, weight] — weights grow for attacks that hit you, shrink for ones you keep dodging
+  choose(opts) {
+    const m = this.mind || this.sense();
+    if (m.last && !m.landed) m.miss[m.last] = (m.miss[m.last] || 0) + 1;
+    const W = opts.filter(o => o[1] > 0).map(([n, w]) => [n, U.clamp(w * (1 + .6 * (m.hit[n] || 0)) / (1 + .3 * (m.miss[n] || 0)), w * .25, w * 4) * (n === m.last ? .35 : 1)]);
+    let t = W.reduce((a, b) => a + b[1], 0) * Math.random(), pick = W.length ? W[0][0] : 'move';
+    for (const [n, w] of W) { t -= w; if (t <= 0) { pick = n; break; } }
+    m.last = pick; m.landed = false; this.pat++;
+    return pick;
+  }
+  // a short "it read you" line above the boss (never spammy)
+  think(text) { const m = this.mind; if (!m || this.t - m.said < 200) return; m.said = this.t; this.g.text(this.cx, this.y - 34, text, '#ffb0ff', 70, true); }
+  // where you will be when a shot fired now (speed px/frame) reaches you
+  lead(sx, speed, k) {
+    const p = this.g.player, A = this.arena(), m = this.mind || {}; const t = Math.min(70, Math.abs(p.cx - sx) / Math.max(.5, speed));
+    return U.clamp(p.cx + (m.vx || 0) * t * (k == null ? .85 : k), A.x0 + 12, A.x1 - 12);
+  }
+  // an arcing throw from (sx, sy) that lands on (tx, ty) after `t` frames under gravity `gr`
+  arc(sx, sy, tx, ty, t, gr) { return { vx: (tx - sx) / t, vy: (ty - sy - .5 * gr * t * t) / t, grav: gr }; }
+
+  /* AQUA SPIRIT (1-3) — "the evasive one": keeps its distance, punishes standing on ledges / standing still with rain,
+     warps away when you corner it or land 3 hits in a row, times a second wave for when you land, and (phase 2)
+     raises geysers where you are RUNNING TO. */
   aqua() {
-    const g = this.g, p = g.player, A = this.arena(), sp = this.phase >= 2 ? 1.5 : 1, toP = U.sign(p.cx - this.cx) || this.dir;
+    const g = this.g, p = g.player, A = this.arena(), sp = this.phase >= 2 ? 1.5 : 1, toP = U.sign(p.cx - this.cx) || this.dir, m = this.mind, ph2 = this.phase >= 2;
     this.vulnerable = false;
+    if (m.streak >= 3 && (this.st === 'move' || this.st === 'rest')) { m.streak = 0; this.think('หลบ!'); this.set('warp'); }
     switch (this.st) {
       case 'intro': this.intro(); break;
-      case 'move':
-        this.face(toP); this.vx = this.dir * .9 * sp; this.anim.play('move');
-        if (this.stT > (this.phase >= 2 ? 70 : 110)) this.pick(this.phase >= 2 ? ['wave', 'rain', 'warp', 'wave2', 'rain'] : ['wave', 'rain', 'wave', 'warp']);
+      case 'move': {
+        this.face(toP); const want = p.cx - toP * 150; this.vx = U.clamp((want - this.cx) * .02, -1.3, 1.3) * sp; this.anim.play('move');
+        if (this.x < A.x0 + 4 && this.vx < 0 || this.x + this.w > A.x1 - 4 && this.vx > 0) this.vx = 0;
+        if (this.stT > (ph2 ? 60 : 95)) {
+          const ledge = m.above > 40, camp = m.still > 50, airy = m.air > .45, corner = (this.x < A.x0 + 60 || this.x + this.w > A.x1 - 60) && Math.abs(p.cx - this.cx) < 140;
+          const n = this.choose([['wave', ledge ? .4 : 3], ['rain', 1.4 + (ledge ? 3 : 0) + (camp ? 2 : 0)], ['warp', .7 + (corner ? 4 : 0)], ['wave2', ph2 ? 2 + (airy ? 2 : 0) : airy ? 1 : 0], ['tide', ph2 ? 1.6 + (ledge ? 1 : 0) : .5]]);
+          if (n === 'rain' && ledge) this.think('ปีนหนีไม่พ้นหรอก!'); else if (n === 'rain' && camp) this.think('ยืนนิ่งเหรอ?'); else if (n === 'warp' && corner) this.think('ไม่ยอมจนมุมหรอก');
+          this.set(n);
+        }
         break;
+      }
       case 'wave': case 'wave2':
         this.vx = 0; this.face(toP); this.anim.play(this.stT < 24 ? 'idle' : 'atk'); if (this.stT < 24 && this.stT % 6 < 3) this.flash = 2;
         if (this.stT === 24) { g.spawnProj('wave', this.cx + this.dir * 20, this.feet, this.dir, { speed: 2.8 * sp }); sfx().big(); if (this.st === 'wave2' || this.phase >= 3) g.spawnProj('wave', this.cx - this.dir * 20, this.feet, -this.dir, { speed: 2.4 * sp }); }
-        if (this.stT > 60) { this.set('rest'); }
+        if (this.stT === 46 && m.air > .35) { this.face(U.sign(p.cx - this.cx) || this.dir); g.spawnProj('wave', this.cx + this.dir * 20, this.feet, this.dir, { speed: 3.2 * sp }); sfx().big(); }   // timed for your landing
+        if (this.stT > 70) this.set('rest');
         break;
       case 'rain': {
         this.vx = 0; this.anim.play('atk');
-        const n = this.phase >= 2 ? 9 : 6;
+        const n = ph2 ? 9 : 6;
         if (this.stT === 10) { g.text(this.cx, this.y - 14, 'ฝนวารี!', '#7ad8ff', 50); sfx().big(); }
-        if (this.stT >= 16 && this.stT < 16 + n * 8 && (this.stT - 16) % 8 === 0) { const x = U.clamp(p.cx + U.rnd(-120, 120), A.x0 + 10, A.x1 - 10); g.warn(x, g.floorBelow(x, p.y), 40, () => g.spawnProj('drop', x, g.cam.y - 10, 0, { vy: 1 })); }
+        if (this.stT >= 16 && this.stT < 16 + n * 8 && (this.stT - 16) % 8 === 0) {
+          const i = (this.stT - 16) / 8, base = i % 2 ? this.lead(p.cx, 0.01, 0) + (m.vx || 0) * 40 : p.cx;          // every other drop falls where you are heading
+          const x = U.clamp(base + U.rnd(-70, 70), A.x0 + 10, A.x1 - 10); g.warn(x, g.floorBelow(x, p.y), 40, () => g.spawnProj('drop', x, g.cam.y - 10, 0, { vy: 1 }));
+        }
         if (this.stT > 30 + n * 8) this.set('rest');
+        break;
+      }
+      case 'tide': {                                      // geysers burst up under where you are running to
+        this.vx = 0; this.anim.play('atk');
+        if (this.stT === 4) { g.text(this.cx, this.y - 14, 'น้ำพุ!', '#7ad8ff', 40); sfx().big(); }
+        if (this.stT === 8 || this.stT === 26 || this.stT === 44) {
+          const x = U.clamp(p.cx + (m.vx || 0) * 34, A.x0 + 14, A.x1 - 14), fl = g.floorBelow(x, p.y);
+          g.warn(x, fl, 30, () => { for (let i = 0; i < 3; i++) g.spawnProj('drop', x + (i - 1) * 9, fl - 6, 0, { vy: -8.5 - i * .8, grav: .3 }); sfx().shoot(); });
+        }
+        if (this.stT > 70) this.set('rest');
         break;
       }
       case 'warp':
@@ -511,20 +579,31 @@ class Boss extends Enemy {
         if (this.stT < 30) this.alpha = 1 - this.stT / 30;
         else if (this.stT === 30) { const left = p.cx > (A.x0 + A.x1) / 2; this.x = (left ? A.x0 + 40 : A.x1 - 40) - this.w / 2; this.alpha = 0; }
         else if (this.stT < 56) this.alpha = (this.stT - 30) / 26;
-        else { this.alpha = 1; this.set(this.phase >= 2 ? 'wave2' : 'wave'); }
+        else { this.alpha = 1; this.set(ph2 ? 'wave2' : 'wave'); }
         break;
-      case 'rest': this.vx = 0; this.anim.play('idle'); this.vulnerable = true; if (this.stT > (this.phase >= 2 ? 30 : 50) * TUNE.bossRest) this.set('move'); break;
+      case 'rest': this.vx = 0; this.anim.play('idle'); this.vulnerable = true; if (this.stT > (ph2 ? 30 : 50) * TUNE.bossRest) this.set('move'); break;
     }
   }
+  /* GARGANTUAR (2-3) — "the relentless brute": closes in and smashes; if you keep AWAY it leaps onto where you will be;
+     if you hide on a ledge it rips up rocks and throws them at you; jump over it twice and it learns — the next jump-over
+     gets swatted out of the air. */
   garg() {
-    const g = this.g, p = g.player, toP = U.sign(p.cx - this.cx) || this.dir, fast = this.phase >= 2;
+    const g = this.g, p = g.player, toP = U.sign(p.cx - this.cx) || this.dir, fast = this.phase >= 2, m = this.mind, A = this.arena();
     this.vulnerable = false;
     switch (this.st) {
       case 'intro': this.intro(); break;
-      case 'move':
+      case 'move': {
         this.face(toP); this.vx = this.dir * (fast ? 1.05 : .7); this.anim.play('move');
-        if (Math.abs(p.cx - this.cx) < 120 || this.stT > 170) { this.set('raise'); g.text(this.cx, this.y - 16, '⚠ ยกเสา!', '#ffd060', 40); }
+        const dist = Math.abs(p.cx - this.cx);
+        if (m.overs >= 2 && !p.onGround && dist < 100) { m.overs = 0; this.think('อ่านทางแล้ว!'); this.set('swat'); break; }
+        if (m.far > (fast ? 60 : 100) || m.above > 70) {
+          m.far = 0; const n = this.choose([['leap', m.above > 40 ? 1 : 3], ['throw', m.above > 40 ? 3.5 : 1.2]]);
+          if (n === 'throw' && m.above > 40) this.think('ลงมานี่!'); else if (n === 'leap') this.think('หนีไม่พ้น!');
+          this.set(n); break;
+        }
+        if (dist < 120 || this.stT > 170) { this.set('raise'); g.text(this.cx, this.y - 16, '⚠ ยกเสา!', '#ffd060', 40); }
         break;
+      }
       case 'raise': this.vx = 0; this.anim.play('raise', fast ? 26 : 36); if (this.stT % 6 < 3) this.flash = 2; if (this.stT >= (fast ? 26 : 36)) { this.set('smash'); this.anim.play('smash', 32, true); } break;
       case 'smash':
         this.vx = 0;
@@ -534,38 +613,78 @@ class Boss extends Enemy {
           if (U.overlap(hb, p)) p.hurt(2, this.cx, { elem: 'shock' });
           g.spawnProj('shock', this.cx + this.dir * 70, this.feet, this.dir, {}); g.spawnProj('shock', this.cx - this.dir * 10, this.feet, -this.dir, {});
           g.dust(this.cx + this.dir * 60, this.feet, 12);
-          if (fast) { for (let i = 0; i < (this.phase >= 3 ? 7 : 5); i++) { const x = U.rnd(this.arena().x0 + 16, this.arena().x1 - 16); g.warn(x, g.floorBelow(x, p.y), 46 + i * 9, () => g.spawnProj('rock', x, g.cam.y - 10, 0, {})); } }
+          if (fast) { for (let i = 0; i < (this.phase >= 3 ? 7 : 5); i++) { const x = i < 2 ? U.clamp(p.cx + (m.vx || 0) * (30 + i * 20), A.x0 + 16, A.x1 - 16) : U.rnd(A.x0 + 16, A.x1 - 16); g.warn(x, g.floorBelow(x, p.y), 46 + i * 9, () => g.spawnProj('rock', x, g.cam.y - 10, 0, {})); } }
         }
         if (this.stT >= 32) { this.set('stuck'); g.text(this.cx, this.y - 16, 'เสาติดพื้น! โจมตีเลย!', '#8aff8a', 50); }
         break;
       case 'stuck': this.vx = 0; this.anim.play('stuck'); this.vulnerable = true; if (this.stT > (this.phase >= 3 ? 46 : 70)) { this.set(fast && !this.double ? 'raise' : 'move'); this.double = fast && !this.double; } break;
+      case 'leap': {                                       // crouch → a huge jump that lands where you are going → shockwaves
+        if (this.stT < 22) { this.vx = 0; this.anim.play('raise', 22); if (this.stT % 6 < 3) this.flash = 2; break; }
+        if (this.stT === 22) { const tx = this.lead(this.cx, 5, 1.1); this.leapX = tx; this.vy = -10.5; this.vx = (tx - this.cx) / 42; g.warn(tx, g.floorBelow(tx, this.y), 40); sfx().heavy(); }
+        this.anim.play('smash');
+        if (this.stT > 26 && this.onGround) {
+          this.vx = 0; sfx().boom(); g.shake(9); g.hitstop(3); g.dust(this.cx, this.feet, 16);
+          g.spawnProj('shock', this.cx + 40, this.feet, 1, {}); g.spawnProj('shock', this.cx - 40, this.feet, -1, {});
+          if (U.overlap({ x: this.x - 20, y: this.feet - 60, w: this.w + 40, h: 60 }, p)) p.hurt(2, this.cx, { elem: 'shock' });
+          this.set('stuck'); g.text(this.cx, this.y - 16, 'ลงพื้นแรง! โจมตีเลย!', '#8aff8a', 50);
+        }
+        if (this.stT > 160) this.set('move');
+        break;
+      }
+      case 'throw': {                                      // rips up rocks and lobs them onto your ledge
+        this.vx = 0; this.face(toP); this.anim.play('raise', 30);
+        if (this.stT < 24 && this.stT % 6 < 3) this.flash = 2;
+        const n = fast ? 4 : 3;
+        if (this.stT >= 24 && (this.stT - 24) % 12 === 0 && this.stT < 24 + n * 12) {
+          const i = (this.stT - 24) / 12, sx = this.cx + this.dir * 30, sy = this.y + 10, tx = i % 2 ? this.lead(sx, 4) : p.cx + U.rnd(-30, 30), ty = p.y + p.h / 2;
+          g.spawnProj('rock', sx, sy, this.dir, this.arc(sx, sy, tx, ty, 44, .3)); sfx().swing();
+        }
+        if (this.stT > 30 + n * 12) { this.set('stuck'); }
+        break;
+      }
+      case 'swat': {                                       // a quick upward swipe: the answer to jumping over it
+        this.vx = 0; this.face(toP); this.anim.play('raise', 12);
+        if (this.stT < 10) { if (this.stT % 4 < 2) this.flash = 2; break; }
+        if (this.stT === 10) { const hb = { x: this.cx - 80, y: this.y - 100, w: 160, h: 120 }; if (U.overlap(hb, p)) p.hurt(2, this.cx, { elem: 'shock' }); g.burst(this.cx, this.y - 30, '#ffd060', 14, 3); sfx().big(); g.shake(3); }
+        if (this.stT > 28) this.set('stuck');
+        break;
+      }
     }
   }
+  /* BLACK DRAGON (3-3) — "the hunter": its fireballs are aimed where you are GOING (every other one at where you are,
+     so you cannot just keep running one way), it stomps you when you get under it, takes to the air when you go up on
+     ledges or stay far, and its bombing run drops fire right where you will be. */
   dragon() {
-    const g = this.g, p = g.player, A = this.arena(), toP = U.sign(p.cx - this.cx) || this.dir;
+    const g = this.g, p = g.player, A = this.arena(), toP = U.sign(p.cx - this.cx) || this.dir, m = this.mind;
     this.vulnerable = false;
     switch (this.st) {
       case 'intro': this.intro(); break;
-      case 'move':
+      case 'move': {
         this.flying = false; this.face(toP); this.anim.play('idle');
         const want = p.cx - toP * 170; this.vx = U.clamp((want - this.cx) * .02, -1.2, 1.2);
-        if (this.stT > (this.phase >= 3 ? 50 : 80)) this.pick(this.phase >= 2 ? ['breath', 'takeoff', 'breath', 'takeoff'] : ['breath', 'breath', 'stomp']);
+        const close = Math.abs(p.cx - this.cx) < 110;
+        if (close && m.near > 30) { this.think('ใกล้เกินไปแล้ว!'); this.set('stomp'); break; }
+        if (this.stT > (this.phase >= 3 ? 50 : 80)) {
+          const ph2 = this.phase >= 2, ledge = m.above > 40;
+          const n = this.choose([['breath', ledge ? 1.2 : 3], ['stomp', close ? 3 : .6], ['takeoff', ph2 ? 1.6 + (ledge ? 3 : 0) + (m.far > 60 ? 1.5 : 0) : 0]]);
+          if (n === 'takeoff' && ledge) this.think('บนนั้นก็ไม่รอด!');
+          this.set(n);
+        }
         break;
+      }
       case 'stomp':
         if (this.stT < 18) { this.vx = 0; this.face(toP); if (this.stT % 6 < 3) this.flash = 2; break; }          // crouch = warning
-        if (this.stT === 18) { this.vy = -7; g.warn(this.cx + this.dir * 70, this.groundY, 30); }
-        this.vx = this.dir * 2.2;
+        if (this.stT === 18) { this.vy = -7; const tx = this.lead(this.cx, 4); this.vx = U.clamp((tx - this.cx) / 36, -3.2, 3.2); g.warn(tx, this.groundY, 30); }
         if ((this.stT > 26 && this.onGround) || this.stT > 140) { sfx().boom(); g.shake(7); g.spawnProj('shock', this.cx + 50, this.feet, 1, {}); g.spawnProj('shock', this.cx - 50, this.feet, -1, {}); this.vx = 0; this.set('rest'); }
         break;
       case 'breath': {
         this.vx = 0; this.face(toP);
         this.anim.play('breath', 70);
         if (this.stT < 22 && this.stT % 6 < 3) this.flash = 2;
-        // volleys aimed at where you ARE when each one leaves — keep moving / jump and they miss
         const n = this.phase >= 3 ? 4 : this.phase >= 2 ? 3 : 2;
         if (this.stT >= 28 && this.stT < 28 + n * 13 && (this.stT - 28) % 13 === 0) {
-          const sx = this.cx + this.dir * 70, sy = this.y + 20, aim = Math.atan2((p.y + p.h / 2) - sy, Math.abs(p.cx - sx));
-          const a = U.clamp(aim, -.35, .75);
+          const i = (this.stT - 28) / 13, sx = this.cx + this.dir * 70, sy = this.y + 20, tx = i % 2 ? this.lead(sx, 3.6) : p.cx;   // alternate: where you ARE / where you are GOING
+          const a = U.clamp(Math.atan2((p.y + p.h / 2) - sy, Math.abs(tx - sx)), -.35, .75);
           g.spawnProj('fireball', sx, sy, this.dir, { vx: this.dir * Math.cos(a) * 3.6, vy: Math.sin(a) * 3.6, scale: .8 }); sfx().shoot();
         }
         if (this.stT >= 70) this.set('rest');
@@ -573,18 +692,22 @@ class Boss extends Enemy {
       }
       case 'takeoff':
         this.anim.play('fly'); this.flying = true; this.vx = 0; this.y -= 2.2;
-        if (this.y < (g.L.arena ? g.L.arena.top : 2 * T)) { this.set('fly'); this.dir = this.cx < (A.x0 + A.x1) / 2 ? 1 : -1; }
+        if (this.y < (g.L.arena ? g.L.arena.top : 2 * T)) { this.set('fly'); this.dir = this.cx < (A.x0 + A.x1) / 2 ? 1 : -1; this.dropT = 0; }
         break;
-      case 'fly':
+      case 'fly': {
         this.flying = true; this.anim.play('fly'); this.x += this.dir * (this.phase >= 3 ? 2.6 : 2); this.y += Math.sin(this.stT / 12) * .6;
-        if (this.stT % (this.phase >= 3 ? 26 : 36) === 10) { g.spawnProj('bigfire', this.cx, this.y + this.h, 0, { vx: this.dir * .6, vy: 1, grav: .14 }); sfx().shoot(); }
+        // bombs fall so they LAND where you will be (fall time ~ 40 frames), plus a steady trail
+        if (this.dropT > 0) this.dropT--;
+        const fallX = this.cx + this.dir * .6 * 40, aim = U.clamp(p.cx + (m.vx || 0) * 40, A.x0, A.x1);
+        if ((Math.abs(fallX - aim) < 26 && this.dropT <= 0) || this.stT % (this.phase >= 3 ? 40 : 54) === 10) { g.spawnProj('bigfire', this.cx, this.y + this.h, 0, { vx: this.dir * .6, vy: 1, grav: .14 }); sfx().shoot(); this.dropT = 22; }
         if ((this.dir > 0 && this.x + this.w > A.x1 - 10) || (this.dir < 0 && this.x < A.x0 + 10)) { this.dir = -this.dir; this.passes = (this.passes || 0) + 1; }
         if (this.passes >= 2) { this.passes = 0; this.set('land'); }
         break;
+      }
       case 'land':
         this.flying = true; this.anim.play('fly');
-        if (this.stT === 1) g.warn(this.cx, this.groundY, 34);          // shadow where it will land
-        if (this.stT < 34 && !this.dropFast) { this.y += Math.sin(this.stT / 5) * .4; break; }
+        if (this.stT === 1) { this.landX = this.dropFast ? this.cx : U.clamp(p.cx, A.x0 + this.w / 2, A.x1 - this.w / 2); g.warn(this.landX, this.groundY, 34); }   // it dives at you — the shadow shows where
+        if (this.stT < 34 && !this.dropFast) { this.y += Math.sin(this.stT / 5) * .4; this.x += U.clamp((this.landX - this.cx) * .12, -5, 5); break; }
         this.y += this.dropFast ? 6 : 4;
         if (this.y + this.h >= this.groundY - 1) { const p2 = g.player; if (p2 && U.overlap(this, p2)) p2.hurt(1, this.cx, { elem: 'fire' }); }
         if (this.y + this.h >= this.groundY) { this.y = this.groundY - this.h; this.flying = false; this.dropFast = false; sfx().boom(); g.shake(6); g.dust(this.cx, this.feet, 14); this.set('tired'); g.text(this.cx, this.y - 14, 'มังกรเหนื่อย! โจมตี!', '#8aff8a', 60); }
@@ -602,6 +725,7 @@ class Boss extends Enemy {
     }
     const ok = super.takeHit(dmg, o);
     if (ok) {
+      this.noteHit();
       this.g.bossHit(this);
       // poise break → STAGGER: the boss reels (takes double damage); a flying dragon is knocked out of the sky
       this.breakPoise();
@@ -637,9 +761,18 @@ class Boss extends Enemy {
         if (this.x < A.x0 + 4 && this.vx < 0 || this.x + this.w > A.x1 - 4 && this.vx > 0) this.vx = 0;
         this.anim.play(Math.abs(this.vx) > .3 ? 'move' : 'idle');
         if (this.stT > (ph >= 3 ? 30 : fast ? 46 : 70)) {
-          const near = Math.abs(p.cx - this.cx) < 120, minions = g.enemies.filter(e => !e.dead && !e.boss).length;
-          if (!fast) this.pick(near ? ['slash', 'warp', 'slash2', 'bolts'] : ['bolts', 'warp', 'slash', 'bolts']);
-          else this.pick(near ? ['slash2', minions < 3 ? 'summon' : 'cast', 'dash', 'cast', 'warp', 'rain'] : ['cast', 'rain', 'dash', minions < 3 ? 'summon' : 'cast', 'warp', 'slash2']);
+          // v117 THE TACTICIAN: it counters your habits — parry its bolts and it stops shooting reflectable bolts; hug it and it
+          // blinks away; snipe from afar and it warps behind you; hide up high and the sky rains on you; jump a lot = bolt fans
+          const m = this.mind, near = Math.abs(p.cx - this.cx) < 120, minions = g.enemies.filter(e => !e.dead && !e.boss).length;
+          const noRef = m.parries >= 2 ? .25 : 1, hug = m.near > 50, snipe = m.far > 60, high = m.above > 40, jumpy = m.air > .45;
+          const n = this.choose([
+            ['slash', fast ? 0 : (near ? 3 : 1) * (m.parries >= 2 ? 1.6 : 1)], ['slash2', (near ? 2.5 : .8) * (m.parries >= 2 ? 1.6 : 1)],
+            ['bolts', fast ? 0 : (near ? 1 : 3) * noRef], ['cast', fast ? (2 + (jumpy ? 2 : 0)) * noRef : 0],
+            ['warp', 1 + (snipe ? 3 : 0)], ['blink', hug ? 4 : 0], ['rain', fast ? 1.5 + (high ? 3 : 0) + (m.parries >= 2 ? 1.5 : 0) : 0],
+            ['summon', fast && minions < 3 ? 1.4 : 0], ['dash', fast ? 1.4 + (snipe ? 1 : 0) : 0]]);
+          if (m.parries >= 2 && !m.saidRef) { m.saidRef = true; this.think('สะท้อนเวทข้าอีกไม่ได้แล้ว!'); }
+          else if (n === 'blink') this.think('ไม่ให้ประชิดหรอก'); else if (n === 'warp' && snipe) this.think('อยู่ไกลก็ไม่รอด'); else if (n === 'rain' && high) this.think('บนนั้นก็ไม่รอด');
+          this.set(n);
         }
         break;
       }
@@ -661,7 +794,7 @@ class Boss extends Enemy {
         this.anim.play('atk2', 26 + n * 12, false);
         if (this.stT < 20 && this.stT % 6 < 3) this.flash = 2;
         if (this.stT >= 22 && (this.stT - 22) % 12 === 0 && this.stT < 22 + n * 12) {
-          const sx = this.cx + this.dir * 34, sy = this.feet - 60, a = Math.atan2((p.y + p.h / 2) - sy, (p.cx - sx)), sp = 3.6;
+          const i = (this.stT - 22) / 12, sx = this.cx + this.dir * 34, sy = this.feet - 60, sp = 3.6, tx = i % 2 ? this.lead(sx, sp) : p.cx, a = Math.atan2((p.y + p.h / 2) - sy, (tx - sx));
           bolt(sx, sy, Math.cos(a) * sp, Math.sin(a) * sp); sfx().shoot();
         }
         if (this.stT > 30 + n * 12) this.set('rest');
@@ -694,6 +827,14 @@ class Boss extends Enemy {
         else if (this.stT === 22) { const side = -(p.face || 1), x = U.clamp(p.cx + side * 80, A.x0 + 30, A.x1 - 30); this.x = x - this.w / 2; this.alpha = 0; this.face(U.sign(p.cx - x) || 1); for (let i = 0; i < 12; i++) g.burst(x, this.feet - U.rnd(0, 80), '#c86aff', 1, 2); }
         else if (this.stT < 40) this.alpha = (this.stT - 22) / 18;
         else { this.alpha = 1; this.set(fast ? 'slash2' : 'slash'); }
+        break;
+      }
+      case 'blink': {                                      // v117: you are too close — it vanishes and reappears on the far side, then fires
+        this.vx = 0;
+        if (this.stT < 14) this.alpha = 1 - this.stT / 14;
+        else if (this.stT === 14) { const x = p.cx < (A.x0 + A.x1) / 2 ? A.x1 - 50 : A.x0 + 50; this.x = x - this.w / 2; this.alpha = 0; this.face(U.sign(p.cx - x) || 1); for (let i = 0; i < 12; i++) g.burst(x, this.feet - U.rnd(0, 80), '#c86aff', 1, 2); }
+        else if (this.stT < 28) this.alpha = (this.stT - 14) / 14;
+        else { this.alpha = 1; this.set(fast ? (this.mind.parries >= 2 ? 'rain' : 'cast') : 'bolts'); }
         break;
       }
       case 'summon': {                                     // phase 2: bats from the dark, goo from the mud
@@ -735,7 +876,17 @@ class Boss extends Enemy {
       case 'move':
         this.face(toP); this.vx = this.dir * (ph >= 2 ? .85 : .55); this.anim.play('move');
         if (this.x < A.x0 + 4 && this.vx < 0 || this.x + this.w > A.x1 - 4 && this.vx > 0) this.vx = 0;
-        if (this.stT > (ph >= 3 ? 40 : ph >= 2 ? 60 : 90)) this.pick(ph >= 2 ? ['roll', 'mortar', 'cannon', 'roll', 'mortar'] : ['mortar', 'cannon', 'roll']);
+        {                                                  // v117 THE FORTRESS: it punishes the side you pick
+          const m = this.mind;
+          if (m.behind > 45) { m.behind = 0; this.think('ข้างหลังก็ไม่รอด!'); this.choose([['roll', 1]]); this.set('roll'); break; }
+          if (m.streak >= 4) { m.streak = 0; this.think('หดเข้ากระดอง!'); this.choose([['roll', 1]]); this.set('roll'); break; }
+          if (this.stT > (ph >= 3 ? 40 : ph >= 2 ? 60 : 90)) {
+            const high = m.above > 40, close = Math.abs(p.cx - this.cx) < 130;
+            const n = this.choose([['mortar', 2 + (high ? 2.5 : 0) + (m.still > 40 ? 1.5 : 0)], ['cannon', high ? 1.5 : close ? 1 : 2.5], ['roll', (ph >= 2 ? 2 : 1) + (close ? 1.5 : 0) + (m.air > .45 ? 1 : 0)]]);
+            if (n === 'cannon' && high) this.think('ยิงโค้งขึ้นไปก็ได้!');
+            this.set(n);
+          }
+        }
         break;
       case 'mortar': {
         this.vx = 0; const n = ph >= 3 ? 7 : ph >= 2 ? 5 : 3, wind = ph >= 3 ? 18 : 26;
@@ -746,7 +897,8 @@ class Boss extends Enemy {
         if (k % 10 === 0 && k < n * 10) {
           const m = muzzle(); smoke(m.x, m.y - 10); sfx().shoot(); g.shake(2);
           g.parts.push({ x: m.x, y: m.y - 14, vx: 0, vy: -7, life: 30, col: '#2a2630', size: 9 });
-          const x = U.clamp(k === 0 ? p.cx : p.cx + U.rnd(-150, 150), A.x0 + 14, A.x1 - 14);
+          const mi = this.mind, i = k / 10, ahead = U.clamp(p.cx + (mi.vx || 0) * 46, A.x0 + 14, A.x1 - 14);   // where you are, where you run to, and the way out
+          const x = U.clamp(i === 0 ? p.cx : i === 1 ? ahead : ahead + U.sign(mi.vx || (p.cx - this.cx) || 1) * U.rnd(40, 120) * (i % 2 ? 1 : -1), A.x0 + 14, A.x1 - 14);
           g.warn(x, g.floorBelow(x, p.y), 46, () => g.spawnProj('cball', x, g.cam.y - 12, 0, { vy: 3, grav: .2 }));
         }
         if (k > n * 10 + 20) this.set('rest');
@@ -759,7 +911,8 @@ class Boss extends Enemy {
         this.anim.play('fire'); const k = this.stT - wind;
         if (k % 22 === 0 && k < n * 22) {
           const sx = this.cx + this.dir * this.w * .45, sy = this.feet - 22;
-          g.spawnProj('cball', sx, sy, this.dir, { vx: this.dir * (ph >= 2 ? 4.4 : 3.8), vy: -1.2, grav: .045 });
+          if (this.mind.above > 40) { const tx = this.lead(sx, 4); g.spawnProj('cball', sx, sy - 20, this.dir, this.arc(sx, sy - 20, tx, p.y + p.h / 2, 48, .2)); }   // you are up on a ledge → a high arc onto it
+          else g.spawnProj('cball', sx, sy, this.dir, { vx: this.dir * (ph >= 2 ? 4.4 : 3.8), vy: -1.2, grav: .045 });
           smoke(sx, sy); sfx().boom(); g.shake(3);
         }
         if (k > n * 22 + 14) this.set('rest');
@@ -882,7 +1035,10 @@ class Boss extends Enemy {
     }
     this.vx = 0; this.vy = 0;
   }
-  pick2() { const L = this.phase >= 2 ? ['leap', 'laser', 'bubbles', 'leap', 'laser'] : ['leap', 'bubbles', 'laser']; return L[this.pat++ % L.length]; }
+  // serpent: up on the ledges → it leaps through them · standing still on a shore → laser · jumping around → bubbles
+  pick2() { const m = this.mind, ph2 = this.phase >= 2, p = this.g.player, ledge = p.feet < this.pool.y - 40;
+    const n = this.choose([['leap', (ph2 ? 2 : 1.2) + (ledge ? 3 : 0)], ['laser', 1.6 + (m.still > 30 ? 2 : 0) + (ph2 ? .6 : 0)], ['bubbles', 1.2 + (m.air > .45 ? 2 : 0)]]);
+    if (n === 'leap' && ledge) this.think('บนสะพานก็ไม่รอด'); return n; }
   // serpent: points along the body (head first) — for contact damage and drawing
   bodyPts() {
     const k = this.def.scale, out = [[this.hx, this.hy]], c = Math.cos(this.ang), s = Math.sin(this.ang);

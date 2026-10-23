@@ -64,6 +64,12 @@ const WORLDS = PLAT.ENDLESS_WORLDS = {
        pool: [{ t: 'slime', w: 3 }, { t: 'zombie', w: 2.2, d: .05 }, { t: 'goo', w: 2.2, d: .1 }, { t: 'rat', w: 1.6, d: .15 }, { t: 'shroom', w: 1.4, d: .3, wide: true },
          { t: 'ghost', w: 1.4, d: .2, fly: true }, { t: 'bat', w: 1.2, d: .35, fly: true }, { t: 'mimic', w: .7, d: .4, wide: true }, { t: 'goo', w: .8, d: .55, elite: true }, { t: 'shroom', w: .6, d: .65, elite: true, wide: true }],
        pat: { flat: 2, hill: 2.2, steps: 1.4, gap: 1.6, lily: 3.2, ledges: 1.8, tomb: 1.6, spring: .7, crumble: [1.3, .2], arena: [1.4, .2] } },
+  // v117 WORLD 5 — the crystal grotto: lava channels, rope bridges, stone pillars; hell hounds, skeleton knights, eyes and bats
+  5: { world: 5, theme: 'grotto', name: 'ถ้ำคริสตัลไม่สิ้นสุด', th: 'ลาวาใต้ถ้ำ สะพานเชือก เสาหิน แท่นลอยข้ามลาวา — Hell Hound อัศวินโครงกระดูก ตาบิน ค้างคาว เห็ดพ่นสปอร์',
+       hazard: 'lava', ledge: [TL.ONEWAY, TL.BRICK], color: '#3ac0e8',
+       pool: [{ t: 'hound', w: 3.2 }, { t: 'goo', w: 2, d: .05 }, { t: 'skel', w: 2, d: .15 }, { t: 'bat', w: 1.6, d: .1, fly: true }, { t: 'eye', w: 1.2, d: .3, fly: true },
+         { t: 'shroom', w: 1.2, d: .35, wide: true }, { t: 'goblin', w: 1, d: .45 }, { t: 'hound', w: 1, d: .5, elite: true }, { t: 'skel', w: .6, d: .65, elite: true }],
+       pat: { flat: 1.8, gap: 2.6, pillars: 2.6, crumble: 2, ledges: 2.2, ferry: [1.8, .2], steps: 1.6, hill: 1.2, spring: .8, arena: [1.4, .2] } },
 };
 const CHAMP_FIRST = 180, CHAMP_EVERY = 320;             // v116 endless boss: first at 180 m, then 320 m after each one is beaten
 const enemyTypes = world => [...new Set(WORLDS[world].pool.map(p => p.t))];

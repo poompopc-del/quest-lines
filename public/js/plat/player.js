@@ -1032,6 +1032,7 @@ class Player {
   onParry(e, fromX, perfect) {
     const g = this.g; if (perfect == null) perfect = this.parryPerfect();
     if (e && e.parried) e.parried(perfect, this.cx);
+    else if (!e && g.boss && !g.boss.dead && g.boss.noteParry) g.boss.noteParry();     // v117: a boss remembers its shots being parried
     if (this.hero.parryStars) {                       // v100 Kirby: a parried enemy (or its shot) drops stars to inhale — v116: EVERY enemy, not just bosses
       const B = e && !e.dead ? e : (!e && g.bossActive && g.boss && !g.boss.dead ? g.boss : null);
       if (B) g.dropMouthStars(B.cx, B.y + B.h * .3, B.boss ? this.hero.parryStars : B.elite ? 2 : 1);
