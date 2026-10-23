@@ -365,7 +365,7 @@ function renderMap() {
     box.appendChild(div);
   }
   const e = document.createElement('div'); e.className = 'world';
-  const best = [1, 2, 3].map(k => S.endlessRec(k).bestDist || 0);
+  const best = Object.keys(PLAT.ENDLESS_WORLDS).map(k => S.endlessRec(+k).bestDist || 0);
   e.innerHTML = `<div class="wn"><span>∞ โหมดไม่สิ้นสุด (Endless)</span><span class="chip gold">ไกลสุด ${best.map(b => b + ' ม.').join(' · ')}</span></div><button class="btn gold block">∞ เลือกโลกแล้ววิ่งไม่หยุด</button>`;
   e.querySelector('button').addEventListener('click', () => go('endless'));
   box.appendChild(e);
@@ -575,7 +575,7 @@ function finishLevel(r) {
 function renderEndless() {
   $('#eHero').textContent = PLAT.HEROES[S.data.hero].name;
   const box = $('#eWorlds'); box.innerHTML = '';
-  for (const k of [1, 2, 3]) {
+  for (const k of Object.keys(PLAT.ENDLESS_WORLDS).map(Number)) {
     const W = PLAT.ENDLESS_WORLDS[k], r = S.endlessRec(k);
     const b = document.createElement('button'); b.className = 'eworld'; b.style.setProperty('--wc', W.color);
     b.innerHTML = `<div class="nm">โลก ${k} · ${W.name}</div><div class="th">${W.th}</div>

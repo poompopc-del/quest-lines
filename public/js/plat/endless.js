@@ -58,12 +58,18 @@ const WORLDS = PLAT.ENDLESS_WORLDS = {
        hazard: 'lava', ledge: [TL.BRICK, TL.ONEWAY], color: '#ff7a3a',
        pool: [{ t: 'licker', w: 3.5 }, { t: 'magma', w: 2.6, d: .1 }, { t: 'salvador', w: 1.4, d: .3, wide: true }, { t: 'tyrant', w: 1.2, d: .45, wide: true }, { t: 'licker', w: 1, d: .5, elite: true }, { t: 'magma', w: .8, d: .55, elite: true }, { t: 'tyrant', w: .5, d: .75, elite: true, wide: true }],
        pat: { flat: 1.5, gap: 3, pillars: 3, crumble: 2.6, ledges: 2, ferry: [2, .2], steps: 1.5, arena: [1.4, .2] } },
+  // v113 WORLD 4 — the poison swamp: sinking lily-pad ponds, skull mounds, mossy branches, swamp creatures and mimics
+  4: { world: 4, theme: 'swamp', name: 'หนองพิษไม่สิ้นสุด', th: 'บ่อน้ำพิษกับใบบัวที่จม เนินกะโหลก กิ่งไม้ — แมงมุม ปีศาจโคลน สไลม์หนอง เห็ดพ่นสปอร์ ค้างคาว และหีบ Mimic',
+       hazard: 'acid', ledge: [TL.ONEWAY, TL.BRICK], color: '#7ad05a',
+       pool: [{ t: 'slime', w: 3 }, { t: 'zombie', w: 2.2, d: .05 }, { t: 'goo', w: 2.2, d: .1 }, { t: 'rat', w: 1.6, d: .15 }, { t: 'shroom', w: 1.4, d: .3, wide: true },
+         { t: 'ghost', w: 1.4, d: .2, fly: true }, { t: 'bat', w: 1.2, d: .35, fly: true }, { t: 'mimic', w: .7, d: .4, wide: true }, { t: 'goo', w: .8, d: .55, elite: true }, { t: 'shroom', w: .6, d: .65, elite: true, wide: true }],
+       pat: { flat: 2, hill: 2.2, steps: 1.4, gap: 1.6, lily: 3.2, ledges: 1.8, tomb: 1.6, spring: .7, crumble: [1.3, .2], arena: [1.4, .2] } },
 };
 const enemyTypes = world => [...new Set(WORLDS[world].pool.map(p => p.t))];
 
 /* ------------------------------------------------------------------ chunk */
 class Chunk {
-  constructor(gi, inRow) { this.gi = gi; this.inRow = inRow; this.outRow = inRow; this.tiles = new Uint8Array(H * CW); this.coins = []; this.hearts = []; this.springs = []; this.movers = []; this.spawns = []; this.signs = []; this.pats = []; this.safe = []; }
+  constructor(gi, inRow) { this.gi = gi; this.inRow = inRow; this.outRow = inRow; this.tiles = new Uint8Array(H * CW); this.coins = []; this.hearts = []; this.springs = []; this.movers = []; this.pads = []; this.spawns = []; this.signs = []; this.pats = []; this.safe = []; }
   get(c, r) { return c < 0 || c >= CW || r < 0 || r >= H ? TL.EMPTY : this.tiles[r * CW + c]; }
   set(c, r, t) { if (c >= 0 && c < CW && r >= 0 && r < H) this.tiles[r * CW + c] = t; }
   ground(c0, c1, row, t) { for (let c = c0; c < c1; c++) for (let r = row; r < H; r++) this.set(c, r, r === row && t ? t : TL.GROUND); }
@@ -254,7 +260,9 @@ function rules(ch) {
 function region(prev, ch) {
   const parts = prev ? [prev, ch] : [ch], w = parts.length * CW, tiles = new Uint8Array(H * w), V = { w, tiles, springs: [], movers: [] };
   parts.forEach((p, k) => { for (let r = 0; r < H; r++) for (let c = 0; c < CW; c++) tiles[r * w + k * CW + c] = p.tiles[r * CW + c];
-    p.springs.forEach(s => V.springs.push({ c: s.c + k * CW, r: s.r })); p.movers.forEach(m => V.movers.push({ c0: m.c0 + k * CW, c1: m.c1 + k * CW, r: m.r })); });
+    p.springs.forEach(s => V.springs.push({ c: s.c + k * CW, r: s.r })); p.movers.forEach(m => V.movers.push({ c0: m.c0 + k * CW, c1: m.c1 + k * CW, r: m.r }));
+    // a lily pad = a ledge on the water row for the search (the real pad floats 12 px higher: the check is the stricter one)
+    (p.pads || []).forEach(pd => { for (let c = pd.c; c < pd.c + pd.w; c++) tiles[pd.r * w + k * CW + c] = TL.ONEWAY; }); });
   V.startCol = 1; V.startRow = parts[0].inRow; V.goalCol = w - 2; V.goalRow = ch.outRow;
   return V;
 }
@@ -360,6 +368,13 @@ const PAT = {
     ch.ground(x, x + 9, row);
     for (let c = x + 2; c < x + 7; c++) { const hh = h1 > 1 && (c === x + 2 || c === x + 6) ? h1 - 1 : h1; for (let r = row - hh; r < row; r++) ch.set(c, r, TL.BRICK); if (hh === h1) ch.coin(c, row - h1 - 2); }
     return { x: x + 9, row }; } },
+  // v113 swamp pond: water one row LOWER than the banks, 2-wide lily pads (sinking movers) with 1-tile gaps
+  lily: { w: 9, make(ch, x, row, X) {
+    const n = X.r.int(2, X.d < .4 ? 3 : 4), span = n * 3 + 1; if (2 + span + 2 > X.left) return null;
+    const s = Math.max(row, Math.min(BASE, row + 1)), spd = +(X.d < .3 ? .6 : X.d < .7 ? .85 : 1.1).toFixed(2);
+    ch.ground(x, x + 2, row); ch.hazard(x + 2, x + 2 + span, row, 'lava');
+    for (let i = 0; i < n; i++) { const c = x + 3 + i * 3; ch.pads.push({ c, r: s, w: 2, speed: spd }); ch.coin(c, s - 3); ch.coin(c + 1, s - 3); }
+    ch.ground(x + 2 + span, x + 4 + span, row); return { x: x + 4 + span, row }; } },
   arena: { w: 9, make(ch, x, row, X) { const n = Math.min(X.left, X.r.int(8, 10)); ch.ground(x, x + n, row); ch.arena = { c0: x, c1: x + n - 1, r: row }; return { x: x + n, row }; } },
 };
 
@@ -410,12 +425,12 @@ function buildChunk(gi, inRow, X, hist, opt) {
     X.left = CW - PAD - x;
     if (X.left < 4) { ch.ground(x, CW - PAD, row); x = CW - PAD; break; }
     // a pattern that does not fit is rolled back completely (tiles + objects), never half-kept
-    const snap = { t: ch.tiles.slice(), n: [ch.coins.length, ch.hearts.length, ch.springs.length, ch.movers.length, ch.spawns.length], arena: ch.arena };
+    const snap = { t: ch.tiles.slice(), n: [ch.coins.length, ch.hearts.length, ch.springs.length, ch.movers.length, ch.spawns.length, ch.pads.length], arena: ch.arena };
     let name = null, res = null;
     for (let k = 0; k < 4 && !res; k++) {
       name = pickPat(X, hist.concat(ch.pats, k ? [name, name] : [])); res = PAT[name].make(ch, x, row, X);
       if (res && res.x > CW - PAD) res = null;
-      if (!res) { ch.tiles.set(snap.t); ch.coins.length = snap.n[0]; ch.hearts.length = snap.n[1]; ch.springs.length = snap.n[2]; ch.movers.length = snap.n[3]; ch.spawns.length = snap.n[4]; ch.arena = snap.arena; }
+      if (!res) { ch.tiles.set(snap.t); ch.coins.length = snap.n[0]; ch.hearts.length = snap.n[1]; ch.springs.length = snap.n[2]; ch.movers.length = snap.n[3]; ch.spawns.length = snap.n[4]; ch.pads.length = snap.n[5]; ch.arena = snap.arena; }
     }
     if (!res) { ch.ground(x, CW - PAD, row); x = CW - PAD; break; }
     ch.pats.push(name); x = res.x; row = res.row;
@@ -499,6 +514,7 @@ function placeChunk(L, ch, k) {
   for (const s of ch.springs) L.springs.push({ x: wx(s.c) + 4, y: s.r * T - 12, w: T - 8, h: 12, sq: 0 });
   for (const s of ch.signs) L.signs.push({ x: wx(s.c) + T / 2, y: s.r * T, text: s.text });
   for (const m of ch.movers) { const x = wx(m.c0), y = m.r * T; L.movers.push({ id: ch.gi * 10 + L.movers.length, x, y, w: m.w * T, h: 12, x0: x, y0: y, axis: 'x', range: m.range * T, speed: m.speed, t: m.phase * Math.PI * 2, dx: 0, dy: 0, prevY: y }); }
+  for (const pd of ch.pads || []) { const x = wx(pd.c), y = pd.r * T - 12; L.movers.push({ id: ch.gi * 10 + L.movers.length, x, y, w: pd.w * T, h: 12, x0: x, y0: y, axis: 'x', range: 0, speed: pd.speed, t: 0, dx: 0, dy: 0, prevY: y, sink: 1.6 * T, off: 0, load: 0, hold: 0, wy: pd.r * T }); }
   ch.pad = { x: wx(1) + T / 2, y: ch.inRow * T };
   L.chunks[k] = ch;
 }
@@ -536,6 +552,7 @@ PLAT.Endless = {
       for (let r = 0; r < H; r++) for (let c = 0; c < CW; c++) rows[r][k * CW + c] = inv[ch.tiles[r * CW + c]] || '.';
       ch.springs.forEach(s => rows[s.r - 1][k * CW + s.c] = 'S');
       ch.movers.forEach(m => movers.push({ tx: k * CW + m.c0, ty: m.r, w: m.w, axis: 'x', range: m.range, speed: m.speed, phase: m.phase }));
+      (ch.pads || []).forEach(pd => movers.push({ tx: k * CW + pd.c, ty: pd.r, w: pd.w, sink: true, speed: pd.speed }));
     });
     rows[chunks[0].inRow - 1][1] = 'P';
     const last = chunks[chunks.length - 1]; rows[last.outRow - 1][n * CW - 2] = 'E';

@@ -11,12 +11,12 @@ import { loadPlat } from './plat-vm.mjs';
 import { bfsValidate } from './plat-bfs.mjs';
 import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path';
 const PLAT = loadPlat(), E = PLAT.Endless, a = process.argv.slice(2).map(Number);
-const single = a.length >= 2 && a[0] >= 1 && a[0] <= 3 && a[1] > 10 ? { world: a[0], seed: a[1], n: a[2] || 6, from: a[3] || 1 } : null;
+const single = a.length >= 2 && a[0] >= 1 && a[0] <= 9 && a[1] > 10 ? { world: a[0], seed: a[1], n: a[2] || 6, from: a[3] || 1 } : null;
 const SEEDS = single ? 1 : (a[0] || 4), N = single ? single.n : (a[1] || 6);
 const heroes = ['__test', 'x'], failed = []; let pass = 0, fail = 0, unk = 0;
 const t0 = Date.now();
 // every seed is checked twice: the start of a run (LV 1-2) and deep into it (chunks 50+, LV 9-10, hardest)
-const runs = single ? [[single.world, single.seed, single.from || 1]] : [1, 2, 3].flatMap(w => [...Array(SEEDS)].flatMap((_, i) => [[w, 1000 + w * 97 + i * 7919, 1], [w, 1000 + w * 97 + i * 7919, 50]]));
+const runs = single ? [[single.world, single.seed, single.from || 1]] : Object.keys(E.WORLDS).map(Number).flatMap(w => [...Array(SEEDS)].flatMap((_, i) => [[w, 1000 + w * 97 + i * 7919, 1], [w, 1000 + w * 97 + i * 7919, 50]]));
 for (const [w, seed, from] of runs) {
   const { spec, gen, chunks } = E.toSpec(w, seed, N + 1, from);
   const res = heroes.map(h => bfsValidate(PLAT, spec, { hero: h, gems: false, stopAtExit: true }));
@@ -27,7 +27,7 @@ for (const [w, seed, from] of runs) {
     sims ${res.map(r => r.sims).join('/')} · generator: ${st.tries} tries, ${st.failed} re-rolled, ${st.fallback} fallback${bad.length ? '\n    ' + bad.map(r => r.errs.join('; ')).join('\n    ') : ''}`);
 }
 // the fallback chunk of every world (used if MAX_TRIES candidates all fail)
-for (const w of [1, 2, 3]) {
+for (const w of Object.keys(E.WORLDS).map(Number)) {
   const g = new E.Generator(w, 1); const intro = g.start(); const chunks = [intro];
   for (let i = 1; i <= 3; i++) chunks.push(E.safeChunk(i, chunks[i - 1].outRow));
   const ok = chunks.slice(1).every((c, i) => E.validate(chunks[i], c).ok);
