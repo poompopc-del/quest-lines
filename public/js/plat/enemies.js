@@ -91,6 +91,7 @@ class Enemy {
   constructor(g, type, x, y, elite) {
     // the theme's skin (art.js) replaces only the look; AI / HP / damage stay the type's own
     const d = this.def = tuneDef((PLAT.enemyDef ? PLAT.enemyDef(type, g.spec && g.spec.theme) : null) || E[type] || PLAT.BOSSES[type]); this.type = type; this.g = g; this.elite = !!elite && !d.boss;
+    if (g.daily && g.daily.mod.id === 'swarm' && !d.boss) { if (d.speed) d.speed *= 1.25; if (d.chase) d.chase *= 1.25; }   // v118 daily rule
     this.sc = d.scale * (this.elite ? 1.15 : 1);
     const geo = g.geom && g.geom[type], k = this.sc / d.scale;
     this.w = Math.round((geo ? geo.w : d.box[0]) * k); this.h = Math.round((geo ? geo.h : d.box[1]) * k); this.cOff = geo ? geo.c / d.scale : 0;

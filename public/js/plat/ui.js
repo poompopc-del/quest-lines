@@ -55,12 +55,14 @@ function boot() {
   $('#padDefaults').addEventListener('click', () => { input.setPadMap(PLAT.PAD.copy(PLAT.PAD.DEFAULT)); S.data.settings.padMap = null; S.persist(); renderPadMap(); refreshGlyphs(); notify('🎮 คืนค่าปุ่มจอยเริ่มต้นแล้ว'); PLAT.sfx.checkpoint(); });
   setupSettings(); refreshFullBtn(); applyBtnSize(); renderPadStatus();
   document.documentElement.dataset.dev = input.lastDevice;
+  if (app.onBoot) app.onBoot();
   resize(); show('title'); refreshTitle();
   app.last = performance.now(); app.raf = requestAnimationFrame(tick);
 }
 
 /* -------------------------------- screens -------------------------------- */
-const SCREENS = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', endless: 'sEndless', over: 'sOver', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings', loading: 'sLoading', shop: 'sShop' };
+const SCREENS = app.SCREENS = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', endless: 'sEndless', over: 'sOver', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings', loading: 'sLoading', shop: 'sShop' };
+app.onShow = {}; app.subScreens = new Set(['settings', 'heroes', 'shop']);        // v118: hub.js adds screens (daily, missions, talents, rush …)
 function show(name, push) {
   if (name !== app.screen) input.reset('screen');                     // switching screens never leaves a button held
   if (push && app.screen !== name) app.prev.push(app.screen);
@@ -78,6 +80,7 @@ function show(name, push) {
   if (name === 'settings') { renderPadStatus(); renderPadMap(); }
   if (name === 'shop') renderShop();
   if (name !== 'settings' && input.capture) stopListen();
+  if (app.onShow[name]) app.onShow[name]();
   const first = id && $('#' + id + ' .btn.red, #' + id + ' .btn');
   if (first && (input.lastDevice === 'pad' || input.lastDevice === 'key')) setTimeout(() => first.focus({ preventScroll: true }), 30);
 }
@@ -99,6 +102,7 @@ function go(where) {
     case 'resume': resume(); break;
     case 'retryCp': if (app.game && !app.game.endlessWorld) { app.game.respawn(); show('game'); } break;
     case 'restart': if (app.game) { if (app.game.endlessWorld) { recordEndless(app.game.result(), true); go2('endlessAgain'); } else startLevel(app.game.levelId); } break;
+    default: if (app.go2 && app.go2(where)) break; break;
     case 'next': { const i = PLAT.LEVEL_ORDER.indexOf(app.game && app.game.levelId); const n = PLAT.LEVEL_ORDER[i + 1]; if (n && levelUnlocked(n)) startLevel(n); else { quitGame(); show('map'); } break; }
   }
 }
@@ -108,7 +112,7 @@ function menuKeys(e) {
   // ` toggles the combat debug overlay — only for developers (main game's dev mode, or ?debug=1 in the URL)
   if (e.code === 'Backquote' && (S.devOn() || /[?&]debug=1\b/.test(location.search))) { PLAT.debug.on = !PLAT.debug.on; PLAT.debug.boxes = []; PLAT.debug.log = []; notify('🛠 Debug ' + (PLAT.debug.on ? 'ON' : 'OFF'), PLAT.debug.on ? 'กล่องโจมตี / กล่องรับดาเมจ / สถานะ / เหตุผลที่ตีไม่เข้า' : ''); return; }
   if (app.screen === 'game') return;
-  if (e.code === 'Escape') { e.preventDefault(); if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes' || app.screen === 'shop') go('back'); else if (app.screen === 'map' || app.screen === 'endless') show('title'); }
+  if (e.code === 'Escape') { e.preventDefault(); if (app.screen === 'pause') resume(); else if (app.subScreens.has(app.screen)) go('back'); else if (app.screen === 'map' || app.screen === 'endless') show('title'); }
 }
 function pause() {
   const g = app.game; if (!g || g.mode !== 'play') return; g.mode = 'paused';
@@ -122,7 +126,7 @@ function resume() { if (!app.game) return; if (app.game.mode === 'paused') app.g
 /* ---------------------------- menu navigation ----------------------------
    D-pad / stick / arrow keys move the focus to the nearest button in that direction,
    A / Enter presses it, B / Backspace goes back — every menu works without touching the screen. */
-function screenEl() { const id = { title: 'sTitle', heroes: 'sHeroes', map: 'sMap', endless: 'sEndless', pause: 'sPause', dead: 'sDead', clear: 'sClear', settings: 'sSettings', shop: 'sShop', over: 'sOver' }[app.screen]; return id && $('#' + id); }
+function screenEl() { const id = app.screen !== 'loading' && SCREENS[app.screen]; return id && $('#' + id); }
 function focusables(root) { return [...root.querySelectorAll('button:not([disabled]), input[type=range]')].filter(el => el.offsetParent !== null && el.getBoundingClientRect().width > 0); }
 function moveFocus(dx, dy) {
   const root = screenEl(); if (!root) return;
@@ -150,7 +154,7 @@ function menuNav() {
   if (P('up')) moveFocus(0, -1); else if (P('down')) moveFocus(0, 1); else if (P('left')) moveFocus(-1, 0); else if (P('right')) moveFocus(1, 0);
   else if (P('ok')) { const root = screenEl(); if (root && cur && root.contains(cur) && cur.tagName === 'BUTTON') cur.click(); else moveFocus(0, 1); }
   else if (P('back') || (P('pause') && app.screen === 'pause')) {
-    if (app.screen === 'pause') resume(); else if (app.screen === 'settings' || app.screen === 'heroes' || app.screen === 'shop') go('back');
+    if (app.screen === 'pause') resume(); else if (app.subScreens.has(app.screen)) go('back');
     else if (app.screen === 'map' || app.screen === 'endless') show('title'); else if (app.screen === 'dead') go('retryCp');
   }
   else return;
@@ -167,7 +171,7 @@ function toggleFullscreen() {
 }
 function refreshFullBtn() {
   const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
-  [$('#hFull'), $('#tFull')].forEach(b => { if (!b) return; b.style.display = fsOK() ? '' : 'none'; b.textContent = b.id === 'tFull' ? (on ? '⛶ ออกจากเต็มจอ' : '⛶ เต็มจอ (แนะนำบนมือถือ)') : '⛶'; });
+  [$('#hFull'), $('#tFull')].forEach(b => { if (!b) return; b.style.display = fsOK() ? '' : 'none'; b.textContent = '⛶'; b.title = on ? 'ออกจากเต็มจอ' : 'เต็มจอ (แนะนำบนมือถือ)'; });
 }
 
 /* ------------------------- controls: glyphs & pad info ------------------------- */
@@ -373,40 +377,43 @@ function renderMap() {
 }
 
 /* ------------------------------ level session ------------------------------ */
-async function startLevel(id) {
+async function startLevel(id, opts) {
   if (app.busy) return; app.busy = true;
-  try { await startLevel_(id); } finally { app.busy = false; }
+  try { await startLevel_(id, opts); } finally { app.busy = false; }
 }
-async function startLevel_(id) {
+async function startLevel_(id, opts) {
+  opts = opts || {};
   quitGame();
   const L = PLAT.LEVELS[id], heroId = heroAvailable(S.data.hero) ? S.data.hero : 'knight';
   $('#lTitle').textContent = `${PLAT.levelLabel(id)} · ${L.name}`; $('#lSub').textContent = L.teach || ''; $('#lBar').style.width = '0%';
   show('loading');
-  const g = new PLAT.Game({ levelId: id, heroId, onEvent: onGameEvent });
+  const g = new PLAT.Game({ levelId: id, heroId, onEvent: onGameEvent, rush: opts.rush || null });
   app.game = g;
   try { await g.load((d, n) => { $('#lBar').style.width = Math.round(d / n * 100) + '%'; }); }
   catch (e) { console.error(e); $('#lTitle').textContent = 'โหลดด่านไม่สำเร็จ'; $('#lSub').textContent = String(e.message || e); app.game = null; setTimeout(() => show('map'), 2200); return; }
   if (app.game !== g) return;
   setupHud(g);
+  if (opts.hp != null) { g.player.hp = Math.min(g.player.maxHp, Math.max(1, opts.hp)); }            // v118 boss rush: HP carries over
   input.clearAll(); show('game');
   toast(`${PLAT.levelLabel(id)} ${L.name}`, L.teach);
   if (PLAT.assets.failed.length) console.warn('[platform] missing assets:', PLAT.assets.failed);
 }
 /* ENDLESS: one run per world. Loading uses the same loader / hero as the story levels. */
-async function startEndless(world, seed) {
+async function startEndless(world, seed, opts) {
+  opts = opts || {};
   if (app.busy) return; app.busy = true;
   try {
     quitGame();
     const heroId = heroAvailable(S.data.hero) ? S.data.hero : 'knight', W = PLAT.ENDLESS_WORLDS[world];
     $('#lTitle').textContent = `∞ ${W.name}`; $('#lSub').textContent = W.th; $('#lBar').style.width = '0%';
     show('loading');
-    const g = new PLAT.Game({ endless: world, seed, heroId, onEvent: onGameEvent });
+    const g = new PLAT.Game({ endless: world, seed, heroId, onEvent: onGameEvent, daily: opts.daily || null });
     app.game = g;
     try { await g.load((d, n) => { $('#lBar').style.width = Math.round(d / n * 100) + '%'; }); }
     catch (e) { console.error(e); $('#lTitle').textContent = 'โหลดไม่สำเร็จ'; $('#lSub').textContent = String(e.message || e); app.game = null; setTimeout(() => show('endless'), 2200); return; }
     if (app.game !== g) { g.dispose(); return; }
     setupHud(g); input.reset('start'); show('game');
-    toast('∞ ' + W.name, 'ไปให้ไกลที่สุด! · ยิ่งไกลยิ่งยาก');
+    if (opts.daily) toast('📅 ท้าทายรายวัน · ' + opts.daily.mod.icon + ' ' + opts.daily.mod.name, opts.daily.mod.desc); else toast('∞ ' + W.name, 'ไปให้ไกลที่สุด! · ยิ่งไกลยิ่งยาก');
   } finally { app.busy = false; }
 }
 function quitGame() {
@@ -424,9 +431,10 @@ function onGameEvent(type, d) {
     case 'bossHit': $('#hBossBar').style.width = (d.hp / d.max * 100) + '%'; break;
     case 'toast': toast(d.text, d.sub); break;
     case 'bag': hudCache.bag = null; break;
-    case 'dead': S.data.stats.deaths++; S.persist(); $('#dRetry').textContent = g.spec.boss ? '↺ ท้าบอสอีกครั้ง' : '↺ เกิดใหม่ที่เช็กพอยต์'; show('dead'); break;
+    case 'dead': S.data.stats.deaths++; S.persist(); if (g.rush && app.onEvent) { app.onEvent('rushDead', d); break; } $('#dRetry').textContent = g.spec.boss ? '↺ ท้าบอสอีกครั้ง' : '↺ เกิดใหม่ที่เช็กพอยต์'; show('dead'); break;
     case 'clear': finishLevel(d); break;
     case 'over': finishEndless(d); break;
+    default: if (app.onEvent) app.onEvent(type, d);
   }
 }
 let toastT = 0;
@@ -484,7 +492,7 @@ function shopAct(k) {
 // equipping / removing a relic mid-run: max HP (dragon) follows at once
 function relicChanged() {
   const g = app.game, p = g && g.player; if (!p) return;
-  p.maxHp = p.hero.hp * PLAT.HPU + (PLAT.relicOn('dragon') ? 40 : 0); p.hp = Math.min(p.hp, p.maxHp); hudCache.hp = null;
+  p.maxHp = PLAT.meta ? PLAT.meta.maxHpOf(p, g) : p.hero.hp * PLAT.HPU + (PLAT.relicOn('dragon') ? 40 : 0); p.hp = Math.min(p.hp, p.maxHp); hudCache.hp = null;
 }
 
 /* ---------------------------------- HUD ---------------------------------- */
@@ -553,6 +561,14 @@ function finishLevel(r) {
   const unlocked = heroList().filter(h => heroAvailable(h) && !before.has(h));
   S.data.stats.kills += r.kills; S.data.stats.coins += r.coins; S.data.stats.playFrames += r.frames;
   const paid = S.addMainGold(gold);
+  const MT = PLAT.meta;
+  if (MT) {                                                              // v118 counters → missions / achievements
+    MT.track('clear'); if (r.rank === 'S') MT.track('rankS');
+    if (PLAT.LEVELS[id].boss && r.hits === 0 && r.deaths === 0 && !MT.invincible()) MT.track('noHitBoss');
+    MT.best('levelsCleared', PLAT.LEVEL_ORDER.filter(l => S.level(l) && S.level(l).cleared).length);
+    MT.best('gems', PLAT.LEVEL_ORDER.reduce((n, l) => n + ((S.level(l) || {}).gems || []).length, 0));
+    if (PLAT.LEVELS[id].boss) MT.medal(id, MT.grade(r.hits, r.frames), r.frames);
+  }
   S.persist();
   const next = PLAT.LEVEL_ORDER[idx + 1];
   const newBest = !first && rec.bestScore === r.score && r.score > (prev.bestScore || 0);
@@ -597,10 +613,12 @@ function recordEndless(r, quit) {
   if (r.dist > (rec.bestDist || 0)) rec.bestDist = r.dist;
   if (r.tier > (rec.bestTier || 0)) rec.bestTier = r.tier;
   S.data.stats.kills += r.kills; S.data.stats.coins += r.coins; S.data.stats.playFrames += r.frames; if (!quit) S.data.stats.deaths++;
+  if (PLAT.meta) { PLAT.meta.track('endlessDist', r.dist); PLAT.meta.best('endlessBest', r.dist); }
   S.persist();
   return { rec, newBest };
 }
 function finishEndless(r) {
+  const g0 = app.game; if (g0 && g0.daily && app.finishDaily) { recordEndless(r, false); app.finishDaily(r, g0.daily); return; }
   const res = recordEndless(r, false) || { rec: S.endlessRec(r.endless), newBest: false }, rec = res.rec, W = PLAT.ENDLESS_WORLDS[r.endless];
   const dev = S.devOn() || PLAT.debug.on;
   $('#overBox').innerHTML = `
@@ -667,7 +685,7 @@ function tick(now) {
   if (g && g.mode !== 'loading') {
     if (app.screen === 'game' && input.wasPressed('pause') && g.mode === 'play') { pause(); input.endFrame(); }
     if (app.screen === 'game' && (g.mode === 'play' || g.mode === 'clear' || (g.mode === 'dead'))) {
-      app.acc += dt / (1000 / C.FPS);
+      app.acc += dt / (1000 / C.FPS) * (PLAT.meta ? PLAT.meta.assist().speed || 1 : 1);   // v118 assist: slower game
       let steps = 0;
       while (app.acc >= 1 && steps < 5) {
         try { g.update(); } catch (e) { if (!app.errLogged) { app.errLogged = true; console.error('[platform] update error', e); } }   // one bad frame must not freeze the game
@@ -684,12 +702,13 @@ function tick(now) {
     input.endFrame();
     if (app.previews.length) animatePreviews();
     // idle menu backdrop
-    const cv = app.cv, ctx = app.ctx; if (app.idleOf !== cv.width + 'x' + cv.height) { app.idleOf = cv.width + 'x' + cv.height; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#08070f'; ctx.fillRect(0, 0, cv.width, cv.height); }
+    const cv = app.cv, ctx = app.ctx; if (app.drawBackdrop && app.drawBackdrop(ctx, cv, now)) { app.idleOf = null; }
+    else if (app.idleOf !== cv.width + 'x' + cv.height) { app.idleOf = cv.width + 'x' + cv.height; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#08070f'; ctx.fillRect(0, 0, cv.width, cv.height); }
   }
   if (g && app.previews.length && app.screen !== 'game') animatePreviews();
 }
 
 // small handle for tools/plat-v92-test.mjs (and the browser console): the same functions the buttons call
-app.api = { startLevel, startEndless, show, go, pause, resume, quitGame, syncTouch, renderPadMap, startListen, stopListen };
-boot();
+app.api = { startLevel, startEndless, show, go, pause, resume, quitGame, syncTouch, renderPadMap, startListen, stopListen, notify, toast, refreshTitle, heroSheet, drawPreview, heroAvailable, levelUnlocked, setupHud };
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();   // v118: after hub.js has registered its screens
 })();

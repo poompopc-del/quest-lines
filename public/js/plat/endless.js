@@ -71,7 +71,7 @@ const WORLDS = PLAT.ENDLESS_WORLDS = {
          { t: 'shroom', w: 1.2, d: .35, wide: true }, { t: 'goblin', w: 1, d: .45 }, { t: 'hound', w: 1, d: .5, elite: true }, { t: 'skel', w: .6, d: .65, elite: true }],
        pat: { flat: 1.8, gap: 2.6, pillars: 2.6, crumble: 2, ledges: 2.2, ferry: [1.8, .2], steps: 1.6, hill: 1.2, spring: .8, arena: [1.4, .2] } },
 };
-const CHAMP_FIRST = 180, CHAMP_EVERY = 320;             // v116 endless boss: first at 180 m, then 320 m after each one is beaten
+const CHAMP_FIRST = 180, CHAMP_EVERY = 320, BOON_FIRST = 60, BOON_EVERY = 150;   // v118 boons: first at 60 m, then every 150 m (+ one per endless boss)             // v116 endless boss: first at 180 m, then 320 m after each one is beaten
 const enemyTypes = world => [...new Set(WORLDS[world].pool.map(p => p.t))];
 
 /* ------------------------------------------------------------------ chunk */
@@ -579,7 +579,10 @@ class Runner {
     placeChunk(L, gen.start(), 0);
     for (let k = 1; k < WIN; k++) placeChunk(L, gen.next(k), k);
     this.nextGi = WIN; this.startX = L.start.x; this.maxX = L.start.x; this.dist = 0; this.tier = 1;
-    this.champ = null; this.champN = 0; this.nextChamp = CHAMP_FIRST; g.emit('boss', null);
+    const DM = g.daily && g.daily.mod.id;
+    this.champEvery = DM === 'hunt' ? 200 : CHAMP_EVERY; this.boonEvery = DM === 'boonrush' ? 80 : BOON_EVERY;
+    this.champ = null; this.champN = 0; this.nextChamp = DM === 'hunt' ? 100 : CHAMP_FIRST; g.emit('boss', null);
+    this.nextBoon = DM === 'boonrush' ? 80 : BOON_FIRST; this.boonDue = false;
     this.startWorker();
     this.request(this.nextGi);
     return L;
@@ -633,6 +636,11 @@ class Runner {
     this.dist = Math.max(0, Math.floor((this.maxX - this.startX) / T));
     const cur = L.chunks.find(c => (c.gi + 1) * CW * T > p.cx); this.tier = cur && cur.tier || this.tier;
     this.stepChampion();
+    // v118 BOONS: pick 1 of 3 at every milestone and after each endless boss (only when no boss is alive)
+    if (!p.dead && !this.champ && g.mode === 'play' && (this.boonDue || this.dist >= this.nextBoon)) {
+      if (!this.boonDue) this.nextBoon += this.boonEvery; this.boonDue = false;
+      if (PLAT.meta) g.offerBoon(PLAT.meta.boonChoices(g, 3));
+    }
   }
   /* v116 ENDLESS BOSSES: every so often one of this world's own enemies comes back as a giant CHAMPION —
      ×1.7 size, lots of HP (a boss bar), heavier hits, faster, it does not flinch until its poise breaks, it hunts you
@@ -641,7 +649,7 @@ class Runner {
     const g = this.g, p = g.player, L = g.L;
     const c = this.champ;
     if (c) {
-      if (c.dead || c.gone) { this.champ = null; this.nextChamp = this.dist + CHAMP_EVERY; return; }
+      if (c.dead || c.gone) { this.champ = null; this.nextChamp = this.dist + this.champEvery; return; }
       if (c.cx < p.cx - 13 * T && !p.dead) {                       // left behind → it catches up (lands just behind you)
         const x = p.cx - 7 * T, fl = g.floorBelow(x, p.y - 4 * T);
         if (fl < L.ph && !W.tilesIn(L, { x: x - 8, y: fl, w: 16, h: 8 }, TL.LIQUID).length) { c.x = x - c.w / 2; c.y = (c.def.ai === 'flyer' ? fl - 4 * T : fl) - c.h; c.vx = 0; c.vy = 0; c.home = { x: c.x, y: c.y }; g.burst(c.cx, c.y + c.h / 2, '#ff5ad8', 12, 2.4); }

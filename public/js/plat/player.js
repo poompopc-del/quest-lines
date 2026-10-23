@@ -64,7 +64,7 @@ class Player {
     if (this.comboWin > 0 && --this.comboWin === 0) this.combo = 0;
     if (this.streakT > 0 && --this.streakT === 0) this.streak = 0;
     if (this.wallLock > 0) this.wallLock--; if (this.drop > 0) this.drop--;
-    this.en = Math.min(100, this.en + .12);
+    this.en = Math.min(100, this.en + .12 * (1 + ((g.mods && g.mods.en) || 0)));
     this.sq.x += (1 - this.sq.x) * .2; this.sq.y += (1 - this.sq.y) * .2;
     this.bodyHit = null; this.guarding = false;
 
@@ -141,7 +141,7 @@ class Player {
     if (this.wallLock > 0) ax = 0;
     // v102: holding a direction WALKS; a double tap (runTap) makes it RUN until the direction is let go or reversed
     if (ax && this.onGround) this.runT = (Math.sign(this.vx) === ax || Math.abs(this.vx) < .5) ? (this.runT >= C.RUN_AFTER ? this.runT + 1 : Math.min(this.runT + 1, C.RUN_AFTER - 1)) : 0; else if (this.onGround) this.runT = 0;
-    let top = (this.runT >= C.RUN_AFTER ? C.RUN : C.WALK) * spd * (this.superT > 0 ? h.ult.speed : 1) * (this.speedMul || 1);
+    let top = (this.runT >= C.RUN_AFTER ? C.RUN : C.WALK) * spd * (this.superT > 0 ? h.ult.speed : 1) * (this.speedMul || 1) * (1 + ((this.g.mods && this.g.mods.speed) || 0));
     if (!this.onGround) top = Math.max(C.WALK * spd, this.airTop || 0);
     if (this.act && this.act.slow) top *= this.onGround ? this.act.slow : 1;
     if (this.mouth) top *= .85;
@@ -636,7 +636,7 @@ class Player {
           update() {
             this.t++;
             if (this.phase === 'wind') {
-              this.held += (self.chargeMul || 1); self.vx *= .6;
+              this.held += (self.chargeMul || 1) * (1 + ((g.mods && g.mods.charge) || 0)); self.vx *= .6;
               if (this.t % 12 === 0) sfx().charge();
               if (this.t % 3 === 0) g.burst(self.cx + self.face * 14, self.feet - 34, this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0', 1, .6);
               if (lvlUp(this.held, self.chargeMul || 1)) { g.text(self.cx, self.y - 14, 'ชาร์จ! ' + ((S.base + this.held * S.perFrame) / 60).toFixed(1) + ' วิ', '#ffd060', 40); sfx().gem(); }
@@ -663,7 +663,7 @@ class Player {
           update() {
             this.t++;
             if (this.phase === 'up') {
-              this.held += (self.chargeMul || 1); const w = S.base + this.held * S.grow; self.vx *= .6;
+              this.held += (self.chargeMul || 1) * (1 + ((g.mods && g.mods.charge) || 0)); const w = S.base + this.held * S.grow; self.vx *= .6;
               if (S.hold && this.held === S.rise) { self.anim.play(S.hold, null, true); this.pose = S.hold; }
               if (this.held % 12 === 0) sfx().charge();
               const col = this.held > 180 ? '#ffe36a' : this.held > 60 ? '#ffb04a' : '#ffd8a0';
@@ -919,7 +919,7 @@ class Player {
   /* ------------------------------- ULTIMATE ------------------------------- */
   gainUlt(n) {
     if (this.superT > 0 || !this.hero.ult) return;
-    const was = this.ult >= 100; this.ult = Math.min(100, this.ult + n);
+    const was = this.ult >= 100; this.ult = Math.min(100, this.ult + n * (1 + ((this.g.mods && this.g.mods.ult) || 0)));
     if (!was && this.ult >= 100) { this.g.text(this.cx, this.y - 14, 'ULT พร้อม!', '#ffd84a', 70, true); sfx().gem(); }
   }
   startUlt() {
@@ -1024,7 +1024,7 @@ class Player {
     if (a && /^(ult|beam|transform|nova|meteor|bigshot)$/.test(a.kind)) return;       // big committed moves cannot be cancelled
     if (a) this.endAct();
     this.cancelHeld();
-    this.parryWin = PARRY_WIN + (PLAT.relicOn('shadow') ? 6 : 0); this.parryT = this.parryWin; this.parryCd = PARRY_CD;
+    this.parryWin = PARRY_WIN + (PLAT.relicOn('shadow') ? 6 : 0) + ((this.g.mods && this.g.mods.parryWin) || 0); this.parryT = this.parryWin; this.parryCd = PARRY_CD;
     if (this.hero.parryPose) { this.anim.play(this.hero.parryPose, 30, true); this.parryAnim = 30; }   // v103: Luffy parries with Gomu Gomu Fusen
     sfx().swing(); this.g.burst(this.cx + this.face * 12, this.y + this.h * .4, '#cfe8ff', 4, 1.2);
   }
@@ -1048,6 +1048,7 @@ class Player {
     g.spark(x, y, perfect ? 2.2 : 1.5); g.burst(x, y, perfect ? '#ffe36a' : '#cfe8ff', perfect ? 16 : 10, 3);
     g.text(this.cx, this.y - 12, perfect ? 'PERFECT PARRY!' : 'ปัด!', perfect ? '#ffe36a' : '#bfe8ff', perfect ? 50 : 36, perfect);
     g.stats.parries = (g.stats.parries || 0) + 1;
+    if (PLAT.meta) { PLAT.meta.track('parry'); if (perfect) PLAT.meta.track('perfectParry'); PLAT.meta.onParry(g, this, perfect); }
     if (PLAT.relicOn('halo')) { this.heal(15); g.text(this.cx, this.y - 26, '+15 😇', '#fff4a0', 30); }
   }
   // returns 'hit' | 'blocked' | 'ignored' | 'parried'
@@ -1061,6 +1062,7 @@ class Player {
     }
     if (this.inv > 0) return 'ignored';
     if (!o.raw) dmg = Math.round(dmg * PLAT.HPU);                          // enemy damage is in old hearts
+    if (PLAT.meta) { const a = PLAT.meta.assist().dmg; if (a < 1) dmg = Math.round(dmg * a); }      // v118 assist mode: less (or no) damage
     if (PLAT.relicOn('aegis') && this.aegisCd <= 0 && !o.unblockable) {   // relic: the barrier eats one hit
       this.aegisCd = 900; this.inv = 40; sfx().clang(); PLAT.haptic('hit');
       this.g.burst(this.cx, this.y + this.h / 2, '#9fe8ff', 16, 3); this.g.text(this.cx, this.y - 10, 'BARRIER!', '#9fe8ff', 40, true); return 'blocked';
@@ -1080,6 +1082,7 @@ class Player {
     if (dmg > 0) this.g.text(this.cx, this.y - 6, '-' + dmg, '#ff6a7a', 40);
     this.g.stats.hits++; this.gainUlt(8); this.g.hurtT = 18; this.g.chain = 0; this.g.chainT = 0; this.queued = false;
     if (this.hero.mod && this.hero.mod.onHurt) this.hero.mod.onHurt(this, dmg);
+    if (PLAT.meta && o.src) PLAT.meta.onHurt(this.g, this, o.src);                 // v118 thorns / lava armour
     if (this.hp <= 0 && PLAT.relicOn('phoenix') && !this.g.phoenixUsed) { this.g.phoenixUsed = true; this.rebirth(); return 'hit'; }
     if (this.hp <= 0) this.die();
     return 'hit';
@@ -1092,7 +1095,7 @@ class Player {
     if (this.hero.mod && this.hero.mod.die) this.hero.mod.die(this);
   }
   heal(n) { this.hp = Math.min(this.maxHp, this.hp + n); }
-  maxAirJumps() { return (this.hero.airJumps || 0) + (PLAT.relicOn('wind') ? 1 : 0); }
+  maxAirJumps() { return (this.hero.airJumps || 0) + (PLAT.relicOn('wind') ? 1 : 0) + ((this.g.mods && this.g.mods.airJumps) || 0); }
   // relic: PHOENIX — rise from the ashes once per level
   rebirth() {
     const g = this.g; this.hp = Math.ceil(this.maxHp * .5); this.inv = 150; this.hurtT = 0; this.vy = -6;
@@ -1108,7 +1111,7 @@ class Player {
     const miss = (this.maxHp - this.hp) / this.maxHp, order = ['potS', 'potL', 'elixir'].filter(k => B.count(k) > 0);
     if (!order.length) { g.text(this.cx, this.y - 8, 'ไม่มียา! (ซื้อที่ร้านค้า)', '#ff9a9a', 40); sfx().denied(); return false; }
     const id = order.find(k => PLAT.ITEMS[k].heal >= miss * .6) || order[order.length - 1], it = PLAT.ITEMS[id];
-    B.take(id); const n = Math.ceil(this.maxHp * it.heal); this.heal(n); if (it.inv) this.inv = Math.max(this.inv, it.inv);
+    B.take(id); const n = Math.ceil(this.maxHp * it.heal * (1 + ((g.mods && g.mods.potion) || 0))); this.heal(n); if (it.inv) this.inv = Math.max(this.inv, it.inv);
     sfx().heart(); g.text(this.cx, this.y - 10, `${it.icon} +${n} HP`, '#7aff9a', 50, true);
     for (let i = 0; i < 18; i++) g.parts.push({ x: this.cx + U.rnd(-12, 12), y: this.feet - U.rnd(0, this.h), vx: U.rnd(-.4, .4), vy: U.rnd(-2.2, -.8), life: 30, col: i % 2 ? '#7aff9a' : '#ffffff', size: 3, grav: -.02, fade: true });
     g.emit('bag', {}); return true;

@@ -25,6 +25,7 @@ class Game {
     if (opt.endless) { this.endlessWorld = opt.endless; this.seed = (opt.seed >>> 0) || ((Math.random() * 4294967296) >>> 0); this.spec = PLAT.Endless.spec(opt.endless); this.levelId = this.spec.id; }
     else { this.levelId = opt.levelId; this.spec = PLAT.LEVELS[opt.levelId]; }
     this.theme = PLAT.THEMES[this.spec.theme]; this.input = PLAT.input; this.emitFn = opt.onEvent || (() => {});
+    this.daily = opt.daily || null; this.rush = opt.rush || null;                          // v118 daily challenge rules / boss rush run
     this.sheets = new Map(); this.frame = 0; this.mode = 'loading';
   }
   enemyDef(type) { return (PLAT.enemyDef && PLAT.enemyDef(type, this.spec.theme)) || PLAT.ENEMIES[type] || PLAT.BOSSES[type]; }
@@ -72,6 +73,12 @@ class Game {
     const L = this.L = this.runner ? this.runner.init() : W.buildLevel(this.spec);
     if (this.spec.arena) { const a = this.spec.arena; L.arena = { x0: a.x0 * T, x1: a.x1 * T, top: a.top || 2 * T }; }
     this.player = new PLAT.Player(this, this.heroId, L.start, this.heroSheet);
+    // v118: talents (+ this run's boons + the daily rule) → g.mods; the daily "blessed" rule starts with 2 boons
+    this.boons = {}; this.fires = [];
+    if (PLAT.meta) {
+      if (this.daily && this.daily.mod.id === 'blessed') for (const id of PLAT.meta.boonChoices(this, 2)) this.boons[id] = 1;
+      PLAT.meta.buildMods(this); PLAT.meta.applyMods(this); this.player.hp = this.player.maxHp;
+    } else this.mods = {};
     this.checkpoint = { x: L.start.x, y: L.start.y };
     this.tokens = new Set();
     this.measureEnemies();
@@ -88,6 +95,14 @@ class Game {
     if (!this.runner) this.buildDecor(); this.tileCache = null;
     this.mode = 'play'; this.signNear = null; this.clearT = 0; this.held_ = null; this.freeze = 0; this.chain = 0; this.chainT = 0; this.cut = null; this.hurtT = 0;
     if (this.spec.boss) this.emit('toast', { text: this.spec.name, sub: this.spec.teach });
+    this.emit('hud', this.hudState());
+  }
+  // v118: pause the run and ask the UI for a boon pick (1 of `choices`)
+  offerBoon(choices) { if (!choices || !choices.length) return; this.mode = 'boon'; this.boonChoices = choices; this.emit('boon', { choices, owned: Object.assign({}, this.boons) }); }
+  takeBoon(id) {
+    if (this.mode !== 'boon') return; PLAT.meta.pickBoon(this, id); this.mode = 'play'; this.boonChoices = null;
+    const p = this.player, b = PLAT.meta.BOONS[id]; sfx().gem(); this.text(p.cx, p.y - 30, `${b.icon} ${b.name}${this.boons[id] > 1 ? ' Lv' + this.boons[id] : ''}`, b.col || '#ffd84a', 80, true);
+    for (let i = 0; i < 24; i++) this.burst(p.cx, p.y + p.h / 2, b.col || '#ffd84a', 1, 3);
     this.emit('hud', this.hudState());
   }
   /* ENDLESS: a new run in place (same loaded assets, new seed) — Game Over → "play again" is instant */
@@ -164,6 +179,7 @@ class Game {
     const camC = this.cam.x + C.VW / 2;
     for (const e of this.enemies) { if (!e.boss && !e.champion && !e.dead && Math.abs(e.cx - camC) > SLEEP_X) continue; e.update(); }
     this.separate();
+    if (PLAT.meta) PLAT.meta.step(this);                                          // v118 burning enemies, fire trails
     for (const e of this.tokens) if (e.dead || e.gone || !this.enemies.includes(e)) this.tokens.delete(e);
     this.contacts();
     compact(this.enemies, notGone);
@@ -252,12 +268,15 @@ class Game {
       let dd = dmg;
       if (o.from === this.player && !o.aura) {
         const p = this.player, mul = 1 + (PLAT.relicOn('godblade') ? .6 : 0) + (PLAT.relicOn('berserk') && p.hp < p.maxHp * .4 ? .5 : 0);
-        dd = Math.max(1, Math.round(dmg * mul));
+        const tm = PLAT.meta && !o.proc ? PLAT.meta.dmgMul(this, e, p) : { k: 1 };       // v118 talents / boons: damage, crit, execute
+        dd = Math.max(1, Math.round(dmg * mul * tm.k));
+        if (tm.crit) this.text(e.cx, e.y - 22, 'CRIT!', '#ffe36a', 30, true);
         if (PLAT.relicOn('godblade') && Math.random() < .15) { dd *= 2; this.text(e.cx, e.y - 22, 'CRITICAL!', '#ffe36a', 34, true); }
       }
       if (e.takeHit(dd, o)) {
         n++; if (e.dead) kills++;
         if (o.from === this.player && !o.proj) this.player.lastTarget = e;      // combo step-in (player.startStep) follows this target
+        if (o.from === this.player && PLAT.meta) PLAT.meta.onHit(this, e, o);
         if (dbg) this.dbgLog(e, 'hit', e.lastDmg);
         const cx = U.clamp(e.cx, box.x, box.x + box.w), cy = U.clamp(e.y + e.h / 2, box.y, box.y + box.h); cxs = cx; cys = cy;
         this.burst(cx, cy, '#fff4c0', o.heavy ? 10 : 5, o.heavy ? 3.2 : 2.2); this.spark(cx, cy, o.heavy ? 1.6 : 1);
@@ -322,7 +341,9 @@ class Game {
   }
   onEnemyKilled(e) {
     this.stats.kills++;
-    const d = e.def;
+    const d = e.def, MT = PLAT.meta;
+    if (MT) { MT.track('kill'); if (e.elite && !e.champion) MT.track('eliteKill'); if (e.champion) MT.track('champKill'); if (d.boss) MT.track('bossKill'); if (e.inhaled) MT.track('inhale'); MT.onKill(this, e); }
+    if (e.champion && this.runner) this.runner.boonDue = true;                    // v118: a beaten endless boss grants a boon
     if (e.champion) {                       // v116 endless boss beaten
       this.emit('boss', null); PLAT.haptic('boss'); this.shake(8); this.hitstop(8); sfx().roar();
       this.text(e.cx, e.y - 20, e.fell ? 'บอสตกเหว!' : '👑 ปราบบอสแล้ว!', '#ffd84a', 100, true);
@@ -341,6 +362,7 @@ class Game {
     if (PLAT.relicOn('vamp')) { const p = this.player, hv = d.boss ? 40 : 6; if (!p.dead && p.hp < p.maxHp) { p.heal(hv); this.text(p.cx, p.y - 18, `🩸 +${hv}`, '#ff6a8a', 30); } }
     if (d.boss) {
       PLAT.haptic('boss'); this.bossActive = false; this.clearHostile(); this.emit('boss', null);
+      if (this.rush) { const s = this.stats; setTimeout(() => this.emit('rushWin', { levelId: this.levelId, frames: s.frames, hits: s.hits, deaths: s.deaths, hp: this.player.hp, maxHp: this.player.maxHp }), 1800); return; }
       setTimeout(() => { if (this.L.exit) { this.L.exit.open = true; this.text(this.L.exit.x + T / 2, this.L.exit.y - 10, 'ประตูเปิดแล้ว!', '#8aff8a', 120, true); sfx().checkpoint(); } }, 1600);
     }
   }
@@ -535,8 +557,8 @@ class Game {
     this.gainItem(c.id, c.x, c.y);
   }
   addCoins(n) {
-    let v = n * (PLAT.relicOn('midas') ? 1.5 : 1); v = Math.floor(v) + (Math.random() < v % 1 ? 1 : 0);
-    this.stats.coins += v; PLAT.bag.earn(v);
+    let v = n * (PLAT.relicOn('midas') ? 1.5 : 1) * (1 + ((this.mods && this.mods.coin) || 0)); v = Math.floor(v) + (Math.random() < v % 1 ? 1 : 0);
+    this.stats.coins += v; PLAT.bag.earn(v); if (PLAT.meta) PLAT.meta.track('coin', v);
   }
   gainItem(id, x, y) {
     const it = PLAT.ITEMS[id]; if (!it) return;

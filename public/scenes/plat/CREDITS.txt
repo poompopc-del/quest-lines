@@ -46,3 +46,8 @@ grotto/     Super Grotto Escape — artwork by Luis Zuno (@ansimuz). CC0 (pack l
             "Bosses" sprite sheet (Bosses.png) from OpenGameArt — CC0.
             Changes: the snail tank's 8 frames aligned on one strip + a round "rolling shell" frame cut from its tucked-in frame;
             the horned serpent split into head / body / fin pieces (drawn and animated in code), its eye hole filled white; bubble ring strip.
+
+v118 — menu music
+../../audio/plat/title.mp3
+            "rpg_village02_loop" — music by Pascal Belisle (from the Gothicvania Town pack by ansimuz).
+            Free to use with credit: "Music by Pascal Belisle" (https://soundcloud.com/pascalbelisle) — credited in Settings too.

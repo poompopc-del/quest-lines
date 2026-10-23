@@ -72,7 +72,7 @@ class Gimmicks {
       if (n.anim) n.anim.play('idle');
       if (Math.abs(p.cx - n.x) < 260) n.dir = U.sign(p.cx - n.x) || n.dir;
       if (!p.dead && Math.abs(p.cx - n.x) < 22 && Math.abs(p.feet - n.y) < 40) {
-        n.st = 'saved'; n.t = 0; this.saved++; const all = this.saved === this.npcs.length;
+        n.st = 'saved'; n.t = 0; this.saved++; if (PLAT.meta) PLAT.meta.track('villager'); const all = this.saved === this.npcs.length;
         sfx().checkpoint(); g.text(n.x, n.y - 58, all ? 'ช่วยครบทุกคนแล้ว! 🎉' : `ขอบคุณ! (${this.saved}/${this.npcs.length})`, '#8aff8a', 70, all);
         if (p.hp < p.maxHp) { p.heal(PLAT.HPU); g.text(p.cx, p.y - 20, '+' + PLAT.HPU + ' ❤', '#ff8aa8', 50); }
         const coins = all ? 15 : 5;

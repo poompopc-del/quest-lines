@@ -406,6 +406,34 @@ const results = await page.evaluate(async (filter) => {
     const charging = p.charging(); press('left'); step(g, 6, () => shield(p)); const face = p.face; rel('left'); rel(btn); step(g, 40, () => shield(p));
     return { ok: charging && face === -1, detail: `charging ${charging} face ${face}` };
   });
+  // v118 meta progression
+  await t('v118 talents: HP / damage / parry window reach the game', async () => {
+    const MT = P.meta, keep = JSON.stringify(MT.d().tal); MT.d().tal = { hp: 2, dmg: 1, parry: 1 };
+    const { g, p } = await setup('knight', null, 0, 1); MT.buildMods(g); MT.applyMods(g);
+    const ok = p.maxHp === P.HEROES.knight.hp * P.HPU + 20 && Math.abs(g.mods.dmg - .08) < 1e-9 && g.mods.parryWin === 2;
+    MT.d().tal = JSON.parse(keep); MT.buildMods(g); MT.applyMods(g);
+    return { ok, detail: `maxHp ${p.maxHp} dmg ${g.mods.dmg}` };
+  });
+  await t('v118 boons: vital raises max HP, burn sets enemies on fire, a duo needs both halves', async () => {
+    const MT = P.meta, { g, p, e } = await setup('knight', 'zombie', 60, 1, { hp: 99 }); g.boons = {}; MT.buildMods(g); MT.applyMods(g);
+    const hp0 = p.maxHp; MT.pickBoon(g, 'vital'); const up = p.maxHp - hp0;
+    MT.pickBoon(g, 'burn'); g.hit({ x: e.x, y: e.y, w: e.w, h: e.h }, 1, { id: P.newSwing(), from: p, dir: 1 });
+    let duoOk = true; for (let i = 0; i < 30; i++) if (MT.boonChoices(g, 3).some(id => MT.BOONS[id].duo && !MT.BOONS[id].duo.every(k => g.boons[k]))) duoOk = false;
+    g.boons = {}; MT.buildMods(g); MT.applyMods(g);
+    return { ok: up === 20 && e.burnT > 0 && duoOk, detail: `+${up} burn ${e.burnT} duo ${duoOk}` };
+  });
+  await t('v118 achievements + missions: counters unlock, rewards pay once', async () => {
+    const MT = P.meta, d = MT.d(), keep = JSON.stringify({ ach: d.ach, cnt: d.cnt, mis: d.mis, wmis: d.wmis, titles: d.titles }), w0 = P.bag.coins();
+    d.ach = {}; d.cnt = {}; d.mis = null; d.wmis = null; MT.missions();
+    MT.track('kill', 1); const a1 = !!d.ach.kill1, paid = P.bag.coins() - w0;
+    const q = MT.missions().daily[0]; MT.track(q.key, q.need); const c1 = MT.claim(q), c2 = MT.claim(q);
+    Object.assign(d, JSON.parse(keep)); P.bag.d().wallet = w0;
+    return { ok: a1 && paid >= 20 && c1 && !c2, detail: `ach ${a1} paid ${paid} claim ${c1}/${c2}` };
+  });
+  await t('v118 daily challenge: same day → same world / seed / rule', async () => {
+    const MT = P.meta, a = MT.daily(Date.UTC(2026, 9, 23, 5)), b = MT.daily(Date.UTC(2026, 9, 23, 9)), c = MT.daily(Date.UTC(2026, 9, 24, 5));
+    return { ok: a.seed === b.seed && a.world === b.world && a.mod.id === b.mod.id && (a.seed !== c.seed), detail: `${a.world}/${a.mod.id} vs ${c.world}/${c.mod.id}` };
+  });
   await t('v116 a parried NORMAL enemy drops a star for Kirby (bosses 3, elites 2) · puff', async () => {
     const { g, p, e } = await setup('puff', 'zombie', 60, 1, { hp: 99 }); p.inv = 0;
     press('parry'); step(g, 1); rel('parry'); p.hurt(1, e.cx, { src: e });

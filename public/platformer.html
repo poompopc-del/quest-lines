@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/platform.css?v=32">
+<link rel="stylesheet" href="css/platform.css?v=33">
 </head>
 <body>
 <div id="stage">
@@ -48,21 +48,36 @@
 <div class="notify" id="notify"></div>
 
 <!-- screens -->
-<section class="screen" id="sTitle">
-  <div class="title-wrap">
-    <h1 class="logo">PLATFORM MODE<small>QUEST LINES · ACTION PLATFORMER</small></h1>
-    <div class="menu">
-      <button class="btn red" data-go="map">▶ เล่น · เลือกด่าน</button>
-      <button class="btn gold" data-go="endless">∞ โหมดไม่สิ้นสุด (Endless)</button>
-      <button class="btn" data-go="heroes">🦸 เลือกฮีโร่ <span class="chip gold" id="tHero"></span></button>
-      <button class="btn gold2" data-go="shop">🛒 ร้านค้า · กระเป๋า <span class="chip gold" id="tWallet"></span></button>
-      <button class="btn" data-go="settings">⚙️ ตั้งค่า · ปุ่มควบคุม · จอย</button>
-      <button class="btn" id="tFull">⛶ เต็มจอ</button>
-      <button class="btn" data-go="main">↩ กลับเกมหลัก</button>
+<section class="screen ttl" id="sTitle">
+  <canvas id="tBg" aria-hidden="true"></canvas>
+  <div class="t-shade"></div>
+  <div class="t-bar">
+    <div class="t-prof"><span class="t-hero">🦸 <b id="tHero"></b></span><span class="t-title" id="tTitleChip"></span><span class="t-streak" id="tStreak"></span></div>
+    <div class="t-prof"><span class="t-wallet" id="tWallet"></span><button class="tbtn" id="tFull">⛶</button><button class="tbtn" data-go="main" title="กลับเกมหลัก">↩</button></div>
+  </div>
+  <div class="t-main">
+    <h1 class="logo2"><span class="l1">QUEST LINES</span><span class="l2">PLATFORM</span><small>แอ็กชันแพลตฟอร์ม · 5 โลก · 6 บอส · ไม่สิ้นสุด</small></h1>
+    <div class="t-grid">
+      <button class="tile big red" data-go="map"><em>▶</em><span>เนื้อเรื่อง</span><small id="tStory"></small></button>
+      <button class="tile big gold" data-go="endless"><em>∞</em><span>โหมดไม่สิ้นสุด</span><small id="tEndless"></small></button>
+      <button class="tile cyan" data-go="daily"><em>📅</em><span>ท้าทายรายวัน</span><small id="tDaily"></small><i class="dot" id="tDailyDot"></i></button>
+      <button class="tile violet" data-go="rush"><em>⚔️</em><span>ล่าบอส</span><small id="tRush"></small></button>
+      <button class="tile" data-go="quests"><em>📜</em><span>ภารกิจ · ความสำเร็จ</span><small id="tQuests"></small><i class="badge" id="tQuestBadge"></i></button>
+      <button class="tile green" data-go="talents"><em>🌳</em><span>พรสวรรค์</span><small id="tTalents"></small></button>
+      <button class="tile" data-go="heroes"><em>🦸</em><span>ฮีโร่</span><small id="tHeroes"></small></button>
+      <button class="tile" data-go="shop"><em>🛒</em><span>ร้านค้า</span><small>ยา · ไอเทม · เรลิก</small></button>
+      <button class="tile" data-go="settings"><em>⚙️</em><span>ตั้งค่า</span><small>เสียง · จอย · โหมดช่วยเหลือ</small></button>
     </div>
-    <p class="note" id="tNote" style="margin-top:14px"></p>
+    <p class="note t-note" id="tNote"></p>
   </div>
 </section>
+
+<section class="screen" id="sDaily"><div class="panel" id="dailyBox"></div></section>
+<section class="screen" id="sQuests"><div class="panel" id="questBox"></div></section>
+<section class="screen" id="sTalents"><div class="panel" id="talentBox"></div></section>
+<section class="screen" id="sRush"><div class="panel" id="rushBox"></div></section>
+<section class="screen dim" id="sBoon"><div class="boonwrap" id="boonBox"></div></section>
+<section class="screen dim" id="sStreak"><div class="panel sm" id="streakBox"></div></section>
 
 <section class="screen" id="sHeroes">
   <div class="panel">
@@ -140,18 +155,22 @@
   <div class="panel sm">
     <div class="row" style="justify-content:space-between;align-items:center"><h2 class="kick">ตั้งค่า</h2><button class="btn" data-go="back">✕ ปิด</button></div>
     <div class="set-row"><span>🔊 เสียงเอฟเฟกต์</span><input type="range" id="setSfx" min="0" max="100" step="5"></div>
+    <div class="set-row"><span>🎵 เพลงเมนู</span><input type="range" id="setMusic" min="0" max="100" step="5"></div>
     <div class="set-row"><span>📳 จอสั่น</span><div class="seg" id="setShake"><button data-v="1">เปิด</button><button data-v="0">ปิด</button></div></div>
     <div class="set-row"><span>👆 ปุ่มบนจอ<br><small class="note">อัตโนมัติ = ซ่อนเมื่อใช้จอย/คีย์บอร์ด</small></span><div class="seg" id="setTouch"><button data-v="auto">อัตโนมัติ</button><button data-v="on">แสดง</button><button data-v="off">ซ่อน</button></div></div>
     <div class="set-row"><span>🔘 ขนาดปุ่ม / จอยบนจอ</span><div class="seg" id="setSize"><button data-v="S">เล็ก</button><button data-v="M">กลาง</button><button data-v="L">ใหญ่</button></div></div>
     <div class="set-row"><span>🕹 จอยสติ๊ก<br><small class="note">ลอยตามนิ้ว = แตะตรงไหนก็ได้ทางซ้ายของจอ</small></span><div class="seg" id="setJoyMode"><button data-v="float">ลอยตามนิ้ว</button><button data-v="fixed">คงที่</button></div></div>
     <div class="set-row"><span>🎯 ระยะเริ่มเดิน (Dead zone)<br><small class="note">ใหญ่ = ต้องลากไกลขึ้นก่อนเดิน กันเดินโดยไม่ตั้งใจ</small></span><div class="seg" id="setJoyDead"><button data-v="0.15">น้อย</button><button data-v="0.25">กลาง</button><button data-v="0.35">มาก</button></div></div>
     <div class="set-row"><span>📳 สั่นเมื่อโดนตี (มือถือ/จอย)</span><div class="seg" id="setVib"><button data-v="1">เปิด</button><button data-v="0">ปิด</button></div></div>
+    <h3>🤝 โหมดช่วยเหลือ (Assist)</h3>
+    <div class="set-row"><span>🐢 ความเร็วเกม<br><small class="note">ช้าลง = มีเวลาตอบสนองมากขึ้น</small></span><div class="seg" id="setAsSpeed"><button data-v="1">100%</button><button data-v="0.85">85%</button><button data-v="0.7">70%</button></div></div>
+    <div class="set-row"><span>💗 ความแรงที่โดนตี<br><small class="note">อมตะ = ไม่เสียเลือด (ปิดการปลดล็อกความสำเร็จ)</small></span><div class="seg" id="setAsDmg"><button data-v="1">ปกติ</button><button data-v="0.5">ครึ่งเดียว</button><button data-v="0">อมตะ</button></div></div>
     <h3>จอยเกม · ตั้งปุ่ม</h3>
     <p class="keys" id="padStatus"></p>
     <div class="remap" id="padRemap"></div>
     <div class="row" style="margin-top:6px"><button class="btn" id="padDefaults">↺ คืนค่าปุ่มเริ่มต้น</button></div>
     <p class="note" id="padNote">ปุ่มซ้ำ = <b>สลับกัน</b> (ปุ่มหนึ่งทำได้อย่างเดียว) · กระโดด / โจมตี / หยุดเกม ต้องมีปุ่มเสมอ · เดิน (✚ / สติ๊กซ้าย) และปุ่มในเมนู (A เลือก · B ย้อนกลับ · Start) ตั้งไม่ได้ เพื่อไม่ให้ติดอยู่ในเมนู · จอยแบบไม่มาตรฐานที่ส่ง LT/RT เป็นแกน ก็ตั้งได้ (แสดงเป็น "ไก/แกน #")</p>
-    <p class="note" id="artCredits">🎨 เครดิตภาพ: Hell Hound โดย Luis Zuno (@ansimuz) · CC-BY 3.0 · ฉาก Gothicvania / Illusion / Super Grotto Escape โดย ansimuz (CC0) · มอนสเตอร์ LuizMelo (CC0) · <a href="scenes/plat/CREDITS.txt" target="_blank" rel="noopener" style="color:inherit">ดูเครดิตทั้งหมด</a></p>
+    <p class="note" id="artCredits">🎵 เพลงเมนู: Pascal Belisle · 🎨 เครดิตภาพ: Hell Hound โดย Luis Zuno (@ansimuz) · CC-BY 3.0 · ฉาก Gothicvania / Illusion / Super Grotto Escape โดย ansimuz (CC0) · มอนสเตอร์ LuizMelo (CC0) · <a href="scenes/plat/CREDITS.txt" target="_blank" rel="noopener" style="color:inherit">ดูเครดิตทั้งหมด</a></p>
     <h3>ปุ่มควบคุม</h3>
     <div class="keys">
       <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> เดิน (กดทิศเดิม 2 ครั้ง = วิ่ง) · <kbd>Space</kbd>/<kbd>K</kbd> กระโดด (กดค้าง = สูง)<br>
@@ -169,22 +188,24 @@
   <div style="text-align:center"><div class="kick" id="lTitle">กำลังโหลด…</div><div class="sub" id="lSub"></div><div class="loadbar"><b id="lBar"></b></div></div>
 </section>
 
-<script src="js/plat/core.js?v=32"></script>
-<script src="js/plat/world.js?v=32"></script>
-<script src="js/plat/anim.js?v=32"></script>
-<script src="js/plat/heroes.js?v=32"></script>
-<script src="js/plat/x4-sheet.js?v=32"></script>
-<script src="js/plat/xmod.js?v=32"></script>
-<script src="js/plat/player.js?v=32"></script>
-<script src="js/plat/monster-sheets.js?v=32"></script>
-<script src="js/plat/enemies.js?v=32"></script>
-<script src="js/plat/art-sheets.js?v=32"></script>
-<script src="js/plat/levels.js?v=32"></script>
-<script src="js/plat/items.js?v=32"></script>
-<script src="js/plat/endless.js?v=32"></script>
-<script src="js/plat/art.js?v=32"></script>
-<script src="js/plat/gimmicks.js?v=32"></script>
-<script src="js/plat/game.js?v=32"></script>
-<script src="js/plat/ui.js?v=32"></script>
+<script src="js/plat/core.js?v=33"></script>
+<script src="js/plat/world.js?v=33"></script>
+<script src="js/plat/anim.js?v=33"></script>
+<script src="js/plat/heroes.js?v=33"></script>
+<script src="js/plat/x4-sheet.js?v=33"></script>
+<script src="js/plat/xmod.js?v=33"></script>
+<script src="js/plat/player.js?v=33"></script>
+<script src="js/plat/monster-sheets.js?v=33"></script>
+<script src="js/plat/enemies.js?v=33"></script>
+<script src="js/plat/art-sheets.js?v=33"></script>
+<script src="js/plat/levels.js?v=33"></script>
+<script src="js/plat/items.js?v=33"></script>
+<script src="js/plat/meta.js?v=33"></script>
+<script src="js/plat/endless.js?v=33"></script>
+<script src="js/plat/art.js?v=33"></script>
+<script src="js/plat/gimmicks.js?v=33"></script>
+<script src="js/plat/game.js?v=33"></script>
+<script src="js/plat/ui.js?v=33"></script>
+<script src="js/plat/hub.js?v=33"></script>
 </body>
 </html>
