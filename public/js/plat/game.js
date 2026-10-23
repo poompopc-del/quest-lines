@@ -843,7 +843,7 @@ class Game {
         else if (!this.stamp(g, t, st, x, y)) { g.fillStyle = th.ground; g.fillRect(x, y, T, T); }
       } else if (tt === TL.ONEWAY) {
         const l = tileT(tx - 1, ty) !== TL.ONEWAY, r = tileT(tx + 1, ty) !== TL.ONEWAY;
-        this.stamp(g, t, (l && t.onewayL) || (r && t.onewayR) || t.oneway, x, y);
+        this.stamp(g, t, this.pick((l && t.onewayL) || (r && t.onewayR) || t.oneway, tx, ty), x, y);   // v112: variants allowed (the swamp branch had invisible middles)
       } else if (tt === TL.SPIKE) {
         if (t.spike) { const n = Array.isArray(t.spike) || (t.spike.r && t.spike.r[2] * T / t.unit >= T * .9) ? 1 : 2;
           for (let i = 0; i < n; i++) { const im = this.stampImg(t.spike, t), r = t.spike.r || [0, 0, im.width, im.height], k = T / t.unit, dw = r[2] * k, dh = r[3] * k;
