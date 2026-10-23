@@ -22,12 +22,13 @@ app.go2 = where => {
   return false;
 };
 app.onShow.title = () => {
+  if (BM.on) battle(false);
   refreshTitle2(); music(true);
   if (app.pendingStreak) setTimeout(() => { const r = app.pendingStreak; if (r && app.screen === 'title' && !app.game) { app.pendingStreak = null; showStreak(r); } }, 700);
 };
 app.onShow.daily = renderDaily; app.onShow.quests = renderQuests; app.onShow.talents = renderTalents; app.onShow.rush = renderRush;
 ['map', 'endless', 'heroes', 'shop', 'settings'].forEach(n => { const f = app.onShow[n]; app.onShow[n] = () => { if (f) f(); music(true); }; });
-app.onShow.game = () => music(false);
+app.onShow.game = () => { music(false); if (BM.on) bmFade(bmLevel(), .3); };
 
 /* ------------------------------------------------------------------ music */
 let bgm = null, gestured = false;
@@ -35,12 +36,48 @@ function musicVol() { const v = S.data.settings.music; return (v == null ? 45 : 
 function music(on) {
   if (!bgm) { try { bgm = new Audio('audio/plat/title.mp3'); bgm.loop = true; bgm.preload = 'none'; } catch (e) { return; } }
   bgm.volume = musicVol() * .6;
-  if (on && musicVol() > 0 && gestured && !app.game) { const p = bgm.play(); if (p && p.catch) p.catch(() => {}); }
+  if (on && musicVol() > 0 && gestured && !app.game && !BM.on) { const p = bgm.play(); if (p && p.catch) p.catch(() => {}); }
   else if (!on || !musicVol()) bgm.pause();
 }
-const firstGesture = () => { if (gestured) return; gestured = true; if (MENU.has(app.screen)) music(true); };
+const firstGesture = () => { if (gestured) return; gestured = true; if (MENU.has(app.screen)) music(true); if (bmCtx()) bmLoad(); };
 ['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, firstGesture, { capture: true }));
 setInterval(() => { if (input.pad && !gestured) firstGesture(); }, 1500);
+
+/* ------------------------------------------------------------------ boss music
+   "8-bit Battle Loop" by Wolfgang_ (CC0). Played through Web Audio so the loop has no gap; .ogg where the browser
+   can decode it, .mp3 otherwise (iPhone Safari). Starts when a boss / endless champion appears, fades out when it
+   falls; quieter while paused; keeps going between the fights of a boss rush. */
+const BM = { ctx: null, gain: null, buf: null, src: null, on: false, loading: null };
+function bmCtx() {
+  if (!BM.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; BM.ctx = new AC(); BM.gain = BM.ctx.createGain(); BM.gain.gain.value = 0; BM.gain.connect(BM.ctx.destination); }
+  if (BM.ctx.state === 'suspended') BM.ctx.resume().catch(() => {});
+  return BM.ctx;
+}
+function bmLoad() {
+  if (BM.buf || BM.loading) return BM.loading;
+  const ctx = bmCtx(); if (!ctx) return null;
+  const ogg = typeof Audio !== 'undefined' && new Audio().canPlayType('audio/ogg; codecs="vorbis"');
+  const get = url => fetch(url).then(r => r.arrayBuffer()).then(a => new Promise((ok, no) => ctx.decodeAudioData(a, ok, no)));
+  BM.loading = get(ogg ? 'audio/plat/boss.ogg' : 'audio/plat/boss.mp3').catch(() => get('audio/plat/boss.mp3')).then(b => { BM.buf = b; return b; }).catch(() => null);
+  return BM.loading;
+}
+function bmLevel() { return BM.on ? musicVol() * (app.screen === 'game' ? .55 : .2) : 0; }
+function bmFade(to, sec) { if (!BM.ctx) return; const g = BM.gain.gain, t = BM.ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(to, t + (sec || .6)); }
+function battle(on) {
+  if (on === BM.on) { bmFade(bmLevel(), .4); return; }
+  BM.on = on;
+  if (!on) { bmFade(0, 1.4); const s = BM.src; setTimeout(() => { if (!BM.on && s) { try { s.stop(); } catch (e) {} if (BM.src === s) BM.src = null; } }, 1500); return; }
+  if (!gestured || !bmCtx()) return;
+  Promise.resolve(bmLoad()).then(buf => {
+    if (!buf || !BM.on || BM.src) { if (BM.src) bmFade(bmLevel(), .5); return; }
+    const src = BM.ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(BM.gain); src.start(); BM.src = src;
+    bmFade(bmLevel(), .8);
+  });
+  if (bgm) bgm.pause();
+}
+app.bm = BM;                                         // (tests / console)
+app.onBoss = d => { if (d) battle(true); else if (!app.rushRun) battle(false); };
+['pause', 'dead', 'clear', 'over', 'boon'].forEach(n => { const f = app.onShow[n]; app.onShow[n] = () => { if (f) f(); if (BM.on) bmFade(bmLevel(), .3); }; });
 
 /* ------------------------------------------------------------------ title backdrop */
 const BG_THEMES = ['meadow', 'night', 'swamp', 'grotto', 'town', 'forest', 'fort', 'lava'];
@@ -250,6 +287,7 @@ function startRush() { app.rushRun = { i: 0, list: M.RUSH.slice(), total: 0, hit
 function rushStep() { const R = app.rushRun; A().startLevel(R.list[R.i], { rush: true, hp: R.hp }); }
 function rushEnd(win) {
   const R = app.rushRun; app.rushRun = null; if (!R) return;
+  battle(false);
   const m = M.d(), RR = m.rush; let nb = false;
   if (win) {
     RR.clears = (RR.clears || 0) + 1; M.track('rushClear');
@@ -297,7 +335,7 @@ app.onEvent = (type, d) => {
 /* ------------------------------------------------------------------ settings: music + assist */
 function setupSettings2() {
   const sl = $('#setMusic'); sl.value = S.data.settings.music == null ? 45 : S.data.settings.music;
-  sl.addEventListener('input', () => { S.data.settings.music = +sl.value; S.persist(); if (bgm) bgm.volume = musicVol() * .6; if (+sl.value === 0) music(false); else music(true); });
+  sl.addEventListener('input', () => { S.data.settings.music = +sl.value; S.persist(); if (bgm) bgm.volume = musicVol() * .6; if (BM.on) bmFade(bmLevel(), .1); if (+sl.value === 0) music(false); else music(true); });
   const seg = (el, key) => { const sync = () => $$(`#${el} button`).forEach(b => b.classList.toggle('on', String(M.assist()[key]) === b.dataset.v));
     $$(`#${el} button`).forEach(b => b.addEventListener('click', () => { M.assist()[key] = +b.dataset.v; S.persist(); sync(); PLAT.sfx.select(); })); sync(); };
   seg('setAsSpeed', 'speed'); seg('setAsDmg', 'dmg');

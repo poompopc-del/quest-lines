@@ -51,3 +51,6 @@ v118 — menu music
 ../../audio/plat/title.mp3
             "rpg_village02_loop" — music by Pascal Belisle (from the Gothicvania Town pack by ansimuz).
             Free to use with credit: "Music by Pascal Belisle" (https://soundcloud.com/pascalbelisle) — credited in Settings too.
+../../audio/plat/boss.ogg (+ boss.mp3, converted for iPhone Safari)
+            "8-bit Battle Loop" — music by Wolfgang_. Public domain (CC0). https://opengameart.org/content/8-bit-battle-loop
+            Plays during boss fights, endless bosses and the boss rush.

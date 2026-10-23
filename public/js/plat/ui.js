@@ -420,6 +420,7 @@ function quitGame() {
   const g = app.game; S.persist();
   if (g) { if (g.endlessWorld && (g.mode === 'play' || g.mode === 'paused')) recordEndless(g.result(), true); g.dispose(); app.game = null; }
   $('#hud').classList.remove('on'); $('#hBoss').classList.remove('on'); $('#hSign').classList.remove('on');
+  if (app.onBoss && !app.rushRun) app.onBoss(null);
   app.idleOf = null; app.stillOf = null;                               // menus repaint their plain backdrop once
 }
 function onGameEvent(type, d) {
@@ -427,7 +428,7 @@ function onGameEvent(type, d) {
   switch (type) {
     case 'hud': updateHud(d); break;
     case 'sign': $('#hSign').classList.toggle('on', !!d); if (d) $('#hSign').textContent = signText(d); break;
-    case 'boss': $('#hBoss').classList.toggle('on', !!d); if (d) { $('#hBossNm').textContent = `${d.name} · ${d.th}`; $('#hBossBar').style.width = '100%'; toast(d.name, d.th); } break;
+    case 'boss': if (app.onBoss) app.onBoss(d); $('#hBoss').classList.toggle('on', !!d); if (d) { $('#hBossNm').textContent = `${d.name} · ${d.th}`; $('#hBossBar').style.width = '100%'; toast(d.name, d.th); } break;
     case 'bossHit': $('#hBossBar').style.width = (d.hp / d.max * 100) + '%'; break;
     case 'toast': toast(d.text, d.sub); break;
     case 'bag': hudCache.bag = null; break;
