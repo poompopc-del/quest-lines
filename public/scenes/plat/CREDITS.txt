@@ -29,3 +29,20 @@ swamp/      Gothicvania Swamp — artwork by Luis Zuno (@ansimuz). Public domain
 World-4 boss (v114): Evil Wizard 2 + Evil Wizard 3 — by LuizMelo. CC0. Credit not required.
             https://luizmelo.itch.io/evil-wizard-2 · https://luizmelo.itch.io/evil-wizard-3
             (enemies/mcf/wiz2.png, wiz3.png, fx/wbolt.png, fx/wboom.png — mirrored to face left)
+
+v115 — new levels, world 5, Hell Hound, two new bosses (imported by tools/plat-import-monsters.py from the downloads in <packs>/batch2)
+town/       Gothicvania Town — artwork by Luis Zuno (@ansimuz). Public domain (CC0). Credit not required.
+            https://opengameart.org/content/gothicvania-town
+            (background / middleground layers, a 16 px tile atlas cut from the sliced tileset, houses, street lamp, well, wagon,
+             barrel, crates, sign, and the four villagers — mirrored to face left)
+fort/       Fort of Illusion — artwork by Luis Zuno (@ansimuz). CC0 (pack licence: "credit not required").
+forest/     Forest of Illusion — artwork by Luis Zuno (@ansimuz). CC0 (pack licence: "credit not required").
+grotto/     Super Grotto Escape — artwork by Luis Zuno (@ansimuz). CC0 (pack licence: "credit not required").
+../../enemies/hound/hound.png
+            Hell Hound — artwork by Luis Zuno (@ansimuz). Licensed CC-BY 3.0 (http://creativecommons.org/licenses/by/3.0/).
+            CREDIT REQUIRED: "Hell Hound by Luis Zuno (@ansimuz), CC-BY 3.0" — shown in the game's Settings screen too.
+            Changes: idle / walk / run / jump frames placed on one strip.
+../../bosses/snail/, ../../bosses/serpent/
+            "Bosses" sprite sheet (Bosses.png) from OpenGameArt — CC0.
+            Changes: the snail tank's 8 frames aligned on one strip + a round "rolling shell" frame cut from its tucked-in frame;
+            the horned serpent split into head / body / fin pieces (drawn and animated in code), its eye hole filled white; bubble ring strip.

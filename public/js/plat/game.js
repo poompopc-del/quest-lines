@@ -37,12 +37,16 @@ class Game {
     if (hdef.kind === 'atlas') { const atlas = await PLAT.assets.json(hdef.atlasSrc); if (!atlas) throw new Error('missing ' + hdef.atlasSrc); hdef = Object.assign({}, hdef, { atlas }); }
     this.heroSheet = new PLAT.Sheet(hdef);
     const L = this.L0spec = this.spec;
-    const types = new Set(this.endlessWorld ? PLAT.Endless.enemyTypes(this.endlessWorld) : W.buildLevel(L).spawns.map(s => s.type)); if (L.boss) types.add(L.boss);
-    const imgs = [...this.heroSheet.srcs()];
+    const built = this.endlessWorld ? null : W.buildLevel(L);
+    const types = new Set(this.endlessWorld ? PLAT.Endless.enemyTypes(this.endlessWorld) : built.spawns.map(s => s.type)); if (L.boss) types.add(L.boss);
+    const npcImgs = [];
+    if (built && built.npcs && PLAT.MONSTER_SHEETS) for (const k of ['vOld', 'vWoman', 'vHat', 'vBeard']) { const d = PLAT.MONSTER_SHEETS[k]; if (d) { this.sheets.set('npc:' + k, new PLAT.Sheet(d)); npcImgs.push(d.img); } }   // v115 villagers
+    const imgs = [...this.heroSheet.srcs(), ...npcImgs];
     for (const t of [...types]) { const d = this.enemyDef(t); (d && d.minions || []).forEach(m => types.add(m)); }   // v114: bosses that summon
     for (const t of types) {
       const d = this.enemyDef(t);
       if (d.sheet2) { this.sheets.set(t + ':2', new PLAT.Sheet(d.sheet2)); imgs.push(d.sheet2.img); }       // v114: a boss's second form
+      (d.imgs || []).forEach(s => imgs.push(s));                                                             // v115: extra pieces a boss draws itself
       this.sheets.set(t, new PLAT.Sheet(d.sheet)); imgs.push(d.sheet.img); (d.states || []).forEach(s => imgs.push(s)); if (d.after) imgs.push(d.after); if (d.afterSheet) imgs.push(d.afterSheet.img);
     }
     // projectiles / effects this hero and these enemies can make
@@ -155,7 +159,7 @@ class Game {
     this.playerHazards();
     if (this.gim) this.gim.step();
     if (this.runner) this.runner.step();
-    if (this.spec.boss && !this.boss && !p.dead && p.cx > (L.arena ? L.arena.x0 + 5 * T : 6 * T)) this.spawnBoss();
+    if (this.spec.boss && !this.boss && !p.dead && p.cx > (L.arena ? L.arena.x0 + (this.spec.arena.trigger || 5) * T : 6 * T)) this.spawnBoss();   // v115: arena.trigger (tiles) for a narrow arena
     // enemies far from the camera sleep (no AI / physics) — bosses and dying enemies always update
     const camC = this.cam.x + C.VW / 2;
     for (const e of this.enemies) { if (!e.boss && !e.dead && Math.abs(e.cx - camC) > SLEEP_X) continue; e.update(); }
@@ -410,6 +414,7 @@ class Game {
       const d = pr.def; pr.t++;
       if (d.accel) pr.vx = U.clamp(pr.vx + pr.dir * d.accel, -d.maxSpeed, d.maxSpeed);
       if (d.decel) { pr.vx *= d.decel; }
+      if (d.bob) pr.vy = Math.sin(pr.t / 11) * d.bob;                     // v115 serpent bubbles drift in a wave
       if (d.boomerang && pr.t > 20 && pr.owner) {
         const tx = pr.owner.cx, ty = pr.owner.feet - 30; pr.vx += U.sign(tx - pr.x) * .55; pr.vy += U.sign(ty - pr.y) * .3; pr.vx = U.clamp(pr.vx, -7, 7); pr.vy = U.clamp(pr.vy, -4, 4);
         // on the way BACK it is a new pass: it may hit the same enemies once more (was: one hit per throw)
@@ -750,7 +755,12 @@ class Game {
         if (r < .12 && !W.tilesIn(L, { x: tx * T - T, y: ty * T - 2 * T, w: 3 * T, h: 3 * T }, TL.SPIKE).length) {
           const D = th.art.decor, tot = D.reduce((n, d) => n + d.w, 0); let k = rnd() * tot, d = D[0];
           for (const it of D) { k -= it.w; if (k <= 0) { d = it; break; } }
-          out.push({ img: d.img, x: tx * T + 16, y: ty * T, sc: d.s, flip: rnd() < .5 });
+          if (d.span) {                                  // v115 wide decor (houses, doors): needs flat ground under it and never overlaps another wide one
+            const h = Math.floor(d.span / 2); let ok = true;
+            for (let x = tx - h; x <= tx + h && ok; x++) ok = W.tileAt(L, x, ty) === TL.GROUND && W.tileAt(L, x, ty - 1) === TL.EMPTY;
+            if (!ok || out.some(o => o.span && Math.abs(o.x - (tx * T + 16)) < (o.span + d.span) / 2 * T)) continue;
+          }
+          out.push({ img: d.img, x: tx * T + 16, y: ty * T, sc: d.s, flip: d.span ? false : rnd() < .5, span: d.span || 0 });
         }
         continue;
       }

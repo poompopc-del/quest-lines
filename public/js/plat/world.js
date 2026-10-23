@@ -7,7 +7,8 @@
      B  breakable block  C  crumbling block       F  fake wall (secret, walk through)
      S  spring           o  coin                  G  gem (3 per level)
      H  heart            P  player start          K  checkpoint flag
-     U  poison gas vent  Y  lantern (dark levels)  (v108, js/plat/gimmicks.js)
+     U  gas / flame vent Y  lantern (dark levels)  (v108, js/plat/gimmicks.js)
+     R  villager to rescue (v115 town, gimmicks.js)
      E  exit door        1-9 hint sign (text in level.signs)
      enemy letters: see PLAT.ENEMY_CODES (enemies.js)
    Pure logic — no DOM, so tools/plat-validate.mjs can run it in Node.
@@ -41,6 +42,7 @@ function buildLevel(spec) {
         case 'K': L.checkpoints.push({ x: cx, y: by, on: false }); break;
         case 'A': L.bossSpawn = { x: cx, y: by }; break;
         case 'U': (L.vents || (L.vents = [])).push({ tx, ty }); break;              // v108 poison gas vent (gimmicks.js)
+        case 'R': (L.npcs || (L.npcs = [])).push({ x: cx, y: by, i: L.npcs.length }); break;      // v115 villager (gimmicks.js)
         case 'Y': (L.lights || (L.lights = [])).push({ x: cx, y: ty * T + T / 2 }); break;   // v108 lantern (dark levels)
         case 'E': L.exit = { x: tx * T, y: by - T * 2, w: T, h: T * 2, open: !spec.boss }; break;
         default:

@@ -112,7 +112,7 @@ function menuKeys(e) {
 }
 function pause() {
   const g = app.game; if (!g || g.mode !== 'play') return; g.mode = 'paused';
-  $('#pSub').textContent = g.endlessWorld ? `∞ ${g.spec.name} · ${g.runner.dist} ม. · LV ${g.runner.tier} · ${PLAT.HEROES[g.heroId].name}` : `${g.levelId} ${g.spec.name} · ${PLAT.HEROES[g.heroId].name}`;
+  $('#pSub').textContent = g.endlessWorld ? `∞ ${g.spec.name} · ${g.runner.dist} ม. · LV ${g.runner.tier} · ${PLAT.HEROES[g.heroId].name}` : `${PLAT.levelLabel(g.levelId)} ${g.spec.name} · ${PLAT.HEROES[g.heroId].name}`;
   $('#pRetry').style.display = g.endlessWorld ? 'none' : ''; $('#pRestart').textContent = g.endlessWorld ? '⟲ เริ่มรอบใหม่ (ด่านใหม่)' : '⟲ เริ่มด่านใหม่';
   $('#pExit').textContent = g.endlessWorld ? '∞ ออก (บันทึกสถิติรอบนี้)' : '🗺 ออกไปแผนที่'; $('#pExit').dataset.go = g.endlessWorld ? 'endless' : 'map';
   show('pause'); input.reset('pause');
@@ -250,10 +250,11 @@ function heroAvailable(id) {
 }
 function heroLockText(id) {
   const need = PLAT.HERO_UNLOCK[id];
-  return need ? `ผ่านด่าน ${need} หรือมีในเกมหลัก` : 'มีในเกมหลักก่อน';
+  return need ? `ผ่านด่าน ${PLAT.levelLabel(need)} หรือมีในเกมหลัก` : 'มีในเกมหลักก่อน';
 }
 function levelUnlocked(id) {
   const i = PLAT.LEVEL_ORDER.indexOf(id); if (i <= 0 || S.devOn()) return true;
+  const own = S.level(id); if (own && own.cleared) return true;               // v115: new levels were inserted between old ones — nothing you cleared re-locks
   const prev = S.level(PLAT.LEVEL_ORDER[i - 1]); return !!(prev && prev.cleared);
 }
 const heroList = () => PLAT.HERO_ORDER.filter(id => PLAT.HEROES[id] && !PLAT.HEROES[id].disabled && !(PLAT.HEROES[id].devOnly && !S.devOn()));
@@ -263,7 +264,7 @@ function refreshTitle() {
   $('#tHero').textContent = PLAT.HEROES[S.data.hero].name; $('#tWallet').textContent = '🪙 ' + PLAT.bag.coins().toLocaleString();
   const cleared = PLAT.LEVEL_ORDER.filter(id => S.level(id) && S.level(id).cleared).length;
   const gems = PLAT.LEVEL_ORDER.reduce((n, id) => n + ((S.level(id) || {}).gems || []).length, 0);
-  $('#tNote').textContent = (input.pad ? '🎮 จอยพร้อมใช้ · ' : '') + `ผ่านแล้ว ${cleared}/${PLAT.LEVEL_ORDER.length} ด่าน · 💎 ${gems}/18 · ทองที่ได้เข้าเกมหลักรวม ${S.data.goldEarned || 0}` + (S.devOn() ? ' · 🛠 โหมดผู้พัฒนา: ปลดล็อกทุกอย่าง' : '');
+  $('#tNote').textContent = (input.pad ? '🎮 จอยพร้อมใช้ · ' : '') + `ผ่านแล้ว ${cleared}/${PLAT.LEVEL_ORDER.length} ด่าน · 💎 ${gems}/${PLAT.LEVEL_ORDER.filter(id => !PLAT.LEVELS[id].boss).length * 3} · ทองที่ได้เข้าเกมหลักรวม ${S.data.goldEarned || 0}` + (S.devOn() ? ' · 🛠 โหมดผู้พัฒนา: ปลดล็อกทุกอย่าง' : '');
 }
 
 /* ------------------------------ hero previews ------------------------------
@@ -351,13 +352,13 @@ function renderMap() {
   for (const w of PLAT.WORLDS) {
     const div = document.createElement('div'); div.className = 'world';
     const g = w.levels.reduce((n, id) => n + ((S.level(id) || {}).gems || []).length, 0);
-    div.innerHTML = `<div class="wn"><span>โลก ${w.n} · ${w.name}</span><span class="chip">💎 ${g}/6</span></div><div class="lvls"></div>`;
+    div.innerHTML = `<div class="wn"><span>โลก ${w.n} · ${w.name}</span><span class="chip">💎 ${g}/${w.levels.filter(id => !PLAT.LEVELS[id].boss).length * 3}</span></div><div class="lvls"></div>`;
     const lv = div.querySelector('.lvls');
     for (const id of w.levels) {
       const L = PLAT.LEVELS[id], rec = S.level(id) || {}, open = levelUnlocked(id);
       const b = document.createElement('button'); b.className = 'lvl' + (open ? '' : ' lock') + (L.boss ? ' boss' : '');
       const gemTxt = L.boss ? '👑 บอส' : `💎 ${(rec.gems || []).length}/3`;
-      b.innerHTML = `<div class="id">${id}</div><div class="nm">${L.name}</div><div class="meta">${open ? (rec.cleared ? `${gemTxt} · ⏱ ${U.fmtTime(rec.bestTime)} · ${rec.bestScore || 0} แต้ม` : `${gemTxt} · ยังไม่ผ่าน`) : '🔒 ผ่านด่านก่อนหน้า'}</div>${rec.bestRank ? `<div class="rk ${rec.bestRank}">${rec.bestRank}</div>` : ''}`;
+      b.innerHTML = `<div class="id">${PLAT.levelLabel(id)}</div><div class="nm">${L.name}</div><div class="meta">${open ? (rec.cleared ? `${gemTxt} · ⏱ ${U.fmtTime(rec.bestTime)} · ${rec.bestScore || 0} แต้ม` : `${gemTxt} · ยังไม่ผ่าน`) : '🔒 ผ่านด่านก่อนหน้า'}</div>${rec.bestRank ? `<div class="rk ${rec.bestRank}">${rec.bestRank}</div>` : ''}`;
       if (open) b.addEventListener('click', () => startLevel(id));
       else b.disabled = true;
       lv.appendChild(b);
@@ -379,7 +380,7 @@ async function startLevel(id) {
 async function startLevel_(id) {
   quitGame();
   const L = PLAT.LEVELS[id], heroId = heroAvailable(S.data.hero) ? S.data.hero : 'knight';
-  $('#lTitle').textContent = `${id} · ${L.name}`; $('#lSub').textContent = L.teach || ''; $('#lBar').style.width = '0%';
+  $('#lTitle').textContent = `${PLAT.levelLabel(id)} · ${L.name}`; $('#lSub').textContent = L.teach || ''; $('#lBar').style.width = '0%';
   show('loading');
   const g = new PLAT.Game({ levelId: id, heroId, onEvent: onGameEvent });
   app.game = g;
@@ -388,7 +389,7 @@ async function startLevel_(id) {
   if (app.game !== g) return;
   setupHud(g);
   input.clearAll(); show('game');
-  toast(`${id} ${L.name}`, L.teach);
+  toast(`${PLAT.levelLabel(id)} ${L.name}`, L.teach);
   if (PLAT.assets.failed.length) console.warn('[platform] missing assets:', PLAT.assets.failed);
 }
 /* ENDLESS: one run per world. Loading uses the same loader / hero as the story levels. */
@@ -490,7 +491,7 @@ function relicChanged() {
 let hudCache = {};
 function setupHud(g) {
   const h = PLAT.HEROES[g.heroId];
-  $('#hLv').textContent = g.endlessWorld ? `∞ ${g.spec.name}` : `${g.levelId} ${g.spec.name}`;
+  $('#hLv').textContent = g.endlessWorld ? `∞ ${g.spec.name}` : `${PLAT.levelLabel(g.levelId)} ${g.spec.name}`;
   $('#hDist').classList.toggle('on', !!g.endlessWorld); $('#hTime').style.display = g.endlessWorld ? 'none' : '';
   $('#hHpL').style.width = '100%';
   $('#hGems').innerHTML = g.spec.boss || g.endlessWorld ? '' : Array.from({ length: g.L.gems.length }, () => '<i>💎</i>').join('');
@@ -557,7 +558,7 @@ function finishLevel(r) {
   const newBest = !first && rec.bestScore === r.score && r.score > (prev.bestScore || 0);
   $('#clearBox').innerHTML = `
     <h2 class="kick" style="text-align:center">${PLAT.LEVELS[id].boss ? 'ปราบบอสสำเร็จ!' : 'ผ่านด่าน!'}</h2>
-    <p class="sub" style="text-align:center;margin:0">${id} ${PLAT.LEVELS[id].name}</p>
+    <p class="sub" style="text-align:center;margin:0">${PLAT.levelLabel(id)} ${PLAT.LEVELS[id].name}</p>
     <div class="res-rank rk ${r.rank}">${r.rank}</div>
     <div class="checks">${r.checks.map(c => `<div><span>${c.th}</span><span class="${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✗'}</span></div>`).join('')}</div>
     <div class="kv"><div>เวลา<b>${U.fmtTime(r.frames)}</b></div><div>คะแนน<b>${r.score.toLocaleString()}</b></div><div>เหรียญ<b>🪙 ${r.coins}</b></div>${PLAT.LEVELS[id].boss ? '' : `<div>💎<b>${r.gems.length}/${r.gemTotal}</b></div>`}<div>ปราบ<b>${r.kills}</b></div><div>โดนตี<b>${r.hits}</b></div><div>ตาย<b>${r.deaths}</b></div><div>คอมโบสูงสุด<b>${r.maxChain} HIT</b></div><div>ปัดสำเร็จ<b>🛡 ${r.parries || 0}</b></div></div>${lootLine(r)}

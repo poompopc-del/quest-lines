@@ -13,6 +13,7 @@
      leaper   crouches (telegraph) then pounces         (licker)
      shooter  keeps distance, telegraphs, shoots       (tyrant)
      charger  revs, charges, blocks frontal hits while charging, dizzy after a crash (salvador)
+     hound    walks, sprints at you when it sees you, "!" crouch then a long pounce (hell hound, v115)
    Armour (cone / bucket zombies): hits break the armour first; the sheet
    swaps to its dented states, then to a plain zombie.
    ========================================================================== */
@@ -30,9 +31,11 @@ const zSheet = (img, tall) => ({ kind: 'grid', img, cols: 10, fw: tall ? 52 : 51
 
 PLAT.ENEMY_CODES = { s: 'slime', j: 'hopper', g: 'golden', m: 'magma', z: 'zombie', c: 'cone', b: 'bucket', w: 'ghost', l: 'licker', t: 'tyrant', h: 'salvador',
   // v108 CC0 monsters (Monsters Creatures Fantasy 1 + 2 by LuizMelo — js/plat/monster-sheets.js)
-  k: 'skel', q: 'goblin', n: 'shroom', e: 'eye', r: 'rat', v: 'bat', d: 'goo', x: 'mimic' };
+  k: 'skel', q: 'goblin', n: 'shroom', e: 'eye', r: 'rat', v: 'bat', d: 'goo', x: 'mimic',
+  // v115 Hell Hound by ansimuz (CC-BY 3.0)
+  f: 'hound' };
 // ELITE versions (upper case): more HP and poise, a pink aura, and one extra trick each (see think())
-PLAT.ELITE_CODES = { Z: 'zombie', J: 'hopper', M: 'magma', W: 'ghost', L: 'licker', T: 'tyrant', I: 'skel', Q: 'goblin', N: 'shroom', V: 'bat', D: 'goo' };
+PLAT.ELITE_CODES = { Z: 'zombie', J: 'hopper', M: 'magma', W: 'ghost', L: 'licker', T: 'tyrant', I: 'skel', Q: 'goblin', N: 'shroom', V: 'bat', D: 'goo', X: 'hound' };
 const E = PLAT.ENEMIES = {
   slime:  { name: 'Green Slime', sheet: slimeSheet('green'), scale: .5, box: [26, 22], hp: 2, dmg: 1, ai: 'patrol', speed: .55, coins: 1, small: true, fps: 6 },
   hopper: { name: 'Devil Slime', sheet: slimeSheet('devil', true), scale: .55, box: [30, 24], hp: 3, dmg: 1, ai: 'hopper', jumpV: 7.6, jumpX: 2.4, wait: 54, sight: 210, coins: 2, small: true, fps: 6 },
@@ -58,6 +61,8 @@ const E = PLAT.ENEMIES = {
   bat:    { name: 'Vampire Bat', sheet: MS.bat, scale: .7, box: [24, 20], hp: 2, dmg: 1, ai: 'flyer', speed: 1.2, sight: 230, coins: 2, fps: 14, small: true },
   goo:    { name: 'Swamp Goo', sheet: MS.goo, scale: .7, box: [32, 18], hp: 3, dmg: 1, ai: 'leaper', speed: .5, sight: 170, coins: 2, fps: 10, small: true, elem: 'poison' },
   mimic:  { name: 'Mimic', sheet: MS.mimic, scale: .75, box: [28, 28], hp: 7, dmg: 1, ai: 'mimic', bite: { wind: 18, recover: 30, reach: 34 }, speed: .9, chase: 1.7, sight: 220, wake: 74, coins: 12, fps: 12, poise: 3 },
+  // v115 Hell Hound: walks → spots you → sprints (fire trail) → "!" crouch → pounce
+  hound:  { elem: 'fire', name: 'Hell Hound', sheet: MS.hound, scale: 1.3, box: [44, 28], hp: 4, dmg: 1, ai: 'hound', speed: .55, chase: 2.3, sight: 230, coins: 3, fps: 12, small: true },
   salvador: { name: 'Chainsaw Man', sheet: { kind: 'grid', img: 'enemies/re/salvador.png', cols: 7, fw: 56, fh: 72, ax: 40, by: 71, anims: { idle: [0, 1], move: [0, 1], atk: [2, 3], rev: [4, 5], dead: [6] } },
             scale: .85, box: [26, 34], hp: 6, dmg: 2, ai: 'charger', speed: .5, sight: 230, coins: 5, fps: 6, poise: 3 },
 };
@@ -228,6 +233,30 @@ class Enemy {
         if (this.st === 'wake') { this.vx = 0; if (this.stT === 22) this.anim.play('transform', 22, true); if (this.stT % 6 < 3) this.flash = 2; if (this.stT >= 44) { this.sleeping = false; this.set('walk'); this.cool = coolT(20); } break; }
         this.sleeping = false;
         d.ai = 'patrol'; this.think(p); d.ai = 'mimic';     // awake: a fast biting patrol
+        break;
+      }
+      case 'hound': {                                      // v115 hell hound
+        if (this.st === 'crouch') {
+          this.vx = 0; if (this.stT % 6 < 3) this.flash = 2; this.anim.play('idle');
+          if (this.stT >= (this.elite ? 12 : 18)) { this.face(toP); this.vy = -5.6; this.vx = this.dir * 5.2; this.set('leap'); this.anim.play('atk', 36, true); sfx().swing(); }
+          break;
+        }
+        if (this.st === 'leap') {
+          if (this.t % 3 === 0) g.burst(this.cx - this.dir * 12, this.y + this.h / 2, '#ff7a2a', 1, .5);
+          if (this.onGround && this.stT > 4) { if (this.elite && ++this.combo < 2) { this.face(toP); this.set('crouch'); } else { this.combo = 0; this.set('rest'); this.vx = 0; this.release(); this.cool = coolT(70); } }
+          break;
+        }
+        if (this.st === 'rest') { this.vx *= .8; this.anim.play('idle'); if (this.stT > 50 * TUNE.rest) this.set('idle'); break; }
+        if (p && this.seesPlayer(d.sight, 70)) {
+          this.face(toP);
+          const dist = Math.abs(p.cx - this.cx);
+          if (this.onGround && dist < 130 && this.cool <= 0 && this.token()) { this.set('crouch'); this.vx = 0; break; }
+          if (this.onGround && (!W.floorAhead(L, this, this.dir) || W.wallAhead(L, this, this.dir))) { this.vx = 0; this.anim.play('idle'); break; }
+          this.vx = dist < 70 ? 0 : this.dir * d.chase * (this.elite ? 1.2 : 1); this.anim.play(this.vx ? 'run' : 'idle');
+          if (this.vx && this.t % 4 === 0) g.burst(this.cx - this.dir * 14, this.feet - 4, '#ff7a2a', 1, .3);
+          break;
+        }
+        this.walkTurn(L); this.vx = this.dir * d.speed; this.anim.play('move');
         break;
       }
       case 'leaper': {
@@ -417,6 +446,13 @@ PLAT.BOSSES = {
   // v114 WORLD 4 BOSS — Evil Wizard 2 → (50 % HP) transforms into Evil Wizard 3 (LuizMelo, CC0; monster-sheets.js)
   wizard: { elem: 'poison', name: 'MARSH WARLOCK', th: 'จอมเวทหนองพิษ', boss: true, hp: 64, dmg: 1, poise: 14, scale: .95, box: [30, 60],
     sheet: MS.wiz2, sheet2: MS.wiz3, scale2: 1.55, proj: 'wbolt', minions: ['bat', 'goo'], fps: 10, heavy: true },
+  // v115 WORLD 5 BOSSES — from the CC0 "Bosses" sprite sheet (public/bosses/snail, public/bosses/serpent)
+  snail: { elem: 'fire', name: 'SNAIL TANK', th: 'หอยทากรถถัง', boss: true, hp: 56, dmg: 1, poise: 12, scale: 2.6, box: [84, 60], proj: 'cball',
+    sheet: MS.snail, fps: 6, heavy: true },
+  serpent: { elem: 'fire', name: 'HORNED SERPENT', th: 'อสรพิษเขาเดียว', boss: true, hp: 66, dmg: 1, poise: 14, scale: 2.2, box: Object.assign([52, 40], { fixed: true }), proj: 'bubble',
+    sheet: { kind: 'grid', img: 'bosses/serpent/head0.png', cols: 1, fw: 30, fh: 22, ax: 15, by: 22, anims: { idle: [0], move: [0], fly: [0], hurt: [0] } },
+    imgs: ['bosses/serpent/head1.png', 'bosses/serpent/head2.png', 'bosses/serpent/body.png', 'bosses/serpent/dead.png', 'bosses/serpent/fin1.png', 'bosses/serpent/fin2.png', 'bosses/serpent/fin3.png', 'bosses/serpent/fin4.png'],
+    fps: 6, heavy: true },
 };
 
 class Boss extends Enemy {
@@ -559,6 +595,10 @@ class Boss extends Enemy {
   takeHit(dmg, o) {
     // intro roar / phase change / fully warped out: the boss cannot be hurt — say so (game.hit shows "ไม่มีผล")
     if (this.st === 'intro' || this.st === 'phase' || this.alpha === 0) { this.reject = 'immune'; return false; }
+    if (this.armored && !this.dead) {                    // v115 snail tank: inside its shell nothing gets through
+      if (o.id == null || !this.lastHit.has(o.id)) { if (o.id != null) this.lastHit.add(o.id); PLAT.sfx.clang(); this.g.burst(this.cx, this.y + this.h / 2, '#ffffff', 6, 2); this.g.text(this.cx, this.y - 6, 'แข็ง!', '#d0d8e0', 26); }
+      this.reject = 'blocked'; return false;
+    }
     const ok = super.takeHit(dmg, o);
     if (ok) {
       this.g.bossHit(this);
@@ -680,6 +720,217 @@ class Boss extends Enemy {
       case 'rest': this.vx = 0; this.anim.play('idle'); this.vulnerable = true; if (this.stT > (ph >= 3 ? 26 : fast ? 34 : 50) * TUNE.bossRest) this.set('move'); break;
     }
   }
+  /* ---------------- v115 SNAIL TANK (world 5, 5-2) ----------------
+     crawls at you · MORTAR: raises its cannon ("!"), shells fall on marked spots · CANNON: two/three low cannonballs (jump them) ·
+     ROLL: hides in its shell (hits bounce off) and rolls wall to wall — jump over it; after the last bounce it is dizzy (×2 damage).
+     phase 2: faster, more shells, an extra bounce · phase 3: everything again, shorter rests. */
+  snail() {
+    const g = this.g, p = g.player, A = this.arena(), ph = this.phase, toP = U.sign(p.cx - this.cx) || this.dir;
+    this.vulnerable = false; this.armored = false; this.rollA = this.st === 'roll' ? this.rollA : 0;
+    const muzzle = () => ({ x: this.cx + this.dir * -20 * this.def.scale / 2.1, y: this.y + 4 });           // the cannon sits on the shell's back
+    const smoke = (x, y) => { for (let i = 0; i < 6; i++) g.parts.push({ x: x + U.rnd(-6, 6), y: y + U.rnd(-4, 4), vx: U.rnd(-.6, .6), vy: U.rnd(-1.6, -.4), life: 26, col: i % 2 ? '#5a6a4a' : '#8a9a7a', size: 6, fade: true }); };
+    switch (this.st) {
+      case 'intro': this.intro(); break;
+      case 'move':
+        this.face(toP); this.vx = this.dir * (ph >= 2 ? .85 : .55); this.anim.play('move');
+        if (this.x < A.x0 + 4 && this.vx < 0 || this.x + this.w > A.x1 - 4 && this.vx > 0) this.vx = 0;
+        if (this.stT > (ph >= 3 ? 40 : ph >= 2 ? 60 : 90)) this.pick(ph >= 2 ? ['roll', 'mortar', 'cannon', 'roll', 'mortar'] : ['mortar', 'cannon', 'roll']);
+        break;
+      case 'mortar': {
+        this.vx = 0; const n = ph >= 3 ? 7 : ph >= 2 ? 5 : 3, wind = ph >= 3 ? 18 : 26;
+        if (this.stT === 1) g.text(this.cx, this.y - 16, '⚠ ปืนครก!', '#ffd060', 40);
+        if (this.stT < wind) { this.anim.play('raise'); if (this.stT % 6 < 3) this.flash = 2; break; }
+        this.anim.play('fire');
+        const k = this.stT - wind;
+        if (k % 10 === 0 && k < n * 10) {
+          const m = muzzle(); smoke(m.x, m.y - 10); sfx().shoot(); g.shake(2);
+          g.parts.push({ x: m.x, y: m.y - 14, vx: 0, vy: -7, life: 30, col: '#2a2630', size: 9 });
+          const x = U.clamp(k === 0 ? p.cx : p.cx + U.rnd(-150, 150), A.x0 + 14, A.x1 - 14);
+          g.warn(x, g.floorBelow(x, p.y), 46, () => g.spawnProj('cball', x, g.cam.y - 12, 0, { vy: 3, grav: .2 }));
+        }
+        if (k > n * 10 + 20) this.set('rest');
+        break;
+      }
+      case 'cannon': {
+        this.vx = 0; this.face(toP); const n = ph >= 3 ? 3 : 2, wind = ph >= 3 ? 16 : 22;
+        if (this.stT === 1) g.text(this.cx, this.y - 16, '!', '#ff5a5a', 26, true);
+        if (this.stT < wind) { this.anim.play('raise'); if (this.stT % 6 < 3) this.flash = 2; break; }
+        this.anim.play('fire'); const k = this.stT - wind;
+        if (k % 22 === 0 && k < n * 22) {
+          const sx = this.cx + this.dir * this.w * .45, sy = this.feet - 22;
+          g.spawnProj('cball', sx, sy, this.dir, { vx: this.dir * (ph >= 2 ? 4.4 : 3.8), vy: -1.2, grav: .045 });
+          smoke(sx, sy); sfx().boom(); g.shake(3);
+        }
+        if (k > n * 22 + 14) this.set('rest');
+        break;
+      }
+      case 'roll': {                                       // tuck in (telegraph) → roll wall to wall → dizzy
+        const wind = ph >= 3 ? 22 : 32;
+        this.armored = true; if (this.stT < (ph >= 3 ? 22 : 32)) this.anim.play('hide');
+        if (this.stT === 1) { g.text(this.cx, this.y - 16, '⚠ กลิ้ง! กระโดดข้าม!', '#ffd060', 50); this.face(toP); this.bounces = 0; sfx().charge(); }
+        if (this.stT < wind) { this.vx = 0; if (this.stT % 6 < 3) this.flash = 2; this.rollA = (this.rollA || 0) + this.dir * .05 * this.stT / wind; break; }
+        this.anim.play('shell'); this.vx = this.dir * (ph >= 3 ? 6.4 : ph >= 2 ? 5.6 : 4.8); this.rollA = (this.rollA || 0) + this.vx / 36;
+        if (this.stT % 3 === 0) g.dust(this.cx - this.dir * 20, this.feet, 1);
+        if (U.overlap({ x: this.x + 6, y: this.y + 6, w: this.w - 12, h: this.h - 6 }, p) && !p.dead) p.hurt(2, this.cx, { src: this });
+        if ((this.dir < 0 && this.x < A.x0 + 6) || (this.dir > 0 && this.x + this.w > A.x1 - 6) || this.wall) {
+          this.dir = -this.dir; this.bounces++; g.shake(5); sfx().clang(); g.dust(this.cx, this.feet, 8);
+          if (ph >= 2) for (let i = 0; i < 2; i++) { const x = U.clamp(U.rnd(A.x0 + 20, A.x1 - 20), A.x0, A.x1); g.warn(x, g.floorBelow(x, p.y), 40 + i * 8, () => g.spawnProj('rock', x, g.cam.y - 10, 0, {})); }
+          if (this.bounces >= (ph >= 2 ? 3 : 2)) { this.vx = 0; this.rollA = 0; this.set('tired'); g.text(this.cx, this.y - 16, 'มึน! โจมตีเลย!', '#8aff8a', 60); }
+        }
+        if (this.stT > 400) { this.rollA = 0; this.set('tired'); }
+        break;
+      }
+      case 'tired': this.vx = 0; this.vulnerable = true; this.anim.play('hurt'); if (this.t % 20 === 0) g.burst(this.cx, this.y, '#fff6a0', 2, 1); if (this.stT > (ph >= 3 ? 70 : 100)) this.set('move'); break;
+      case 'rest': this.vx = 0; this.vulnerable = true; this.anim.play('idle'); if (this.stT > (ph >= 3 ? 24 : 40) * TUNE.bossRest) this.set('move'); break;
+    }
+  }
+  /* ---------------- v115 HORNED SERPENT (world 5, 5-4) ----------------
+     lives in the lava pool between two shores. Bubbles on the surface show where it comes up next.
+     LEAP: jumps out of one side of the pool and arcs to the other (its whole body hurts) ·
+     SURFACE: comes up on the far side from you → horn LASER (a red aim line first, then the beam: move off the line)
+       or a stream of BUBBLES (parry = reflect) → then it rests its head on the shore: cross over and hit it (×2).
+     phase 2: two leaps in a row, lava blobs splash out, wider bubble fans · phase 3: faster, a second laser. */
+  serpent() {
+    const g = this.g, p = g.player, A = this.arena(), ph = this.phase, k = this.def.scale;
+    this.flying = true; this.vulnerable = false;
+    if (!this.pool) {                                     // the lava pool under the spawn point
+      const ty = Math.floor((this.groundY || this.feet) / T), L = g.L; let x0 = Math.floor(this.cx / T), x1 = x0;
+      while (W.tileAt(L, x0 - 1, ty) === PLAT.TILE.LIQUID) x0--; while (W.tileAt(L, x1 + 1, ty) === PLAT.TILE.LIQUID) x1++;
+      this.pool = { x0: x0 * T, x1: (x1 + 1) * T, y: ty * T + 4 }; this.hx = this.cx; this.hy = this.pool.y + 70; this.ang = -Math.PI / 2; this.trail = [];
+    }
+    const P = this.pool, surf = P.y;
+    const place = (x, y, ang) => { this.hx = x; this.hy = y; if (ang != null) this.ang = ang; this.x = x - this.w / 2; this.y = y - this.h / 2; };
+    const splash = (x, n) => { for (let i = 0; i < (n || 14); i++) g.parts.push({ x: x + U.rnd(-20, 20), y: surf, vx: U.rnd(-2, 2), vy: U.rnd(-5, -1.5), life: 30, col: i % 2 ? '#ffd04a' : '#ff6a1a', size: 4, grav: .2, fade: true }); sfx().heavy(); };
+    const blobs = x => { if (ph < 2) return; for (let i = 0; i < (ph >= 3 ? 4 : 3); i++) g.spawnProj('lblob', x, surf - 6, 0, { vx: U.rnd(-2.6, 2.6), vy: U.rnd(-7.5, -5) }); };
+    const farSide = () => (p.cx < (P.x0 + P.x1) / 2 ? 1 : -1);          // +1 = the right edge
+    const edgeX = s => s > 0 ? P.x1 - 34 : P.x0 + 34;
+    const bubbleMarks = x => { if (g.frame % 4 === 0) g.parts.push({ x: x + U.rnd(-18, 18), y: surf + 2, vx: 0, vy: U.rnd(-1.6, -.6), life: 16, col: '#fff0a0', size: 4, fade: true }); };
+    this.trail.unshift([this.hx, this.hy]); if (this.trail.length > 40) this.trail.length = 40;
+    switch (this.st) {
+      case 'intro':                                       // rises out of the middle of the pool, roars, dives
+        if (this.stT < 60) { place(this.hx, surf + 60 - this.stT * 1.7, -Math.PI / 2 + Math.sin(this.stT / 8) * .2); if (this.stT === 1) splash(this.hx, 20); }
+        else place(this.hx, surf - 42, -Math.PI / 2 + .35 * -1);
+        this.intro(); break;
+      case 'move': case 'land': case 'dive': {            // under the lava (invulnerable): bubbles mark the next spot
+        if (this.stT === 1) { if (this.hy < surf + 10) splash(this.hx); this.alpha = 1; this.next = this.dropFast ? 'tired' : this.pick2(); this.side = this.next === 'leap' ? -farSide() : farSide(); this.dropFast = false; }
+        if (this.st !== 'dive' && this.next === 'tired') { this.set('surface'); this.next = 'tired'; this.side = p.cx < (P.x0 + P.x1) / 2 ? -1 : 1; break; }
+        place(this.hx, Math.min(surf + 80, this.hy + 5), Math.PI / 2 * U.sign(Math.cos(this.ang) || 1));
+        if (this.hy > surf + 40) this.alpha = 0;
+        bubbleMarks(edgeX(this.side));
+        if (this.stT > (ph >= 3 ? 34 : ph >= 2 ? 46 : 60)) { this.alpha = 1; this.set(this.next === 'leap' ? 'leap' : 'surface'); }
+        break;
+      }
+      case 'leap': {                                      // a long arc from one side of the pool to the other
+        const D = ph >= 3 ? 64 : 76, H = ph >= 2 ? 190 : 160, s = this.side, x0 = edgeX(s), x1 = edgeX(-s), u = Math.min(1, this.stT / D);
+        if (this.stT === 1) { splash(x0); blobs(x0); sfx().roar(); this.face(-s); }
+        const x = x0 + (x1 - x0) * u, y = surf + 40 - 4 * (H + 40) * u * (1 - u), dx = (x1 - x0) / D, dy = -4 * (H + 40) * (1 - 2 * u) / D;
+        place(x, y, Math.atan2(dy, dx));
+        if (this.stT % 2 === 0) for (const [bx, by] of this.bodyPts()) if (by < surf && !p.dead && Math.abs(bx - p.cx) < 16 * k / 2.2 + p.w / 2 && Math.abs(by - (p.y + p.h / 2)) < 14 * k / 2.2 + p.h / 2) { p.hurt(1, bx, { src: this, elem: 'fire' }); break; }
+        if (u >= 1) { splash(x1); blobs(x1); this.leaps = (this.leaps || 0) + 1;
+          if (ph >= 2 && this.leaps < 2) { this.side = -s; this.set('leapWait'); } else { this.leaps = 0; this.set('dive'); this.next = null; } }
+        break;
+      }
+      case 'leapWait': place(this.hx, Math.min(surf + 80, this.hy + 6)); this.alpha = this.hy > surf + 40 ? 0 : 1; bubbleMarks(edgeX(this.side)); if (this.stT > 26) { this.alpha = 1; this.set('leap'); } break;
+      case 'surface': {                                   // comes up at the edge, then attacks
+        const s = this.side, x = edgeX(s), face = -s;
+        if (this.stT === 1) { splash(x); this.face(face); }
+        const up = Math.min(1, this.stT / 22);
+        place(x + s * 6 * (1 - up), surf + 50 - 92 * up, Math.atan2(-.55, face));
+        if (this.stT > 26) { if (this.next === 'tired') this.set('tired'); else this.set(this.next); }
+        break;
+      }
+      case 'laser': {                                     // aim line (where you WERE) → beam; phase 3 fires twice
+        const s = this.side, face = -s;
+        const hornX = this.hx + face * 26 * k / 2.2, hornY = this.hy - 12 * k / 2.2;
+        if (this.stT === 1 || this.stT === 64) { this.aim = { x: p.cx, y: p.y + p.h / 2 }; sfx().charge(); }
+        const t = this.stT >= 64 ? this.stT - 63 : this.stT, wind = ph >= 3 ? 26 : 34;
+        const a = Math.atan2(this.aim.y - hornY, this.aim.x - hornX); this.ang = Math.atan2(Math.sin(a) * .6 - .3, Math.cos(a));
+        this.beam = { x: hornX, y: hornY, a, on: t > wind && t <= wind + 26, warn: t <= wind };
+        if (this.beam.warn && t % 6 < 3) this.flash = 2;
+        if (this.beam.on) {
+          if (t === wind + 1) { sfx().big(); g.shake(4); }
+          const ux = Math.cos(a), uy = Math.sin(a), px = p.cx - hornX, py = p.y + p.h / 2 - hornY, along = px * ux + py * uy, off = Math.abs(px * -uy + py * ux);
+          if (along > 0 && off < 9 + Math.min(p.w, p.h) / 2 && !p.dead) p.hurt(2, hornX, { src: this, elem: 'fire' });
+          if (t % 2 === 0) g.parts.push({ x: hornX + ux * U.rnd(20, 400), y: hornY + uy * U.rnd(20, 400), vx: U.rnd(-1, 1), vy: U.rnd(-1, 1), life: 12, col: '#ffb0b0', size: 3, fade: true });
+        }
+        place(this.hx, this.hy + Math.sin(this.stT / 6) * .3);
+        if (t > wind + 30) { this.beam = null; if (ph >= 3 && this.stT < 64) { this.stT = 63; } else this.set('tired'); }
+        break;
+      }
+      case 'bubbles': {
+        const s = this.side, face = -s, n = ph >= 3 ? 7 : ph >= 2 ? 5 : 3;
+        place(this.hx, this.hy + Math.sin(this.stT / 5) * .6, Math.atan2(-.3 + Math.sin(this.stT / 6) * .25, face));
+        if (this.stT === 1) g.text(this.hx, this.hy - 40, 'ฟองลาวา!', '#ffb08a', 40);
+        if (this.stT >= 16 && (this.stT - 16) % 14 === 0 && this.stT < 16 + n * 14) {
+          const mx = this.hx + face * 28 * k / 2.2, my = this.hy + 4, i = (this.stT - 16) / 14;
+          g.spawnProj('bubble', mx, my, face, { vx: face * (1.3 + (i % 3) * .35), vy: 0 }); sfx().shoot();
+        }
+        if (this.stT > 30 + n * 14) this.set('tired');
+        break;
+      }
+      case 'tired': {                                     // the head rests on the shore: the punish window
+        const s = this.side, shoreX = s > 0 ? P.x1 + 22 : P.x0 - 22, face = s;
+        const u = Math.min(1, this.stT / 20);
+        place(this.hx + (shoreX - this.hx) * u * .25, this.hy + ((surf - 16) - this.hy) * u * .25, Math.atan2(-.4, face));   // chin on the shore, the body sloping down into the lava
+        this.vulnerable = this.stT > 14; this.face(face);
+        if (this.stT === 16) g.text(this.hx, this.hy - 34, 'เหนื่อย! ตีหัวเลย!', '#8aff8a', 60);
+        if (this.stT > (ph >= 3 ? 80 : 110)) this.set('dive');
+        break;
+      }
+      default: this.set('dive');
+    }
+    this.vx = 0; this.vy = 0;
+  }
+  pick2() { const L = this.phase >= 2 ? ['leap', 'laser', 'bubbles', 'leap', 'laser'] : ['leap', 'bubbles', 'laser']; return L[this.pat++ % L.length]; }
+  // serpent: points along the body (head first) — for contact damage and drawing
+  bodyPts() {
+    const k = this.def.scale, out = [[this.hx, this.hy]], c = Math.cos(this.ang), s = Math.sin(this.ang);
+    for (let i = 1; i <= 4; i++) out.push([this.hx - c * i * 17 * k, this.hy - s * i * 17 * k + Math.sin(this.t / 8 + i) * 2]);
+    return out;
+  }
+  /* the horned serpent is drawn from pieces: tail (body.png) → flapping fin → head, everything under the lava hidden */
+  drawSerpent(ctx) {
+    const A = PLAT.assets, k = this.def.scale, P = this.pool; if (!P) return;
+    let alpha = this.alpha != null ? this.alpha : 1; if (this.dead) alpha *= Math.max(0, 1 - this.deadT / 110);
+    if (alpha <= 0) return;
+    const fl = this.flash > 0 && this.flash % 2 ? .8 : this.vulnerable && this.t % 16 < 8 ? .25 : 0;
+    const piece = (src, x, y, ang, ax, ay, rot) => {     // a piece that points LEFT in its image, turned to point along `ang`
+      const im = A.img(src); if (!im) return;
+      ctx.save(); ctx.translate(x, y);
+      if (Math.cos(ang) <= 0) ctx.rotate(ang - Math.PI); else { ctx.rotate(ang); ctx.scale(-1, 1); }
+      if (rot) ctx.rotate(rot);
+      ctx.scale(k, k); ctx.drawImage(im, -ax, -ay);
+      if (fl) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha *= fl; ctx.drawImage(im, -ax, -ay); }
+      ctx.restore();
+    };
+    ctx.save(); ctx.globalAlpha *= alpha; ctx.imageSmoothingEnabled = false;
+    if (this.dead) { const im = A.img('bosses/serpent/dead.png'); if (im) { ctx.translate(this.hx, Math.min(this.hy, P.y - 6)); ctx.scale(k * (this.dir > 0 ? -1 : 1), k); ctx.drawImage(im, -im.width / 2, -im.height + 6); } ctx.restore(); return; }
+    ctx.beginPath(); ctx.rect(this.hx - 600, this.hy - 600, 1200, P.y + 2 - (this.hy - 600)); ctx.clip();     // nothing below the lava surface
+    const c = Math.cos(this.ang), s = Math.sin(this.ang), neck = [this.hx - c * 12 * k, this.hy - s * 12 * k];
+    // the tail follows the head's path a little (trail), so arcs curve
+    const tr = this.trail && this.trail[Math.min(this.trail.length - 1, 10)] || [this.hx - c * 60, this.hy - s * 60];
+    let ba = Math.atan2(this.hy - tr[1], this.hx - tr[0]); if (!isFinite(ba) || Math.hypot(this.hx - tr[0], this.hy - tr[1]) < 24) ba = this.ang;   // the way it is moving
+    else { let d = ba - this.ang; d = Math.atan2(Math.sin(d), Math.cos(d)); ba = this.ang + U.clamp(d, -.7, .7); }                                   // a gentle bend, never a fold
+    const fin = 'bosses/serpent/fin' + (1 + Math.floor(this.t / 6) % 4) + '.png';
+    piece('bosses/serpent/body.png', neck[0], neck[1], ba, 8, 7);
+    const bc = Math.cos(ba), bs = Math.sin(ba);
+    piece(fin, neck[0] - bc * 22 * k, neck[1] - bs * 22 * k + 6, ba, 8, 2);
+    const head = this.st === 'bubbles' || (this.beam && this.beam.on) ? 'bosses/serpent/head2.png' : this.st === 'tired' || this.st === 'laser' ? 'bosses/serpent/head1.png' : 'bosses/serpent/head0.png';
+    piece(head, this.hx, this.hy, this.ang, 15, 12);
+    ctx.restore();
+    // the surface around it: a glowing ring where it breaks the lava
+    if (this.hy > P.y - 60 && alpha > 0) { ctx.fillStyle = 'rgba(255,220,120,.55)'; ctx.beginPath(); ctx.ellipse(this.hx, P.y + 2, 26 + Math.sin(this.t / 5) * 4, 4, 0, 0, 6.283); ctx.fill(); }
+    const b = this.beam;
+    if (b) {
+      const L = 900, ex = b.x + Math.cos(b.a) * L, ey = b.y + Math.sin(b.a) * L;
+      ctx.save(); ctx.lineCap = 'round';
+      if (b.warn) { ctx.strokeStyle = this.t % 8 < 4 ? 'rgba(255,60,60,.85)' : 'rgba(255,200,120,.6)'; ctx.lineWidth = 1.5; ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(ex, ey); ctx.stroke(); }
+      if (b.on) { ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(255,40,60,.55)'; ctx.lineWidth = 18 + Math.sin(this.t) * 3; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(ex, ey); ctx.stroke();
+        ctx.strokeStyle = '#fff0f0'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(ex, ey); ctx.stroke(); }
+      ctx.restore();
+    }
+    if (this.st === 'stagger') this.g.drawStars(ctx, this.hx, this.hy - 30, this.t);
+  }
   breakPoise() {
     if (!this.dead && this.poise <= 0 && this.st !== 'stagger' && this.st !== 'intro' && this.st !== 'phase') {
       this.poise = this.maxPoise; this.alpha = 1;
@@ -694,7 +945,14 @@ class Boss extends Enemy {
     this.g.onEnemyKilled(this);
   }
   draw(ctx) {
+    if (this.type === 'serpent') return this.drawSerpent(ctx);
     const d = this.def, face = -this.dir, fr = this.anim.frame();
+    if (this.rollA) {                                    // v115 snail tank rolling in its shell: spin round the shell's middle
+      const b = this.anim.sheet.bounds ? this.anim.sheet.bounds(fr) : null, sc = d.scale;
+      const ox = b ? (b.x0 + b.x1) / 2 * sc * face : 0, r = b ? -(b.y0 + b.y1) / 2 * sc : this.h * .5;   // bounds are anchor-relative   // the shell's visual centre
+      ctx.save(); ctx.translate(this.cx + ox, this.feet - r); ctx.rotate(this.rollA);
+      PLAT.drawFrame(ctx, fr, -ox, r, face, sc, { flash: this.flash > 0 && this.flash % 2 ? .8 : 0 }); ctx.restore(); return;
+    }
     let alpha = this.alpha != null ? this.alpha : 1; if (this.dead && this.deadT > 90) alpha *= Math.max(0, 1 - (this.deadT - 90) / 30);
     const o = { alpha, flash: this.flash > 0 && this.flash % 2 ? .8 : 0 };
     if (this.vulnerable && this.t % 16 < 8) o.flash = Math.max(o.flash, .25);

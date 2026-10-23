@@ -10,6 +10,10 @@
      dark:  { r }                          the level is pitch dark: light radius r around the hero, plus the lanterns
      lights: [{ tx, ty }]                  lanterns (glow + light) — map 'Y' places one too
    Lily pads are movers with `sink: true` (world.js): they sink while stood on and float back up.
+   v115:
+     vents in a level whose theme is not poison are FLAME jets (fire damage, orange)
+     rise in a level whose theme has `lavaRise` is rising LAVA
+     villagers: map 'R' — scared townsfolk; touch one to rescue it (coins / a heart back), save them all for a bonus
    ========================================================================== */
 (function (G) {
 'use strict';
@@ -25,7 +29,15 @@ class Gimmicks {
     this.rise = s.rise ? Object.assign({ speed: .35, delay: 120, top: 2 }, s.rise) : null;
     if (this.rise) this.resetRise(this.rise.row * T);
     this.dark = s.dark ? Object.assign({ r: 110 }, s.dark) : null;
-    this.active = !!(this.vents.length || this.rise || this.dark || this.lights.length);
+    const th = PLAT.THEMES[s.theme] || {};
+    this.fire = !th.poison; this.lavaRise = !!th.lavaRise;                     // v115 flame jets / rising lava
+    const kinds = ['vOld', 'vWoman', 'vHat', 'vBeard'];
+    this.npcs = (L.npcs || []).map((n, i) => {
+      const kind = kinds[i % kinds.length], sh = g.sheets.get('npc:' + kind);
+      return { x: n.x, y: n.y, kind, st: 'scared', t: i * 23, anim: sh ? new PLAT.Anim(sh, {}) : null, dir: -1, alpha: 1 };
+    });
+    this.saved = 0;
+    this.active = !!(this.vents.length || this.rise || this.dark || this.lights.length || this.npcs.length);
   }
   resetRise(y) { const R = this.rise; R.y = Math.min(y, this.g.L.ph + T); R.wait = R.delay; }
   /* ------------------------------------------------------------------ step */
@@ -35,19 +47,43 @@ class Gimmicks {
     for (const v of this.vents) {
       if (!armed) { v.t = 0; continue; }
       v.t = (v.t + 1) % v.period; const on = this.ventOn(v);
-      if (v.t % 9 === 0) g.parts.push({ x: v.x + U.rnd(-8, 8), y: v.y - 2, vx: 0, vy: U.rnd(-1.2, -.5), life: 22, col: 'rgba(150,230,110,.7)', size: 3, fade: true });
-      if (this.ventWarn(v) && v.t % 3 === 0) g.parts.push({ x: v.x + U.rnd(-10, 10), y: v.y - 2, vx: U.rnd(-.4, .4), vy: U.rnd(-2.2, -1), life: 18, col: '#b8ff7a', size: 3 });
-      if (on && v.t % 2 === 0) for (let i = 0; i < 2; i++) g.parts.push({ x: v.x + U.rnd(-12, 12), y: v.y - U.rnd(0, VENT_H * T), vx: U.rnd(-.6, .6), vy: U.rnd(-2.6, -1.2), life: 26, col: 'rgba(120,220,90,.55)', size: 7, grav: -.02, fade: true });
-      if (on && !p.dead && U.overlap(this.ventBox(v), p)) p.hurt(1, v.x, { unblockable: true, elem: 'poison' });
+      const F = this.fire;
+      if (v.t % 9 === 0) g.parts.push({ x: v.x + U.rnd(-8, 8), y: v.y - 2, vx: 0, vy: U.rnd(-1.2, -.5), life: 22, col: F ? 'rgba(120,110,110,.6)' : 'rgba(150,230,110,.7)', size: 3, fade: true });
+      if (this.ventWarn(v) && v.t % 3 === 0) g.parts.push({ x: v.x + U.rnd(-10, 10), y: v.y - 2, vx: U.rnd(-.4, .4), vy: U.rnd(-2.2, -1), life: 18, col: F ? '#ffb04a' : '#b8ff7a', size: 3 });
+      if (on && v.t % 2 === 0) for (let i = 0; i < 2; i++) g.parts.push({ x: v.x + U.rnd(-12, 12), y: v.y - U.rnd(0, VENT_H * T), vx: U.rnd(-.6, .6), vy: U.rnd(-2.6, -1.2), life: 26, col: F ? (i ? 'rgba(255,200,60,.7)' : 'rgba(255,90,30,.65)') : 'rgba(120,220,90,.55)', size: 7, grav: -.02, fade: true });
+      if (on && !p.dead && U.overlap(this.ventBox(v), p)) p.hurt(1, v.x, { unblockable: true, elem: this.fire ? 'fire' : 'poison' });
       if (on) for (const e of g.enemies) if (!e.dead && !e.boss && !e.def.ghost && U.overlap(this.ventBox(v), e) && g.frame % 20 === 0) e.takeHit(1, { id: -1, dir: 0 });
       if (v.t === v.period - VENT_ON && Math.abs(v.x - p.cx) < 360) sfx().shoot();
     }
     const R = this.rise;
     if (R && g.mode === 'play' && !p.dead) {
       if (R.wait > 0) R.wait--; else R.y = Math.max(R.top * T, R.y - R.speed);
-      if (g.frame % 4 === 0) g.parts.push({ x: g.cam.x + U.rnd(0, C.VW), y: R.y + 4, vx: 0, vy: U.rnd(-1.4, -.4), life: 18, col: '#9aff6a', size: 3, fade: true });
+      if (g.frame % 4 === 0) g.parts.push({ x: g.cam.x + U.rnd(0, C.VW), y: R.y + 4, vx: 0, vy: U.rnd(-1.4, -.4), life: 18, col: this.lavaRise ? '#ffd04a' : '#9aff6a', size: 3, fade: true });
       if (p.feet > R.y + 8) { this.flooded(); return; }
       for (const e of g.enemies) if (!e.dead && !e.boss && !e.def.ghost && e.feet > R.y + 10) e.kill({});
+    }
+    for (const n of this.npcs) this.stepNpc(n);
+  }
+  /* v115 villagers: shiver and call for help until you touch them → "thank you" + a reward → they walk off and fade */
+  stepNpc(n) {
+    const g = this.g, p = g.player; n.t++;
+    if (n.anim) n.anim.update();
+    if (n.st === 'scared') {
+      if (n.anim) n.anim.play('idle');
+      if (Math.abs(p.cx - n.x) < 260) n.dir = U.sign(p.cx - n.x) || n.dir;
+      if (!p.dead && Math.abs(p.cx - n.x) < 22 && Math.abs(p.feet - n.y) < 40) {
+        n.st = 'saved'; n.t = 0; this.saved++; const all = this.saved === this.npcs.length;
+        sfx().checkpoint(); g.text(n.x, n.y - 58, all ? 'ช่วยครบทุกคนแล้ว! 🎉' : `ขอบคุณ! (${this.saved}/${this.npcs.length})`, '#8aff8a', 70, all);
+        if (p.hp < p.maxHp) { p.heal(PLAT.HPU); g.text(p.cx, p.y - 20, '+' + PLAT.HPU + ' ❤', '#ff8aa8', 50); }
+        const coins = all ? 15 : 5;
+        for (let i = 0; i < coins; i++) g.loose.push({ x: n.x, y: n.y - 30, vx: U.rnd(-2, 2), vy: U.rnd(-6, -2.5), kind: 'coin', t: 0 });
+        for (let i = 0; i < 10; i++) g.burst(n.x + U.rnd(-12, 12), n.y - U.rnd(0, 40), '#fff6a0', 1, 1.6);
+        n.dir = -(U.sign(p.cx - n.x) || 1);
+      }
+    } else {                                    // walks home and fades away
+      if (n.anim) n.anim.play(n.t > 30 ? 'move' : 'idle');
+      if (n.t > 30) n.x += n.dir * .9;
+      n.alpha = Math.max(0, 1 - Math.max(0, n.t - 90) / 50);
     }
   }
   ventOn(v) { return v.t >= v.period - VENT_ON; }
@@ -55,9 +91,9 @@ class Gimmicks {
   ventBox(v) { return { x: v.x - 12, y: v.y - VENT_H * T, w: 24, h: VENT_H * T }; }
   flooded() {
     const g = this.g, p = g.player;
-    for (let i = 0; i < 16; i++) g.burst(p.cx + U.rnd(-12, 12), this.rise.y, '#7ad05a', 1, 2.6);
+    for (let i = 0; i < 16; i++) g.burst(p.cx + U.rnd(-12, 12), this.rise.y, this.lavaRise ? '#ff8a2a' : '#7ad05a', 1, 2.6);
     sfx().hurt(); g.flashT = 8;
-    if (p.hp <= PLAT.HPU) { p.inv = 0; p.hurt(1, p.cx, { unblockable: true, elem: 'poison' }); return; }
+    if (p.hp <= PLAT.HPU) { p.inv = 0; p.hurt(1, p.cx, { unblockable: true, elem: this.lavaRise ? 'fire' : 'poison' }); return; }
     p.hp -= PLAT.HPU; g.stats.hits++; g.text(p.cx, p.y, '-' + PLAT.HPU, '#ff6a7a', 40);
     p.endAct(); p.reset(g.checkpoint); p.inv = 90; g.snapCam();
     this.resetRise(g.checkpoint.y + 4 * T);
@@ -66,14 +102,26 @@ class Gimmicks {
   /* ------------------------------------------------------------------ draw (world space) */
   draw(ctx) {
     const g = this.g, f = g.frame;
+    for (const n of this.npcs) {
+      if (n.alpha <= 0 || !n.anim) continue;
+      const shiver = n.st === 'scared' ? Math.sin(n.t * 1.3) * .8 : 0;
+      PLAT.drawFrame(ctx, n.anim.frame(), n.x + shiver, n.y + 1, -n.dir, 1.05, { alpha: n.alpha });
+      if (n.st === 'scared' && Math.abs(g.player.cx - n.x) < 300 && n.t % 120 < 80) {
+        ctx.font = '800 11px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000a';
+        const tx = n.x, ty = n.y - 54 + Math.sin(n.t / 9) * 2;
+        ctx.strokeText('ช่วยด้วย!', tx, ty); ctx.fillStyle = '#ffe36a'; ctx.fillText('ช่วยด้วย!', tx, ty);
+      }
+    }
     for (const v of this.vents) {
       // the vent mouth: a cracked stone ring that glows before it blows
       const warn = this.ventWarn(v), on = this.ventOn(v);
-      ctx.fillStyle = '#2a2a1a'; ctx.fillRect(v.x - 13, v.y - 6, 26, 6); ctx.fillStyle = warn || on ? '#b8ff7a' : '#5a7a3a'; ctx.fillRect(v.x - 9, v.y - 5, 18, 3);
+      const F = this.fire;
+      ctx.fillStyle = '#2a2a1a'; ctx.fillRect(v.x - 13, v.y - 6, 26, 6); ctx.fillStyle = warn || on ? (F ? '#ffb04a' : '#b8ff7a') : (F ? '#7a3a1a' : '#5a7a3a'); ctx.fillRect(v.x - 9, v.y - 5, 18, 3);
       if (warn && f % 10 < 6) { ctx.fillStyle = '#ffe36a'; ctx.font = '900 16px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('!', v.x, v.y - 12); }
       if (on) {
         const gr = ctx.createLinearGradient(0, v.y - VENT_H * T, 0, v.y);
-        gr.addColorStop(0, 'rgba(120,220,90,0)'); gr.addColorStop(1, 'rgba(140,240,100,.55)');
+        if (F) { gr.addColorStop(0, 'rgba(255,120,30,0)'); gr.addColorStop(.6, 'rgba(255,150,40,.6)'); gr.addColorStop(1, 'rgba(255,240,140,.85)'); }
+        else { gr.addColorStop(0, 'rgba(120,220,90,0)'); gr.addColorStop(1, 'rgba(140,240,100,.55)'); }
         ctx.fillStyle = gr; ctx.fillRect(v.x - 14 + Math.sin(f / 4) * 2, v.y - VENT_H * T, 28, VENT_H * T);
       }
     }
@@ -85,10 +133,12 @@ class Gimmicks {
     const R = this.rise;
     if (R) {
       const y = R.y, x0 = g.cam.x - 10, w = C.VW + 20, bot = Math.max(y, g.cam.y + C.VH + 10);
-      ctx.fillStyle = 'rgba(40,110,50,.82)'; ctx.fillRect(x0, y, w, bot - y + 40);
-      ctx.fillStyle = '#7ad05a';
+      const LV = this.lavaRise;
+      ctx.fillStyle = LV ? 'rgba(200,60,20,.88)' : 'rgba(40,110,50,.82)'; ctx.fillRect(x0, y, w, bot - y + 40);
+      if (LV) { ctx.fillStyle = 'rgba(255,170,40,.35)'; ctx.fillRect(x0, y + 4, w, 10); }
+      ctx.fillStyle = LV ? '#ffd04a' : '#7ad05a';
       for (let x = Math.floor(x0 / 8) * 8; x < x0 + w; x += 8) { const yy = y + Math.sin((x + f * 2) / 22) * 2.5; ctx.fillRect(x, yy - 1, 8, 3); }
-      if (R.wait > 0 && f % 20 < 12) { ctx.fillStyle = '#ffe36a'; ctx.font = '800 12px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('น้ำพิษกำลังขึ้น!', g.player.cx, y - 8); }
+      if (R.wait > 0 && f % 20 < 12) { ctx.fillStyle = '#ffe36a'; ctx.font = '800 12px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(LV ? 'ลาวากำลังขึ้น!' : 'น้ำพิษกำลังขึ้น!', g.player.cx, y - 8); }
     }
   }
   /* ------------------------------------------------------------------ darkness (screen space) */
