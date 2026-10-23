@@ -883,6 +883,12 @@ class Game {
       if (t === TL.LIQUID && liqArt) {             // world-art lava: the pack's lava tiles, the surface bobs a little
         const top = W.tileAt(L, tx, ty - 1) !== TL.LIQUID;
         ctx.drawImage(top ? liqArt[0] : liqArt[1], x, top ? y + Math.round(Math.sin((this.frame + tx * 9) / 14) * 1.5) : y, T, T);
+        if (top && th.poison) {                    // v109 poison swamp: a glowing green surface so the water reads as "danger", never as floor
+          const wy = y + 3 + Math.sin((this.frame + tx * 9) / 14) * 1.5;
+          ctx.fillStyle = 'rgba(70,200,80,.38)'; ctx.fillRect(x, wy, T, T - 3);
+          ctx.fillStyle = '#9cff6a'; ctx.fillRect(x, wy - 1, T, 2); ctx.fillStyle = 'rgba(200,255,150,.55)'; ctx.fillRect(x + ((this.frame / 3 + tx * 11) % T), wy - 1, 6, 1);
+          const bt = (this.frame + tx * 37) % 70; if (bt < 14) { ctx.fillStyle = '#b8ff8a'; ctx.beginPath(); ctx.arc(x + 8 + (tx * 13) % 16, wy + 6 - bt * .4, 1.6 + bt * .12, 0, 6.283); ctx.fill(); }
+        } else if (th.poison) { ctx.fillStyle = 'rgba(40,150,60,.35)'; ctx.fillRect(x, y, T, T); }
       } else if (t === TL.LIQUID) {
         const top = W.tileAt(L, tx, ty - 1) !== TL.LIQUID, wave = Math.sin((this.frame + tx * 9) / 10) * 2;
         ctx.fillStyle = th.liquid[0]; ctx.globalAlpha = .9; ctx.fillRect(x, top ? y + 6 + wave : y, T, top ? T - 6 - wave : T); ctx.globalAlpha = 1;
@@ -905,13 +911,23 @@ class Game {
     }
     // moving platforms
     for (const m of L.movers) {
-      if (this.theme.lily) {                       // v108 swamp: a lily pad (sinks while you stand on it)
-        const cxm = m.x + m.w / 2, wob = m.sink ? Math.sin(this.frame / 9 + m.id) * .8 : 0;
-        ctx.fillStyle = '#1e3a1a'; ctx.beginPath(); ctx.ellipse(cxm, m.y + 6 + wob, m.w / 2 + 2, 7, 0, 0, 6.283); ctx.fill();
-        ctx.fillStyle = m.load ? '#6aa83a' : '#5a9a34'; ctx.beginPath(); ctx.ellipse(cxm, m.y + 4 + wob, m.w / 2, 6, 0, 0, 6.283); ctx.fill();
-        ctx.fillStyle = '#8acb4a'; ctx.beginPath(); ctx.ellipse(cxm - m.w / 6, m.y + 2.5 + wob, m.w / 5, 2.2, 0, 0, 6.283); ctx.fill();
-        ctx.fillStyle = '#1e3a1a'; ctx.beginPath(); ctx.moveTo(cxm, m.y + 4 + wob); ctx.lineTo(cxm + m.w / 2, m.y + wob); ctx.lineTo(cxm + m.w / 2, m.y + 8 + wob); ctx.fill();
-        if (m.sink && m.off > 4) { ctx.fillStyle = 'rgba(122,208,90,.7)'; ctx.fillRect(m.x - 2, m.y + 8 + wob, m.w + 4, 2); }
+      if (this.theme.lily) {                       // v109 swamp lily pad: a big round leaf with a notch; sinks (with ripples) while stood on
+        const cxm = m.x + m.w / 2, rw = m.w / 2 + 4, f = this.frame, k = m.sink ? m.off / m.sink : 0;
+        const bob = Math.sin(f / 18 + m.id * 1.7) * (m.load ? .3 : 1.2), cy = m.y + 5 + bob;
+        const surf = m.y0 + 2;                     // the water line the pad floats on
+        if (m.load || k > .05) for (let r = 0; r < 2; r++) { const ph = ((f + r * 18) % 36) / 36; ctx.strokeStyle = `rgba(160,255,120,${.6 * (1 - ph)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(cxm, surf + 4, rw + ph * 16, 3 + ph * 3, 0, 0, 6.283); ctx.stroke(); }
+        ctx.fillStyle = '#0f2a12'; ctx.beginPath(); ctx.ellipse(cxm, cy + 1.5, rw + 1.5, 8.5, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = k > .45 ? '#4a7a2a' : '#3f9a3a'; ctx.beginPath(); ctx.ellipse(cxm, cy, rw, 7, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = k > .45 ? '#6a9a3a' : '#6cc84e'; ctx.beginPath(); ctx.ellipse(cxm - 3, cy - 1.5, rw - 6, 4, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = 'rgba(20,70,20,.7)'; ctx.lineWidth = 1; ctx.beginPath();
+        for (let a = -2; a <= 2; a++) { ctx.moveTo(cxm, cy); ctx.lineTo(cxm + Math.cos(Math.PI + a * .55) * rw * .85, cy + Math.sin(Math.PI + a * .55) * 5); } ctx.stroke();
+        ctx.fillStyle = '#0f2a12'; ctx.beginPath(); ctx.moveTo(cxm, cy); ctx.lineTo(cxm + rw + 2, cy - 4); ctx.lineTo(cxm + rw + 2, cy + 3); ctx.fill();   // the notch
+        if (m.id % 2 === 0) { const fx = cxm - rw * .45, fy = cy - 4; ctx.fillStyle = '#ff8ab8'; ctx.beginPath(); ctx.ellipse(fx - 3, fy, 3, 2, -.5, 0, 6.283); ctx.ellipse(fx + 3, fy, 3, 2, .5, 0, 6.283); ctx.ellipse(fx, fy - 2, 2, 3, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = '#ffe36a'; ctx.fillRect(fx - 1, fy - 1, 2, 2); }
+        if (k > .02) {                             // the sunk part is under the green water
+          ctx.fillStyle = 'rgba(60,170,70,.55)'; ctx.fillRect(m.x - 6, surf, m.w + 12, Math.max(0, cy + 9 - surf));
+          ctx.fillStyle = '#9cff6a'; ctx.fillRect(m.x - 6, surf - 1, m.w + 12, 2);
+          if (f % 6 === 0) this.parts.push({ x: cxm + U.rnd(-rw, rw), y: surf, vx: 0, vy: U.rnd(-1.4, -.5), life: 16, col: '#b8ff8a', size: 2, fade: true });
+        }
         continue;
       }
       ctx.fillStyle = '#3a2a1a'; ctx.fillRect(m.x, m.y + 2, m.w, m.h); ctx.fillStyle = '#c8a060'; ctx.fillRect(m.x, m.y, m.w, 4); ctx.fillStyle = '#8a6a3a'; ctx.fillRect(m.x, m.y + 4, m.w, 5);
