@@ -45,8 +45,8 @@ const PROJ = PLAT.PROJ = {
   fireball:  { img: 'bosses/dragon/fireball.png', fw: 56, fh: 32, n: 6, rate: 4, loopFrom: 3, scale: .55, speed: 3.2, dmg: 1, life: 140, box: [14, 12], enemy: true, elem: 'fire', explode: { r: 0 } },
   bigfire:   { img: 'bosses/dragon/fireball.png', fw: 56, fh: 32, n: 6, rate: 4, loopFrom: 3, scale: 1, speed: 3.6, dmg: 2, life: 200, box: [26, 20], enemy: true, elem: 'fire', explode: { r: 40, dmg: 2 } },
   wave:      { img: 'bosses/aqua/wave.png', fw: 69, fh: 83, n: 1, scale: .7, speed: 2.8, dmg: 1, life: 260, box: [30, 50], enemy: true, elem: 'ice', ground: true },
-  drop:      { proc: 'drop', col: '#7ad8ff', speed: 0, grav: .22, dmg: 1, life: 200, box: [8, 12], enemy: true, elem: 'ice' },
-  rock:      { proc: 'rock', col: '#8a7a6a', speed: 0, grav: .3, dmg: 1, life: 200, box: [16, 16], enemy: true },
+  drop:      { spr: { img: 'items/plat/props/orb.png', fw: 48, fh: 24, n: 3, rate: 3, scale: .6, ax: 40, ay: 12, aim: true, add: true }, proc: 'drop', col: '#7ad8ff', speed: 0, grav: .22, dmg: 1, life: 200, box: [8, 12], enemy: true, elem: 'ice' },
+  rock:      { spr: { img: 'items/plat/props/rock.png', fw: 28, fh: 15, scale: .85, spin: .1 }, proc: 'rock', col: '#8a7a6a', speed: 0, grav: .3, dmg: 1, life: 200, box: [16, 16], enemy: true },
   // v108 monster shots (CC0 strips from Monsters Creatures Fantasy 1.3 — PLAT.MONSTER_FX)
   wbolt:     { img: 'enemies/mcf/fx/wbolt.png', fw: 30, fh: 11, n: 4, rate: 4, scale: 1.7, speed: 3.6, dmg: 1, life: 170, box: [16, 10], enemy: true, elem: 'poison', glow: '#c86aff', pixel: true },
   gbomb:     { img: 'enemies/mcf/fx/bomb.png', fw: 54, fh: 62, n: 19, rate: 3, loopFrom: 0, scale: .5, speed: 0, dmg: 1, life: 160, box: [14, 14], enemy: true, elem: 'fire', explode: { r: 34, dmg: 1, fx: 'wexp' } },
@@ -54,11 +54,12 @@ const PROJ = PLAT.PROJ = {
   ebolt:     { img: 'enemies/mcf/fx/bolt.png', fw: 44, fh: 44, n: 8, rate: 3, scale: .55, speed: 3.4, dmg: 1, life: 120, box: [14, 14], enemy: true },
   // v115 world-5 bosses
   bubble:    { img: 'bosses/serpent/bubble.png', fw: 16, fh: 16, n: 4, rate: 7, loopFrom: 2, scale: 2.2, speed: 1.5, dmg: 1, life: 260, box: [24, 24], enemy: true, bob: 1.1, pixel: true },
-  cball:     { proc: 'bomb', col: '#2a2630', speed: 0, dmg: 1, life: 220, box: [16, 16], enemy: true, elem: 'fire', explode: { r: 38, dmg: 1, fx: 'wexp' } },
+  cball:     { spr: { img: 'items/plat/props/bomb.png', fw: 24, fh: 24, n: 3, rate: 4, scale: 1.1 }, proc: 'bomb', col: '#2a2630', speed: 0, dmg: 1, life: 220, box: [16, 16], enemy: true, elem: 'fire', explode: { r: 38, dmg: 1, fx: 'wexp' } },
   lblob:     { img: 'fx/fire.png', fw: 30, fh: 62, n: 30, rate: 2, scale: .42, pixel: true, speed: 0, grav: .22, dmg: 1, life: 200, box: [10, 14], enemy: true, elem: 'fire' },
-  shock:     { proc: 'shock', col: '#ffd060', speed: 4, dmg: 1, life: 90, box: [20, 18], enemy: true, elem: 'shock', ground: true },
+  shock:     { spr: { img: 'fx/zap.png', fw: 78, fh: 56, n: 10, from: 2, rate: 2, scale: .55, lift: 12, add: true }, proc: 'shock', col: '#ffd060', speed: 4, dmg: 1, life: 90, box: [20, 18], enemy: true, elem: 'shock', ground: true },
 };
 const FX = PLAT.FXDEF = {
+  sparkle: { img: 'items/plat/props/sparkle.png', fw: 32, fh: 32, n: 4, rate: 4, scale: 1, pixel: true },   // v122 Sunny Land pickup sparkle (CC0)
   puff:   { img: 'scenes/plat/swamp/death-puff.png', fw: 39, fh: 49, n: 6, rate: 4, scale: 1 },
   boom:   { img: 'bosses/dragon/boom.png', fw: 53, fh: 48, n: 8, rate: 3, scale: 1 },
   impact: { img: 'heroes/yota/fx_impact.png', fw: 200, fh: 200, n: 10, rate: 2, scale: .3 },

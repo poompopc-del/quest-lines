@@ -1,0 +1,15 @@
+Level props (built by tools/plat-import-props.py) — all public domain (CC0), credit not required.
+
+coin.png, spring.png, flag.png, sign.png
+    "Pixel Platformer" by Kenney (www.kenney.nl) — CC0. https://kenney.nl/assets/pixel-platformer
+    (via the CC0 collection https://github.com/Tiddybub/2d-assets) · flag frames 2-3 greyed for "not reached yet".
+gem.png, sparkle.png, rock.png
+    "Sunny Land" by Luis Zuno (@ansimuz) — CC0. https://ansimuz.itch.io/sunny-land-pixel-game-art
+    (from https://github.com/PhaserEditor2D/starter-example-sunny-land) · the gem recoloured cyan.
+door.png, door-closed.png
+    "Fort of Illusion" by Luis Zuno (@ansimuz) — CC0.
+bomb.png
+    Goblin bomb from "Monsters Creatures Fantasy" by LuizMelo — CC0.
+orb.png
+    "Magical projectile" from "PVFX Foundry" by nerijs — CC0.
+Also reused: Gothicvania Town street lamp (lanterns), Gothicvania Swamp water (acid pools), PVFX electric impact (shock waves).

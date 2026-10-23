@@ -132,7 +132,13 @@ class Gimmicks {
         ctx.fillStyle = gr; ctx.fillRect(v.x - 14 + Math.sin(f / 4) * 2, v.y - VENT_H * T, 28, VENT_H * T);
       }
     }
-    for (const l of this.lights) {          // a swamp lantern on a post
+    const lamp = PLAT.assets.img('scenes/plat/town/street-lamp.png');
+    if (lamp) for (const l of this.lights) {   // v122: the Gothicvania Town street lamp (ansimuz, CC0) instead of a drawn box
+      const k = .45, w = lamp.width * k, h = lamp.height * k, by = l.y + 16; ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(lamp, l.x - w / 2, by - h, w, h);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5 + (f % 30 < 15 ? .1 : 0); ctx.fillStyle = 'rgba(255,200,90,.35)'; ctx.beginPath(); ctx.arc(l.x, by - h + 10, 12, 0, 6.283); ctx.fill(); ctx.restore();
+    }
+    else for (const l of this.lights) {          // a swamp lantern on a post
       ctx.fillStyle = '#2a2016'; ctx.fillRect(l.x - 1.5, l.y - 4, 3, 22);
       ctx.fillStyle = '#5a4a2a'; ctx.fillRect(l.x - 6, l.y - 12, 12, 10);
       ctx.fillStyle = f % 30 < 15 ? '#ffd86a' : '#ffc84a'; ctx.fillRect(l.x - 4, l.y - 10, 8, 6);
@@ -141,10 +147,17 @@ class Gimmicks {
     if (R) {
       const y = R.y, x0 = g.cam.x - 10, w = C.VW + 20, bot = Math.max(y, g.cam.y + C.VH + 10);
       const LV = this.lavaRise;
-      ctx.fillStyle = LV ? 'rgba(200,60,20,.88)' : 'rgba(40,110,50,.82)'; ctx.fillRect(x0, y, w, bot - y + 40);
-      if (LV) { ctx.fillStyle = 'rgba(255,170,40,.35)'; ctx.fillRect(x0, y + 4, w, 10); }
-      ctx.fillStyle = LV ? '#ffd04a' : '#7ad05a';
-      for (let x = Math.floor(x0 / 8) * 8; x < x0 + w; x += 8) { const yy = y + Math.sin((x + f * 2) / 22) * 2.5; ctx.fillRect(x, yy - 1, 8, 3); }
+      const at = g.theme.art && g.theme.art.tiles, lt = at && at.liquidTop && PLAT.assets.img(at.liquidTop), lf = at && at.liquid && PLAT.assets.img(at.liquid);
+      if (lt && lf) {                         // v122: the rising flood is the world's own water / lava tiles
+        ctx.imageSmoothingEnabled = false; const T = C.T, sx = Math.floor(x0 / T) * T;
+        for (let x = sx; x < x0 + w; x += T) { const yy = y + Math.round(Math.sin((x + f * 2) / 22) * 2); ctx.drawImage(lt, x, yy, T, T); for (let yb = yy + T; yb < bot + 40; yb += T) ctx.drawImage(lf, x, yb, T, T); }
+        if (!LV) { ctx.fillStyle = 'rgba(70,200,80,.3)'; ctx.fillRect(x0, y + 3, w, bot - y + 40); }
+      } else {
+        ctx.fillStyle = LV ? 'rgba(200,60,20,.88)' : 'rgba(40,110,50,.82)'; ctx.fillRect(x0, y, w, bot - y + 40);
+        if (LV) { ctx.fillStyle = 'rgba(255,170,40,.35)'; ctx.fillRect(x0, y + 4, w, 10); }
+        ctx.fillStyle = LV ? '#ffd04a' : '#7ad05a';
+        for (let x = Math.floor(x0 / 8) * 8; x < x0 + w; x += 8) { const yy = y + Math.sin((x + f * 2) / 22) * 2.5; ctx.fillRect(x, yy - 1, 8, 3); }
+      }
       if (R.wait > 0 && f % 20 < 12) { ctx.fillStyle = '#ffe36a'; ctx.font = '800 12px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(LV ? 'ลาวากำลังขึ้น!' : 'น้ำพิษกำลังขึ้น!', g.player.cx, y - 8); }
     }
   }

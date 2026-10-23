@@ -28,6 +28,7 @@ const ART = PLAT.ART = {
     tiles: { img: P + 'sunnyland/tileset.png', unit: 16,
       top: [[48, 16, 16, 16]], topL: [16, 16, 16, 16], topR: [80, 16, 16, 16],
       fill: [[48, 48, 16, 16]], fillL: [16, 48, 16, 16], fillR: [80, 48, 16, 16],
+      bot: [48, 80, 16, 16], botL: [16, 80, 16, 16], botR: [80, 80, 16, 16],          // v122 the underside of floating ground
       brickTop: [272, 112, 16, 16], brick: [272, 144, 16, 16],
       oneway: [160, 16, 16, 16], onewayL: [144, 16, 16, 16], onewayR: [176, 16, 16, 16],
       spike: { img: P + 'sunnyland/spikes.png', r: [0, 0, 15, 10] },
@@ -48,7 +49,8 @@ const ART = PLAT.ART = {
       brickTop: { img: P + 'church/tileset.png', r: [16, 112, 16, 16] }, brick: [{ img: P + 'church/tileset.png', r: [16, 128, 16, 16] }, { img: P + 'church/tileset.png', r: [32, 128, 16, 16] }],
       oneway: { img: P + 'church/tileset.png', r: [72, 166, 16, 10] },
       spike: { r: [128, 80, 16, 16] },
-      breakable: { img: P + 'church/tileset.png', r: [32, 112, 16, 16] }, crumble: { img: P + 'church/tileset.png', r: [16, 112, 16, 16] } },
+      breakable: { img: P + 'church/tileset.png', r: [32, 112, 16, 16] }, crumble: { img: P + 'church/tileset.png', r: [16, 112, 16, 16] },
+      liquidTop: P + 'swamp/water-top.png', liquid: P + 'swamp/water.png', acid: true },
     decor: [{ img: P + 'cemetery/stone-1.png', s: 1.4, w: 3 }, { img: P + 'cemetery/stone-2.png', s: 1.4, w: 3 }, { img: P + 'cemetery/stone-3.png', s: 1.4, w: 2 }, { img: P + 'cemetery/stone-4.png', s: 1.4, w: 2 },
       { img: P + 'cemetery/bush-small.png', s: 1.6, w: 2 }, { img: P + 'cemetery/tree-1.png', s: 1.1, w: 1 }, { img: P + 'cemetery/statue.png', s: 1.4, w: .6 }],
   },
@@ -95,7 +97,7 @@ const ART = PLAT.ART = {
       // so heroes and monsters looked like they floated above the ground
       top: [[48, 5, 16, 16], [64, 5, 16, 16], [80, 5, 16, 16], [240, 5, 16, 16], [256, 5, 16, 16]], topL: [32, 5, 16, 16], topR: [96, 5, 16, 16],
       // v109: only the lit rows — the tileset darkens toward its bottom, which made mounds / dips a light-dark checkerboard
-      fill: [[48, 21, 16, 16], [64, 21, 16, 16], [80, 21, 16, 16], [240, 21, 16, 16], [256, 21, 16, 16]], fillL: [32, 21, 16, 16], fillR: [96, 21, 16, 16], deep: [[240, 24, 16, 16], [256, 24, 16, 16], [272, 24, 16, 16]],
+      fill: [[48, 21, 16, 16], [64, 21, 16, 16], [80, 21, 16, 16], [240, 21, 16, 16], [256, 21, 16, 16]], fillL: [32, 21, 16, 16], fillR: [96, 21, 16, 16], deep: [[48, 37, 16, 16], [64, 37, 16, 16], [80, 37, 16, 16]], deepColor: '#1e201e',   // v122: fades into the dark like the pack (no more lit rows stacked with seams)
       brickTop: [[144, 5, 16, 16], [160, 4, 16, 16], [176, 5, 16, 16]], brick: [[144, 16, 16, 16], [160, 16, 16, 16], [176, 16, 16, 16], [160, 32, 16, 16]],
       oneway: [{ r: [48, 5, 16, 10] }, { r: [64, 5, 16, 10] }, { r: [80, 5, 16, 10] }], onewayL: { r: [32, 6, 16, 10] }, onewayR: { r: [96, 6, 16, 10] },
       spike: { img: P + 'cemetery/tileset.png', r: [128, 80, 16, 16] },
@@ -117,7 +119,8 @@ const ART = PLAT.ART = {
       oneway: [64, 0, 16, 13],
       spike: { img: P + 'cemetery/tileset.png', r: [128, 80, 16, 16] },
       breakable: { img: P + 'sunnyland/crate.png', r: [0, 0, 16, 16] }, breakableClean: true,
-      crumble: { img: P + 'church/tileset.png', r: [16, 112, 16, 16] } },
+      crumble: { img: P + 'church/tileset.png', r: [16, 112, 16, 16] },
+      liquidTop: P + 'swamp/water-top.png', liquid: P + 'swamp/water.png', acid: true },   // v122: acid pools drawn with the swamp's water art + a green glow
     decor: [{ img: P + 'town/house-a.png', s: 1, w: 1.2, span: 6 }, { img: P + 'town/house-b.png', s: .9, w: 1, span: 7 }, { img: P + 'town/house-c.png', s: .9, w: 1, span: 7 },
       { img: P + 'town/street-lamp.png', s: 1, w: 1.4 }, { img: P + 'town/well.png', s: 1, w: .6, span: 2 }, { img: P + 'town/wagon.png', s: 1, w: .6, span: 3 },
       { img: P + 'town/barrel.png', s: 1, w: 1.2 }, { img: P + 'town/crate-stack.png', s: .8, w: .7, span: 2 }, { img: P + 'town/sign.png', s: 1, w: .5 }],
@@ -166,7 +169,8 @@ const ART = PLAT.ART = {
     tiles: { img: P + 'grotto/tileset.png', unit: 16,
       top: [[32, 64, 16, 16], [48, 64, 16, 16]], topL: [16, 64, 16, 16], topR: [64, 64, 16, 16],
       fill: [[32, 80, 16, 16], [48, 80, 16, 16]], fillL: [16, 80, 16, 16], fillR: [64, 80, 16, 16],
-      brickTop: [[16, 112, 16, 16], [32, 112, 16, 16]], brick: [[16, 128, 16, 16], [32, 128, 16, 16]],
+      deepColor: '#151123',                            // v122: under the first row the grotto is plain dark (the fill row repeated made stripes)
+      brickTop: [[16, 112, 16, 16], [32, 112, 16, 16]], brick: [[16, 128, 16, 16], [32, 128, 16, 16]], brickAsGround: true,   // v122: walls are the same stone as the floor
       oneway: [[48, 30, 16, 14], [64, 30, 16, 14]],
       spike: { img: P + 'cemetery/tileset.png', r: [128, 80, 16, 16] },
       liquidTop: P + 'grotto/lava-top.png', liquid: P + 'grotto/lava.png',

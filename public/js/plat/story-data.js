@@ -204,7 +204,7 @@ PLAT.STORY = {
     ['ฉาก', 'Gothicvania Cemetery · Church · Swamp · Town · Sunny Land · Forest / Fort of Illusion · Super Grotto Escape — Luis Zuno (@ansimuz), CC0', '2D Platformer Volcano Pack — Tio Aimar'],
     ['มอนสเตอร์', 'Monsters Creatures Fantasy 1 & 2 · Evil Wizard 2 & 3 — LuizMelo, CC0', 'Hell Hound — Luis Zuno (@ansimuz), CC-BY 3.0', 'Bosses sprite sheet — CC0'],
     ['เอฟเฟกต์', 'PVFX Foundry — nerijs, CC0', 'Animated Fire — BenHickling, CC0'],
-    ['ไอเทม', '16x16 Assorted RPG Icons — Shade, CC0'],
+    ['ไอเทม', '16x16 Assorted RPG Icons — Shade, CC0', 'Pixel Platformer — Kenney, CC0 · Sunny Land items — ansimuz, CC0'],
     ['เพลง', 'rpg_village02_loop — Pascal Belisle', '8-bit Battle Loop — Wolfgang_, CC0'],
     ['ขอบคุณที่เล่น', 'ทุกครั้งที่เห็นหิ่งห้อย… เรียกชื่อเธอดังๆ นะ'],
   ],

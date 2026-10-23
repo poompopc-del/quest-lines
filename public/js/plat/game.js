@@ -10,6 +10,7 @@
    ========================================================================== */
 (function (G) {
 'use strict';
+const PROPS = 'items/plat/props/';                // v122 level props as sprites (tools/plat-import-props.py)
 const PLAT = G.PLAT, C = PLAT.C, U = PLAT.U, W = PLAT.world, T = C.T, TL = PLAT.TILE;
 const sfx = () => PLAT.sfx;
 
@@ -57,7 +58,8 @@ class Game {
     (A.charge || []).forEach(c => projNames.add(c.proj));
     for (const t of types) { const d = this.enemyDef(t); if (d && d.proj) projNames.add(d.proj); (d && d.projs || []).forEach(n => projNames.add(n)); }   // v121: the Scribe borrows every keeper's shots
     if (PLAT.FXDEF.puff) imgs.push(PLAT.FXDEF.puff.img);
-    for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); }
+    for (const n of projNames) { const p = PLAT.PROJ[n]; if (p && p.img) imgs.push(p.img); if (p && p.spr) imgs.push(p.spr.img); }
+    for (const k of ['coin', 'gem', 'sparkle', 'spring', 'flag', 'sign', 'door', 'door-closed']) imgs.push(PROPS + k + '.png'); imgs.push('scenes/plat/town/street-lamp.png');   // v122 level props
     for (const k of ['boom', 'impact', 'spark', 'orb', 'craura', 'ground', 'kick', 'aura']) imgs.push(PLAT.FXDEF[k].img);
     for (const k in (PLAT.FX_SHEETS || {})) imgs.push(PLAT.FX_SHEETS[k].img);            // v120 effect sprites (small, always loaded)
     (hero.preload || []).forEach(s => s && imgs.push(s));
@@ -517,9 +519,9 @@ class Game {
     const p = this.player, L = this.L; if (p.dead) return;
     const pb = { x: p.x - 4, y: p.y - 4, w: p.w + 8, h: p.h + 8 };
     const near = (x, y, r) => x > pb.x - r && x < pb.x + pb.w + r && y > pb.y - r && y < pb.y + pb.h + r;
-    for (const c of L.coins) if (!c.got && near(c.x, c.y, 8)) { c.got = true; this.stats.coins++; sfx().coin(); this.burst(c.x, c.y, '#ffd84a', 5, 1.4); }
+    for (const c of L.coins) if (!c.got && near(c.x, c.y, 8)) { c.got = true; this.stats.coins++; sfx().coin(); this.burst(c.x, c.y, '#ffd84a', 5, 1.4); this.fx('sparkle', c.x, c.y, { scale: .8 }); }
     for (const g of L.gems) if (!g.got && near(g.x, g.y, 10)) {
-      g.got = true; this.stats.gems.add(g.i); sfx().gem(); PLAT.haptic('gem'); this.flashT = 6;
+      g.got = true; this.stats.gems.add(g.i); sfx().gem(); PLAT.haptic('gem'); this.flashT = 6; this.fx('sparkle', g.x, g.y, { scale: 1.4 });
       for (let i = 0; i < 18; i++) this.burst(g.x, g.y, i % 2 ? '#7af0ff' : '#ffffff', 1, 3);
       this.text(g.x, g.y - 14, `💎 ${this.stats.gems.size}/${L.gems.length}`, '#9af0ff', 80, true); this.emit('gem', { n: this.stats.gems.size, of: L.gems.length, i: g.i });
     }
@@ -880,12 +882,28 @@ class Game {
       const tt = tileT(tx, ty), x = tx * T - ox, y = ty * T;
       if (tt === TL.GROUND || tt === TL.BRICK) {
         const open = !solidish(tx, ty - 1), lOpen = !solidish(tx - 1, ty) && tileT(tx - 1, ty) !== TL.BREAK && tileT(tx - 1, ty) !== TL.CRUMBLE, rOpen = !solidish(tx + 1, ty) && tileT(tx + 1, ty) !== TL.BREAK && tileT(tx + 1, ty) !== TL.CRUMBLE;
-        let st;
-        if (tt === TL.BRICK) st = open ? this.pick(t.brickTop, tx, ty) || this.pick(t.brick, tx, ty) : this.pick(t.brick, tx, ty);
-        else if (open) st = (lOpen && !rOpen && t.topL) || (rOpen && !lOpen && t.topR) || this.pick(t.top, tx, ty);
+        let st, half = null;
+        // v122 autotile: a column one tile wide gets its left edge on the left half and its right edge on the right half;
+        // a block with air under it gets the tileset's underside row; ground right under a wall ('=') continues the wall
+        // down to the floor; deep ground (2+ under the surface) can be the tileset's plain dark colour instead of a texture.
+        const both = lOpen && rOpen, bOpen = !solidish(tx, ty + 1) && ty + 1 < L.h;
+        const edge = (c, l, r) => both && l && r ? (half = [l, r], null) : (lOpen && !rOpen && l) || (rOpen && !lOpen && r) || this.pick(c, tx, ty);
+        if ((tt === TL.BRICK && !t.brickAsGround) || (tileT(tx, ty - 1) === TL.BRICK && !t.brickAsGround && tt === TL.GROUND && !open)) st = open && tt === TL.BRICK ? this.pick(t.brickTop, tx, ty) || this.pick(t.brick, tx, ty) : this.pick(t.brick, tx, ty);
+        else if (open) st = edge(t.top, t.topL, t.topR);
+        else if (bOpen && t.bot) st = edge(t.bot, t.botL, t.botR);
         else {
-          const deep = t.deep && solidish(tx, ty - 1) && solidish(tx, ty - 2);
-          st = deep ? this.pick(t.deep, tx, ty) : (lOpen && !rOpen && t.fillL) || (rOpen && !lOpen && t.fillR) || this.pick(t.fill, tx, ty);
+          // depth below the surface, smoothed with the neighbours so a mound does not turn dark one row before the ground beside it
+          const dep = c => { if (!solidish(c, ty)) return 9; let k = 0; while (k < 3 && solidish(c, ty - 1 - k)) k++; return k; };
+          let d = dep(tx); for (let o = 1; o <= 4 && d > 1; o++) d = Math.min(d, dep(tx - o), dep(tx + o));
+          const deep = d >= 2 && !lOpen && !rOpen, deep3 = d >= 3 && !lOpen && !rOpen;
+          if (t.deepColor && (deep3 || (deep && !t.deep))) { g.fillStyle = t.deepColor; g.fillRect(x, y, T, T); continue; }
+          st = deep && t.deep ? this.pick(t.deep, tx, ty) : edge(t.fill, t.fillL, t.fillR);
+        }
+        if (half) {                                        // left half of the left edge + right half of the right edge
+          const k = T / t.unit;
+          for (let i = 0; i < 2; i++) { const s0 = half[i], im = this.stampImg(s0, t); if (!im) continue; const r = Array.isArray(s0) ? s0 : s0.r, oy = (s0.oy || 0), hw = r[2] / 2;
+            g.drawImage(im, r[0] + i * hw, r[1], hw, r[3], x + i * T / 2, y - oy * k, T / 2, r[3] * k); }
+          continue;
         }
         if (st && st.oy) { over.push([st, x, y]); this.stamp(g, t, { img: st.img, r: [st.r[0], st.r[1] + st.oy, st.r[2], st.r[3] - st.oy] }, x, y); }
         else if (!this.stamp(g, t, st, x, y)) { g.fillStyle = th.ground; g.fillRect(x, y, T, T); }
@@ -931,12 +949,12 @@ class Game {
       if (t === TL.LIQUID && liqArt) {             // world-art lava: the pack's lava tiles, the surface bobs a little
         const top = W.tileAt(L, tx, ty - 1) !== TL.LIQUID;
         ctx.drawImage(top ? liqArt[0] : liqArt[1], x, top ? y + Math.round(Math.sin((this.frame + tx * 9) / 14) * 1.5) : y, T, T);
-        if (top && th.poison) {                    // v109 poison swamp: a glowing green surface so the water reads as "danger", never as floor
+        if (top && (th.poison || at.acid)) {                    // v109 poison swamp: a glowing green surface so the water reads as "danger", never as floor
           const wy = y + 3 + Math.sin((this.frame + tx * 9) / 14) * 1.5;
           ctx.fillStyle = 'rgba(70,200,80,.38)'; ctx.fillRect(x, wy, T, T - 3);
           ctx.fillStyle = '#9cff6a'; ctx.fillRect(x, wy - 1, T, 2); ctx.fillStyle = 'rgba(200,255,150,.55)'; ctx.fillRect(x + ((this.frame / 3 + tx * 11) % T), wy - 1, 6, 1);
           const bt = (this.frame + tx * 37) % 70; if (bt < 14) { ctx.fillStyle = '#b8ff8a'; ctx.beginPath(); ctx.arc(x + 8 + (tx * 13) % 16, wy + 6 - bt * .4, 1.6 + bt * .12, 0, 6.283); ctx.fill(); }
-        } else if (th.poison) { ctx.fillStyle = 'rgba(40,150,60,.35)'; ctx.fillRect(x, y, T, T); }
+        } else if (th.poison || at.acid) { ctx.fillStyle = 'rgba(40,150,60,.35)'; ctx.fillRect(x, y, T, T); }
       } else if (t === TL.LIQUID) {
         const top = W.tileAt(L, tx, ty - 1) !== TL.LIQUID, wave = Math.sin((this.frame + tx * 9) / 10) * 2;
         ctx.fillStyle = th.liquid[0]; ctx.globalAlpha = .9; ctx.fillRect(x, top ? y + 6 + wave : y, T, top ? T - 6 - wave : T); ctx.globalAlpha = 1;
@@ -954,7 +972,7 @@ class Game {
       } else if (t === TL.FAKE) {
         const inside = U.overlap({ x: x - 40, y: y - 40, w: T + 80, h: T + 80 }, p);
         // a secret wall must look exactly like the real wall around it
-        ctx.globalAlpha = inside ? .35 : 1; if (!(at && this.stamp(ctx, at, this.pick(at.brick, tx, ty), x, y))) this.drawBrick(ctx, x, y, th, tx, ty); ctx.globalAlpha = 1;
+        ctx.globalAlpha = inside ? .35 : 1; if (!(at && this.stamp(ctx, at, this.pick(at.brickAsGround ? at.fill : at.brick, tx, ty), x, y))) this.drawBrick(ctx, x, y, th, tx, ty); ctx.globalAlpha = 1;
       }
     }
     // moving platforms
@@ -978,6 +996,11 @@ class Game {
         }
         continue;
       }
+      if (at && at.oneway && this.tileArtReady(at)) {     // v122: moving platforms use the world's own ledge tiles
+        const n = Math.max(1, Math.round(m.w / T));
+        for (let i = 0; i < n; i++) this.stamp(ctx, at, this.pick((i === 0 && n > 1 && at.onewayL) || (i === n - 1 && n > 1 && at.onewayR) || at.oneway, i, 0), m.x + i * T, m.y);
+        continue;
+      }
       ctx.fillStyle = '#3a2a1a'; ctx.fillRect(m.x, m.y + 2, m.w, m.h); ctx.fillStyle = '#c8a060'; ctx.fillRect(m.x, m.y, m.w, 4); ctx.fillStyle = '#8a6a3a'; ctx.fillRect(m.x, m.y + 4, m.w, 5);
       ctx.fillStyle = '#ffd060'; ctx.fillRect(m.x + 4, m.y + 5, 3, 3); ctx.fillRect(m.x + m.w - 7, m.y + 5, 3, 3);
     }
@@ -995,7 +1018,14 @@ class Game {
     const L = this.L, f = this.frame, x0 = this.cam.x - 48, x1 = this.cam.x + C.VW + 48, inV = x => x > x0 && x < x1;   // only what is on screen (coins were all drawn every frame)
     // exit door
     const ex = L.exit;
-    if (ex) {
+    const pi = n => PLAT.assets.img(PROPS + n + '.png');
+    const door = ex && pi(ex.open ? 'door' : 'door-closed');
+    if (ex && door) {                          // v122: the Fort of Illusion archway (ansimuz, CC0) — open = lit from inside
+      const k = .8, w = door.width * k, h = door.height * k, cx = ex.x + ex.w / 2, by = ex.y + ex.h;
+      ctx.imageSmoothingEnabled = false; ctx.drawImage(door, cx - w / 2, by - h, w, h);
+      if (ex.open) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .55 + Math.sin(f / 12) * .15; ctx.drawImage(glowSprite('rgba(255,236,150,.9)', 'rgba(255,236,150,0)', 26, 2), cx - 26, by - h * .45 - 26); ctx.restore(); }
+      ctx.fillStyle = '#ffd060'; ctx.font = '700 9px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(ex.open ? 'EXIT' : '🔒', cx, by - h - 4);
+    } else if (ex) {
       ctx.fillStyle = '#2a1a10'; ctx.fillRect(ex.x - 4, ex.y - 6, ex.w + 8, ex.h + 6);
       ctx.fillStyle = ex.open ? '#ffe9a0' : '#5a4030'; ctx.fillRect(ex.x, ex.y, ex.w, ex.h);
       if (ex.open) { const g = ctx.createRadialGradient(ex.x + ex.w / 2, ex.y + ex.h / 2, 4, ex.x + ex.w / 2, ex.y + ex.h / 2, 40); g.addColorStop(0, 'rgba(255,240,160,.7)'); g.addColorStop(1, 'rgba(255,240,160,0)'); ctx.fillStyle = g; ctx.fillRect(ex.x - 30, ex.y - 30, ex.w + 60, ex.h + 60); }
@@ -1005,13 +1035,20 @@ class Game {
     // checkpoints
     for (const k of L.checkpoints) {
       if (!inV(k.x)) continue;
+      const fl = pi('flag');
+      if (fl) { const fi = k.on ? Math.floor(f / 12) % 2 : 2, sc = 1.5; ctx.imageSmoothingEnabled = false; ctx.drawImage(fl, fi * 18, 0, 18, 36, k.x - 4 * sc, k.y - 36 * sc, 18 * sc, 36 * sc); continue; }   // v122 Kenney flag: grey until reached
       ctx.fillStyle = '#ddd'; ctx.fillRect(k.x - 1, k.y - 48, 3, 48);
       const wv = Math.sin(f / 8) * 2; ctx.fillStyle = k.on ? '#5aff7a' : '#a0a0a0'; ctx.beginPath(); ctx.moveTo(k.x + 2, k.y - 48); ctx.lineTo(k.x + 20, k.y - 41 + wv); ctx.lineTo(k.x + 2, k.y - 34); ctx.fill();
     }
     // signs
-    for (const s of L.signs) { if (!inV(s.x)) continue; ctx.fillStyle = '#6a4a2a'; ctx.fillRect(s.x - 1, s.y - 18, 3, 18); ctx.fillStyle = '#c8965a'; ctx.fillRect(s.x - 11, s.y - 30, 22, 14); ctx.fillStyle = '#6a4a2a'; ctx.font = '700 10px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', s.x, s.y - 19); }
+    const sg = pi('sign');
+    if (sg) for (const s of L.signs) { if (!inV(s.x)) continue; const sc = 1.7; ctx.imageSmoothingEnabled = false; ctx.drawImage(sg, s.x - 9 * sc, s.y - 18 * sc, 18 * sc, 18 * sc); ctx.fillStyle = '#5a3418'; ctx.font = '800 11px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', s.x, s.y - 18); }
+    else for (const s of L.signs) { if (!inV(s.x)) continue; ctx.fillStyle = '#6a4a2a'; ctx.fillRect(s.x - 1, s.y - 18, 3, 18); ctx.fillStyle = '#c8965a'; ctx.fillRect(s.x - 11, s.y - 30, 22, 14); ctx.fillStyle = '#6a4a2a'; ctx.font = '700 10px Kanit, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', s.x, s.y - 19); }
     // springs
-    for (const s of L.springs) { if (!inV(s.x)) continue; const sq = s.sq > 0 ? Math.sin(s.sq / 14 * Math.PI) * 6 : 0; ctx.fillStyle = '#8a8a9a'; ctx.fillRect(s.x + 3, s.y + 4 + sq / 2, s.w - 6, 8 - sq / 2); ctx.fillStyle = '#ff4a5a'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 5); ctx.fillStyle = '#ffa0a8'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 1.5); }
+    const sp = pi('spring');
+    if (sp) for (const s of L.springs) { if (!inV(s.x)) continue; const on = s.sq > 0, st = on ? 1 + Math.sin(s.sq / 14 * Math.PI) * .15 : 1, sc = 32 / 18; ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(sp, on ? 18 : 0, 0, 18, 18, s.x + s.w / 2 - 16, s.y + s.h - 32 * st, 32, 32 * st); }
+    else for (const s of L.springs) { if (!inV(s.x)) continue; const sq = s.sq > 0 ? Math.sin(s.sq / 14 * Math.PI) * 6 : 0; ctx.fillStyle = '#8a8a9a'; ctx.fillRect(s.x + 3, s.y + 4 + sq / 2, s.w - 6, 8 - sq / 2); ctx.fillStyle = '#ff4a5a'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 5); ctx.fillStyle = '#ffa0a8'; ctx.fillRect(s.x, s.y + sq - 2, s.w, 1.5); }
     // coins / gems / hearts
     for (const c of L.coins) if (!c.got && inV(c.x)) this.drawCoin(ctx, c.x, c.y + Math.sin((f + c.x) / 12) * 2, (f + c.x) / 16);
     for (const c of this.loose) { if (!inV(c.x)) continue; if (c.kind === 'coin') this.drawCoin(ctx, c.x, c.y, (f + c.t) / 6, .8); else this.drawItem(ctx, c); }
@@ -1024,12 +1061,17 @@ class Game {
     for (const h of L.hearts) if (!h.got && inV(h.x)) this.drawChest(ctx, h.x, h.y + 6);
   }
   drawCoin(ctx, x, y, ph, s) {
-    s = s || 1; const w = Math.max(1.2, Math.abs(Math.cos(ph)) * 6 * s);
+    s = s || 1;
+    const im = PLAT.assets.img(PROPS + 'coin.png');
+    if (im) { const c = Math.abs(Math.cos(ph * .6)), edge = c < .28, z = 20 * s, w = edge ? z : z * c; ctx.imageSmoothingEnabled = false; ctx.drawImage(im, edge ? 18 : 0, 0, 18, 18, x - w / 2, y - z / 2, w, z); return; }   // v122 Kenney pixel coin, spun by squashing
+    const w = Math.max(1.2, Math.abs(Math.cos(ph)) * 6 * s);
     ctx.fillStyle = '#b8860b'; ctx.beginPath(); ctx.ellipse(x, y, w + .8, 7 * s, 0, 0, 6.283); ctx.fill();
     ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.ellipse(x, y, w, 6 * s, 0, 0, 6.283); ctx.fill(); ctx.fillStyle = '#fff3a0'; ctx.fillRect(x - .5, y - 3 * s, 1.5, 3 * s);
   }
   drawGem(ctx, x, y) {
     ctx.drawImage(glowSprite('rgba(120,240,255,.6)', 'rgba(120,240,255,0)', 22, 2), x - 22, y - 22);
+    const im = PLAT.assets.img(PROPS + 'gem.png');
+    if (im) { const i = Math.floor(this.frame / 7) % 5, sc = 1.7; ctx.imageSmoothingEnabled = false; ctx.drawImage(im, i * 15, 0, 15, 13, x - 7.5 * sc, y - 6.5 * sc, 15 * sc, 13 * sc); return; }   // v122 Sunny Land gem (cyan)
     ctx.fillStyle = '#2aa8d8'; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x + 9, y - 3); ctx.lineTo(x, y + 11); ctx.lineTo(x - 9, y - 3); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#9af0ff'; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x + 4, y - 3); ctx.lineTo(x, y + 6); ctx.lineTo(x - 4, y - 3); ctx.closePath(); ctx.fill();
     if (this.frame % 40 < 6) { ctx.fillStyle = '#fff'; ctx.fillRect(x + 5, y - 9, 2, 6); ctx.fillRect(x + 3, y - 7, 6, 2); }
@@ -1049,6 +1091,14 @@ class Game {
   drawProj(ctx, pr) {
     const d = pr.def;
     if (d.glow) { const r = Math.round(Math.max(d.box[0], d.box[1]) * .9); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(glowSprite(d.glow + 'aa', d.glow + '00', r, 1), pr.x - r, pr.y - r); ctx.restore(); }
+    const sp = d.spr && PLAT.assets.img(d.spr.img);
+    if (sp) {                                  // v122: sprites for the shots that used to be drawn shapes
+      const S0 = d.spr, n = S0.n || 1, i = S0.from != null ? S0.from + Math.floor(pr.t / (S0.rate || 3)) % (n - S0.from) : Math.floor(pr.t / (S0.rate || 3)) % n, sc = S0.scale || 1, w = S0.fw * sc, h = S0.fh * sc;
+      ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(pr.x, pr.y - (S0.lift || 0));
+      if (S0.spin) ctx.rotate(pr.t * S0.spin); else if (S0.aim) ctx.rotate(Math.atan2(pr.vy, pr.vx)); else if ((U.sign(pr.vx) || pr.dir) < 0) ctx.scale(-1, 1);
+      if (S0.add) ctx.globalCompositeOperation = 'lighter';
+      ctx.drawImage(sp, i * S0.fw, 0, S0.fw, S0.fh, -(S0.ax != null ? S0.ax * sc : w / 2), -(S0.ay != null ? S0.ay * sc : h / 2), w, h); ctx.restore(); return;
+    }
     if (d.proc) {
       ctx.fillStyle = d.col;
       if (d.proc === 'tracer') { ctx.fillRect(pr.x - 8, pr.y - 1, 16, 2.5); ctx.fillStyle = '#fff'; ctx.fillRect(pr.x + (pr.vx > 0 ? 4 : -8), pr.y - 1, 4, 2.5); }
